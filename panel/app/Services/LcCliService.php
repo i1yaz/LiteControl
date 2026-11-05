@@ -187,7 +187,90 @@ class LcCliService
                         ],
                     ];
                 }
+                if ($sub === 'ini-get') {
+                    $ver = $args[1] ?? '83';
+                    return [
+                        'status' => 'success',
+                        'message' => "PHP $ver ini configuration retrieved",
+                        'data' => [
+                            'version' => $ver,
+                            'ini_path' => "/usr/local/lsws/lsphp{$ver}/etc/php/{$ver}/litespeed/php.ini",
+                            'directives' => [
+                                'memory_limit' => '256M',
+                                'upload_max_filesize' => '64M',
+                                'post_max_size' => '64M',
+                                'max_execution_time' => '300',
+                                'max_input_vars' => '3000',
+                                'display_errors' => 'Off',
+                                'disable_functions' => 'exec,passthru,shell_exec,system,proc_open,popen',
+                                'date.timezone' => 'UTC',
+                            ],
+                        ],
+                    ];
+                }
+
+                if ($sub === 'ext-list') {
+                    $ver = $args[1] ?? '83';
+                    return [
+                        'status' => 'success',
+                        'message' => "PHP $ver extensions list retrieved",
+                        'data' => [
+                            'installed' => ['bcmath', 'curl', 'gd', 'imagick', 'intl', 'mbstring', 'mysql', 'opcache', 'pdo', 'redis', 'soap', 'xml', 'zip'],
+                            'available' => ['memcached', 'mongodb', 'pgsql', 'sqlite3', 'xdebug', 'yaml'],
+                        ],
+                    ];
+                }
+
+                if ($sub === 'modules') {
+                    $ver = $args[1] ?? '83';
+                    return [
+                        'status' => 'success',
+                        'message' => "PHP $ver loaded modules",
+                        'data' => [
+                            'Core', 'date', 'libxml', 'openssl', 'pcre', 'zlib', 'filter', 'hash', 'json', 'pcntl', 'readline',
+                            'Reflection', 'SPL', 'standard', 'bcmath', 'ctype', 'curl', 'dom', 'fileinfo', 'ftp', 'gd',
+                            'iconv', 'intl', 'mbstring', 'mysqli', 'PDO', 'pdo_mysql', 'Phar', 'posix', 'redis', 'SimpleXML',
+                            'soap', 'sockets', 'sodium', 'tokenizer', 'xml', 'xmlreader', 'xmlwriter', 'zip', 'Zend OPcache'
+                        ],
+                    ];
+                }
+
                 return ['status' => 'success', 'message' => "PHP operation '$sub' completed", 'data' => []];
+
+            case 'db':
+                if ($sub === 'list') {
+                    return [
+                        'status' => 'success',
+                        'message' => 'Databases retrieved',
+                        'data' => [
+                            ['name' => 'client1_wp', 'size_bytes' => 12582912, 'size_human' => '12.0 MB', 'tables' => 14],
+                            ['name' => 'client1_shop', 'size_bytes' => 33554432, 'size_human' => '32.0 MB', 'tables' => 28],
+                        ],
+                    ];
+                }
+                return ['status' => 'success', 'message' => "Database operation '$sub' completed", 'data' => ['db' => $args[1] ?? '']];
+
+            case 'backup':
+                if ($sub === 'list') {
+                    return [
+                        'status' => 'success',
+                        'message' => 'Backups retrieved',
+                        'data' => [
+                            ['filename' => 'backup-client1-20261101_030000.tar.gz', 'path' => '/home/client1/backups/backup-client1-20261101_030000.tar.gz', 'size_bytes' => 45000000, 'size_human' => '42.9 MB', 'created_at' => '2026-11-01 03:00:00'],
+                        ],
+                    ];
+                }
+                if ($sub === 'create') {
+                    $ts = now()->format('Ymd_His');
+                    $user = $args[1] ?? 'client1';
+                    $fn = "backup-{$user}-{$ts}.tar.gz";
+                    return [
+                        'status' => 'success',
+                        'message' => "Backup archive created: $fn",
+                        'data' => ['filename' => $fn, 'path' => "/home/{$user}/backups/{$fn}", 'size_bytes' => 52428800],
+                    ];
+                }
+                return ['status' => 'success', 'message' => "Backup operation '$sub' completed", 'data' => []];
 
             case 'tuning':
                 return [
