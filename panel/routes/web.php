@@ -10,6 +10,10 @@ use App\Http\Controllers\PhpController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\FileManagerController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\ConfigurationController;
+use App\Http\Controllers\ServerController;
+use App\Http\Controllers\SecurityController;
+use App\Http\Controllers\ModuleController;
 
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
@@ -68,6 +72,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/backups/schedules', [BackupController::class, 'storeSchedule'])->name('backups.schedules.store');
     Route::delete('/backups/schedules/{schedule}', [BackupController::class, 'destroySchedule'])->name('backups.schedules.destroy');
 
+    // Security (User + Admin accessible)
+    Route::get('/security/ssl', [SecurityController::class, 'ssl'])->name('security.ssl');
+    Route::post('/security/ssl/issue', [SecurityController::class, 'issueSsl'])->name('security.ssl.issue');
+    Route::post('/security/ssl/custom', [SecurityController::class, 'customSsl'])->name('security.ssl.custom');
+    Route::post('/security/ssl/{domain}/renew', [SecurityController::class, 'renewSsl'])->name('security.ssl.renew');
+    Route::get('/security/password', [SecurityController::class, 'password'])->name('security.password');
+    Route::post('/security/password', [SecurityController::class, 'updatePassword'])->name('security.password.update');
+    Route::get('/security/two-factor', [SecurityController::class, 'twoFactor'])->name('security.two-factor');
+    Route::post('/security/two-factor/toggle', [SecurityController::class, 'toggleTwoFactor'])->name('security.two-factor.toggle');
+
     // Admin Only Routes
     Route::middleware('admin')->group(function () {
         // Users Management
@@ -91,5 +105,47 @@ Route::middleware('auth')->group(function () {
         Route::get('/php/versions', [PhpController::class, 'versions'])->name('php.versions');
         Route::post('/php/versions/install', [PhpController::class, 'installVersion'])->name('php.versions.install');
         Route::post('/php/versions/remove', [PhpController::class, 'removeVersion'])->name('php.versions.remove');
+
+        // Configuration (Admin Only)
+        Route::get('/configuration/settings', [ConfigurationController::class, 'settings'])->name('configuration.settings');
+        Route::post('/configuration/settings', [ConfigurationController::class, 'updateSettings'])->name('configuration.settings.update');
+        Route::get('/configuration/tuning', [ConfigurationController::class, 'tuning'])->name('configuration.tuning');
+        Route::post('/configuration/tuning', [ConfigurationController::class, 'updateTuning'])->name('configuration.tuning.update');
+        Route::get('/configuration/php-limit', [ConfigurationController::class, 'phpLimit'])->name('configuration.php-limit');
+        Route::post('/configuration/php-limit', [ConfigurationController::class, 'updatePhpLimit'])->name('configuration.php-limit.update');
+        Route::get('/configuration/error-logs', [ConfigurationController::class, 'errorLogs'])->name('configuration.error-logs');
+
+        // Server Management (Admin Only)
+        Route::get('/server/services', [ServerController::class, 'services'])->name('server.services');
+        Route::post('/server/services/{service}/{action}', [ServerController::class, 'serviceAction'])->name('server.services.action');
+        Route::get('/server/processes', [ServerController::class, 'processes'])->name('server.processes');
+        Route::post('/server/processes/{pid}/kill', [ServerController::class, 'killProcess'])->name('server.processes.kill');
+        Route::get('/server/timezone', [ServerController::class, 'timezone'])->name('server.timezone');
+        Route::post('/server/timezone', [ServerController::class, 'updateTimezone'])->name('server.timezone.update');
+        Route::get('/server/hostname', [ServerController::class, 'hostname'])->name('server.hostname');
+        Route::post('/server/hostname', [ServerController::class, 'updateHostname'])->name('server.hostname.update');
+        Route::get('/server/restart', [ServerController::class, 'restart'])->name('server.restart');
+        Route::post('/server/restart', [ServerController::class, 'executeRestart'])->name('server.restart.execute');
+        Route::get('/server/statistics', [ServerController::class, 'statistics'])->name('server.statistics');
+
+        // Security (Admin Only)
+        Route::get('/security/ufw', [SecurityController::class, 'ufw'])->name('security.ufw');
+        Route::post('/security/ufw/rules', [SecurityController::class, 'storeUfwRule'])->name('security.ufw.store');
+        Route::delete('/security/ufw/rules/{rule}', [SecurityController::class, 'deleteUfwRule'])->name('security.ufw.destroy');
+        Route::get('/security/port', [SecurityController::class, 'portFirewall'])->name('security.port');
+        Route::get('/security/panel-port', [SecurityController::class, 'panelPort'])->name('security.panel-port');
+        Route::post('/security/panel-port', [SecurityController::class, 'updatePanelPort'])->name('security.panel-port.update');
+        Route::get('/security/ssh-port', [SecurityController::class, 'sshPort'])->name('security.ssh-port');
+        Route::post('/security/ssh-port', [SecurityController::class, 'updateSshPort'])->name('security.ssh-port.update');
+        Route::get('/security/panel-ssl', [SecurityController::class, 'panelSsl'])->name('security.panel-ssl');
+        Route::post('/security/panel-ssl', [SecurityController::class, 'updatePanelSsl'])->name('security.panel-ssl.update');
+        Route::get('/security/csf', [SecurityController::class, 'csf'])->name('security.csf');
+        Route::get('/security/modsecurity', [SecurityController::class, 'modSecurity'])->name('security.modsecurity');
+        Route::get('/security/imunifyav', [SecurityController::class, 'imunifyAv'])->name('security.imunifyav');
+
+        // Module Manager (Admin Only)
+        Route::get('/modules', [ModuleController::class, 'index'])->name('modules.index');
+        Route::post('/modules/{module}/install', [ModuleController::class, 'install'])->name('modules.install');
+        Route::post('/modules/{module}/remove', [ModuleController::class, 'remove'])->name('modules.remove');
     });
 });

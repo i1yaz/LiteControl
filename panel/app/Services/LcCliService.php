@@ -143,6 +143,74 @@ class LcCliService
                     ];
                 }
 
+                if ($sub === 'timezone') {
+                    $mode = $args[1] ?? 'get';
+                    if ($mode === 'set') {
+                        $tz = $args[2] ?? 'UTC';
+                        return [
+                            'status' => 'success',
+                            'message' => "Timezone updated to '$tz'.",
+                            'data' => ['timezone' => $tz],
+                        ];
+                    }
+                    return [
+                        'status' => 'success',
+                        'message' => 'Current timezone.',
+                        'data' => ['timezone' => 'UTC'],
+                    ];
+                }
+
+                if ($sub === 'hostname') {
+                    $mode = $args[1] ?? 'get';
+                    if ($mode === 'set') {
+                        $h = $args[2] ?? 'panel.local';
+                        return [
+                            'status' => 'success',
+                            'message' => "Hostname updated to '$h'.",
+                            'data' => ['hostname' => $h],
+                        ];
+                    }
+                    return [
+                        'status' => 'success',
+                        'message' => 'Current hostname.',
+                        'data' => ['hostname' => 'panel.local'],
+                    ];
+                }
+
+                if ($sub === 'kill-process') {
+                    $pid = (int) ($args[1] ?? 0);
+                    return [
+                        'status' => 'success',
+                        'message' => "Process $pid terminated.",
+                        'data' => ['pid' => $pid, 'terminated' => true],
+                    ];
+                }
+
+                if ($sub === 'service-action') {
+                    $svc = $args[1] ?? 'openlitespeed';
+                    $act = $args[2] ?? 'restart';
+                    return [
+                        'status' => 'success',
+                        'message' => "Executed '$act' on service '$svc'.",
+                        'data' => ['service' => $svc, 'action' => $act, 'status' => 'active'],
+                    ];
+                }
+
+                if ($sub === 'logs') {
+                    $logType = $args[1] ?? 'ols-error';
+                    $lines = (int) ($args[2] ?? 100);
+                    return [
+                        'status' => 'success',
+                        'message' => 'Log entries retrieved.',
+                        'data' => [
+                            'log_type' => $logType,
+                            'file' => "/usr/local/lsws/logs/{$logType}.log",
+                            'lines' => $lines,
+                            'content' => "[2026-11-06 00:00:01] [NOTICE] LiteControl system healthy.\n[2026-11-06 01:15:22] [INFO] Worker pool reloaded cleanly.\n[2026-11-06 03:00:00] [NOTICE] Daily log rotation executed.",
+                        ],
+                    ];
+                }
+
                 return ['status' => 'success', 'message' => "Mock server action '$sub' succeeded", 'data' => []];
 
             case 'user':
@@ -273,6 +341,13 @@ class LcCliService
                 return ['status' => 'success', 'message' => "Backup operation '$sub' completed", 'data' => []];
 
             case 'tuning':
+                if ($sub === 'set') {
+                    return [
+                        'status' => 'success',
+                        'message' => 'LiteSpeed tuning parameters updated successfully.',
+                        'data' => [],
+                    ];
+                }
                 return [
                     'status' => 'success',
                     'message' => 'Tuning configuration retrieved',
@@ -290,6 +365,30 @@ class LcCliService
                 ];
 
             case 'module':
+                if ($sub === 'install') {
+                    $mod = $args[1] ?? '';
+                    return [
+                        'status' => 'success',
+                        'message' => "Module '$mod' installed successfully.",
+                        'data' => ['module' => $mod, 'installed' => true],
+                    ];
+                }
+                if ($sub === 'remove') {
+                    $mod = $args[1] ?? '';
+                    return [
+                        'status' => 'success',
+                        'message' => "Module '$mod' removed successfully.",
+                        'data' => ['module' => $mod, 'installed' => false],
+                    ];
+                }
+                if ($sub === 'status') {
+                    $mod = $args[1] ?? '';
+                    return [
+                        'status' => 'success',
+                        'message' => "Module status for '$mod'.",
+                        'data' => ['module' => $mod, 'state' => 'active', 'installed' => true],
+                    ];
+                }
                 return [
                     'status' => 'success',
                     'message' => 'Module list retrieved',
@@ -310,16 +409,95 @@ class LcCliService
                         'message' => 'UFW status retrieved',
                         'data' => [
                             'status' => 'active',
+                            'active' => true,
                             'rules' => [
-                                ['number' => 1, 'to' => '22/tcp', 'action' => 'ALLOW IN', 'from' => 'Anywhere'],
-                                ['number' => 2, 'to' => '80/tcp', 'action' => 'ALLOW IN', 'from' => 'Anywhere'],
-                                ['number' => 3, 'to' => '443/tcp', 'action' => 'ALLOW IN', 'from' => 'Anywhere'],
-                                ['number' => 4, 'to' => '8090/tcp', 'action' => 'ALLOW IN', 'from' => 'Anywhere'],
+                                ['id' => 1, 'number' => 1, 'to' => '22/tcp', 'action' => 'ALLOW IN', 'from' => 'Anywhere'],
+                                ['id' => 2, 'number' => 2, 'to' => '80/tcp', 'action' => 'ALLOW IN', 'from' => 'Anywhere'],
+                                ['id' => 3, 'number' => 3, 'to' => '443/tcp', 'action' => 'ALLOW IN', 'from' => 'Anywhere'],
+                                ['id' => 4, 'number' => 4, 'to' => '8090/tcp', 'action' => 'ALLOW IN', 'from' => 'Anywhere'],
                             ],
                         ],
                     ];
                 }
+                if ($sub === 'ufw-allow') {
+                    $port = $args[1] ?? '80';
+                    $proto = $args[2] ?? 'tcp';
+                    $src = $args[3] ?? 'Anywhere';
+                    return [
+                        'status' => 'success',
+                        'message' => "Firewall rule added: ALLOW $port/$proto.",
+                        'data' => ['port' => $port, 'proto' => $proto, 'action' => 'allow', 'source' => $src],
+                    ];
+                }
+                if ($sub === 'ufw-deny') {
+                    $port = $args[1] ?? '80';
+                    $proto = $args[2] ?? 'tcp';
+                    $src = $args[3] ?? 'Anywhere';
+                    return [
+                        'status' => 'success',
+                        'message' => "Firewall rule added: DENY $port/$proto.",
+                        'data' => ['port' => $port, 'proto' => $proto, 'action' => 'deny', 'source' => $src],
+                    ];
+                }
+                if ($sub === 'ufw-delete') {
+                    $spec = $args[1] ?? '';
+                    return [
+                        'status' => 'success',
+                        'message' => "Firewall rule '$spec' deleted successfully.",
+                        'data' => ['deleted' => $spec],
+                    ];
+                }
+                if ($sub === 'panel-port') {
+                    $newPort = (int) ($args[1] ?? 8090);
+                    return [
+                        'status' => 'success',
+                        'message' => "Panel port changed successfully from 8090 to $newPort.",
+                        'data' => ['old_port' => 8090, 'new_port' => $newPort],
+                    ];
+                }
+                if ($sub === 'ssh-port') {
+                    $newPort = (int) ($args[1] ?? 22);
+                    return [
+                        'status' => 'success',
+                        'message' => "SSH port changed successfully from 22 to $newPort.",
+                        'data' => ['old_port' => 22, 'new_port' => $newPort],
+                    ];
+                }
                 return ['status' => 'success', 'message' => "Security operation '$sub' completed", 'data' => []];
+
+            case 'ssl':
+                if ($sub === 'issue') {
+                    $dom = $args[1] ?? 'example.com';
+                    return [
+                        'status' => 'success',
+                        'message' => "SSL certificate issued for $dom.",
+                        'data' => ['domain' => $dom, 'ssl_enabled' => true, 'expires_at' => now()->addDays(90)->toIso8601String()],
+                    ];
+                }
+                if ($sub === 'custom') {
+                    $dom = $args[1] ?? 'example.com';
+                    return [
+                        'status' => 'success',
+                        'message' => "Custom SSL certificate installed for $dom.",
+                        'data' => ['domain' => $dom, 'ssl_enabled' => true, 'custom' => true],
+                    ];
+                }
+                if ($sub === 'renew') {
+                    $dom = $args[1] ?? 'example.com';
+                    return [
+                        'status' => 'success',
+                        'message' => "SSL certificate renewed for $dom.",
+                        'data' => ['domain' => $dom, 'ssl_enabled' => true, 'expires_at' => now()->addDays(90)->toIso8601String()],
+                    ];
+                }
+                if ($sub === 'panel-ssl') {
+                    return [
+                        'status' => 'success',
+                        'message' => 'Panel SSL certificate configured successfully.',
+                        'data' => ['panel_ssl' => true],
+                    ];
+                }
+                return ['status' => 'success', 'message' => "SSL operation '$sub' completed", 'data' => []];
 
             default:
                 return [

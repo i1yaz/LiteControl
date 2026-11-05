@@ -22,7 +22,8 @@ import {
     Bell,
     CheckCircle2,
     AlertCircle,
-    Activity
+    Activity,
+    Layers
 } from 'lucide-vue-next';
 
 const page = usePage();
@@ -285,10 +286,10 @@ const logout = () => {
                             <ChevronDown class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="{'rotate-180': openSubmenus.configuration}" />
                         </button>
                         <div v-if="openSubmenus.configuration" class="mt-1 pl-9 pr-2 space-y-1">
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Settings</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">LiteSpeed Tuning</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">PHP Limit</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Error Logs</Link>
+                            <Link href="/configuration/settings" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Settings</Link>
+                            <Link href="/configuration/tuning" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">LiteSpeed Tuning</Link>
+                            <Link href="/configuration/php-limit" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">PHP Limit</Link>
+                            <Link href="/configuration/error-logs" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Error Logs</Link>
                         </div>
                     </div>
 
@@ -305,12 +306,12 @@ const logout = () => {
                             <ChevronDown class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="{'rotate-180': openSubmenus.server}" />
                         </button>
                         <div v-if="openSubmenus.server" class="mt-1 pl-9 pr-2 space-y-1">
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Services</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Process Manager</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Time Zone</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Restart</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Change Hostname</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">System Statistics</Link>
+                            <Link href="/server/services" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Services</Link>
+                            <Link href="/server/processes" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Process Manager</Link>
+                            <Link href="/server/timezone" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Time Zone</Link>
+                            <Link href="/server/restart" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Restart</Link>
+                            <Link href="/server/hostname" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Change Hostname</Link>
+                            <Link href="/server/statistics" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">System Statistics</Link>
                         </div>
                     </div>
 
@@ -327,18 +328,29 @@ const logout = () => {
                             <ChevronDown class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="{'rotate-180': openSubmenus.security}" />
                         </button>
                         <div v-if="openSubmenus.security" class="mt-1 pl-9 pr-2 space-y-1">
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">SSL</Link>
-                            <Link v-if="isAdmin" href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">CSF (Firewall)</Link>
-                            <Link v-if="isAdmin" href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">UFW (Firewall)</Link>
-                            <Link v-if="isAdmin" href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Port (Firewall)</Link>
-                            <Link v-if="isAdmin" href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">ModSecurity</Link>
-                            <Link v-if="isAdmin" href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Panel Port</Link>
-                            <Link v-if="isAdmin" href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">SSH Port</Link>
-                            <Link v-if="isAdmin" href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Panel SSL</Link>
-                            <Link v-if="isAdmin" href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">ImunifyAV Antivirus</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Password</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Two-Factor</Link>
+                            <Link href="/security/ssl" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">SSL</Link>
+                            <Link v-if="isAdmin" href="/security/csf" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">CSF (Firewall)</Link>
+                            <Link v-if="isAdmin" href="/security/ufw" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">UFW (Firewall)</Link>
+                            <Link v-if="isAdmin" href="/security/port" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Port (Firewall)</Link>
+                            <Link v-if="isAdmin" href="/security/modsecurity" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">ModSecurity</Link>
+                            <Link v-if="isAdmin" href="/security/panel-port" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Panel Port</Link>
+                            <Link v-if="isAdmin" href="/security/ssh-port" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">SSH Port</Link>
+                            <Link v-if="isAdmin" href="/security/panel-ssl" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Panel SSL</Link>
+                            <Link v-if="isAdmin" href="/security/imunifyav" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">ImunifyAV Antivirus</Link>
+                            <Link href="/security/password" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Password</Link>
+                            <Link href="/security/two-factor" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Two-Factor</Link>
                         </div>
+                    </div>
+
+                    <!-- Module Manager (Admin Only) -->
+                    <div v-if="isAdmin" class="pt-1">
+                        <Link
+                            href="/modules"
+                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800/60 hover:text-white transition-colors"
+                        >
+                            <Layers class="w-4 h-4 text-emerald-400" />
+                            <span>Module Manager</span>
+                        </Link>
                     </div>
 
                     <!-- Email Section -->
