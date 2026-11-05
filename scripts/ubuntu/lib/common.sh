@@ -24,12 +24,12 @@ export LC_GROUP="litecontrol"
 export LC_PHP_VER="${LC_PHP_VER:-83}"
 export LC_DEFAULT_PORT="${LC_DEFAULT_PORT:-8090}"
 
-# OpenLiteSpeed Paths
-export OLS_DIR="/usr/local/lsws"
-export OLS_CONF="${OLS_DIR}/conf/httpd_config.conf"
-export OLS_VHOSTS_DIR="${OLS_DIR}/conf/vhosts"
-export OLS_CTRL="${OLS_DIR}/bin/lswsctrl"
-export OLS_BIN="${OLS_DIR}/bin/lshttpd"
+# OpenLiteSpeed Paths (overridable for unit test sandboxing)
+export OLS_DIR="${OLS_DIR:-/usr/local/lsws}"
+export OLS_CONF="${OLS_CONF:-${OLS_DIR}/conf/httpd_config.conf}"
+export OLS_VHOSTS_DIR="${OLS_VHOSTS_DIR:-${OLS_DIR}/conf/vhosts}"
+export OLS_CTRL="${OLS_CTRL:-${OLS_DIR}/bin/lswsctrl}"
+export OLS_BIN="${OLS_BIN:-${OLS_DIR}/bin/lshttpd}"
 
 # Terminal Colors (disabled automatically when not a TTY or in JSON mode)
 if [[ -t 1 && "${LC_JSON_OUTPUT:-0}" != "1" ]]; then
