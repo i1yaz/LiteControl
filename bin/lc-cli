@@ -81,20 +81,21 @@ cmd_status() {
     fi
 
     if [[ "${LC_JSON_OUTPUT}" -eq 1 ]]; then
-        local mods_json="[]"
-        if [[ "${#installed_mods[@]}" -gt 0 ]]; then
-            mods_json=$(printf '%s\n' "${installed_mods[@]}" | jq -R . | jq -s .)
-        fi
+        local mods_items=""
+        local sep=""
+        for m in "${installed_mods[@]}"; do
+            mods_items+="${sep}\"$(json_escape "${m}")\""
+            sep=","
+        done
         local data_json
-        data_json=$(jq -n \
-            --arg version "${LC_VERSION}" \
-            --arg ols "${ols_state}" \
-            --arg mariadb "${mariadb_state}" \
-            --arg redis "${redis_state}" \
-            --arg ufw "${ufw_state}" \
-            --arg port "${panel_port}" \
-            --argjson modules "${mods_json}" \
-            '{version: $version, panel_port: ($port|tonumber), services: {openlitespeed: $ols, mariadb: $mariadb, redis: $redis, ufw: $ufw}, modules: $modules}')
+        data_json=$(printf '{"version":"%s","panel_port":%s,"services":{"openlitespeed":"%s","mariadb":"%s","redis":"%s","ufw":"%s"},"modules":[%s]}' \
+            "$(json_escape "${LC_VERSION}")" \
+            "${panel_port}" \
+            "$(json_escape "${ols_state}")" \
+            "$(json_escape "${mariadb_state}")" \
+            "$(json_escape "${redis_state}")" \
+            "$(json_escape "${ufw_state}")" \
+            "${mods_items}")
         json_response "success" "LiteControl status retrieved." "${data_json}"
     else
         echo "LiteControl v${LC_VERSION} Status"
@@ -121,12 +122,11 @@ cmd_credentials() {
 
     if [[ "${LC_JSON_OUTPUT}" -eq 1 ]]; then
         local data_json
-        data_json=$(jq -n \
-            --arg panel "${panel_pass}" \
-            --arg db_root "${db_root_pass}" \
-            --arg db_panel "${db_panel_pass}" \
-            --arg ols "${ols_pass}" \
-            '{panel_admin_password: $panel, mysql_root_password: $db_root, mysql_panel_password: $db_panel, ols_admin_password: $ols}')
+        data_json=$(printf '{"panel_admin_password":"%s","mysql_root_password":"%s","mysql_panel_password":"%s","ols_admin_password":"%s"}' \
+            "$(json_escape "${panel_pass}")" \
+            "$(json_escape "${db_root_pass}")" \
+            "$(json_escape "${db_panel_pass}")" \
+            "$(json_escape "${ols_pass}")")
         json_response "success" "Credentials retrieved." "${data_json}"
     else
         echo "LiteControl Stored Credentials"
