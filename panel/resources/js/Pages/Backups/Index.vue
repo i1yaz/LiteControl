@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from 'vue';
+import { shallowRef } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import PanelLayout from '@/Layouts/PanelLayout.vue';
+import Modal from '@/Components/Modal.vue';
 import {
     FolderTree,
     Plus,
@@ -24,7 +25,7 @@ const props = defineProps({
 const page = usePage();
 const isAdmin = page.props.auth?.user?.role === 'admin';
 
-const showScheduleModal = ref(false);
+const showScheduleModal = shallowRef(false);
 
 const backupForm = useForm({
     user_id: props.users?.[0]?.id || '',
@@ -238,8 +239,8 @@ const deleteSchedule = (id) => {
             </div>
 
             <!-- Schedule Modal -->
-            <div v-if="showScheduleModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <Modal :show="showScheduleModal" max-width="md" @close="showScheduleModal = false">
+                <div class="p-6 space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                         <h3 class="text-base font-bold text-white">Configure Automated Backups</h3>
                         <button @click="showScheduleModal = false" class="text-slate-400 hover:text-white">
@@ -303,7 +304,7 @@ const deleteSchedule = (id) => {
                         </div>
                     </form>
                 </div>
-            </div>
+            </Modal>
         </div>
     </PanelLayout>
 </template>

@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from 'vue';
+import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import PanelLayout from '@/Layouts/PanelLayout.vue';
+import Modal from '@/Components/Modal.vue';
 import { Globe, Plus, Folder, Trash2, X } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -9,7 +10,7 @@ const props = defineProps({
     baseDomains: Array,
 });
 
-const showModal = ref(false);
+const showModal = shallowRef(false);
 
 const form = useForm({
     subdomain_prefix: '',
@@ -108,8 +109,8 @@ const deleteSubdomain = (id, domain) => {
             </div>
 
             <!-- Modal -->
-            <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <Modal :show="showModal" max-width="md" @close="showModal = false">
+                <div class="p-6 space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                         <h3 class="text-base font-bold text-white">Create Subdomain</h3>
                         <button @click="showModal = false" class="text-slate-400 hover:text-white">
@@ -161,7 +162,7 @@ const deleteSubdomain = (id, domain) => {
                         </div>
                     </form>
                 </div>
-            </div>
+            </Modal>
         </div>
     </PanelLayout>
 </template>

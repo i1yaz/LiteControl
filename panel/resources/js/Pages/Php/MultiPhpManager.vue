@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, shallowRef, computed } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { FileCode, Globe, CheckSquare, Square, RefreshCw } from 'lucide-vue-next';
@@ -10,7 +10,7 @@ const props = defineProps({
 });
 
 const selectedDomains = ref([]);
-const targetVersion = ref(props.installedVersions?.[0]?.version || '83');
+const targetVersion = shallowRef(props.installedVersions?.[0]?.version || '83');
 
 const allSelected = computed({
     get: () => props.domains.length > 0 && selectedDomains.value.length === props.domains.length,

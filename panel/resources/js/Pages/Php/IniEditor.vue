@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { shallowRef } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { FileCode, Save, RefreshCw, AlertCircle, Check } from 'lucide-vue-next';
@@ -13,7 +13,7 @@ const props = defineProps({
 const page = usePage();
 const isAdmin = page.props.auth?.user?.role === 'admin';
 
-const selectedVersion = ref(props.currentVersion);
+const selectedVersion = shallowRef(props.currentVersion);
 
 const form = useForm({
     version: props.currentVersion,

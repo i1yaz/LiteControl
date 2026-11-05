@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { shallowRef, computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { FileCode, Search, CheckCircle2 } from 'lucide-vue-next';
@@ -10,7 +10,7 @@ const props = defineProps({
     installedVersions: Array,
 });
 
-const searchQuery = ref('');
+const searchQuery = shallowRef('');
 
 const filteredModules = computed(() => {
     if (!searchQuery.value) return props.modules || [];

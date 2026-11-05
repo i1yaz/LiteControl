@@ -36,6 +36,17 @@ const getProgressColor = (percent) => {
     if (percent > 65) return 'bg-amber-500';
     return 'bg-indigo-500';
 };
+
+const cpuPercent = computed(() => Math.min(props.stats?.cpu_percent ?? 0, 100));
+const ramPercent = computed(() => Math.min(props.stats?.ram_percent ?? 0, 100));
+const diskPercent = computed(() => Math.min(props.stats?.disk_percent ?? 0, 100));
+
+const ramUsedGb = computed(() => Math.round(((props.stats?.ram_used_mb ?? 0) / 1024) * 10) / 10);
+const ramTotalGb = computed(() => Math.round(((props.stats?.ram_total_mb ?? 0) / 1024) * 10) / 10);
+
+const cpuProgressColor = computed(() => getProgressColor(cpuPercent.value));
+const ramProgressColor = computed(() => getProgressColor(ramPercent.value));
+const diskProgressColor = computed(() => getProgressColor(diskPercent.value));
 </script>
 
 <template>
@@ -79,9 +90,9 @@ const getProgressColor = (percent) => {
                     </div>
                     <div class="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
                         <div
-                            :class="getProgressColor(stats?.cpu_percent ?? 0)"
+                            :class="cpuProgressColor"
                             class="h-1.5 rounded-full transition-all duration-500"
-                            :style="{ width: `${Math.min(stats?.cpu_percent ?? 0, 100)}%` }"
+                            :style="{ width: `${cpuPercent}%` }"
                         ></div>
                     </div>
                 </div>
@@ -97,14 +108,14 @@ const getProgressColor = (percent) => {
                     <div class="mt-4 flex items-baseline gap-2">
                         <span class="text-2xl font-bold text-white">{{ stats?.ram_percent ?? 0 }}%</span>
                         <span class="text-xs text-slate-400">
-                            {{ Math.round((stats?.ram_used_mb ?? 0) / 1024 * 10) / 10 }} / {{ Math.round((stats?.ram_total_mb ?? 0) / 1024 * 10) / 10 }} GB
+                            {{ ramUsedGb }} / {{ ramTotalGb }} GB
                         </span>
                     </div>
                     <div class="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
                         <div
-                            :class="getProgressColor(stats?.ram_percent ?? 0)"
+                            :class="ramProgressColor"
                             class="h-1.5 rounded-full transition-all duration-500"
-                            :style="{ width: `${Math.min(stats?.ram_percent ?? 0, 100)}%` }"
+                            :style="{ width: `${ramPercent}%` }"
                         ></div>
                     </div>
                 </div>
@@ -125,9 +136,9 @@ const getProgressColor = (percent) => {
                     </div>
                     <div class="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
                         <div
-                            :class="getProgressColor(stats?.disk_percent ?? 0)"
+                            :class="diskProgressColor"
                             class="h-1.5 rounded-full transition-all duration-500"
-                            :style="{ width: `${Math.min(stats?.disk_percent ?? 0, 100)}%` }"
+                            :style="{ width: `${diskPercent}%` }"
                         ></div>
                     </div>
                 </div>
@@ -254,7 +265,7 @@ const getProgressColor = (percent) => {
                                 <ExternalLink class="w-3.5 h-3.5 text-slate-500" />
                             </a>
                             <Link
-                                href="/dashboard"
+                                href="/domains"
                                 class="flex items-center justify-between p-3 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-xs font-medium text-slate-200 transition-colors border border-slate-700/40"
                             >
                                 <div class="flex items-center gap-2.5">
@@ -263,7 +274,7 @@ const getProgressColor = (percent) => {
                                 </div>
                             </Link>
                             <Link
-                                href="/dashboard"
+                                href="/php/manager"
                                 class="flex items-center justify-between p-3 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-xs font-medium text-slate-200 transition-colors border border-slate-700/40"
                             >
                                 <div class="flex items-center gap-2.5">

@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { computed } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { FileCode, CheckCircle2, Circle, AlertCircle, RefreshCw } from 'lucide-vue-next';
@@ -12,6 +12,9 @@ const props = defineProps({
 
 const page = usePage();
 const isAdmin = page.props.auth?.user?.role === 'admin';
+
+const activeExtensions = computed(() => props.extensionsData?.installed || []);
+const availableExtensions = computed(() => props.extensionsData?.available || []);
 
 const switchVersion = (ver) => {
     router.get('/php/extensions', { version: ver });
@@ -67,12 +70,12 @@ const toggleExt = (ext, currentActive) => {
             <div class="space-y-4">
                 <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                     <CheckCircle2 class="w-4 h-4 text-emerald-400" />
-                    <span>Active Extensions ({{ extensionsData?.installed?.length || 0 }})</span>
+                    <span>Active Extensions ({{ activeExtensions.length }})</span>
                 </h3>
 
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     <div
-                        v-for="ext in extensionsData?.installed || []"
+                        v-for="ext in activeExtensions"
                         :key="ext"
                         class="p-3 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between hover:border-slate-700 transition-colors"
                     >
@@ -96,12 +99,12 @@ const toggleExt = (ext, currentActive) => {
             <div class="space-y-4 pt-4 border-t border-slate-800">
                 <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                     <Circle class="w-4 h-4 text-slate-500" />
-                    <span>Available / Inactive Extensions ({{ extensionsData?.available?.length || 0 }})</span>
+                    <span>Available / Inactive Extensions ({{ availableExtensions.length }})</span>
                 </h3>
 
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     <div
-                        v-for="ext in extensionsData?.available || []"
+                        v-for="ext in availableExtensions"
                         :key="ext"
                         class="p-3 bg-slate-900/50 border border-slate-800/60 rounded-xl flex items-center justify-between hover:border-slate-700 transition-colors"
                     >

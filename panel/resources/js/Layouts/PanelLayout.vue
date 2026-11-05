@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { shallowRef, reactive, computed, useTemplateRef } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
+import { useClickOutside } from '@/Composables/useClickOutside';
 import {
     LayoutDashboard,
     Users,
@@ -29,10 +30,15 @@ const user = computed(() => page.props.auth?.user || {});
 const isAdmin = computed(() => user.value?.role === 'admin');
 const flash = computed(() => page.props.flash || {});
 
-const sidebarOpen = ref(false);
-const userDropdownOpen = ref(false);
+const sidebarOpen = shallowRef(false);
+const userDropdownOpen = shallowRef(false);
+const userDropdownRef = useTemplateRef('userDropdownRef');
 
-const openSubmenus = ref({
+useClickOutside(userDropdownRef, () => {
+    userDropdownOpen.value = false;
+});
+
+const openSubmenus = reactive({
     users: false,
     domains: false,
     database: false,
@@ -45,7 +51,7 @@ const openSubmenus = ref({
 });
 
 const toggleSubmenu = (menu) => {
-    openSubmenus.value[menu] = !openSubmenus.value[menu];
+    openSubmenus[menu] = !openSubmenus[menu];
 };
 
 const logout = () => {
@@ -105,7 +111,7 @@ const logout = () => {
                 </div>
 
                 <!-- Account Dropdown (Matches nav-account.png) -->
-                <div class="relative">
+                <div class="relative" ref="userDropdownRef">
                     <button
                         @click="userDropdownOpen = !userDropdownOpen"
                         class="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-slate-800/70 text-slate-200 transition-colors focus:outline-none"
@@ -123,7 +129,6 @@ const logout = () => {
                     <!-- Account Menu -->
                     <div
                         v-if="userDropdownOpen"
-                        @click.outside="userDropdownOpen = false"
                         class="absolute right-0 mt-2 w-48 rounded-xl bg-slate-900 border border-slate-800 shadow-xl py-1 z-50 ring-1 ring-black/20"
                     >
                         <div class="px-4 py-2 border-b border-slate-800">

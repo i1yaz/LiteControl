@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { shallowRef } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import PanelLayout from '@/Layouts/PanelLayout.vue';
 import {
@@ -25,7 +25,7 @@ const props = defineProps({
     packages: Array,
 });
 
-const search = ref(props.filters?.search || '');
+const search = shallowRef(props.filters?.search || '');
 
 const handleSearch = () => {
     router.get('/users', { search: search.value }, { preserveState: true, replace: true });

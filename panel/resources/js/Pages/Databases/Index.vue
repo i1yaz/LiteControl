@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from 'vue';
+import { shallowRef } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import PanelLayout from '@/Layouts/PanelLayout.vue';
+import Modal from '@/Components/Modal.vue';
 import {
     Database,
     Plus,
@@ -27,11 +28,11 @@ const page = usePage();
 const authUser = page.props.auth?.user;
 const isAdmin = authUser?.role === 'admin';
 
-const showCreateDbModal = ref(false);
-const showCreateUserModal = ref(false);
-const showPasswordModal = ref(false);
-const showGrantModal = ref(false);
-const selectedDbUser = ref(null);
+const showCreateDbModal = shallowRef(false);
+const showCreateUserModal = shallowRef(false);
+const showPasswordModal = shallowRef(false);
+const showGrantModal = shallowRef(false);
+const selectedDbUser = shallowRef(null);
 
 const dbForm = useForm({
     db_name: '',
@@ -305,8 +306,8 @@ const deleteDbUser = (id, name) => {
             </div>
 
             <!-- Create DB Modal -->
-            <div v-if="showCreateDbModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <Modal :show="showCreateDbModal" max-width="md" @close="showCreateDbModal = false">
+                <div class="p-6 space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                         <h3 class="text-base font-bold text-white">Create Database</h3>
                         <button @click="showCreateDbModal = false" class="text-slate-400 hover:text-white">
@@ -359,11 +360,11 @@ const deleteDbUser = (id, name) => {
                         </div>
                     </form>
                 </div>
-            </div>
+            </Modal>
 
             <!-- Create DB User Modal -->
-            <div v-if="showCreateUserModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <Modal :show="showCreateUserModal" max-width="md" @close="showCreateUserModal = false">
+                <div class="p-6 space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                         <h3 class="text-base font-bold text-white">Create Database User</h3>
                         <button @click="showCreateUserModal = false" class="text-slate-400 hover:text-white">
@@ -441,11 +442,11 @@ const deleteDbUser = (id, name) => {
                         </div>
                     </form>
                 </div>
-            </div>
+            </Modal>
 
             <!-- Change Password Modal -->
-            <div v-if="showPasswordModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <Modal :show="showPasswordModal" max-width="sm" @close="showPasswordModal = false">
+                <div class="p-6 space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                         <h3 class="text-base font-bold text-white">Change Password</h3>
                         <button @click="showPasswordModal = false" class="text-slate-400 hover:text-white">
@@ -484,11 +485,11 @@ const deleteDbUser = (id, name) => {
                         </div>
                     </form>
                 </div>
-            </div>
+            </Modal>
 
             <!-- Grant Privileges Modal -->
-            <div v-if="showGrantModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <Modal :show="showGrantModal" max-width="sm" @close="showGrantModal = false">
+                <div class="p-6 space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                         <h3 class="text-base font-bold text-white">Grant Privileges</h3>
                         <button @click="showGrantModal = false" class="text-slate-400 hover:text-white">
@@ -537,7 +538,7 @@ const deleteDbUser = (id, name) => {
                         </div>
                     </form>
                 </div>
-            </div>
+            </Modal>
         </div>
     </PanelLayout>
 </template>

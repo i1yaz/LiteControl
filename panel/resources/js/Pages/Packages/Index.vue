@@ -1,16 +1,17 @@
 <script setup>
-import { ref } from 'vue';
+import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import PanelLayout from '@/Layouts/PanelLayout.vue';
+import Modal from '@/Components/Modal.vue';
 import { Package, Plus, Edit2, Trash2, Users, HardDrive, Activity, Globe, Database, Mail, X } from 'lucide-vue-next';
 
 const props = defineProps({
     packages: Array,
 });
 
-const showModal = ref(false);
-const isEditing = ref(false);
-const editingId = ref(null);
+const showModal = shallowRef(false);
+const isEditing = shallowRef(false);
+const editingId = shallowRef(null);
 
 const form = useForm({
     name: '',
@@ -172,8 +173,8 @@ const deletePackage = (id, name, usersCount) => {
             </div>
 
             <!-- Create / Edit Modal -->
-            <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <Modal :show="showModal" max-width="lg" @close="showModal = false">
+                <div class="p-6 space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                         <h3 class="text-base font-bold text-white">
                             {{ isEditing ? 'Edit Package' : 'Create Hosting Package' }}
@@ -273,7 +274,7 @@ const deletePackage = (id, name, usersCount) => {
                         </div>
                     </form>
                 </div>
-            </div>
+            </Modal>
         </div>
     </PanelLayout>
 </template>

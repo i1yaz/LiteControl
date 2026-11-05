@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { shallowRef, computed, onMounted } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import PanelLayout from '@/Layouts/PanelLayout.vue';
+import Modal from '@/Components/Modal.vue';
 import {
     FolderTree,
     Folder,
@@ -23,18 +24,27 @@ const props = defineProps({
     baseDir: String,
 });
 
-const currentPath = ref('');
-const items = ref([]);
-const loading = ref(false);
+const currentPath = shallowRef('');
+const items = shallowRef([]);
+const loading = shallowRef(false);
 
-const showCreateModal = ref(false);
-const newItemName = ref('');
-const newItemType = ref('file');
+const showCreateModal = shallowRef(false);
+const newItemName = shallowRef('');
+const newItemType = shallowRef('file');
 
-const showEditorModal = ref(false);
-const editingPath = ref('');
-const editorContent = ref('');
-const editorLoading = ref(false);
+const showEditorModal = shallowRef(false);
+const editingPath = shallowRef('');
+const editorContent = shallowRef('');
+const editorLoading = shallowRef(false);
+
+const pathSegments = computed(() => {
+    if (!currentPath.value) return [];
+    const segments = currentPath.value.split('/');
+    return segments.map((segment, idx) => ({
+        name: segment,
+        path: segments.slice(0, idx + 1).join('/'),
+    }));
+});
 
 const loadFiles = async (path = '') => {
     loading.value = true;
@@ -242,15 +252,20 @@ onMounted(() => {
                     >
                         home
                     </button>
-                    <template v-if="currentPath">
+                    <template v-if="pathSegments.length > 0">
                         <span class="text-slate-600">/</span>
                         <span
-                            v-for="(segment, idx) in currentPath.split('/')"
-                            :key="idx"
+                            v-for="(seg, idx) in pathSegments"
+                            :key="seg.path"
                             class="flex items-center gap-2"
                         >
-                            <span class="text-slate-300">{{ segment }}</span>
-                            <span v-if="idx < currentPath.split('/').length - 1" class="text-slate-600">/</span>
+                            <button
+                                @click="navigateTo(seg.path)"
+                                class="text-slate-300 hover:text-cyan-400 hover:underline transition-colors"
+                            >
+                                {{ seg.name }}
+                            </button>
+                            <span v-if="idx < pathSegments.length - 1" class="text-slate-600">/</span>
                         </span>
                     </template>
                 </div>
@@ -351,8 +366,8 @@ onMounted(() => {
             </div>
 
             <!-- Create New File / Folder Modal -->
-            <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+            <Modal :show="showCreateModal" max-width="sm" @close="showCreateModal = false">
+                <div class="p-5 space-y-4">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                         <h3 class="text-base font-bold text-white">Create New Item</h3>
                         <button @click="showCreateModal = false" class="text-slate-400 hover:text-white">
@@ -402,11 +417,11 @@ onMounted(() => {
                         </div>
                     </div>
                 </div>
-            </div>
+            </Modal>
 
             <!-- Code Editor Modal -->
-            <div v-if="showEditorModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-                <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-4xl w-full h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <Modal :show="showEditorModal" max-width="4xl" @close="showEditorModal = false">
+                <div class="h-[80vh] flex flex-col overflow-hidden">
                     <!-- Editor Header -->
                     <div class="px-5 py-3 border-b border-slate-800 flex items-center justify-between bg-slate-950">
                         <div class="flex items-center gap-2 text-xs font-mono text-cyan-400">
@@ -437,7 +452,7 @@ onMounted(() => {
                         ></textarea>
                     </div>
                 </div>
-            </div>
+            </Modal>
         </div>
     </PanelLayout>
 </template>
