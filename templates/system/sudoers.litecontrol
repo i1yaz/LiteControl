@@ -1,0 +1,5 @@
+# LiteControl privilege separation rule
+# Allows the unprivileged 'litecontrol' panel user to invoke only the root-owned lc-cli engine
+Defaults:litecontrol !requiretty
+litecontrol ALL=(root) NOPASSWD: /usr/local/litecontrol/bin/lc-cli *
+

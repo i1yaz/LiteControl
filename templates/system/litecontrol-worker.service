@@ -1,0 +1,17 @@
+[Unit]
+Description=LiteControl Laravel Queue Worker
+After=network.target mariadb.service redis-server.service
+
+[Service]
+User=litecontrol
+Group=litecontrol
+WorkingDirectory=/usr/local/litecontrol/panel
+ExecStart=/usr/local/lsws/lsphp__PHP_VER__/bin/php /usr/local/litecontrol/panel/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/litecontrol/worker.log
+StandardError=append:/var/log/litecontrol/worker-error.log
+
+[Install]
+WantedBy=multi-user.target
+

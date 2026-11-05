@@ -1,0 +1,204 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# LiteControl CLI Engine (`lc-cli`)
+# Root-owned privilege-separated backend command runner for LiteControl Panel.
+# Invoked via CLI or by the Laravel Panel (`sudo /usr/local/litecontrol/bin/lc-cli`).
+# ==============================================================================
+
+set -euo pipefail
+
+LC_VERSION="1.0.0"
+
+# Resolve real path even when called via /usr/local/bin/lc-cli symlink
+SOURCE="${BASH_SOURCE[0]}"
+while [[ -h "${SOURCE}" ]]; do
+    DIR="$(cd -P "$(dirname "${SOURCE}")" && pwd)"
+    SOURCE="$(readlink "${SOURCE}")"
+    [[ "${SOURCE}" != /* ]] && SOURCE="${DIR}/${SOURCE}"
+done
+BIN_DIR="$(cd -P "$(dirname "${SOURCE}")" && pwd)"
+BASE_DIR="$(cd "${BIN_DIR}/.." && pwd)"
+
+# shellcheck source=../scripts/ubuntu/lib/common.sh
+source "${BASE_DIR}/scripts/ubuntu/lib/common.sh"
+
+export LC_JSON_OUTPUT=0
+if [[ "${1:-}" == "--json" ]]; then
+    export LC_JSON_OUTPUT=1
+    shift
+fi
+
+COMMAND="${1:-help}"
+shift || true
+
+show_help() {
+    cat <<EOF
+LiteControl CLI Engine v${LC_VERSION}
+
+Usage: lc-cli [--json] <command> [subcommand] [arguments...]
+
+Core Commands:
+  version                          Display LiteControl CLI version
+  status                           Check core services and installed modules status
+  credentials                      Show stored panel, MariaDB, and OLS admin credentials
+  ols-reload                       Test OpenLiteSpeed config and reload with auto-rollback
+
+Management Subcommands:
+  user     <add|suspend|unsuspend|delete|list|quota>
+  vhost    <add|remove|list|php-switch|ssl>
+  php      <list|install|remove|ext-list|ext-enable|ext-disable|ini-get|ini-set|limits>
+  tuning   <get|set>
+  server   <stats|services|service-action|processes|kill-process|timezone|hostname|logs>
+  db       <list|create-db|delete-db|create-user|delete-user|password>
+  ssl      <issue|renew|custom|panel-ssl>
+  security <ufw-status|ufw-allow|ufw-delete|panel-port|ssh-port|modsec>
+  backup   <create|restore|list|schedule>
+  module   <list|status|install|remove> <ftp|dns|mail|csf|modsecurity|imunifyav>
+EOF
+}
+
+cmd_status() {
+    detect_ubuntu_os
+    local ols_state="inactive"
+    if "${OLS_CTRL}" status >/dev/null 2>&1; then
+        ols_state="active"
+    fi
+    local mariadb_state
+    mariadb_state=$(systemctl is-active mariadb 2>/dev/null || echo "inactive")
+    local redis_state
+    redis_state=$(systemctl is-active redis-server 2>/dev/null || echo "inactive")
+    local ufw_state
+    ufw_state=$(systemctl is-active ufw 2>/dev/null || echo "inactive")
+    local panel_port
+    panel_port=$(cat "${LC_CONF_DIR}/port" 2>/dev/null || echo "${LC_DEFAULT_PORT}")
+
+    local installed_mods=()
+    if [[ -d "${LC_MODULES_DIR}" ]]; then
+        for f in "${LC_MODULES_DIR}"/*.installed; do
+            [[ -e "$f" ]] || continue
+            installed_mods+=("$(basename "$f" .installed)")
+        done
+    fi
+
+    if [[ "${LC_JSON_OUTPUT}" -eq 1 ]]; then
+        local mods_json="[]"
+        if [[ "${#installed_mods[@]}" -gt 0 ]]; then
+            mods_json=$(printf '%s\n' "${installed_mods[@]}" | jq -R . | jq -s .)
+        fi
+        local data_json
+        data_json=$(jq -n \
+            --arg version "${LC_VERSION}" \
+            --arg ols "${ols_state}" \
+            --arg mariadb "${mariadb_state}" \
+            --arg redis "${redis_state}" \
+            --arg ufw "${ufw_state}" \
+            --arg port "${panel_port}" \
+            --argjson modules "${mods_json}" \
+            '{version: $version, panel_port: ($port|tonumber), services: {openlitespeed: $ols, mariadb: $mariadb, redis: $redis, ufw: $ufw}, modules: $modules}')
+        json_response "success" "LiteControl status retrieved." "${data_json}"
+    else
+        echo "LiteControl v${LC_VERSION} Status"
+        echo "----------------------------------------"
+        echo "Panel Port     : ${panel_port}"
+        echo "OpenLiteSpeed  : ${ols_state}"
+        echo "MariaDB        : ${mariadb_state}"
+        echo "Redis          : ${redis_state}"
+        echo "UFW Firewall   : ${ufw_state}"
+        echo "Modules        : ${installed_mods[*]:-none}"
+    fi
+}
+
+cmd_credentials() {
+    require_root
+    local panel_pass
+    panel_pass=$(get_secret "panel_admin_password" 2>/dev/null || echo "N/A")
+    local db_root_pass
+    db_root_pass=$(get_secret "mysql_root_password" 2>/dev/null || echo "N/A")
+    local db_panel_pass
+    db_panel_pass=$(get_secret "mysql_panel_password" 2>/dev/null || echo "N/A")
+    local ols_pass
+    ols_pass=$(get_secret "ols_admin_password" 2>/dev/null || echo "N/A")
+
+    if [[ "${LC_JSON_OUTPUT}" -eq 1 ]]; then
+        local data_json
+        data_json=$(jq -n \
+            --arg panel "${panel_pass}" \
+            --arg db_root "${db_root_pass}" \
+            --arg db_panel "${db_panel_pass}" \
+            --arg ols "${ols_pass}" \
+            '{panel_admin_password: $panel, mysql_root_password: $db_root, mysql_panel_password: $db_panel, ols_admin_password: $ols}')
+        json_response "success" "Credentials retrieved." "${data_json}"
+    else
+        echo "LiteControl Stored Credentials"
+        echo "----------------------------------------"
+        echo "Panel Admin Password : ${panel_pass}"
+        echo "MariaDB Root Password: ${db_root_pass}"
+        echo "MariaDB Panel User   : ${db_panel_pass}"
+        echo "OLS WebAdmin Password: ${ols_pass}"
+    fi
+}
+
+dispatch_subcommand() {
+    local subcmd="$1"
+    shift || true
+    local handler="${BASE_DIR}/scripts/ubuntu/commands/${subcmd}.sh"
+
+    if [[ ! -f "${handler}" ]]; then
+        if [[ "${LC_JSON_OUTPUT}" -eq 1 ]]; then
+            json_response "error" "Command handler '${subcmd}' is not installed yet."
+        else
+            log_error "Command handler '${subcmd}' not found at ${handler}."
+        fi
+        exit 1
+    fi
+
+    require_root
+    bash "${handler}" "$@"
+}
+
+case "${COMMAND}" in
+    version|--version|-v)
+        if [[ "${LC_JSON_OUTPUT}" -eq 1 ]]; then
+            json_response "success" "LiteControl v${LC_VERSION}" "{\"version\":\"${LC_VERSION}\"}"
+        else
+            echo "LiteControl CLI v${LC_VERSION}"
+        fi
+        ;;
+    status)
+        cmd_status
+        ;;
+    credentials)
+        cmd_credentials
+        ;;
+    ols-reload)
+        require_root
+        if ols_safe_reload; then
+            if [[ "${LC_JSON_OUTPUT}" -eq 1 ]]; then
+                json_response "success" "OpenLiteSpeed configuration tested and reloaded."
+            else
+                log_ok "OpenLiteSpeed configuration tested and reloaded."
+            fi
+        else
+            if [[ "${LC_JSON_OUTPUT}" -eq 1 ]]; then
+                json_response "error" "OpenLiteSpeed configuration test failed; rolled back to last known good config."
+            fi
+            exit 1
+        fi
+        ;;
+    user|vhost|php|tuning|server|db|ssl|security|backup|module)
+        dispatch_subcommand "${COMMAND}" "$@"
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    *)
+        if [[ "${LC_JSON_OUTPUT}" -eq 1 ]]; then
+            json_response "error" "Unknown command: ${COMMAND}"
+        else
+            log_error "Unknown command: ${COMMAND}"
+            show_help
+        fi
+        exit 1
+        ;;
+esac
+
