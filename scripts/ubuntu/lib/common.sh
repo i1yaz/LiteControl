@@ -17,6 +17,7 @@ export LC_SSL_DIR="${LC_CONF_DIR}/ssl"
 export LC_MODULES_DIR="${LC_CONF_DIR}/modules"
 export LC_LOG_DIR="${LC_LOG_DIR:-/var/log/litecontrol}"
 export LC_INSTALL_LOG="${LC_LOG_DIR}/install.log"
+export LC_HOME_ROOT="${LC_HOME_ROOT:-/home}"
 
 # Panel Dedicated System User & PHP Version
 export LC_USER="litecontrol"
@@ -104,6 +105,9 @@ json_response() {
 # Privilege & OS Detection
 # ------------------------------------------------------------------------------
 require_root() {
+    if [[ "${LC_TEST_MODE:-0}" == "1" ]]; then
+        return 0
+    fi
     if [[ "$(id -u)" -ne 0 ]]; then
         if [[ "${LC_JSON_OUTPUT:-0}" == "1" ]]; then
             json_response "error" "Root privileges are required to run this command."
