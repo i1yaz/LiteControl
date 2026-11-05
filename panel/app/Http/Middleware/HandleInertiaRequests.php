@@ -43,6 +43,7 @@ class HandleInertiaRequests extends Middleware
                     'status' => $user->status ?? 'active',
                     'avatar' => $user->avatar,
                 ] : null,
+                'is_impersonating' => (bool) $request->session()->has('impersonator_id'),
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

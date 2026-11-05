@@ -55,6 +55,19 @@ const logout = () => {
 
 <template>
     <div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
+        <!-- Impersonation Banner -->
+        <div v-if="page.props.auth?.is_impersonating" class="bg-amber-500/20 border-b border-amber-500/30 px-4 py-2 text-xs flex items-center justify-between text-amber-200">
+            <div class="flex items-center gap-2">
+                <AlertCircle class="w-4 h-4 text-amber-400" />
+                <span>You are currently impersonating <strong>{{ user.username }}</strong>. Actions taken will reflect on their account.</span>
+            </div>
+            <form @submit.prevent="router.post('/impersonation/revert')">
+                <button type="submit" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-colors">
+                    Revert to Admin
+                </button>
+            </form>
+        </div>
+
         <!-- Top Navigation Bar -->
         <header class="h-16 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6">
             <div class="flex items-center gap-3">
@@ -167,9 +180,9 @@ const logout = () => {
                             <ChevronDown class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="{'rotate-180': openSubmenus.users}" />
                         </button>
                         <div v-if="openSubmenus.users" class="mt-1 pl-9 pr-2 space-y-1">
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">List Users</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Add User</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Packages</Link>
+                            <Link href="/users" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">List Users</Link>
+                            <Link href="/users/create" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Add User</Link>
+                            <Link href="/packages" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Packages</Link>
                         </div>
                     </div>
 
@@ -186,9 +199,9 @@ const logout = () => {
                             <ChevronDown class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="{'rotate-180': openSubmenus.domains}" />
                         </button>
                         <div v-if="openSubmenus.domains" class="mt-1 pl-9 pr-2 space-y-1">
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Domains</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Add Domain</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Sub Domains</Link>
+                            <Link href="/domains" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Domains</Link>
+                            <Link href="/domains" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Add Domain</Link>
+                            <Link href="/subdomains" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Sub Domains</Link>
                             <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">DNS</Link>
                         </div>
                     </div>
@@ -206,7 +219,7 @@ const logout = () => {
                             <ChevronDown class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="{'rotate-180': openSubmenus.database}" />
                         </button>
                         <div v-if="openSubmenus.database" class="mt-1 pl-9 pr-2 space-y-1">
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">MySQL Databases</Link>
+                            <Link href="/databases" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">MySQL Databases</Link>
                             <a href="/phpmyadmin/" target="_blank" class="flex items-center justify-between px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">
                                 <span>phpMyAdmin</span>
                                 <ExternalLink class="w-3 h-3 text-slate-500" />
@@ -227,8 +240,8 @@ const logout = () => {
                             <ChevronDown class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="{'rotate-180': openSubmenus.files}" />
                         </button>
                         <div v-if="openSubmenus.files" class="mt-1 pl-9 pr-2 space-y-1">
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">File Manager</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Backup & Restore</Link>
+                            <Link href="/files" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">File Manager</Link>
+                            <Link href="/backups" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">Backup & Restore</Link>
                             <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">FTP</Link>
                         </div>
                     </div>
@@ -246,11 +259,11 @@ const logout = () => {
                             <ChevronDown class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="{'rotate-180': openSubmenus.php}" />
                         </button>
                         <div v-if="openSubmenus.php" class="mt-1 pl-9 pr-2 space-y-1">
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">MultiPHP INI Editor</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">MultiPHP Manager</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">PHP Extension</Link>
-                            <Link v-if="isAdmin" href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">PHP Version</Link>
-                            <Link href="/dashboard" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">PHP Modules</Link>
+                            <Link href="/php/ini" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">MultiPHP INI Editor</Link>
+                            <Link href="/php/manager" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">MultiPHP Manager</Link>
+                            <Link href="/php/extensions" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">PHP Extension</Link>
+                            <Link v-if="isAdmin" href="/php/versions" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">PHP Version</Link>
+                            <Link href="/php/modules" class="block px-2 py-1.5 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-800/40">PHP Modules</Link>
                         </div>
                     </div>
 
