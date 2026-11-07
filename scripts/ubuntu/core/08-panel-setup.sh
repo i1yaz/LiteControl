@@ -128,11 +128,18 @@ EOF
         fi
 
         chown -R "${LC_USER}:${LC_GROUP}" "${LC_PANEL_DIR}"
-        local composer_bin="/usr/local/bin/composer"
-        if [[ -f "${LC_BASE_DIR}/bin/composer.phar" ]]; then
-            composer_bin="/usr/local/bin/php ${LC_BASE_DIR}/bin/composer.phar"
+        local composer_bin="${LC_BASE_DIR}/bin/composer.phar"
+        local php_bin="/usr/local/bin/php"
+        if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+            mkdir -p "${LC_BASE_DIR}/bin"
+            curl -fsSL -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar || true
+            chmod 755 "${composer_bin}"
         fi
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${composer_bin} install --no-dev -o --no-interaction"
+        local run_composer="${php_bin} ${composer_bin}"
+        if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+            run_composer="/usr/local/bin/composer"
+        fi
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${run_composer} install --no-dev -o --no-interaction"
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan key:generate --force"
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan migrate --force"
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan db:seed --force" 2>/dev/null || true

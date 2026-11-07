@@ -285,6 +285,34 @@ ensure_nodejs_for_frontend_build() {
     apt_install nodejs
 }
 
+ensure_panel_composer() {
+    local composer_bin="${LC_BASE_DIR}/bin/composer.phar"
+    local php_bin="/usr/local/bin/php"
+    if [[ -x "${composer_bin}" && -f "${composer_bin}" ]]; then
+        if "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+            return 0
+        fi
+        log_warn "Cached composer.phar failed verification; re-downloading official release..."
+        rm -f "${composer_bin}"
+    fi
+
+    log_info "Fetching verified Composer official phar..."
+    mkdir -p "${LC_BASE_DIR}/bin"
+    if curl -fsSL -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar; then
+        chmod 755 "${composer_bin}"
+        if "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+            log_ok "Verified Composer phar installed at ${composer_bin}."
+            return 0
+        fi
+    fi
+
+    # Fallback if download failed or curl unavailable
+    if command -v composer >/dev/null 2>&1; then
+        log_warn "Using system composer fallback."
+        return 0
+    fi
+}
+
 upgrade_laravel_panel() {
     log_step "04. Updating Laravel Panel Application, Dependencies & Database Migrations"
 
@@ -314,6 +342,7 @@ upgrade_laravel_panel() {
     chown -R "${LC_USER}:${LC_GROUP}" "${LC_BASE_DIR}/.config" "${LC_BASE_DIR}/.cache" "${LC_PANEL_DIR}"
 
     if [[ -f "${LC_PANEL_DIR}/artisan" ]]; then
+        ensure_panel_composer
         log_info "Installing Composer dependencies..."
         local composer_bin="/usr/local/bin/composer"
         if [[ -f "${LC_BASE_DIR}/bin/composer.phar" ]]; then
