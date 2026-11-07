@@ -135,7 +135,7 @@ detect_ubuntu_os() {
     ARCH=$(uname -m)
 
     if [[ "${OS_ID}" != "ubuntu" ]]; then
-        log_error "Unsupported OS: ${OS_ID}. LiteControl Phase 1 targets Ubuntu (20.04, 22.04, 24.04)."
+        log_error "Unsupported OS: '${OS_ID}'. LiteControl only supports Ubuntu LTS (20.04, 22.04, 24.04)."
         return 1
     fi
 
@@ -143,7 +143,10 @@ detect_ubuntu_os() {
         20|22|24)
             ;;
         *)
-            log_warn "Ubuntu ${OS_VERSION_FULL} detected. Official tested versions are 20.04, 22.04, and 24.04 LTS."
+            log_error "Unsupported Ubuntu version: ${OS_VERSION_FULL:-unknown} (${OS_CODENAME:-unknown})."
+            log_error "LiteControl strictly supports Ubuntu LTS releases: 20.04 (focal), 22.04 (jammy), and 24.04 (noble)."
+            log_error "Upstream packages such as OpenLiteSpeed and LSPHP do not have pre-built repositories for this version."
+            return 1
             ;;
     esac
 
