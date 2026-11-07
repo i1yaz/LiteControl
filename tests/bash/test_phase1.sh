@@ -260,11 +260,13 @@ assert_contains "${panel_nginx_tpl}" "error_page 497" "templates/panel/nginx.con
 # 5. `lc-cli` Dispatcher Unit Tests
 # ------------------------------------------------------------------------------
 echo "5. Testing bin/lc-cli dispatcher..."
+current_expected_ver=$(tr -d ' \t\r\n' < "${REPO_ROOT}/VERSION")
 ver_out=$(bash "${REPO_ROOT}/bin/lc-cli" version)
-assert_contains "${ver_out}" "LiteControl CLI v1.0.0" "lc-cli version human output"
+assert_contains "${ver_out}" "LiteControl CLI v${current_expected_ver}" "lc-cli version human output"
 
 ver_json=$(bash "${REPO_ROOT}/bin/lc-cli" --json version)
-assert_eq '{"status":"success","message":"LiteControl v1.0.0","data":{"version":"1.0.0"}}' "${ver_json}" "lc-cli --json version output"
+expected_json=$(printf '{"status":"success","message":"LiteControl v%s","data":{"version":"%s"}}' "${current_expected_ver}" "${current_expected_ver}")
+assert_eq "${expected_json}" "${ver_json}" "lc-cli --json version output"
 
 help_out=$(bash "${REPO_ROOT}/bin/lc-cli" help)
 assert_contains "${help_out}" "Management Subcommands:" "lc-cli help output"

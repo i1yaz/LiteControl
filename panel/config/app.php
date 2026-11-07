@@ -17,6 +17,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | LiteControl Panel Version
+    |--------------------------------------------------------------------------
+    |
+    | Single source of truth read from the root VERSION file or /etc/litecontrol/version.
+    |
+    */
+
+    'version' => trim(@file_get_contents(base_path('../VERSION')) ?: (@file_get_contents('/etc/litecontrol/version') ?: '0.1.0-alpha.1')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

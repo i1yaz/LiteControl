@@ -17,15 +17,10 @@ done
 BIN_DIR="$(cd -P "$(dirname "${SOURCE}")" && pwd)"
 BASE_DIR="$(cd "${BIN_DIR}/.." && pwd)"
 
-LC_VERSION="1.0.0"
-if [[ -s "${BASE_DIR}/VERSION" ]]; then
-    LC_VERSION=$(tr -d ' \t\r\n' < "${BASE_DIR}/VERSION")
-elif [[ -s "/etc/litecontrol/version" ]]; then
-    LC_VERSION=$(tr -d ' \t\r\n' < "/etc/litecontrol/version")
-fi
-
 # shellcheck source=../scripts/ubuntu/lib/common.sh
 source "${BASE_DIR}/scripts/ubuntu/lib/common.sh"
+
+LC_VERSION="${LC_VERSION:-$(get_lc_version)}"
 
 export LC_JSON_OUTPUT=0
 if [[ "${1:-}" == "--json" ]]; then

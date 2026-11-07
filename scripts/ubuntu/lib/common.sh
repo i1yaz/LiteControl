@@ -19,6 +19,21 @@ export LC_LOG_DIR="${LC_LOG_DIR:-/var/log/litecontrol}"
 export LC_INSTALL_LOG="${LC_INSTALL_LOG:-${LC_LOG_DIR}/install.log}"
 export LC_HOME_ROOT="${LC_HOME_ROOT:-/home}"
 
+# Core Version Resolver (Single Source of Truth)
+get_lc_version() {
+    local default_v="0.1.0-alpha.1"
+    if [[ -s "${LC_BASE_DIR}/VERSION" ]]; then
+        tr -d ' \t\r\n' < "${LC_BASE_DIR}/VERSION"
+    elif [[ -s "${LC_CONF_DIR}/version" ]]; then
+        tr -d ' \t\r\n' < "${LC_CONF_DIR}/version"
+    elif [[ -n "${REPO_ROOT:-}" && -s "${REPO_ROOT}/VERSION" ]]; then
+        tr -d ' \t\r\n' < "${REPO_ROOT}/VERSION"
+    else
+        printf "%s" "${default_v}"
+    fi
+}
+export LC_VERSION="${LC_VERSION:-$(get_lc_version 2>/dev/null || echo "0.1.0-alpha.1")}"
+
 # Panel Dedicated System User & PHP Version
 export LC_USER="litecontrol"
 export LC_GROUP="litecontrol"
