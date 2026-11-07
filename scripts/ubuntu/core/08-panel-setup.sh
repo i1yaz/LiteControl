@@ -106,6 +106,14 @@ EOF
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction"
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan key:generate --force"
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan migrate --force"
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan db:seed --force" 2>/dev/null || true
+
+        # Ensure admin user password matches generated panel_admin_password secret
+        local admin_pass
+        admin_pass=$(get_secret "panel_admin_password" 2>/dev/null || echo "")
+        if [[ -n "${admin_pass}" ]]; then
+            su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan tinker --execute=\"\\App\\Models\\User::where('username', 'admin')->update(['password' => \\Illuminate\\Support\\Facades\\Hash::make('${admin_pass}')]);\"" 2>/dev/null || true
+        fi
 
         # Enable Laravel queue worker service
         local worker_tpl="${LC_BASE_DIR}/templates/system/litecontrol-worker.service"
