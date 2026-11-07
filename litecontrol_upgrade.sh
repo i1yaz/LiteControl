@@ -139,6 +139,8 @@ fetch_target_source() {
     fi
 
     git -C "${UPGRADE_SRC_DIR}" fetch --all --tags --prune --quiet
+    git -C "${UPGRADE_SRC_DIR}" reset --hard --quiet 2>/dev/null || true
+    git -C "${UPGRADE_SRC_DIR}" clean -fd --quiet 2>/dev/null || true
 
     # Checkout matching tag, remote branch, or commit
     if git -C "${UPGRADE_SRC_DIR}" rev-parse -q --verify "refs/tags/${TARGET_REF}" >/dev/null 2>&1; then
@@ -147,7 +149,7 @@ fetch_target_source() {
         TARGET_REF="v${TARGET_REF}"
         git -C "${UPGRADE_SRC_DIR}" checkout -f "tags/${TARGET_REF}" --quiet
     elif git -C "${UPGRADE_SRC_DIR}" rev-parse -q --verify "refs/remotes/origin/${TARGET_REF}" >/dev/null 2>&1; then
-        git -C "${UPGRADE_SRC_DIR}" checkout -B "${TARGET_REF}" "origin/${TARGET_REF}" --quiet
+        git -C "${UPGRADE_SRC_DIR}" checkout -f -B "${TARGET_REF}" "origin/${TARGET_REF}" --quiet
     else
         printf "%s[ERROR]%s Version tag or branch '%s' not found in repository %s\n" "${C_RED}" "${C_RESET}" "${TARGET_REF}" "${GITHUB_REPO_URL}" >&2
         exit 1
