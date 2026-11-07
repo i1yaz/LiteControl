@@ -6,9 +6,14 @@
 [![Backend](https://img.shields.io/badge/Stack-Laravel%2013%20%2B%20Vue%203%20%2B%20Inertia-FF2D20?logo=laravel&logoColor=white)](https://laravel.com/)
 [![Bash Tests](https://img.shields.io/badge/Bash%20Tests-203%2F203%20Passing-brightgreen)](tests/bash)
 [![PHPUnit Tests](https://img.shields.io/badge/Feature%20Tests-130%2F130%20Passing-brightgreen)](panel/tests)
+[![Status](https://img.shields.io/badge/Status-Experimental%20%2F%20Non--Production-orange.svg)](https://github.com/i1yaz/LiteControl)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**LiteControl** is an enterprise-grade, high-performance, modular web hosting control panel engineered specifically for **Ubuntu LTS** servers. Powered by **OpenLiteSpeed (OLS)**, **MariaDB**, and an isolated **Laravel 13 + Inertia.js (Vue 3)** management stack, LiteControl delivers blazingly fast HTTP/3 & QUIC performance with a low memory footprint (~180 MB base RAM).
+> [!WARNING]
+> **EXPERIMENTAL & NON-PRODUCTION NOTICE**
+> LiteControl is currently in an **active experimental development phase** and is **NOT intended or recommended for mission-critical production environments**. Features, architecture, configurations, and CLI interfaces may undergo breaking changes. Use on staging, test, or development VPS instances only.
+
+**LiteControl** is an open-source, modular web hosting control panel engineered specifically for **Ubuntu LTS** servers. Powered by **OpenLiteSpeed (OLS)**, **MariaDB**, and an isolated **Laravel 13 + Inertia.js (Vue 3)** management stack, LiteControl delivers blazingly fast HTTP/3 & QUIC performance with a low memory footprint (~180 MB base RAM).
 
 Designed from the ground up with a **lean-core philosophy**, heavy optional services (Pure-FTPd, PowerDNS, Postfix/Dovecot Mail, CSF, ModSecurity OWASP CRS, and ImunifyAV) are strictly on-demand—keeping your server fast, clean, and unencumbered.
 

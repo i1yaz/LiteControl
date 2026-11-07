@@ -120,6 +120,7 @@ print_banner() {
  |______|_|\__\___|\_____\___/|_| |_|\__|_|  \___/|_|
 EOF
     printf "%s\n" "${C_RESET}"
+    log_warn "NOTICE: LiteControl is currently in EXPERIMENTAL phase and NOT production ready."
     log_info "Starting LiteControl modular installation on Ubuntu..."
 }
 

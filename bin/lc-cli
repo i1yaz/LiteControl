@@ -33,7 +33,7 @@ shift || true
 
 show_help() {
     cat <<EOF
-LiteControl CLI Engine v${LC_VERSION}
+LiteControl CLI Engine v${LC_VERSION} (Experimental - Not for Production Use)
 
 Usage: lc-cli [--json] <command> [subcommand] [arguments...]
 
