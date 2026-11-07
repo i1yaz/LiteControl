@@ -128,7 +128,11 @@ EOF
         fi
 
         chown -R "${LC_USER}:${LC_GROUP}" "${LC_PANEL_DIR}"
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction"
+        local composer_bin="/usr/local/bin/composer"
+        if [[ -f "${LC_BASE_DIR}/bin/composer.phar" ]]; then
+            composer_bin="/usr/local/bin/php ${LC_BASE_DIR}/bin/composer.phar"
+        fi
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${composer_bin} install --no-dev -o --no-interaction"
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan key:generate --force"
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan migrate --force"
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan db:seed --force" 2>/dev/null || true

@@ -26,7 +26,7 @@ LC_BACKUP_ROOT="${LC_BACKUP_ROOT:-/var/backups/litecontrol}"
 
 TARGET_REF=""
 NON_INTERACTIVE=0
-BUILD_FRONTEND=1
+BUILD_FRONTEND=0
 
 # Terminal Colors
 if [[ -t 1 ]]; then
@@ -53,7 +53,8 @@ Options:
   -v, --version <tag>    Upgrade to a specific Git release tag (e.g. v1.0.0, v1.1.0)
   -b, --branch <branch>  Upgrade to a specific Git branch (e.g. main, feat-nginx-panel-server)
   -y, --yes              Run non-interactively using latest release tag (or main)
-      --skip-frontend    Skip npm frontend build if pre-built assets already exist
+      --build-frontend   Compile Vue 3/Vite frontend assets on host machine (default: disabled)
+      --skip-frontend    Skip npm frontend build (default)
   -h, --help             Show this help message
 EOF
 }
@@ -67,6 +68,10 @@ parse_args() {
                 ;;
             -y|--yes)
                 NON_INTERACTIVE=1
+                shift
+                ;;
+            --build-frontend)
+                BUILD_FRONTEND=1
                 shift
                 ;;
             --skip-frontend)
@@ -308,9 +313,13 @@ upgrade_laravel_panel() {
 
     if [[ -f "${LC_PANEL_DIR}/artisan" ]]; then
         log_info "Installing Composer dependencies..."
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction"
+        local composer_bin="/usr/local/bin/composer"
+        if [[ -f "${LC_BASE_DIR}/bin/composer.phar" ]]; then
+            composer_bin="/usr/local/bin/php ${LC_BASE_DIR}/bin/composer.phar"
+        fi
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${composer_bin} install --no-dev -o --no-interaction"
 
-        # Build frontend assets if package.json exists and build is requested or manifest is missing
+        # Build frontend assets if package.json exists and build is explicitly requested or prebuilt assets are missing
         if [[ -f "${LC_PANEL_DIR}/package.json" ]]; then
             if [[ "${BUILD_FRONTEND}" -eq 1 || ! -f "${LC_PANEL_DIR}/public/build/manifest.json" ]]; then
                 ensure_nodejs_for_frontend_build
@@ -319,6 +328,8 @@ upgrade_laravel_panel() {
                     su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && npm install --no-audit --no-fund && npm run build"
                     rm -rf "${LC_PANEL_DIR}/node_modules"
                 fi
+            else
+                log_info "Pre-built frontend assets detected; skipping on-server npm build."
             fi
         fi
 
