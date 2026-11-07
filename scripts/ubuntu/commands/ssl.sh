@@ -260,6 +260,7 @@ cmd_ssl_panel() {
             fi
 
             ols_safe_reload
+            panel_safe_reload
             emit_success "Panel SSL certificate issued for '${hostname}'." "{\"hostname\":\"${hostname}\"}"
             ;;
         custom)
@@ -275,6 +276,7 @@ cmd_ssl_panel() {
             chmod 644 "${LC_SSL_DIR}/fullchain.pem"
 
             ols_safe_reload
+            panel_safe_reload
             emit_success "Panel custom SSL certificate updated successfully." '{"installed":true}'
             ;;
         *)

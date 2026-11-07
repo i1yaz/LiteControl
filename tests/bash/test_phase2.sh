@@ -219,6 +219,8 @@ assert_contains "${srv_stats}" '"cpu_percent":' "server stats returns cpu_percen
 assert_contains "${srv_stats}" '"ram_total_mb":' "server stats returns ram_total_mb"
 
 srv_svcs=$(bash "${CLI}" --json server services)
+assert_contains "${srv_svcs}" '"service":"litecontrol-panel"' "server services lists litecontrol-panel"
+assert_contains "${srv_svcs}" '"service":"litecontrol-php"' "server services lists litecontrol-php"
 assert_contains "${srv_svcs}" '"service":"openlitespeed"' "server services lists openlitespeed"
 assert_contains "${srv_svcs}" '"service":"redis-server"' "server services lists redis-server"
 

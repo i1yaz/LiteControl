@@ -2,18 +2,9 @@
 import { computed, onMounted, onUnmounted, watch } from 'vue';
 
 const props = defineProps({
-    show: {
-        type: Boolean,
-        default: false,
-    },
-    maxWidth: {
-        type: String,
-        default: 'md',
-    },
-    closeable: {
-        type: Boolean,
-        default: true,
-    },
+    show: { type: Boolean, default: false },
+    maxWidth: { type: String, default: 'md' },
+    closeable: { type: Boolean, default: true },
 });
 
 const emit = defineEmits(['close']);
@@ -31,34 +22,22 @@ const maxWidthClass = computed(() => {
 });
 
 const close = () => {
-    if (props.closeable) {
-        emit('close');
-    }
+    if (props.closeable) emit('close');
 };
 
 const closeOnEscape = (e) => {
-    if (e.key === 'Escape' && props.show && props.closeable) {
-        close();
-    }
+    if (e.key === 'Escape' && props.show && props.closeable) close();
 };
 
 onMounted(() => document.addEventListener('keydown', closeOnEscape));
-
 onUnmounted(() => {
     document.removeEventListener('keydown', closeOnEscape);
     document.body.style.overflow = '';
 });
 
-watch(
-    () => props.show,
-    (val) => {
-        if (val) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-    }
-);
+watch(() => props.show, (val) => {
+    document.body.style.overflow = val ? 'hidden' : '';
+});
 </script>
 
 <template>
@@ -70,7 +49,7 @@ watch(
                 scroll-region
             >
                 <Transition
-                    enter-active-class="ease-out duration-300"
+                    enter-active-class="ease-out duration-250"
                     enter-from-class="opacity-0"
                     enter-to-class="opacity-100"
                     leave-active-class="ease-in duration-200"
@@ -78,21 +57,21 @@ watch(
                     leave-to-class="opacity-0"
                 >
                     <div v-show="show" class="fixed inset-0 transform transition-all" @click="close">
-                        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                        <div class="absolute inset-0 bg-[#06080b]/80 backdrop-blur-md" />
                     </div>
                 </Transition>
 
                 <Transition
-                    enter-active-class="ease-out duration-300"
-                    enter-from-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    enter-to-class="opacity-100 translate-y-0 sm:scale-100"
-                    leave-active-class="ease-in duration-200"
-                    leave-from-class="opacity-100 translate-y-0 sm:scale-100"
-                    leave-to-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                    enter-active-class="ease-out duration-250"
+                    enter-from-class="opacity-0 translate-y-3 scale-98"
+                    enter-to-class="opacity-100 translate-y-0 scale-100"
+                    leave-active-class="ease-in duration-150"
+                    leave-from-class="opacity-100 translate-y-0 scale-100"
+                    leave-to-class="opacity-0 translate-y-3 scale-98"
                 >
                     <div
                         v-show="show"
-                        class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl transform transition-all sm:w-full sm:mx-auto z-10"
+                        class="bg-[#0c1017] border border-[#1e2634] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden transition-all sm:w-full sm:mx-auto z-10 rounded-sm relative before:absolute before:top-0 before:left-0 before:w-16 before:h-[2px] before:bg-[#ff6b35]"
                         :class="maxWidthClass"
                     >
                         <slot v-if="show" />
@@ -102,4 +81,3 @@ watch(
         </Transition>
     </Teleport>
 </template>
-

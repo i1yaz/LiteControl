@@ -12,11 +12,11 @@ export LC_BASE_DIR="${LC_BASE_DIR:-/usr/local/litecontrol}"
 export LC_PANEL_DIR="${LC_PANEL_DIR:-${LC_BASE_DIR}/panel}"
 export LC_PMA_DIR="${LC_PMA_DIR:-${LC_BASE_DIR}/phpmyadmin}"
 export LC_CONF_DIR="${LC_CONF_DIR:-/etc/litecontrol}"
-export LC_SECRETS_DIR="${LC_CONF_DIR}/secrets"
-export LC_SSL_DIR="${LC_CONF_DIR}/ssl"
-export LC_MODULES_DIR="${LC_CONF_DIR}/modules"
+export LC_SECRETS_DIR="${LC_SECRETS_DIR:-${LC_CONF_DIR}/secrets}"
+export LC_SSL_DIR="${LC_SSL_DIR:-${LC_CONF_DIR}/ssl}"
+export LC_MODULES_DIR="${LC_MODULES_DIR:-${LC_CONF_DIR}/modules}"
 export LC_LOG_DIR="${LC_LOG_DIR:-/var/log/litecontrol}"
-export LC_INSTALL_LOG="${LC_LOG_DIR}/install.log"
+export LC_INSTALL_LOG="${LC_INSTALL_LOG:-${LC_LOG_DIR}/install.log}"
 export LC_HOME_ROOT="${LC_HOME_ROOT:-/home}"
 
 # Panel Dedicated System User & PHP Version
@@ -31,6 +31,15 @@ export OLS_CONF="${OLS_CONF:-${OLS_DIR}/conf/httpd_config.conf}"
 export OLS_VHOSTS_DIR="${OLS_VHOSTS_DIR:-${OLS_DIR}/conf/vhosts}"
 export OLS_CTRL="${OLS_CTRL:-${OLS_DIR}/bin/lswsctrl}"
 export OLS_BIN="${OLS_BIN:-${OLS_DIR}/bin/lshttpd}"
+
+# Panel Nginx & PHP-FPM Paths (overridable for unit test sandboxing)
+export PANEL_NGINX_DIR="${PANEL_NGINX_DIR:-${LC_CONF_DIR}/nginx}"
+export PANEL_NGINX_CONF="${PANEL_NGINX_CONF:-${PANEL_NGINX_DIR}/nginx.conf}"
+export PANEL_FPM_DIR="${PANEL_FPM_DIR:-${LC_CONF_DIR}/php-fpm}"
+export PANEL_FPM_CONF="${PANEL_FPM_CONF:-${PANEL_FPM_DIR}/php-fpm.conf}"
+export NGINX_BIN="${NGINX_BIN:-/usr/sbin/nginx}"
+export PANEL_SYSTEMD_SERVICE="${PANEL_SYSTEMD_SERVICE:-litecontrol-panel}"
+export PANEL_FPM_SYSTEMD_SERVICE="${PANEL_FPM_SYSTEMD_SERVICE:-litecontrol-php}"
 
 # Terminal Colors (disabled automatically when not a TTY or in JSON mode)
 if [[ -t 1 && "${LC_JSON_OUTPUT:-0}" != "1" ]]; then
@@ -341,4 +350,65 @@ ols_safe_reload() {
     ols_backup_config
     return 0
 }
+
+# ------------------------------------------------------------------------------
+# Out-of-Band Panel Nginx Atomic Config Validation & Auto-Rollback Guard
+# Prevents panel lockout when updating panel port, SSL, or server blocks.
+# ------------------------------------------------------------------------------
+panel_backup_config() {
+    if [[ -f "${PANEL_NGINX_CONF}" ]]; then
+        cp -a "${PANEL_NGINX_CONF}" "${PANEL_NGINX_CONF}.last_good"
+    fi
+}
+
+panel_restore_config() {
+    if [[ -f "${PANEL_NGINX_CONF}.last_good" ]]; then
+        log_warn "Restoring last known good Panel Nginx configuration..."
+        cp -a "${PANEL_NGINX_CONF}.last_good" "${PANEL_NGINX_CONF}"
+    fi
+}
+
+panel_test_config() {
+    if [[ ! -x "${NGINX_BIN}" ]]; then
+        log_error "Nginx binary not found at ${NGINX_BIN}"
+        return 1
+    fi
+    local test_output
+    if ! test_output=$("${NGINX_BIN}" -t -q -c "${PANEL_NGINX_CONF}" 2>&1); then
+        log_error "Panel Nginx configuration test failed: ${test_output}"
+        return 1
+    fi
+    return 0
+}
+
+panel_safe_reload() {
+    if ! panel_test_config; then
+        panel_restore_config
+        return 1
+    fi
+
+    if [[ "${LC_TEST_MODE:-0}" == "1" ]]; then
+        panel_backup_config
+        return 0
+    fi
+
+    if systemctl is-active --quiet "${PANEL_SYSTEMD_SERVICE}"; then
+        systemctl reload-or-restart "${PANEL_SYSTEMD_SERVICE}" >/dev/null 2>&1 || systemctl restart "${PANEL_SYSTEMD_SERVICE}" >/dev/null 2>&1
+    else
+        systemctl start "${PANEL_SYSTEMD_SERVICE}" >/dev/null 2>&1
+    fi
+
+    sleep 1
+    if ! systemctl is-active --quiet "${PANEL_SYSTEMD_SERVICE}"; then
+        log_error "Panel Nginx service failed to stay running after reload. Triggering auto-rollback..."
+        panel_restore_config
+        systemctl restart "${PANEL_SYSTEMD_SERVICE}" >/dev/null 2>&1
+        return 1
+    fi
+
+    # Update last_good snapshot now that config is verified healthy
+    panel_backup_config
+    return 0
+}
+
 

@@ -86,11 +86,32 @@ install_primary_lsphp() {
     log_ok "PHP ${dotted_ver} (lsphp${ver}) and Composer ready."
 }
 
+install_panel_nginx_and_fpm() {
+    log_step "05b. Installing Dedicated Panel Nginx & PHP-FPM"
+
+    # Install nginx and standard php-fpm packages for out-of-band panel daemon
+    apt_install nginx php-fpm php-cli php-mysql php-curl php-intl php-mbstring php-xml php-zip php-redis php-bcmath php-gd || true
+
+    # Immediately stop, disable, and prevent stock nginx from conflicting with OpenLiteSpeed on port 80/443
+    systemctl stop nginx >/dev/null 2>&1 || true
+    systemctl disable nginx >/dev/null 2>&1 || true
+    rm -f /etc/nginx/sites-enabled/default
+
+    # Stop and disable any default stock php*-fpm service (we run our isolated litecontrol-php service)
+    for fpm_svc in $(systemctl list-unit-files 'php*-fpm.service' --no-legend 2>/dev/null | awk '{print $1}'); do
+        systemctl stop "${fpm_svc}" >/dev/null 2>&1 || true
+        systemctl disable "${fpm_svc}" >/dev/null 2>&1 || true
+    done
+
+    log_ok "Panel Nginx and PHP-FPM packages installed; default port 80 services deactivated."
+}
+
 main() {
     require_root
     detect_ubuntu_os
     init_litecontrol_dirs
     install_primary_lsphp
+    install_panel_nginx_and_fpm
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

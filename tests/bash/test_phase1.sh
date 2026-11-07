@@ -68,11 +68,17 @@ export LC_SSL_DIR="${LC_CONF_DIR}/ssl"
 export LC_MODULES_DIR="${LC_CONF_DIR}/modules"
 export LC_LOG_DIR="${SANDBOX_DIR}/var/log/litecontrol"
 export LC_INSTALL_LOG="${LC_LOG_DIR}/install.log"
+export LC_TEST_MODE="1"
 export OLS_DIR="${SANDBOX_DIR}/usr/local/lsws"
 export OLS_CONF="${OLS_DIR}/conf/httpd_config.conf"
 export OLS_VHOSTS_DIR="${OLS_DIR}/conf/vhosts"
 export OLS_CTRL="${OLS_DIR}/bin/lswsctrl"
 export OLS_BIN="${OLS_DIR}/bin/lshttpd"
+export PANEL_NGINX_DIR="${LC_CONF_DIR}/nginx"
+export PANEL_NGINX_CONF="${PANEL_NGINX_DIR}/nginx.conf"
+export PANEL_FPM_DIR="${LC_CONF_DIR}/php-fpm"
+export PANEL_FPM_CONF="${PANEL_FPM_DIR}/php-fpm.conf"
+export NGINX_BIN="${SANDBOX_DIR}/usr/sbin/nginx"
 
 # Stub chown/chmod for unprivileged Windows/Git-Bash test environment
 chown() { return 0; }
@@ -150,10 +156,10 @@ json_out=$(json_response "success" "Hello \"World\"" '{"port":8090}')
 assert_eq '{"status":"success","message":"Hello \"World\"","data":{"port":8090}}' "${json_out}" "json_response escapes quotes and formats JSON"
 
 # ------------------------------------------------------------------------------
-# 3. OpenLiteSpeed Atomic Backup & Auto-Rollback Tests
+# 3. OpenLiteSpeed & Panel Nginx Atomic Backup & Auto-Rollback Tests
 # ------------------------------------------------------------------------------
-echo "3. Testing OpenLiteSpeed atomic config test & auto-rollback..."
-mkdir -p "${OLS_DIR}/conf" "${OLS_DIR}/bin"
+echo "3. Testing OpenLiteSpeed and Panel Nginx atomic config test & auto-rollback..."
+mkdir -p "${OLS_DIR}/conf" "${OLS_DIR}/bin" "${PANEL_NGINX_DIR}" "$(dirname "${NGINX_BIN}")"
 echo "serverName valid-config" > "${OLS_CONF}"
 ols_backup_config
 assert_file_exists "${OLS_CONF}.last_good" "ols_backup_config creates .last_good snapshot"
@@ -173,7 +179,7 @@ exit 0
 EOF
 chmod +x "${OLS_BIN}" "${OLS_CTRL}"
 
-# Test valid reload
+# Test valid OLS reload
 echo "serverName valid-config-updated" > "${OLS_CONF}"
 if ols_safe_reload; then
     assert_eq "serverName valid-config-updated" "$(cat "${OLS_CONF}")" "ols_safe_reload keeps valid updated config"
@@ -181,7 +187,7 @@ else
     assert_eq "0" "1" "ols_safe_reload should succeed on valid config"
 fi
 
-# Test broken config triggers auto-rollback to .last_good!
+# Test broken OLS config triggers auto-rollback to .last_good!
 echo "serverName broken-config" > "${OLS_CONF}"
 if ols_safe_reload 2>/dev/null; then
     assert_eq "1" "0" "ols_safe_reload should return non-zero on broken config"
@@ -189,18 +195,66 @@ else
     assert_eq "serverName valid-config-updated" "$(cat "${OLS_CONF}")" "ols_safe_reload automatically rolls back broken config to .last_good"
 fi
 
+# Create mock nginx binary for panel_safe_reload testing
+cat > "${NGINX_BIN}" <<'EOF'
+#!/usr/bin/env bash
+if grep -q "broken-nginx" "${PANEL_NGINX_CONF}"; then
+    echo "[ERROR] Nginx syntax error in nginx.conf" >&2
+    exit 1
+fi
+exit 0
+EOF
+chmod +x "${NGINX_BIN}"
+
+echo "server { listen 8090 ssl http2; }" > "${PANEL_NGINX_CONF}"
+panel_backup_config
+assert_file_exists "${PANEL_NGINX_CONF}.last_good" "panel_backup_config creates .last_good snapshot"
+
+echo "server { listen 8099 ssl http2; }" > "${PANEL_NGINX_CONF}"
+if panel_safe_reload; then
+    assert_eq "server { listen 8099 ssl http2; }" "$(cat "${PANEL_NGINX_CONF}")" "panel_safe_reload keeps valid updated config"
+else
+    assert_eq "0" "1" "panel_safe_reload should succeed on valid config"
+fi
+
+# Test broken Panel Nginx config triggers auto-rollback to .last_good
+echo "server { broken-nginx; }" > "${PANEL_NGINX_CONF}"
+if panel_safe_reload 2>/dev/null; then
+    assert_eq "1" "0" "panel_safe_reload should return non-zero on broken config"
+else
+    assert_eq "server { listen 8099 ssl http2; }" "$(cat "${PANEL_NGINX_CONF}")" "panel_safe_reload automatically rolls back broken config to .last_good"
+fi
+
 # ------------------------------------------------------------------------------
 # 4. Template Placeholder Integrity Tests
 # ------------------------------------------------------------------------------
 echo "4. Testing OLS & system configuration templates..."
 httpd_tpl=$(cat "${REPO_ROOT}/templates/ols/httpd_config.conf.tpl")
-assert_contains "${httpd_tpl}" "extprocessor litecontrol_php" "httpd_config.conf.tpl defines isolated litecontrol_php pool"
-assert_contains "${httpd_tpl}" "listener panel" "httpd_config.conf.tpl defines dedicated panel listener"
+if [[ "${httpd_tpl}" == *"extprocessor litecontrol_php"* ]]; then
+    assert_eq "0" "1" "httpd_config.conf.tpl must NOT contain extprocessor litecontrol_php"
+else
+    assert_eq "0" "0" "httpd_config.conf.tpl clean: no extprocessor litecontrol_php"
+fi
+
+if [[ "${httpd_tpl}" == *"listener panel"* ]]; then
+    assert_eq "0" "1" "httpd_config.conf.tpl must NOT contain listener panel"
+else
+    assert_eq "0" "0" "httpd_config.conf.tpl clean: no listener panel"
+fi
+
 assert_contains "${httpd_tpl}" "# BEGIN LITECONTROL VHOSTS" "httpd_config.conf.tpl contains VHOSTS marker"
 
-panel_tpl=$(cat "${REPO_ROOT}/templates/ols/panel_vhconf.conf.tpl")
-assert_contains "${panel_tpl}" "context /phpmyadmin/" "panel_vhconf.conf.tpl serves /phpmyadmin/ context"
-assert_contains "${panel_tpl}" "lsapi:litecontrol_php" "panel_vhconf.conf.tpl binds to litecontrol_php"
+# Check new Panel Nginx and PHP-FPM templates
+assert_file_exists "${REPO_ROOT}/templates/panel/nginx.conf.tpl" "templates/panel/nginx.conf.tpl exists"
+assert_file_exists "${REPO_ROOT}/templates/panel/fastcgi_params.tpl" "templates/panel/fastcgi_params.tpl exists"
+assert_file_exists "${REPO_ROOT}/templates/panel/php-fpm.conf.tpl" "templates/panel/php-fpm.conf.tpl exists"
+assert_file_exists "${REPO_ROOT}/templates/system/litecontrol-php.service" "templates/system/litecontrol-php.service exists"
+assert_file_exists "${REPO_ROOT}/templates/system/litecontrol-panel.service" "templates/system/litecontrol-panel.service exists"
+
+panel_nginx_tpl=$(cat "${REPO_ROOT}/templates/panel/nginx.conf.tpl")
+assert_contains "${panel_nginx_tpl}" "location ^~ /phpmyadmin/" "templates/panel/nginx.conf.tpl serves /phpmyadmin/ context"
+assert_contains "${panel_nginx_tpl}" "unix:/run/litecontrol-php-fpm.sock" "templates/panel/nginx.conf.tpl fastcgi_passes to litecontrol-php-fpm.sock"
+assert_contains "${panel_nginx_tpl}" "error_page 497" "templates/panel/nginx.conf.tpl redirects plain HTTP on port 8090"
 
 # ------------------------------------------------------------------------------
 # 5. `lc-cli` Dispatcher Unit Tests

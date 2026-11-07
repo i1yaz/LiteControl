@@ -6,7 +6,6 @@ import {
     Users,
     UserPlus,
     Search,
-    Shield,
     Globe,
     Database,
     HardDrive,
@@ -14,8 +13,7 @@ import {
     Unlock,
     Trash2,
     LogIn,
-    Package as PackageIcon,
-    AlertCircle
+    Package as PackageIcon
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -32,7 +30,7 @@ const handleSearch = () => {
 };
 
 const suspendUser = (id, username) => {
-    if (confirm(`Are you sure you want to suspend user '${username}'? Their sites will be blocked.`)) {
+    if (confirm(`Are you sure you want to suspend principal '${username}'? Their virtual hosts will be deactivated.`)) {
         router.post(`/users/${id}/suspend`);
     }
 };
@@ -42,13 +40,13 @@ const unsuspendUser = (id, username) => {
 };
 
 const deleteUser = (id, username) => {
-    if (confirm(`Are you sure you want to delete user '${username}'? ALL sites, databases, and files will be permanently deleted!`)) {
+    if (confirm(`Terminate user principal '${username}'? ALL vhosts, schemas, and storage volumes will be permanently purged!`)) {
         router.delete(`/users/${id}`);
     }
 };
 
 const impersonateUser = (id, username) => {
-    if (confirm(`Switch into customer session as '${username}'?`)) {
+    if (confirm(`Assume security context as principal '${username}'?`)) {
         router.post(`/users/${id}/impersonate`);
     }
 };
@@ -56,126 +54,133 @@ const impersonateUser = (id, username) => {
 
 <template>
     <PanelLayout>
-        <Head title="Users Management" />
+        <Head title="Identity & Principals - LiteControl" />
 
         <div class="space-y-6">
-            <!-- Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <!-- Asymmetrical Spec Header -->
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#1b222d]">
                 <div>
-                    <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
-                        <Users class="w-6 h-6 text-indigo-400" />
-                        <span>Users Management</span>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-[10px] font-mono tracking-widest uppercase text-[#ff6b35]">Access Security</span>
+                        <span class="text-[#3a4454] font-mono">/</span>
+                        <span class="text-[10px] font-mono text-[#6c7d93]">AUTH_IDENTITY_REGISTRY</span>
+                    </div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white font-mono uppercase flex items-center gap-3">
+                        <Users class="w-6 h-6 text-[#ff6b35]" />
+                        <span>Principals & Tenant Accounts</span>
                     </h1>
-                    <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                        Manage Linux hosting accounts, assign packages, and control customer access.
-                    </p>
                 </div>
 
                 <Link
                     href="/users/create"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors shadow-sm shadow-indigo-600/30"
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-[#ff6b35] hover:bg-[#ff8252] text-black text-xs font-mono font-bold uppercase tracking-wider transition-colors shadow-[0_0_15px_rgba(255,107,53,0.25)] rounded-xs"
                 >
-                    <UserPlus class="w-4 h-4" />
-                    <span>Add User</span>
+                    <UserPlus class="w-4 h-4 stroke-[2.5]" />
+                    <span>Provision Principal</span>
                 </Link>
             </div>
 
             <!-- Filter / Search Bar -->
-            <div class="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl p-3">
+            <div class="flex items-center gap-3 bg-[#0b0e14] border border-[#1b2330] rounded-xs p-2.5">
                 <div class="relative flex-1">
-                    <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#5a6b80]" />
                     <input
                         v-model="search"
                         @keyup.enter="handleSearch"
                         type="text"
-                        placeholder="Search by username, name, or email..."
-                        class="w-full pl-9 pr-4 py-1.5 bg-slate-950/70 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                        placeholder="FILTER_PRINCIPALS: USERNAME, EMAIL, IDENTITY_SPEC..."
+                        class="w-full pl-9 pr-4 py-1.5 bg-[#080b0f] border border-[#1e2634] rounded-xs text-xs font-mono text-[#cad3e0] placeholder-[#4e5c6e] focus:outline-none focus:border-[#ff6b35] transition-colors"
                     />
                 </div>
                 <button
                     @click="handleSearch"
-                    class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-colors"
+                    class="px-4 py-1.5 rounded-xs bg-[#161c26] hover:bg-[#202837] text-xs font-mono uppercase tracking-wider text-[#8ea0b5] transition-colors border border-[#1e2634]"
                 >
-                    Filter
+                    Apply Filter
                 </button>
             </div>
 
-            <!-- Users Table -->
-            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+            <!-- Users Grid Matrix -->
+            <div class="bg-[#0b0e14] border border-[#1b2330] rounded-xs overflow-hidden">
+                <div class="px-5 py-3 border-b border-[#1b2330] bg-[#0f131a] flex items-center justify-between">
+                    <span class="text-[11px] font-mono uppercase text-[#7a8b9f] tracking-wider">
+                        Registered Tenants ({{ users.total ?? users.data?.length ?? 0 }})
+                    </span>
+                    <span class="text-[10px] font-mono text-[#00f0a8]">SECURITY_ACL: ENFORCED</span>
+                </div>
+
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm text-slate-300">
-                        <thead class="bg-slate-950/50 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                    <table class="w-full text-left text-xs font-mono text-[#cad3e0]">
+                        <thead class="bg-[#090c11] text-[10px] font-semibold text-[#5a6b80] uppercase tracking-widest border-b border-[#1b2330]">
                             <tr>
-                                <th class="px-5 py-3">User</th>
-                                <th class="px-5 py-3">Package</th>
-                                <th class="px-5 py-3">Domains</th>
-                                <th class="px-5 py-3">Databases</th>
-                                <th class="px-5 py-3">Disk Usage</th>
-                                <th class="px-5 py-3">Status</th>
-                                <th class="px-5 py-3 text-right">Actions</th>
+                                <th class="px-5 py-3.5">Principal Identity</th>
+                                <th class="px-5 py-3.5">Quota Plan</th>
+                                <th class="px-5 py-3.5">Active Ingress</th>
+                                <th class="px-5 py-3.5">Relational DBs</th>
+                                <th class="px-5 py-3.5">Storage Footprint</th>
+                                <th class="px-5 py-3.5">Account State</th>
+                                <th class="px-5 py-3.5 text-right">Operations</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-800/60">
-                            <tr v-for="user in users.data" :key="user.id" class="hover:bg-slate-800/40 transition-colors">
+                        <tbody class="divide-y divide-[#151b24]">
+                            <tr v-for="user in users.data" :key="user.id" class="hover:bg-[#12161f] transition-colors group">
                                 <td class="px-5 py-3.5">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs uppercase">
-                                            {{ user.username.substring(0, 2) }}
-                                        </div>
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-[#ff6b35]/60 group-hover:bg-[#ff6b35]"></span>
                                         <div>
-                                            <div class="font-semibold text-white flex items-center gap-2">
+                                            <div class="font-bold text-white flex items-center gap-1.5">
                                                 <span>{{ user.username }}</span>
                                             </div>
-                                            <div class="text-xs text-slate-400">{{ user.email }}</div>
+                                            <div class="text-[10px] text-[#5e6f85]">{{ user.email }}</div>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-5 py-3.5">
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700/60">
-                                        <PackageIcon class="w-3.5 h-3.5 text-indigo-400" />
-                                        {{ user.package?.name || 'Default' }}
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-xs text-[10px] bg-[#161c26] text-[#8ea0b5] border border-[#222c3c]">
+                                        <PackageIcon class="w-3 h-3 text-[#ff6b35]" />
+                                        {{ user.package?.name || 'DEFAULT' }}
                                     </span>
                                 </td>
-                                <td class="px-5 py-3.5 text-slate-300">
-                                    <span class="inline-flex items-center gap-1 text-xs">
-                                        <Globe class="w-3.5 h-3.5 text-emerald-400" />
+                                <td class="px-5 py-3.5">
+                                    <span class="inline-flex items-center gap-1.5 text-[#cad3e0]">
+                                        <Globe class="w-3.5 h-3.5 text-[#ff6b35]" />
                                         {{ user.domains_count || 0 }}
                                     </span>
                                 </td>
-                                <td class="px-5 py-3.5 text-slate-300">
-                                    <span class="inline-flex items-center gap-1 text-xs">
-                                        <Database class="w-3.5 h-3.5 text-amber-400" />
+                                <td class="px-5 py-3.5">
+                                    <span class="inline-flex items-center gap-1.5 text-[#cad3e0]">
+                                        <Database class="w-3.5 h-3.5 text-[#00f0a8]" />
                                         {{ user.databases_count || 0 }}
                                     </span>
                                 </td>
-                                <td class="px-5 py-3.5 text-xs">
-                                    <div class="flex items-center gap-1.5 text-slate-300">
-                                        <HardDrive class="w-3.5 h-3.5 text-cyan-400" />
+                                <td class="px-5 py-3.5">
+                                    <div class="flex items-center gap-1.5 text-[#cad3e0]">
+                                        <HardDrive class="w-3.5 h-3.5 text-[#00f0a8]" />
                                         <span>{{ diskUsageMap[user.username]?.disk_usage_human || '—' }}</span>
                                     </div>
-                                    <div class="text-[11px] text-slate-500">
-                                        Quota: {{ user.package?.disk_quota_mb ? `${user.package.disk_quota_mb} MB` : 'Unlimited' }}
+                                    <div class="text-[10px] text-[#5e6f85]">
+                                        CAP: {{ user.package?.disk_quota_mb ? `${user.package.disk_quota_mb} MB` : 'UNLIMITED' }}
                                     </div>
                                 </td>
                                 <td class="px-5 py-3.5">
                                     <span
                                         :class="[
-                                            'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold',
+                                            'inline-flex items-center px-2 py-0.5 rounded-xs text-[10px] uppercase tracking-wider',
                                             user.status === 'active'
-                                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                                : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                                ? 'bg-[#00f0a8]/10 text-[#00f0a8] border border-[#00f0a8]/30'
+                                                : 'bg-[#ff3366]/10 text-[#ff6685] border border-[#ff3366]/30'
                                         ]"
                                     >
                                         {{ user.status }}
                                     </span>
                                 </td>
                                 <td class="px-5 py-3.5 text-right">
-                                    <div class="flex items-center justify-end gap-2">
+                                    <div class="flex items-center justify-end gap-1.5">
                                         <!-- Impersonate Button -->
                                         <button
                                             @click="impersonateUser(user.id, user.username)"
-                                            title="Impersonate User"
-                                            class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-indigo-300 transition-colors"
+                                            title="Assume Context"
+                                            class="text-[#5e6f85] hover:text-[#ff6b35] transition-colors p-1"
                                         >
                                             <LogIn class="w-4 h-4" />
                                         </button>
@@ -184,16 +189,16 @@ const impersonateUser = (id, username) => {
                                         <button
                                             v-if="user.status === 'active'"
                                             @click="suspendUser(user.id, user.username)"
-                                            title="Suspend User"
-                                            class="p-1.5 rounded-lg bg-slate-800 hover:bg-amber-500/20 text-amber-400 transition-colors"
+                                            title="Suspend Context"
+                                            class="text-[#5e6f85] hover:text-[#ffd000] transition-colors p-1"
                                         >
                                             <Lock class="w-4 h-4" />
                                         </button>
                                         <button
                                             v-else
                                             @click="unsuspendUser(user.id, user.username)"
-                                            title="Unsuspend User"
-                                            class="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-emerald-400 transition-colors"
+                                            title="Restore Context"
+                                            class="text-[#5e6f85] hover:text-[#00f0a8] transition-colors p-1"
                                         >
                                             <Unlock class="w-4 h-4" />
                                         </button>
@@ -201,8 +206,8 @@ const impersonateUser = (id, username) => {
                                         <!-- Delete -->
                                         <button
                                             @click="deleteUser(user.id, user.username)"
-                                            title="Delete User"
-                                            class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-400 transition-colors"
+                                            title="Terminate Principal"
+                                            class="text-[#5e6f85] hover:text-[#ff3366] transition-colors p-1"
                                         >
                                             <Trash2 class="w-4 h-4" />
                                         </button>
@@ -210,8 +215,8 @@ const impersonateUser = (id, username) => {
                                 </td>
                             </tr>
                             <tr v-if="!users.data || users.data.length === 0">
-                                <td colspan="7" class="px-5 py-8 text-center text-slate-500 text-sm">
-                                    No users found matching query.
+                                <td colspan="7" class="px-5 py-8 text-center text-[#5a6b80] text-xs font-mono">
+                                    NO PRINCIPALS MATCHING SPECIFICATION
                                 </td>
                             </tr>
                         </tbody>
@@ -221,4 +226,3 @@ const impersonateUser = (id, username) => {
         </div>
     </PanelLayout>
 </template>
-

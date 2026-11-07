@@ -6,5 +6,31 @@
 @source '../js/**/*.vue';
 
 @theme {
-    --font-sans: 'Figtree', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --color-obsidian-950: #06080b;
+    --color-obsidian-900: #0a0d12;
+    --color-obsidian-850: #0f141b;
+    --color-obsidian-800: #161c26;
+    --color-obsidian-border: #1e2634;
+
+    --color-plasma-orange: #ff6b35;
+    --color-neon-cyan: #00f0a8;
+}
+
+/* Technical Hairline Grid Texture & Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #0a0d12;
+}
+::-webkit-scrollbar-thumb {
+    background: #1e2634;
+    border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #ff6b35;
 }
