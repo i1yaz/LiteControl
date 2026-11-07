@@ -1,10 +1,12 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import PanelLayout from '@/Layouts/PanelLayout.vue';
-import { Server, RefreshCw, Play, Square, RotateCw } from 'lucide-vue-next';
+import { Server, RefreshCw, Play, Square, RotateCw, ShieldCheck, ShieldAlert, ExternalLink, Globe, Lock } from 'lucide-vue-next';
 
 const props = defineProps({
     services: Array,
+    webAdmin: Object,
 });
 
 const serviceAction = (service, action) => {
@@ -13,11 +15,30 @@ const serviceAction = (service, action) => {
     }
     router.post(`/server/services/${service}/${action}`);
 };
+
+const form = useForm({
+    allowed_ips: props.webAdmin?.allowed_ips || '',
+});
+
+const toggleWebAdmin = () => {
+    if (props.webAdmin?.enabled) {
+        if (!confirm('Disable OpenLiteSpeed WebAdmin console on port ' + (props.webAdmin?.port || 7080) + '?')) {
+            return;
+        }
+        router.post('/server/webadmin/disable');
+    } else {
+        form.post('/server/webadmin/enable');
+    }
+};
+
+const updateWebAdminIps = () => {
+    form.post('/server/webadmin/enable');
+};
 </script>
 
 <template>
     <PanelLayout>
-        <Head title="Services Manager" />
+        <Head title="Services & WebAdmin Manager" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -25,11 +46,99 @@ const serviceAction = (service, action) => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Server class="w-6 h-6 text-blue-400" />
-                        <span>Services Manager</span>
+                        <span>Services & WebAdmin Manager</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                        Monitor health and manage life cycles of core and module daemon services.
+                        Monitor system daemons and manage OpenLiteSpeed native WebAdmin console access.
                     </p>
+                </div>
+            </div>
+
+            <!-- OLS WebAdmin Management Card -->
+            <div class="bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative z-10">
+                    <div class="space-y-2 max-w-2xl">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" :class="webAdmin?.enabled ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'">
+                                <Lock class="w-5 h-5" />
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2.5">
+                                    <h2 class="text-lg font-bold text-white">OpenLiteSpeed WebAdmin Console</h2>
+                                    <span
+                                        :class="[
+                                            'px-2.5 py-0.5 rounded-full text-[11px] font-semibold border',
+                                            webAdmin?.enabled
+                                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                                : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                        ]"
+                                    >
+                                        {{ webAdmin?.enabled ? `Enabled (Port ${webAdmin?.port || 7080})` : 'Disabled (Protected)' }}
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-0.5">
+                                    {{ webAdmin?.enabled 
+                                        ? 'Native OLS WebAdmin console is active. Firewall and port rules are synchronized.' 
+                                        : 'WebAdmin is locked down to prevent brute force and PHP exploit attempts.' }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- IP Whitelist Info / Form -->
+                        <div v-if="webAdmin?.enabled" class="pt-2">
+                            <form @submit.prevent="updateWebAdminIps" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                                <div class="relative flex-1">
+                                    <Globe class="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        v-model="form.allowed_ips"
+                                        type="text"
+                                        placeholder="Allowed IPs (comma separated, e.g. 192.0.2.1, 10.0.0.0/24, or empty for all)"
+                                        class="w-full pl-9 pr-3 py-2 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    :disabled="form.processing"
+                                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium transition-colors whitespace-nowrap"
+                                >
+                                    Update Allowed IPs
+                                </button>
+                            </form>
+                            <p class="text-[11px] text-slate-500 mt-1.5">
+                                Leave blank to allow connections from any IP. If IPs are listed, clients from unlisted addresses receive a 403 Forbidden response.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-3">
+                        <a
+                            v-if="webAdmin?.enabled"
+                            :href="`https://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:${webAdmin?.port || 7080}/`"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="px-4 py-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-xs font-semibold flex items-center gap-2 transition-all shadow-lg shadow-blue-500/5"
+                        >
+                            <ExternalLink class="w-4 h-4" />
+                            <span>Launch WebAdmin</span>
+                        </a>
+
+                        <button
+                            @click="toggleWebAdmin"
+                            :class="[
+                                'px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-lg',
+                                webAdmin?.enabled
+                                    ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 shadow-rose-500/5'
+                                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/10'
+                            ]"
+                        >
+                            <ShieldCheck v-if="!webAdmin?.enabled" class="w-4 h-4" />
+                            <ShieldAlert v-else class="w-4 h-4" />
+                            <span>{{ webAdmin?.enabled ? 'Disable WebAdmin' : 'Enable WebAdmin' }}</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 

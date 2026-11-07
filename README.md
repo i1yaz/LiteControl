@@ -268,6 +268,11 @@ lc-cli credentials
 
 # Test OpenLiteSpeed syntax and perform a safe reload (with auto-rollback)
 lc-cli ols-reload
+
+# OpenLiteSpeed WebAdmin Console Control
+lc-cli server webadmin-status
+lc-cli server webadmin-enable "198.51.100.1,203.0.113.0/24"
+lc-cli server webadmin-disable
 ```
 
 ### User & Quota Management

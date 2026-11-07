@@ -211,6 +211,51 @@ class LcCliService
                     ];
                 }
 
+                if ($sub === 'webadmin-status') {
+                    $mockFile = sys_get_temp_dir() . '/mock_enable_webadmin';
+                    $enabled = file_exists($mockFile);
+                    $ips = $enabled ? trim((string) @file_get_contents($mockFile)) : '';
+                    return [
+                        'status' => 'success',
+                        'message' => 'WebAdmin status retrieved.',
+                        'data' => [
+                            'enabled' => $enabled,
+                            'port' => 7080,
+                            'allowed_ips' => $ips,
+                            'enable_file' => '/usr/local/lsws/admin/conf/enable_webadmin',
+                        ],
+                    ];
+                }
+
+                if ($sub === 'webadmin-enable') {
+                    $ips = $args[1] ?? '';
+                    $mockFile = sys_get_temp_dir() . '/mock_enable_webadmin';
+                    @file_put_contents($mockFile, $ips);
+                    return [
+                        'status' => 'success',
+                        'message' => 'OpenLiteSpeed WebAdmin console enabled on port 7080.',
+                        'data' => [
+                            'enabled' => true,
+                            'port' => 7080,
+                            'allowed_ips' => $ips,
+                        ],
+                    ];
+                }
+
+                if ($sub === 'webadmin-disable') {
+                    $mockFile = sys_get_temp_dir() . '/mock_enable_webadmin';
+                    @unlink($mockFile);
+                    return [
+                        'status' => 'success',
+                        'message' => 'OpenLiteSpeed WebAdmin console disabled.',
+                        'data' => [
+                            'enabled' => false,
+                            'port' => 7080,
+                            'allowed_ips' => '',
+                        ],
+                    ];
+                }
+
                 return ['status' => 'success', 'message' => "Mock server action '$sub' succeeded", 'data' => []];
 
             case 'user':

@@ -48,7 +48,7 @@ Management Subcommands:
   vhost    <add|remove|list|php-switch|ssl>
   php      <list|install|remove|ext-list|ext-enable|ext-disable|ini-get|ini-set|limits>
   tuning   <get|set>
-  server   <stats|services|service-action|processes|kill-process|timezone|hostname|logs>
+  server   <stats|services|service-action|processes|kill-process|timezone|hostname|logs|webadmin-status|webadmin-enable|webadmin-disable>
   db       <list|create-db|delete-db|create-user|delete-user|password>
   ssl      <issue|renew|custom|panel-ssl>
   security <ufw-status|ufw-allow|ufw-delete|panel-port|ssh-port|modsec>

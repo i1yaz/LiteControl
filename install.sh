@@ -174,6 +174,9 @@ main() {
     detect_ubuntu_os
     parse_args "$@"
     init_litecontrol_dirs
+    # Persist chosen panel port so subsequent scripts and helper functions know it
+    printf "%s" "${PANEL_PORT}" > "${LC_CONF_DIR}/port"
+    chmod 644 "${LC_CONF_DIR}/port"
     print_banner
 
     bash "${REPO_DIR}/scripts/ubuntu/core/01-system.sh"

@@ -26,9 +26,68 @@ class ServerController extends Controller
         $res = $this->lcCli->run('server', ['services']);
         $services = ($res['status'] ?? '') === 'success' ? ($res['data'] ?? []) : [];
 
+        $webAdminRes = $this->lcCli->run('server', ['webadmin-status']);
+        $webAdmin = ($webAdminRes['status'] ?? '') === 'success' ? ($webAdminRes['data'] ?? []) : [
+            'enabled' => false,
+            'port' => 7080,
+            'allowed_ips' => '',
+        ];
+
         return Inertia::render('Server/Services', [
             'services' => $services,
+            'webAdmin' => $webAdmin,
         ]);
+    }
+
+    /**
+     * Enable or update OpenLiteSpeed WebAdmin console settings.
+     */
+    public function enableWebAdmin(Request $request)
+    {
+        $validated = $request->validate([
+            'allowed_ips' => 'nullable|string|max:500',
+        ]);
+
+        $ips = trim($validated['allowed_ips'] ?? '');
+        $res = $this->lcCli->run('server', array_filter(['webadmin-enable', $ips]));
+
+        if (($res['status'] ?? '') === 'error') {
+            return redirect()->back()->with('error', $res['message'] ?? 'Failed to enable WebAdmin console.');
+        }
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'webadmin_enabled',
+            'command' => "lc-cli server webadmin-enable" . ($ips ? " {$ips}" : ''),
+            'status' => 'success',
+            'ip_address' => $request->ip(),
+            'details' => json_encode(['allowed_ips' => $ips]),
+        ]);
+
+        return redirect()->back()->with('success', 'OpenLiteSpeed WebAdmin console enabled successfully.');
+    }
+
+    /**
+     * Disable OpenLiteSpeed WebAdmin console.
+     */
+    public function disableWebAdmin(Request $request)
+    {
+        $res = $this->lcCli->run('server', ['webadmin-disable']);
+
+        if (($res['status'] ?? '') === 'error') {
+            return redirect()->back()->with('error', $res['message'] ?? 'Failed to disable WebAdmin console.');
+        }
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'webadmin_disabled',
+            'command' => 'lc-cli server webadmin-disable',
+            'status' => 'success',
+            'ip_address' => $request->ip(),
+            'details' => json_encode([]),
+        ]);
+
+        return redirect()->back()->with('success', 'OpenLiteSpeed WebAdmin console disabled successfully.');
     }
 
     /**

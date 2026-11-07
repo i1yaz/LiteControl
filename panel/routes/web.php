@@ -118,6 +118,8 @@ Route::middleware('auth')->group(function () {
         // Server Management (Admin Only)
         Route::get('/server/services', [ServerController::class, 'services'])->name('server.services');
         Route::post('/server/services/{service}/{action}', [ServerController::class, 'serviceAction'])->name('server.services.action');
+        Route::post('/server/webadmin/enable', [ServerController::class, 'enableWebAdmin'])->name('server.webadmin.enable');
+        Route::post('/server/webadmin/disable', [ServerController::class, 'disableWebAdmin'])->name('server.webadmin.disable');
         Route::get('/server/processes', [ServerController::class, 'processes'])->name('server.processes');
         Route::post('/server/processes/{pid}/kill', [ServerController::class, 'killProcess'])->name('server.processes.kill');
         Route::get('/server/timezone', [ServerController::class, 'timezone'])->name('server.timezone');
