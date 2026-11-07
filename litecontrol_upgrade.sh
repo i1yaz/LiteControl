@@ -93,16 +93,21 @@ parse_args() {
 }
 
 resolve_target_ref() {
-    if [[ -n "${TARGET_REF}" ]]; then
-        return 0
-    fi
-
     # Query latest release tag from GitHub remote, falling back to 'main'
     local latest_tag=""
     if command -v git >/dev/null 2>&1; then
         latest_tag=$(git ls-remote --tags --refs --sort="-v:refname" "${GITHUB_REPO_URL}" 2>/dev/null | head -n 1 | awk -F'/' '{print $NF}' || true)
     fi
     local default_ref="${latest_tag:-main}"
+
+    if [[ "${TARGET_REF:-}" == "latest" || "${TARGET_REF:-}" == "current" ]]; then
+        TARGET_REF="${default_ref}"
+        return 0
+    fi
+
+    if [[ -n "${TARGET_REF:-}" ]]; then
+        return 0
+    fi
 
     if [[ "${NON_INTERACTIVE}" -eq 0 && -t 0 ]]; then
         printf "\n%sLatest available version/branch:%s %s\n" "${C_BOLD}" "${C_RESET}" "${default_ref}"

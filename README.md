@@ -28,6 +28,10 @@ Designed from the ground up with a **lean-core philosophy**, heavy optional serv
   - [One-Line Automated Installer](#one-line-automated-installer)
   - [Manual Git Installation](#manual-git-installation)
   - [Custom Installation Flags](#custom-installation-flags)
+- [Upgrading LiteControl](#-upgrading-litecontrol)
+  - [One-Line Upgrade (Always Latest Version)](#one-line-upgrade-always-latest-version)
+  - [Upgrade to a Specific Version Tag or Branch](#upgrade-to-a-specific-version-tag-or-branch)
+  - [CLI Upgrade (`lc-cli upgrade`)](#cli-upgrade-lc-cli-upgrade)
 - [Post-Installation & Access](#-post-installation--access)
   - [Accessing the Web Panel](#accessing-the-web-panel)
   - [Accessing phpMyAdmin](#accessing-phpmyadmin)
@@ -73,22 +77,27 @@ Designed from the ground up with a **lean-core philosophy**, heavy optional serv
 ## 🏗 Architecture & Security Model
 
 ```mermaid
-flowchart TD
-    Client["User Browser / Client"] -->|"HTTPS :8090 (Panel Listener)"| OLS["OpenLiteSpeed Web Server"]
-    Client -->|"HTTP :80 / HTTPS :443"| VHosts["Customer Virtual Hosts"]
-    
-    subgraph PanelStack["Isolated Panel Environment"]
-        OLS -->|"LSAPI Unix Socket / SuEXEC"| LSAPI["litecontrol_php Pool (User: litecontrol)"]
-        LSAPI --> Laravel["Laravel 13 + Inertia (Vue 3)"]
-        Laravel --> Redis[("Redis (Cache / Session / Queues)")]
-        Laravel --> MariaDB[("MariaDB (litecontrol DB)")]
-        Laravel -->|"Scoped sudo"| CLI["lc-cli Engine (/usr/local/litecontrol/bin/lc-cli)"]
+flowchart LR
+    subgraph Ports["Public Network Ports"]
+        P80["Port 80 / 443 (HTTP/1.1, H2, H3)"]
+        P8090["Port 8090 (HTTPS Panel)"]
     end
-    
-    subgraph SystemExecution["Privileged System Layer (root)"]
-        CLI -->|"Atomic Config & Rollback"| OLSConf["httpd_config.conf & vhconf.conf"]
-        CLI -->|"System Commands"| SystemCtl["systemctl / ufw / acme.sh / useradd"]
+
+    subgraph OLS["Customer Web Stack (OpenLiteSpeed)"]
+        LSHTTPD["lshttpd Daemon"]
+        LSPHP["Per-User SuEXEC lsphp74..84"]
+        P80 --> LSHTTPD --> LSPHP
     end
+
+    subgraph PanelStack["Out-of-Band Panel Stack (Isolated)"]
+        NGINX["litecontrol-panel.service\n(nginx -c /etc/litecontrol/nginx/nginx.conf)"]
+        FPM["litecontrol-php.service\n(php-fpm --fpm-config /etc/litecontrol/php-fpm/php-fpm.conf)"]
+        LARAVEL["Laravel Panel (/usr/local/litecontrol/panel/public)\n+ phpMyAdmin (/phpmyadmin/)"]
+        LCCLI["sudo /usr/local/litecontrol/bin/lc-cli --json"]
+        P8090 --> NGINX -->|"unix:/run/litecontrol-php-fpm.sock"| FPM --> LARAVEL --> LCCLI
+    end
+
+    LCCLI -.->|"Controls & Reloads Safely"| LSHTTPD
 ```
 
 ### Core Stack vs Optional Modules
@@ -198,6 +207,47 @@ sudo bash install.sh --with-ftp --with-dns --with-mail --with-csf --with-modsec 
 
 ---
 
+## 🔄 Upgrading LiteControl
+
+LiteControl features an automated, non-destructive upgrade utility (`litecontrol_upgrade.sh`) inspired by CyberPanel. It creates an automated pre-upgrade backup snapshot, migrates database schemas, rebuilds assets, preserves all user data/websites, and reconciles systemd services.
+
+### One-Line Upgrade (Always Latest Version)
+
+To automatically detect and upgrade to the latest tagged release without manual prompts:
+
+```bash
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/i1yaz/LiteControl/main/litecontrol_upgrade.sh || wget -qO- https://raw.githubusercontent.com/i1yaz/LiteControl/main/litecontrol_upgrade.sh)" -- -y
+```
+
+### Upgrade to a Specific Version Tag or Branch
+
+```bash
+# Upgrade to a specific release tag
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/i1yaz/LiteControl/main/litecontrol_upgrade.sh || wget -qO- https://raw.githubusercontent.com/i1yaz/LiteControl/main/litecontrol_upgrade.sh)" -- --version v1.0.0
+
+# Upgrade to a specific development branch
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/i1yaz/LiteControl/main/litecontrol_upgrade.sh || wget -qO- https://raw.githubusercontent.com/i1yaz/LiteControl/main/litecontrol_upgrade.sh)" -- --branch feat-nginx-panel-server
+```
+
+### CLI Upgrade (`lc-cli upgrade`)
+
+If LiteControl is already running on your server:
+
+```bash
+# Upgrade to latest available tag interactively:
+sudo lc-cli upgrade
+
+# Upgrade to latest automatically:
+sudo lc-cli upgrade latest
+
+# Upgrade to a specific tag or branch:
+sudo lc-cli upgrade v1.0.0
+```
+
+> **Safety Guarantee**: Every upgrade automatically takes a snapshot in `/var/backups/litecontrol/pre-upgrade-<timestamp>/` (backing up `/etc/litecontrol`, database dump, `.env`, and web server configs) prior to applying any code or schema updates.
+
+---
+
 ## 🔑 Post-Installation & Access
 
 Upon successful installation, the terminal prints a completion banner detailing your server endpoints and initial credentials:
@@ -259,6 +309,9 @@ LiteControl includes a command-line engine located at `/usr/local/bin/lc-cli` fo
 ```bash
 # Check version
 lc-cli version
+
+# Upgrade panel to latest release (or specified tag/branch)
+lc-cli upgrade [version|branch]
 
 # Check status of core services and installed modules
 lc-cli status
