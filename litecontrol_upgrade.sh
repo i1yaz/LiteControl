@@ -448,7 +448,7 @@ main() {
     detect_ubuntu_os
     init_litecontrol_dirs
 
-    local old_ver="unknown"
+    old_ver="unknown"
     if [[ -f "${LC_CONF_DIR}/version" ]]; then
         old_ver=$(tr -d ' \t\r\n' < "${LC_CONF_DIR}/version")
     fi
@@ -461,11 +461,8 @@ main() {
     upgrade_laravel_panel
     reconcile_panel_services
 
-    local panel_port
     panel_port=$(get_panel_port)
-    local srv_ip
     srv_ip=$(get_server_ip)
-    local final_ver
     final_ver=$(cat "${LC_CONF_DIR}/version" 2>/dev/null || echo "${TARGET_REF}")
 
     printf "\n%s======================================================================%s\n" "${C_GREEN}${C_BOLD}" "${C_RESET}"
