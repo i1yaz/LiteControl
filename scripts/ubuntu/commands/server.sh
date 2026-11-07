@@ -115,7 +115,7 @@ check_unit_state() {
 }
 
 cmd_server_services() {
-    local services=("openlitespeed" "mariadb" "redis-server" "ufw" "cron" "ssh")
+    local services=("litecontrol-panel" "litecontrol-php" "openlitespeed" "mariadb" "redis-server" "ufw" "cron" "ssh")
 
     # Include installed optional module services dynamically
     is_module_installed "ftp" && services+=("pure-ftpd-mysql")
@@ -143,6 +143,24 @@ cmd_server_service_action() {
     fi
 
     case "${svc}" in
+        litecontrol-panel)
+            if [[ "${action}" == "stop" ]]; then
+                emit_error "Stopping the panel web server from inside LiteControl is prohibited to prevent self-lockout."
+            fi
+            if [[ "${action}" == "reload" || "${action}" == "restart" ]]; then
+                panel_safe_reload || emit_error "Panel web server reload failed."
+            elif [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+                systemctl "${action}" "${PANEL_SYSTEMD_SERVICE}"
+            fi
+            ;;
+        litecontrol-php)
+            if [[ "${action}" == "stop" ]]; then
+                emit_error "Stopping the panel PHP daemon from inside LiteControl is prohibited to prevent self-lockout."
+            fi
+            if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+                systemctl "${action}" "${PANEL_FPM_SYSTEMD_SERVICE}"
+            fi
+            ;;
         openlitespeed|lsws|lshttpd)
             if [[ "${action}" == "reload" || "${action}" == "restart" ]]; then
                 ols_safe_reload || emit_error "OpenLiteSpeed reload failed."

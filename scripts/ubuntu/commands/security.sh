@@ -220,28 +220,37 @@ cmd_panel_port() {
         ufw allow "${new_port}/tcp" comment "LiteControl Panel" >/dev/null 2>&1 || true
     fi
 
-    # 2. Update OLS httpd_config.conf listener panel block
-    if [[ -f "${OLS_CONF}" ]]; then
-        # Replace address *:<old_port> inside listener panel
-        awk -v np="${new_port}" '
-            /listener panel \{/ { in_panel=1 }
-            in_panel && /address[ \t]+\*:[0-9]+/ {
-                sub(/address[ \t]+\*:[0-9]+/, "address *:" np)
-            }
-            in_panel && /^[ \t]*\}/ { in_panel=0 }
-            { print }
-        ' "${OLS_CONF}" > "${OLS_CONF}.tmp" && mv "${OLS_CONF}.tmp" "${OLS_CONF}"
+    # 2. Update Dedicated Panel Nginx configuration
+    if [[ -f "${PANEL_NGINX_CONF}" ]]; then
+        panel_backup_config
+        sed -i -E "s/(listen[[:space:]]+(\[::\]:)?)[0-9]+([[:space:]]+ssl[[:space:]]+http2;)/\1${new_port}\3/g" "${PANEL_NGINX_CONF}"
     fi
 
     # Update runtime state
     mkdir -p "${LC_CONF_DIR}"
     echo "${new_port}" > "${LC_CONF_DIR}/port"
 
-    # 3. Reload OLS safely with auto-rollback
-    if ! ols_safe_reload; then
-        # Rollback port state
+    # Also update APP_URL in Laravel .env if present
+    if [[ -f "${LC_PANEL_DIR}/.env" ]]; then
+        sed -i -E "s|^(APP_URL=https?://[^:]+):[0-9]+|\1:${new_port}|" "${LC_PANEL_DIR}/.env"
+    fi
+
+    # Update WebAdmin notice if present
+    if [[ -f "${LC_CONF_DIR}/webadmin_notice.html" ]]; then
+        sed -i -E "s|:[0-9]+/|:${new_port}/|g" "${LC_CONF_DIR}/webadmin_notice.html" 2>/dev/null || true
+    fi
+    for notice_dir in "${OLS_DIR}/admin/html.open" "${OLS_DIR}/admin/html"; do
+        if [[ -f "${notice_dir}/view/service/webAdminNotice.php" ]]; then
+            sed -i -E "s|:[0-9]+/|:${new_port}/|g" "${notice_dir}/view/service/webAdminNotice.php" 2>/dev/null || true
+        fi
+    done
+
+    # 3. Reload Panel Nginx safely with auto-rollback
+    if ! panel_safe_reload; then
+        # Rollback port state and Nginx config
+        panel_restore_config
         echo "${cur_port}" > "${LC_CONF_DIR}/port"
-        emit_error "Failed to reload OpenLiteSpeed with new port ${new_port}. Rolled back to ${cur_port}."
+        emit_error "Failed to reload Panel Nginx with new port ${new_port}. Rolled back to ${cur_port}."
     fi
 
     # 4. Remove old port from UFW if different from common web ports

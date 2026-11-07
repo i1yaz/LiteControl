@@ -158,7 +158,7 @@ $sapi = PHP_SAPI;
 <body>
     <div class="box">
         <h1>LiteControl Core Stack Active</h1>
-        <p>OpenLiteSpeed is serving the isolated panel listener with dedicated LSAPI pool.</p>
+        <p>Dedicated out-of-band Nginx + PHP-FPM panel daemon is serving the control panel.</p>
         <div class="meta">
             Process User : <?= htmlspecialchars($user) ?><br>
             PHP Version  : <?= htmlspecialchars($phpVersion) ?> (<?= htmlspecialchars($sapi) ?>)<br>
@@ -177,31 +177,65 @@ EOF
     fi
 }
 
-configure_ols_panel_vhost() {
-    local panel_port="$1"
+configure_ols_server() {
     local hostname_val
     hostname_val=$(hostname -f 2>/dev/null || hostname)
 
     ols_backup_config
 
-    mkdir -p "${OLS_VHOSTS_DIR}/Example" "${OLS_VHOSTS_DIR}/litecontrol"
+    mkdir -p "${OLS_VHOSTS_DIR}/Example"
 
     cp "${LC_BASE_DIR}/templates/ols/default_vhconf.conf.tpl" "${OLS_VHOSTS_DIR}/Example/vhconf.conf"
-    cp "${LC_BASE_DIR}/templates/ols/panel_vhconf.conf.tpl" "${OLS_VHOSTS_DIR}/litecontrol/vhconf.conf"
 
     sed -e "s/__SERVER_NAME__/${hostname_val}/g" \
         -e "s/__PHP_VER__/${LC_PHP_VER}/g" \
-        -e "s/__PANEL_PORT__/${panel_port}/g" \
         "${LC_BASE_DIR}/templates/ols/httpd_config.conf.tpl" > "${OLS_CONF}"
 
     chown -R lsadm:lsadm "${OLS_DIR}/conf"
     chown -R nobody:nogroup "${OLS_DIR}/Example" 2>/dev/null || true
 
     if ! ols_safe_reload; then
-        log_error "Failed to reload OpenLiteSpeed with LiteControl configuration."
+        log_error "Failed to reload OpenLiteSpeed with clean customer configuration."
         return 1
     fi
-    log_ok "OpenLiteSpeed panel listener configured on port ${panel_port}."
+    log_ok "OpenLiteSpeed server configured for hosted websites."
+}
+
+configure_panel_server() {
+    local panel_port="$1"
+
+    log_info "Configuring dedicated Nginx & PHP-FPM stack for LiteControl Panel..."
+    mkdir -p "${PANEL_NGINX_DIR}" "${PANEL_FPM_DIR}"
+    mkdir -p /tmp/litecontrol-nginx-body /tmp/litecontrol-nginx-proxy /tmp/litecontrol-nginx-fastcgi /tmp/litecontrol-nginx-uwsgi /tmp/litecontrol-nginx-scgi
+    chown -R "${LC_USER}:${LC_GROUP}" /tmp/litecontrol-nginx-* 2>/dev/null || true
+
+    # Deploy fastcgi_params
+    cp "${LC_BASE_DIR}/templates/panel/fastcgi_params.tpl" "${PANEL_NGINX_DIR}/fastcgi_params"
+
+    # Deploy nginx.conf with panel_port
+    sed "s/__PANEL_PORT__/${panel_port}/g" "${LC_BASE_DIR}/templates/panel/nginx.conf.tpl" > "${PANEL_NGINX_CONF}"
+    panel_backup_config
+
+    # Deploy php-fpm.conf
+    cp "${LC_BASE_DIR}/templates/panel/php-fpm.conf.tpl" "${PANEL_FPM_CONF}"
+
+    # Locate php-fpm binary (e.g. /usr/sbin/php-fpm8.3 or /usr/sbin/php-fpm)
+    local php_fpm_bin
+    php_fpm_bin=$(command -v php-fpm"${LC_PHP_VER:0:1}.${LC_PHP_VER:1:1}" 2>/dev/null || command -v php-fpm 2>/dev/null || echo "/usr/sbin/php-fpm")
+
+    # Install Systemd units
+    sed "s|__PHP_FPM_BIN__|${php_fpm_bin}|g" "${LC_BASE_DIR}/templates/system/litecontrol-php.service" > /etc/systemd/system/litecontrol-php.service
+    cp "${LC_BASE_DIR}/templates/system/litecontrol-panel.service" /etc/systemd/system/litecontrol-panel.service
+
+    systemctl daemon-reload
+    systemctl enable litecontrol-php.service litecontrol-panel.service >/dev/null 2>&1 || true
+    systemctl restart litecontrol-php.service || true
+
+    if ! panel_safe_reload; then
+        log_error "Failed to start LiteControl Panel Nginx service on port ${panel_port}."
+        return 1
+    fi
+    log_ok "LiteControl Out-of-Band Panel server running on port ${panel_port}."
 }
 
 install_motd() {
@@ -223,7 +257,8 @@ main() {
     sync_files_to_install_dir
     configure_sudoers
     bootstrap_panel_app "${panel_port}"
-    configure_ols_panel_vhost "${panel_port}"
+    configure_ols_server
+    configure_panel_server "${panel_port}"
     install_motd
 }
 

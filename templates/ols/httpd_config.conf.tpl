@@ -109,30 +109,6 @@ accessControl  {
   allow                   ALL
 }
 
-# Dedicated Isolated PHP Pool for LiteControl Panel
-extprocessor litecontrol_php {
-  type                    lsapi
-  address                 uds://tmp/lshttpd/litecontrol_php.sock
-  maxConns                20
-  env                     PHP_LSAPI_CHILDREN=20
-  env                     LSAPI_AVOID_FORK=200M
-  initTimeout             60
-  retryTimeout            0
-  persistConn             1
-  respBuffer              0
-  autoStart               2
-  path                    /usr/local/lsws/lsphp__PHP_VER__/bin/lsphp
-  backlog                 100
-  instances               1
-  extUser                 litecontrol
-  extGroup                litecontrol
-  priority                0
-  memSoftLimit            2047M
-  memHardLimit            2047M
-  procSoftLimit           400
-  procHardLimit           500
-}
-
 # Default Server-Wide PHP Pool
 extprocessor lsphp {
   type                    lsapi
@@ -212,15 +188,6 @@ virtualhost Example {
   setUIDMode              0
 }
 
-virtualhost litecontrol {
-  vhRoot                  /usr/local/litecontrol/panel
-  configFile              conf/vhosts/litecontrol/vhconf.conf
-  allowSymbolLink         1
-  enableScript            1
-  restrained              0
-  setUIDMode              2
-}
-
 # BEGIN LITECONTROL VHOSTS
 # END LITECONTROL VHOSTS
 
@@ -249,18 +216,3 @@ listener SSL {
   # BEGIN LITECONTROL MAP_HTTPS
   # END LITECONTROL MAP_HTTPS
 }
-
-listener panel {
-  address                 *:__PANEL_PORT__
-  secure                  1
-  keyFile                 /etc/litecontrol/ssl/privkey.pem
-  certFile                /etc/litecontrol/ssl/fullchain.pem
-  certChain               1
-  sslProtocol             24
-  enableECDHE             1
-  renegProtection         1
-  sslSessionCache         1
-  enableSpdy              15
-  map                     litecontrol *
-}
-

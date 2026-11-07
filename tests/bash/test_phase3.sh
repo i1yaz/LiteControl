@@ -76,6 +76,11 @@ export OLS_CONF="${OLS_DIR}/conf/httpd_config.conf"
 export OLS_VHOSTS_DIR="${OLS_DIR}/conf/vhosts"
 export OLS_CTRL="${OLS_DIR}/bin/lswsctrl"
 export OLS_BIN="${OLS_DIR}/bin/lshttpd"
+export PANEL_NGINX_DIR="${LC_CONF_DIR}/nginx"
+export PANEL_NGINX_CONF="${PANEL_NGINX_DIR}/nginx.conf"
+export PANEL_FPM_DIR="${LC_CONF_DIR}/php-fpm"
+export PANEL_FPM_CONF="${PANEL_FPM_DIR}/php-fpm.conf"
+export NGINX_BIN="${SANDBOX_DIR}/usr/sbin/nginx"
 export SSHD_CONFIG_FILE="${SANDBOX_DIR}/etc/ssh/sshd_config"
 export PUREFTPD_CONF_DIR="${SANDBOX_DIR}/etc/pure-ftpd"
 export PDNS_CONF_DIR="${SANDBOX_DIR}/etc/powerdns"
@@ -115,6 +120,15 @@ vhssl {
   certFile                /etc/litecontrol/ssl/fullchain.pem
 }
 EOF
+
+# Setup mock nginx and panel config
+mkdir -p "${PANEL_NGINX_DIR}" "$(dirname "${NGINX_BIN}")"
+sed "s/__PANEL_PORT__/8090/g" "${REPO_ROOT}/templates/panel/nginx.conf.tpl" > "${PANEL_NGINX_CONF}"
+cat > "${NGINX_BIN}" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+chmod +x "${NGINX_BIN}"
 
 # Setup a test user home
 mkdir -p "${LC_HOME_ROOT}/testuser/testdomain.com/public_html"
@@ -259,7 +273,8 @@ fi
 out=$(bash "${CLI}" --json security panel-port 8099)
 assert_contains "${out}" '"status":"success"' "security panel-port 8099 succeeds"
 assert_eq "8099" "$(cat "${LC_CONF_DIR}/port")" "LC_CONF_DIR/port updated to 8099"
-assert_contains "$(cat "${OLS_CONF}")" "address *:8099" "OLS listener panel address updated to *:8099"
+assert_contains "$(cat "${PANEL_NGINX_CONF}")" "listen 8099 ssl http2;" "PANEL_NGINX_CONF updated to listen 8099"
+assert_contains "$(cat "${PANEL_NGINX_CONF}")" "listen [::]:8099 ssl http2;" "PANEL_NGINX_CONF IPv6 updated to listen 8099"
 
 # Test ssh-port change
 out=$(bash "${CLI}" --json security ssh-port 2222)
