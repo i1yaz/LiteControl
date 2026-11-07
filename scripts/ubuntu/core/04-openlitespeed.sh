@@ -97,6 +97,7 @@ install_openlitespeed() {
 </body>
 </html>
 EOF
+    chown -R nobody:nogroup "${OLS_DIR}/Example" 2>/dev/null || true
 
     systemctl enable "${OLS_SYSTEMD_SERVICE}" >/dev/null 2>&1 || true
     "${OLS_CTRL}" start >/dev/null 2>&1 || true

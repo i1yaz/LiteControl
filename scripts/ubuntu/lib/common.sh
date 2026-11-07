@@ -215,7 +215,7 @@ init_litecontrol_dirs() {
 
 generate_password() {
     local length="${1:-20}"
-    tr -dc 'A-Za-z0-9' </dev/urandom | head -c "${length}"
+    head -c 2048 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9' | head -c "${length}" || true
 }
 
 save_secret() {

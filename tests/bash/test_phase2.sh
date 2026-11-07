@@ -232,6 +232,7 @@ assert_contains "$(cat "${OLS_CONF}")" "serverName                panel.litecont
 srv_procs=$(bash "${CLI}" --json server processes)
 assert_contains "${srv_procs}" '"command":"lshttpd"' "server processes returns process list"
 
+echo "2026-11-06 [WARN] Test OLS log line" >> "${OLS_DIR}/logs/error.log"
 srv_logs=$(bash "${CLI}" --json server logs ols-error 10)
 assert_contains "${srv_logs}" 'Test OLS log line' "server logs ols-error tails log content"
 

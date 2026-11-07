@@ -48,12 +48,12 @@ cmd_server_stats() {
 
     local ram_total=2048 ram_used=512 ram_pct="25.0"
     if command -v free >/dev/null 2>&1; then
-        read -r ram_total ram_used ram_pct < <(free -m | awk 'NR==2{t=$2; u=$3; p=(t>0)?(u*100)/t:0; printf "%d %d %.1f", t, u, p}')
+        read -r ram_total ram_used ram_pct < <(free -m | awk 'NR==2{t=$2; u=$3; p=(t>0)?(u*100)/t:0; printf "%d %d %.1f\n", t, u, p}') || true
     fi
 
     local disk_total=40 disk_used=8 disk_pct="20"
     if command -v df >/dev/null 2>&1; then
-        read -r disk_total disk_used disk_pct < <(df -BG / 2>/dev/null | awk 'NR==2{gsub(/G/,"",$2); gsub(/G/,"",$3); gsub(/%/,"",$5); printf "%d %d %d", $2, $3, $5}') || true
+        read -r disk_total disk_used disk_pct < <(df -BG / 2>/dev/null | awk 'NR==2{gsub(/G/,"",$2); gsub(/G/,"",$3); gsub(/%/,"",$5); printf "%d %d %d\n", $2, $3, $5}') || true
     fi
 
     local load_str="0.05, 0.03, 0.01"

@@ -86,6 +86,10 @@ bootstrap_panel_app() {
 EOF
     fi
 
+    # Ensure panel user has writable cache and config directory
+    mkdir -p "${LC_BASE_DIR}/.config" "${LC_BASE_DIR}/.cache"
+    chown -R "${LC_USER}:${LC_GROUP}" "${LC_BASE_DIR}/.config" "${LC_BASE_DIR}/.cache"
+
     # If full Laravel app is present (has artisan), configure .env & run migrations
     if [[ -f "${LC_PANEL_DIR}/artisan" ]]; then
         log_info "Laravel panel detected in ${LC_PANEL_DIR}. Running setup..."
@@ -96,10 +100,18 @@ EOF
 
         if [[ ! -f "${LC_PANEL_DIR}/.env" && -f "${LC_PANEL_DIR}/.env.example" ]]; then
             cp "${LC_PANEL_DIR}/.env.example" "${LC_PANEL_DIR}/.env"
-            sed -i "s|^APP_URL=.*|APP_URL=https://${srv_ip}:${panel_port}|" "${LC_PANEL_DIR}/.env"
-            sed -i "s|^DB_DATABASE=.*|DB_DATABASE=litecontrol|" "${LC_PANEL_DIR}/.env"
-            sed -i "s|^DB_USERNAME=.*|DB_USERNAME=litecontrol|" "${LC_PANEL_DIR}/.env"
-            sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=${db_pass}|" "${LC_PANEL_DIR}/.env"
+        fi
+
+        if [[ -f "${LC_PANEL_DIR}/.env" ]]; then
+            sed -E -i "s@^APP_URL=.*@APP_URL=https://${srv_ip}:${panel_port}@" "${LC_PANEL_DIR}/.env"
+            sed -E -i "s@^LC_DEV_MOCK=.*@LC_DEV_MOCK=false@" "${LC_PANEL_DIR}/.env"
+            sed -E -i "s@^DB_CONNECTION=.*@DB_CONNECTION=mysql@" "${LC_PANEL_DIR}/.env"
+            sed -E -i "s@^#?[[:space:]]*DB_HOST=.*@DB_HOST=127.0.0.1@" "${LC_PANEL_DIR}/.env"
+            sed -E -i "s@^#?[[:space:]]*DB_PORT=.*@DB_PORT=3306@" "${LC_PANEL_DIR}/.env"
+            sed -E -i "s@^#?[[:space:]]*DB_DATABASE=.*@DB_DATABASE=litecontrol@" "${LC_PANEL_DIR}/.env"
+            sed -E -i "s@^#?[[:space:]]*DB_USERNAME=.*@DB_USERNAME=litecontrol@" "${LC_PANEL_DIR}/.env"
+            sed -E -i "s@^#?[[:space:]]*DB_PASSWORD=.*@DB_PASSWORD=${db_pass}@" "${LC_PANEL_DIR}/.env"
+            sed -E -i "s@^QUEUE_CONNECTION=.*@QUEUE_CONNECTION=redis@" "${LC_PANEL_DIR}/.env"
         fi
 
         chown -R "${LC_USER}:${LC_GROUP}" "${LC_PANEL_DIR}"
@@ -159,7 +171,10 @@ EOF
     fi
 
     chown -R "${LC_USER}:${LC_GROUP}" "${LC_PANEL_DIR}"
-    chmod -R 750 "${LC_PANEL_DIR}"
+    chmod -R 755 "${LC_PANEL_DIR}"
+    if [[ -d "${LC_PANEL_DIR}/storage" ]]; then
+        chmod -R 775 "${LC_PANEL_DIR}/storage" "${LC_PANEL_DIR}/bootstrap/cache"
+    fi
 }
 
 configure_ols_panel_vhost() {
@@ -180,6 +195,7 @@ configure_ols_panel_vhost() {
         "${LC_BASE_DIR}/templates/ols/httpd_config.conf.tpl" > "${OLS_CONF}"
 
     chown -R lsadm:lsadm "${OLS_DIR}/conf"
+    chown -R nobody:nogroup "${OLS_DIR}/Example" 2>/dev/null || true
 
     if ! ols_safe_reload; then
         log_error "Failed to reload OpenLiteSpeed with LiteControl configuration."
