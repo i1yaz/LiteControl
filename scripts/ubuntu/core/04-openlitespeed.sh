@@ -37,6 +37,30 @@ install_openlitespeed() {
         log_ok "OpenLiteSpeed WebAdmin credentials updated."
     fi
 
+    # Install custom LiteControl WebAdmin disabled notice template
+    local webadmin_notice_tpl="${SCRIPT_DIR}/../../../templates/ols/webadmin_notice.html.tpl"
+    if [[ ! -f "${webadmin_notice_tpl}" ]]; then
+        webadmin_notice_tpl="${LC_BASE_DIR}/templates/ols/webadmin_notice.html.tpl"
+    fi
+    mkdir -p "${LC_CONF_DIR}"
+    if [[ -f "${webadmin_notice_tpl}" ]]; then
+        local srv_ip panel_port
+        srv_ip=$(get_server_ip)
+        panel_port=$(get_panel_port)
+        sed -e "s/__SERVER_IP__/${srv_ip}/g" \
+            -e "s/__PANEL_PORT__/${panel_port}/g" \
+            "${webadmin_notice_tpl}" > "${LC_CONF_DIR}/webadmin_notice.html"
+        chmod 644 "${LC_CONF_DIR}/webadmin_notice.html"
+    fi
+
+    # Deploy custom notice into OLS admin html if directory exists
+    for admin_html in "${OLS_DIR}/admin/html.open" "${OLS_DIR}/admin/html"; do
+        if [[ -d "${admin_html}" && -f "${LC_CONF_DIR}/webadmin_notice.html" ]]; then
+            cp -f "${LC_CONF_DIR}/webadmin_notice.html" "${admin_html}/disabled.html" 2>/dev/null || true
+            cp -f "${LC_CONF_DIR}/webadmin_notice.html" "${admin_html}/notice.html" 2>/dev/null || true
+        fi
+    done
+
     # Remove insecure default sample scripts in Example/html
     local example_html="${OLS_DIR}/Example/html"
     if [[ -d "${example_html}" ]]; then

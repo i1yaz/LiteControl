@@ -296,6 +296,155 @@ cmd_server_logs() {
     emit_success "Log entries retrieved." "${data_json}"
 }
 
+cmd_server_webadmin_status() {
+    local enable_file="${OLS_DIR}/admin/conf/enable_webadmin"
+    local admin_port=7080
+    local is_enabled=0
+    local allowed_ips=""
+
+    # Check if enable_webadmin file exists
+    if [[ -f "${enable_file}" ]]; then
+        is_enabled=1
+        allowed_ips=$(grep -v '^[[:space:]]*#' "${enable_file}" 2>/dev/null | grep -v '^[[:space:]]*$' | tr '\n' ',' | sed 's/,$//' || true)
+    fi
+
+    # Read custom admin port from admin_config.conf if present
+    local admin_conf="${OLS_DIR}/admin/conf/admin_config.conf"
+    if [[ -f "${admin_conf}" ]]; then
+        local detected_port
+        detected_port=$(grep -E '^[[:space:]]*address[[:space:]]+' "${admin_conf}" | awk '{print $2}' | awk -F: '{print $NF}' | head -n1 || true)
+        if [[ -n "${detected_port}" && "${detected_port}" =~ ^[0-9]+$ ]]; then
+            admin_port="${detected_port}"
+        fi
+    fi
+
+    local data_json
+    data_json=$(printf '{"enabled":%s,"port":%d,"allowed_ips":"%s","enable_file":"%s"}' \
+        "$([[ "${is_enabled}" -eq 1 ]] && echo "true" || echo "false")" \
+        "${admin_port}" \
+        "$(json_escape "${allowed_ips}")" \
+        "$(json_escape "${enable_file}")")
+
+    emit_success "WebAdmin status retrieved." "${data_json}"
+}
+
+cmd_server_webadmin_enable() {
+    local raw_ips="${1:-}"
+    local enable_file="${OLS_DIR}/admin/conf/enable_webadmin"
+    local admin_port=7080
+
+    mkdir -p "$(dirname "${enable_file}")"
+
+    # Detect admin port from admin_config.conf if available
+    local admin_conf="${OLS_DIR}/admin/conf/admin_config.conf"
+    if [[ -f "${admin_conf}" ]]; then
+        local detected_port
+        detected_port=$(grep -E '^[[:space:]]*address[[:space:]]+' "${admin_conf}" | awk '{print $2}' | awk -F: '{print $NF}' | head -n1 || true)
+        if [[ -n "${detected_port}" && "${detected_port}" =~ ^[0-9]+$ ]]; then
+            admin_port="${detected_port}"
+        fi
+    fi
+
+    if [[ -n "${raw_ips}" ]]; then
+        # Format comma or space separated IPs into lines
+        echo "${raw_ips}" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' > "${enable_file}"
+    else
+        # Empty file allows all IPs per OLS specification
+        : > "${enable_file}"
+    fi
+
+    chmod 644 "${enable_file}" 2>/dev/null || true
+    chown lsadm:lsadm "${enable_file}" 2>/dev/null || true
+
+    # Synchronize firewall rules (UFW and CSF if installed)
+    if [[ "${LC_TEST_MODE:-0}" == "1" ]]; then
+        local mock_rules="${LC_CONF_DIR}/mock_ufw_rules.conf"
+        mkdir -p "$(dirname "${mock_rules}")"
+        echo "${admin_port}/tcp|ALLOW IN|${raw_ips:-Anywhere}" >> "${mock_rules}"
+    else
+        if command -v ufw >/dev/null 2>&1; then
+            if [[ -n "${raw_ips}" ]]; then
+                IFS=',' read -ra ADDR_ARRAY <<< "${raw_ips}"
+                for ip in "${ADDR_ARRAY[@]}"; do
+                    ip_trimmed=$(echo "${ip}" | tr -d '[:space:]')
+                    if [[ -n "${ip_trimmed}" ]]; then
+                        ufw allow from "${ip_trimmed}" to any port "${admin_port}" proto tcp comment "OLS WebAdmin" >/dev/null 2>&1 || true
+                    fi
+                done
+            else
+                ufw allow "${admin_port}/tcp" comment "OLS WebAdmin" >/dev/null 2>&1 || true
+            fi
+            ufw reload >/dev/null 2>&1 || true
+        fi
+
+        # Sync CSF if installed
+        if [[ -f /etc/csf/csf.conf && -x /usr/sbin/csf ]]; then
+            local tcp_in
+            tcp_in=$(grep '^TCP_IN =' /etc/csf/csf.conf | tr -d '"' | awk -F= '{print $2}' | tr -d ' ')
+            if [[ ",${tcp_in}," != *",${admin_port},"* ]]; then
+                sed -i "s/^TCP_IN = .*/TCP_IN = \"${tcp_in},${admin_port}\"/" /etc/csf/csf.conf
+                csf -r >/dev/null 2>&1 || true
+            fi
+        fi
+    fi
+
+    # Reload OLS safely
+    ols_safe_reload || true
+
+    local parsed_ips
+    parsed_ips=$(grep -v '^[[:space:]]*#' "${enable_file}" 2>/dev/null | grep -v '^[[:space:]]*$' | tr '\n' ',' | sed 's/,$//' || true)
+
+    local data_json
+    data_json=$(printf '{"enabled":true,"port":%d,"allowed_ips":"%s"}' \
+        "${admin_port}" \
+        "$(json_escape "${parsed_ips}")")
+
+    emit_success "OpenLiteSpeed WebAdmin console enabled on port ${admin_port}." "${data_json}"
+}
+
+cmd_server_webadmin_disable() {
+    local enable_file="${OLS_DIR}/admin/conf/enable_webadmin"
+    local admin_port=7080
+
+    # Detect admin port
+    local admin_conf="${OLS_DIR}/admin/conf/admin_config.conf"
+    if [[ -f "${admin_conf}" ]]; then
+        local detected_port
+        detected_port=$(grep -E '^[[:space:]]*address[[:space:]]+' "${admin_conf}" | awk '{print $2}' | awk -F: '{print $NF}' | head -n1 || true)
+        if [[ -n "${detected_port}" && "${detected_port}" =~ ^[0-9]+$ ]]; then
+            admin_port="${detected_port}"
+        fi
+    fi
+
+    rm -f "${enable_file}"
+
+    # Remove firewall rules
+    if [[ "${LC_TEST_MODE:-0}" == "1" ]]; then
+        local mock_rules="${LC_CONF_DIR}/mock_ufw_rules.conf"
+        if [[ -f "${mock_rules}" ]]; then
+            sed -i "/^${admin_port}\/tcp|/d" "${mock_rules}" 2>/dev/null || true
+        fi
+    else
+        if command -v ufw >/dev/null 2>&1; then
+            ufw delete allow "${admin_port}/tcp" >/dev/null 2>&1 || true
+            ufw reload >/dev/null 2>&1 || true
+        fi
+
+        if [[ -f /etc/csf/csf.conf && -x /usr/sbin/csf ]]; then
+            sed -i "s/,${admin_port}//g; s/${admin_port},//g" /etc/csf/csf.conf
+            csf -r >/dev/null 2>&1 || true
+        fi
+    fi
+
+    # Reload OLS safely
+    ols_safe_reload || true
+
+    local data_json
+    data_json=$(printf '{"enabled":false,"port":%d,"allowed_ips":""}' "${admin_port}")
+
+    emit_success "OpenLiteSpeed WebAdmin console disabled." "${data_json}"
+}
+
 SUBCOMMAND="${1:-stats}"
 shift || true
 
@@ -324,8 +473,17 @@ case "${SUBCOMMAND}" in
     logs)
         cmd_server_logs "$@"
         ;;
+    webadmin-status)
+        cmd_server_webadmin_status
+        ;;
+    webadmin-enable)
+        cmd_server_webadmin_enable "$@"
+        ;;
+    webadmin-disable)
+        cmd_server_webadmin_disable
+        ;;
     *)
-        emit_error "Usage: lc-cli server <stats|services|service-action|timezone|hostname|processes|kill-process|logs> [args...]"
+        emit_error "Usage: lc-cli server <stats|services|service-action|timezone|hostname|processes|kill-process|logs|webadmin-status|webadmin-enable|webadmin-disable> [args...]"
         ;;
 esac
 
