@@ -17,9 +17,22 @@ sync_files_to_install_dir() {
         rsync -a "${REPO_ROOT}/bin/" "${LC_BASE_DIR}/bin/"
         rsync -a "${REPO_ROOT}/scripts/" "${LC_BASE_DIR}/scripts/"
         rsync -a "${REPO_ROOT}/templates/" "${LC_BASE_DIR}/templates/"
+        if [[ -f "${REPO_ROOT}/VERSION" ]]; then
+            cp "${REPO_ROOT}/VERSION" "${LC_BASE_DIR}/VERSION"
+        fi
+        if [[ -f "${REPO_ROOT}/litecontrol_upgrade.sh" ]]; then
+            cp "${REPO_ROOT}/litecontrol_upgrade.sh" "${LC_BASE_DIR}/litecontrol_upgrade.sh"
+            chmod 750 "${LC_BASE_DIR}/litecontrol_upgrade.sh"
+        fi
         if [[ -d "${REPO_ROOT}/panel" ]]; then
             rsync -a "${REPO_ROOT}/panel/" "${LC_PANEL_DIR}/"
         fi
+    fi
+
+    if [[ -f "${LC_BASE_DIR}/VERSION" ]]; then
+        sed -i 's/\r$//' "${LC_BASE_DIR}/VERSION"
+        tr -d ' \t\r\n' < "${LC_BASE_DIR}/VERSION" > "${LC_CONF_DIR}/version"
+        chmod 644 "${LC_CONF_DIR}/version"
     fi
 
     # Strip any CRLF line endings from scripts and binaries

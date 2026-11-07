@@ -7,8 +7,6 @@
 
 set -euo pipefail
 
-LC_VERSION="1.0.0"
-
 # Resolve real path even when called via /usr/local/bin/lc-cli symlink
 SOURCE="${BASH_SOURCE[0]}"
 while [[ -h "${SOURCE}" ]]; do
@@ -18,6 +16,13 @@ while [[ -h "${SOURCE}" ]]; do
 done
 BIN_DIR="$(cd -P "$(dirname "${SOURCE}")" && pwd)"
 BASE_DIR="$(cd "${BIN_DIR}/.." && pwd)"
+
+LC_VERSION="1.0.0"
+if [[ -s "${BASE_DIR}/VERSION" ]]; then
+    LC_VERSION=$(tr -d ' \t\r\n' < "${BASE_DIR}/VERSION")
+elif [[ -s "/etc/litecontrol/version" ]]; then
+    LC_VERSION=$(tr -d ' \t\r\n' < "/etc/litecontrol/version")
+fi
 
 # shellcheck source=../scripts/ubuntu/lib/common.sh
 source "${BASE_DIR}/scripts/ubuntu/lib/common.sh"
@@ -42,6 +47,7 @@ Core Commands:
   status                           Check core services and installed modules status
   credentials                      Show stored panel, MariaDB, and OLS admin credentials
   ols-reload                       Test OpenLiteSpeed config and reload with auto-rollback
+  upgrade [version|branch]         Upgrade LiteControl to the latest or specified Git tag/branch
 
 Management Subcommands:
   user     <add|suspend|unsuspend|delete|list|quota>
@@ -182,6 +188,15 @@ case "${COMMAND}" in
             if [[ "${LC_JSON_OUTPUT}" -eq 1 ]]; then
                 json_response "error" "OpenLiteSpeed configuration test failed; rolled back to last known good config."
             fi
+            exit 1
+        fi
+        ;;
+    upgrade)
+        require_root
+        if [[ -f "${BASE_DIR}/litecontrol_upgrade.sh" ]]; then
+            bash "${BASE_DIR}/litecontrol_upgrade.sh" "$@"
+        else
+            log_error "Upgrade script not found at ${BASE_DIR}/litecontrol_upgrade.sh"
             exit 1
         fi
         ;;
