@@ -16,7 +16,27 @@
 
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve repository root: support running via git clone or curl/wget pipe
+GITHUB_REPO_URL="https://github.com/i1yaz/LiteControl.git"
+INSTALL_SRC_DIR="/usr/local/src/litecontrol"
+
+if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+    REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+else
+    # Executed via curl/wget pipe or bash -c string
+    echo "==> Downloading LiteControl installer and scripts..."
+    if ! command -v git >/dev/null 2>&1; then
+        apt-get update -qq && apt-get install -y -qq git curl
+    fi
+    mkdir -p "$(dirname "${INSTALL_SRC_DIR}")"
+    if [[ -d "${INSTALL_SRC_DIR}/.git" ]]; then
+        git -C "${INSTALL_SRC_DIR}" pull --quiet || true
+    else
+        rm -rf "${INSTALL_SRC_DIR}"
+        git clone --depth 1 "${GITHUB_REPO_URL}" "${INSTALL_SRC_DIR}"
+    fi
+    REPO_DIR="${INSTALL_SRC_DIR}"
+fi
 
 # Strip CRLF in case repository was cloned/copied from Windows with CRLF
 find "${REPO_DIR}/scripts" "${REPO_DIR}/bin" "${REPO_DIR}/templates" -type f -exec sed -i 's/\r$//' {} + 2>/dev/null || true

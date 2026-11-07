@@ -134,7 +134,7 @@ flowchart TD
 Connect to your Ubuntu server via SSH as `root` (or run `sudo -i`), then execute:
 
 ```bash
-sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/i1yaz/LiteControl/master/install.sh || wget -qO- https://raw.githubusercontent.com/i1yaz/LiteControl/master/install.sh)"
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/i1yaz/LiteControl/main/install.sh || wget -qO- https://raw.githubusercontent.com/i1yaz/LiteControl/main/install.sh)"
 ```
 
 ---
