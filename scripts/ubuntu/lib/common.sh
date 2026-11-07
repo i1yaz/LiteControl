@@ -250,6 +250,14 @@ get_or_create_secret() {
     fi
 }
 
+get_panel_port() {
+    local port="${LC_DEFAULT_PORT:-8090}"
+    if [[ -s "${LC_CONF_DIR}/port" ]]; then
+        port=$(tr -d ' \t\r\n' < "${LC_CONF_DIR}/port")
+    fi
+    printf "%s" "${port}"
+}
+
 get_server_ip() {
     local ip
     ip=$(hostname -I 2>/dev/null | awk '{print $1}')
