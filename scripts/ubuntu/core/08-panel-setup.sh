@@ -35,8 +35,8 @@ sync_files_to_install_dir() {
         chmod 644 "${LC_CONF_DIR}/version"
     fi
 
-    # Strip any CRLF line endings from scripts and binaries
-    find "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" -type f -exec sed -i 's/\r$//' {} + 2>/dev/null || true
+    # Strip any CRLF line endings from scripts and binaries (excluding .phar)
+    find "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" -type f ! -name "*.phar" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
 
     chown -R root:root "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" "${LC_BASE_DIR}/templates"
     chmod 750 "${LC_BASE_DIR}/bin/lc-cli"

@@ -153,9 +153,9 @@ fetch_target_source() {
         exit 1
     fi
 
-    # Strip CRLF line endings from all Linux scripts and templates
+    # Strip CRLF line endings from all Linux scripts and templates (excluding binaries like .phar)
     find "${UPGRADE_SRC_DIR}/scripts" "${UPGRADE_SRC_DIR}/bin" "${UPGRADE_SRC_DIR}/templates" \
-        -type f -exec sed -i 's/\r$//' {} + 2>/dev/null || true
+        -type f ! -name "*.phar" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
     sed -i 's/\r$//' "${UPGRADE_SRC_DIR}/install.sh" "${UPGRADE_SRC_DIR}/litecontrol_upgrade.sh" 2>/dev/null || true
 }
 
@@ -242,7 +242,7 @@ sync_core_files_and_sudoers() {
     chmod 750 "${LC_BASE_DIR}/litecontrol_upgrade.sh"
 
     find "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" "${LC_BASE_DIR}/templates" \
-        -type f -exec sed -i 's/\r$//' {} + 2>/dev/null || true
+        -type f ! -name "*.phar" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
 
     chown -R root:root "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" "${LC_BASE_DIR}/templates"
     chmod 750 "${LC_BASE_DIR}/bin/lc-cli"
