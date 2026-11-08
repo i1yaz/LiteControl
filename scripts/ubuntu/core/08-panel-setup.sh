@@ -116,6 +116,8 @@ EOF
         fi
 
         if [[ -f "${LC_PANEL_DIR}/.env" ]]; then
+            sed -E -i "s@^APP_ENV=.*@APP_ENV=production@" "${LC_PANEL_DIR}/.env"
+            sed -E -i "s@^APP_DEBUG=.*@APP_DEBUG=false@" "${LC_PANEL_DIR}/.env"
             sed -E -i "s@^APP_URL=.*@APP_URL=https://${srv_ip}:${panel_port}@" "${LC_PANEL_DIR}/.env"
             sed -E -i "s@^LC_DEV_MOCK=.*@LC_DEV_MOCK=false@" "${LC_PANEL_DIR}/.env"
             sed -E -i "s@^DB_CONNECTION=.*@DB_CONNECTION=mysql@" "${LC_PANEL_DIR}/.env"
