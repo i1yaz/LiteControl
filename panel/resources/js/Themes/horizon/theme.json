@@ -1,10 +1,10 @@
 {
   "id": "horizon",
   "name": "Horizon Modern",
-  "description": "Clean enterprise layout with horizontal top navigation, Slate/Sky styling, and refined ergonomics.",
+  "description": "Clean enterprise layout with vertical sidebar navigation, Slate/Sky styling, and refined ergonomics.",
   "version": "1.0.0",
   "author": "LiteControl",
-  "layout_type": "horizontal-top",
+  "layout_type": "vertical-sidebar",
   "color_scheme": "dark",
   "progress_color": "#0284c7",
   "fonts": [

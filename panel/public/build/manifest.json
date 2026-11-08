@@ -7,8 +7,8 @@
       "_runtime-dom.esm-bundler-CMeWlPEc.js"
     ]
   },
-  "_UiCard-D4m0MDgF.js": {
-    "file": "assets/UiCard-D4m0MDgF.js",
+  "_UiCard-DdkEbel0.js": {
+    "file": "assets/UiCard-DdkEbel0.js",
     "name": "UiCard",
     "imports": [
       "_runtime-core.esm-bundler-CoV3YJHl.js",
@@ -331,7 +331,7 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-SSEIvcd6.css",
+    "file": "assets/app-DkG_V9NQ.css",
     "name": "app",
     "names": [
       "app.css"
@@ -340,7 +340,7 @@
     "isEntry": true
   },
   "resources/js/Pages/Auth/Login.vue": {
-    "file": "assets/Login-pFx7ec5k.js",
+    "file": "assets/Login-BwmrkH7D.js",
     "name": "Login",
     "src": "resources/js/Pages/Auth/Login.vue",
     "isDynamicEntry": true,
@@ -350,7 +350,7 @@
       "_dist-Du9yZf7-.js",
       "_shield-check-DkY5A489.js",
       "resources/js/app.js",
-      "_UiCard-D4m0MDgF.js"
+      "_UiCard-DdkEbel0.js"
     ]
   },
   "resources/js/Pages/Backups/Index.vue": {
@@ -414,7 +414,7 @@
     ]
   },
   "resources/js/Pages/Configuration/Settings.vue": {
-    "file": "assets/Settings-CEPd_vUd.js",
+    "file": "assets/Settings-XdX9DiEB.js",
     "name": "Settings",
     "src": "resources/js/Pages/Configuration/Settings.vue",
     "isDynamicEntry": true,
@@ -431,7 +431,7 @@
     ]
   },
   "resources/js/Pages/Dashboard.vue": {
-    "file": "assets/Dashboard-ip7wIM4W.js",
+    "file": "assets/Dashboard-CcV-IZ69.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Dashboard.vue",
     "isDynamicEntry": true,
@@ -439,7 +439,7 @@
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "_dist-Du9yZf7-.js",
       "_useDashboardMetrics-CguAxK4z.js",
-      "_UiCard-D4m0MDgF.js",
+      "_UiCard-DdkEbel0.js",
       "resources/js/app.js",
       "_globe-BRPkwY9L.js",
       "_database-B3YLvUBK.js",
@@ -1032,7 +1032,7 @@
     ]
   },
   "resources/js/Themes/avionics/index.js": {
-    "file": "assets/avionics-CGa6WfF0.js",
+    "file": "assets/avionics-ruNGaEdi.js",
     "name": "avionics",
     "src": "resources/js/Themes/avionics/index.js",
     "isDynamicEntry": true,
@@ -1205,7 +1205,7 @@
     ]
   },
   "resources/js/Themes/horizon/index.js": {
-    "file": "assets/horizon-D3wXKq4u.js",
+    "file": "assets/horizon-BPpqNZ1E.js",
     "name": "horizon",
     "src": "resources/js/Themes/horizon/index.js",
     "isDynamicEntry": true,
@@ -1251,7 +1251,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-gulyMi2W.js",
+    "file": "assets/app-FEXLkpSJ.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -1306,7 +1306,7 @@
       "resources/js/Themes/horizon/Pages/Dashboard.vue"
     ],
     "css": [
-      "assets/app-SSEIvcd6.css"
+      "assets/app-DkG_V9NQ.css"
     ]
   }
 }
