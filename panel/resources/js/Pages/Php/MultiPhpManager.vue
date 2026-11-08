@@ -1,7 +1,6 @@
 <script setup>
 import { ref, shallowRef, computed } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { FileCode, Globe, CheckSquare, Square, RefreshCw } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -49,8 +48,7 @@ const switchSingle = (domainId, ver) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="MultiPHP Manager" />
+            <Head title="MultiPHP Manager" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -164,6 +162,5 @@ const switchSingle = (domainId, ver) => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

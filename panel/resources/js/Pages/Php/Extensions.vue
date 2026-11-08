@@ -1,7 +1,6 @@
 <script setup>
 import { computed } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { FileCode, CheckCircle2, Circle, AlertCircle, RefreshCw } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -32,8 +31,7 @@ const toggleExt = (ext, currentActive) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="PHP Extensions" />
+            <Head title="PHP Extensions" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -124,6 +122,5 @@ const toggleExt = (ext, currentActive) => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

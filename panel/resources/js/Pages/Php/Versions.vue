@@ -1,6 +1,5 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { FileCode, Download, Trash2, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -25,8 +24,7 @@ const removeVer = (ver) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="PHP Version Manager" />
+            <Head title="PHP Version Manager" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -120,6 +118,5 @@ const removeVer = (ver) => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

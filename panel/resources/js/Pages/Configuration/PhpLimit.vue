@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { Sliders, Save, FileCode, CheckCircle2 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -31,8 +30,7 @@ const submit = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="PHP Limit" />
+            <Head title="PHP Limit" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -146,6 +144,5 @@ const submit = () => {
                 </div>
             </form>
         </div>
-    </PanelLayout>
 </template>
 

@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { ShieldCheck, Lock, Save, Key, Globe } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -25,8 +24,7 @@ const submit = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Panel SSL" />
+            <Head title="Panel SSL" />
 
         <div class="max-w-3xl mx-auto space-y-6">
             <!-- Header -->
@@ -120,6 +118,5 @@ const submit = () => {
                 </div>
             </form>
         </div>
-    </PanelLayout>
 </template>
 

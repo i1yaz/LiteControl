@@ -1,6 +1,5 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { ShieldCheck, ShieldAlert, Download, CheckCircle2, Zap } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -14,8 +13,7 @@ const installModSec = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="ModSecurity WAF" />
+            <Head title="ModSecurity WAF" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -72,6 +70,5 @@ const installModSec = () => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

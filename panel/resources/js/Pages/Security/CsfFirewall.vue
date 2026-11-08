@@ -1,6 +1,5 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { Shield, Download, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -14,8 +13,7 @@ const installCsf = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="CSF Firewall" />
+            <Head title="CSF Firewall" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -72,6 +70,5 @@ const installCsf = () => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

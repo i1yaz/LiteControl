@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\ThemeManager;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -30,6 +31,9 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $themeManager = app(ThemeManager::class);
+        $activeTheme = $themeManager->resolve($request);
+        $availableThemes = array_values($themeManager->available());
 
         return [
             ...parent::share($request),
@@ -42,6 +46,7 @@ class HandleInertiaRequests extends Middleware
                     'role' => $user->role ?? 'user',
                     'status' => $user->status ?? 'active',
                     'avatar' => $user->avatar,
+                    'theme' => $user->theme,
                 ] : null,
                 'is_impersonating' => (bool) $request->session()->has('impersonator_id'),
             ],
@@ -54,6 +59,8 @@ class HandleInertiaRequests extends Middleware
                 'name' => config('app.name', 'LiteControl'),
                 'version' => '1.0.0',
                 'is_mock_mode' => (bool) env('LC_DEV_MOCK', true),
+                'theme' => $activeTheme,
+                'available_themes' => $availableThemes,
             ],
         ];
     }

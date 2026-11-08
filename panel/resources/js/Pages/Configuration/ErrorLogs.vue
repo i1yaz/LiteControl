@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { FileText, RefreshCw, Terminal, Filter } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -27,8 +26,7 @@ const refresh = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Error Logs" />
+            <Head title="Error Logs" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -118,6 +116,5 @@ const refresh = () => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

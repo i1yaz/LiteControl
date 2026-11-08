@@ -1,6 +1,5 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { Terminal, Save, AlertTriangle, ShieldCheck } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -19,8 +18,7 @@ const submit = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="SSH Port" />
+            <Head title="SSH Port" />
 
         <div class="max-w-2xl mx-auto space-y-6">
             <!-- Header -->
@@ -85,6 +83,5 @@ const submit = () => {
                 </div>
             </form>
         </div>
-    </PanelLayout>
 </template>
 

@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import { Globe, Plus, ShieldCheck, ShieldAlert, Folder, Trash2, X } from 'lucide-vue-next';
 
@@ -48,10 +47,9 @@ const changePhp = (domainId, newVer) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Virtual Host Routing - LiteControl" />
+    <Head title="Virtual Host Routing - LiteControl" />
 
-        <div class="space-y-6">
+    <div class="space-y-6">
             <!-- Asymmetrical Spec Header -->
             <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#1b222d]">
                 <div>
@@ -242,5 +240,4 @@ const changePhp = (domainId, newVer) => {
                 </div>
             </Modal>
         </div>
-    </PanelLayout>
 </template>

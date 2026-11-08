@@ -1,6 +1,5 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { Activity, RefreshCw, Cpu, HardDrive, Server, Clock, Globe } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -13,8 +12,7 @@ const refresh = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="System Statistics" />
+            <Head title="System Statistics" />
 
         <div class="max-w-5xl mx-auto space-y-6">
             <!-- Header -->
@@ -137,6 +135,5 @@ const refresh = () => {
                 </dl>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

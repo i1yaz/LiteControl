@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
+import { useTheme } from '@/Composables/useTheme';
 import { Sliders, Save, Server, Globe, Mail, Clock, ShieldCheck, CheckCircle2 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -8,11 +8,14 @@ const props = defineProps({
     stats: Object,
 });
 
+const { availableThemes } = useTheme();
+
 const form = useForm({
     panel_name: props.settings.panel_name || 'LiteControl',
     admin_email: props.settings.admin_email || '',
     timezone: props.settings.timezone || 'UTC',
     default_php: props.settings.default_php || '83',
+    default_theme: props.settings.default_theme || 'avionics',
 });
 
 const submit = () => {
@@ -21,10 +24,9 @@ const submit = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Panel Settings" />
+    <Head title="Panel Settings" />
 
-        <div class="max-w-4xl mx-auto space-y-6">
+    <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -128,6 +130,23 @@ const submit = () => {
                         </select>
                         <p v-if="form.errors.default_php" class="text-xs text-rose-400 mt-1">{{ form.errors.default_php }}</p>
                     </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Default Interface Theme</label>
+                        <select
+                            v-model="form.default_theme"
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
+                        >
+                            <option
+                                v-for="t in availableThemes"
+                                :key="t.id"
+                                :value="t.id"
+                            >
+                                {{ t.name }} ({{ t.layout_type }})
+                            </option>
+                        </select>
+                        <p v-if="form.errors.default_theme" class="text-xs text-rose-400 mt-1">{{ form.errors.default_theme }}</p>
+                    </div>
                 </div>
 
                 <div class="pt-4 border-t border-slate-800 flex items-center justify-end">
@@ -142,6 +161,5 @@ const submit = () => {
                 </div>
             </form>
         </div>
-    </PanelLayout>
 </template>
 

@@ -1,6 +1,5 @@
 <script setup>
 import { useForm, Head, Link } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { UserPlus, ArrowLeft, Package as PackageIcon, ShieldAlert } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -23,8 +22,7 @@ const submit = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Create New Hosting Account" />
+            <Head title="Create New Hosting Account" />
 
         <div class="max-w-2xl mx-auto space-y-6">
             <!-- Header -->
@@ -182,6 +180,5 @@ const submit = () => {
                 </form>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

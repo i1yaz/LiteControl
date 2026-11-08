@@ -1,7 +1,6 @@
 <script setup>
 import { ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { Server, RefreshCw, Play, Square, RotateCw, ShieldCheck, ShieldAlert, ExternalLink, Globe, Lock } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -37,8 +36,7 @@ const updateWebAdminIps = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Services & WebAdmin Manager" />
+            <Head title="Services & WebAdmin Manager" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -210,6 +208,5 @@ const updateWebAdminIps = () => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

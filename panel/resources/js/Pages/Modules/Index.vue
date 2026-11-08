@@ -1,6 +1,5 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { Layers, Download, Trash2, CheckCircle2, AlertCircle, ArrowUpRight } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -21,10 +20,9 @@ const removeModule = (mod) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Module Manager" />
+    <Head title="Module Manager" />
 
-        <div class="max-w-5xl mx-auto space-y-6">
+    <div class="max-w-5xl mx-auto space-y-6">
             <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -96,6 +94,5 @@ const removeModule = (mod) => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

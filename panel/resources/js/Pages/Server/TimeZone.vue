@@ -1,6 +1,5 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { Clock, Save, Globe } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -18,8 +17,7 @@ const submit = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Server Time Zone" />
+            <Head title="Server Time Zone" />
 
         <div class="max-w-3xl mx-auto space-y-6">
             <!-- Header -->
@@ -81,6 +79,5 @@ const submit = () => {
                 </div>
             </form>
         </div>
-    </PanelLayout>
 </template>
 

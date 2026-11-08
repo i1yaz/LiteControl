@@ -1,6 +1,5 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { ShieldCheck, ShieldAlert, KeyRound, QrCode } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -13,8 +12,7 @@ const toggle = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Two-Factor Authentication" />
+            <Head title="Two-Factor Authentication" />
 
         <div class="max-w-2xl mx-auto space-y-6">
             <!-- Header -->
@@ -69,6 +67,5 @@ const toggle = () => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

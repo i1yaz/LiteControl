@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import {
     Users,
     UserPlus,
@@ -53,10 +52,9 @@ const impersonateUser = (id, username) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Identity & Principals - LiteControl" />
+    <Head title="Identity & Principals - LiteControl" />
 
-        <div class="space-y-6">
+    <div class="space-y-6">
             <!-- Asymmetrical Spec Header -->
             <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#1b222d]">
                 <div>
@@ -224,5 +222,4 @@ const impersonateUser = (id, username) => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>

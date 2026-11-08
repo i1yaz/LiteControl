@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import { Package, Plus, Edit2, Trash2, Users, HardDrive, Activity, Globe, Database, Mail, X } from 'lucide-vue-next';
 
@@ -73,10 +72,9 @@ const deletePackage = (id, name, usersCount) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Hosting Packages" />
+    <Head title="Hosting Packages" />
 
-        <div class="space-y-6">
+    <div class="space-y-6">
             <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -276,6 +274,5 @@ const deletePackage = (id, name, usersCount) => {
                 </div>
             </Modal>
         </div>
-    </PanelLayout>
 </template>
 

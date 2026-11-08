@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import {
     FolderTree,
@@ -69,10 +68,9 @@ const deleteSchedule = (id) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Backup & Restore" />
+    <Head title="Backup & Restore" />
 
-        <div class="space-y-8">
+    <div class="space-y-8">
             <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -306,6 +304,5 @@ const deleteSchedule = (id) => {
                 </div>
             </Modal>
         </div>
-    </PanelLayout>
 </template>
 

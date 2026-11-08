@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef, computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { Cpu, RefreshCw, XCircle, Search, AlertCircle } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -32,8 +31,7 @@ const refresh = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Process Manager" />
+            <Head title="Process Manager" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -114,6 +112,5 @@ const refresh = () => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef, computed, onMounted } from 'vue';
 import { Head } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import {
     FolderTree,
@@ -209,10 +208,9 @@ onMounted(() => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="File Manager" />
+    <Head title="File Manager" />
 
-        <div class="space-y-6">
+    <div class="space-y-6">
             <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -454,6 +452,5 @@ onMounted(() => {
                 </div>
             </Modal>
         </div>
-    </PanelLayout>
 </template>
 

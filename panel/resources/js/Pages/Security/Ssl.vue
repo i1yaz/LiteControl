@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { ShieldCheck, ShieldAlert, Lock, RefreshCw, Key, Plus, CheckCircle2 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -50,8 +49,7 @@ const submitCustomSsl = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="SSL Certificates" />
+            <Head title="SSL Certificates" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -197,6 +195,5 @@ const submitCustomSsl = () => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

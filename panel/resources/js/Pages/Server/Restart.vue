@@ -1,6 +1,5 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { RotateCw, RefreshCw, AlertTriangle, Server, Database, Zap } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -20,8 +19,7 @@ const execute = (actionName) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Restart Services" />
+            <Head title="Restart Services" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -128,6 +126,5 @@ const execute = (actionName) => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

@@ -1,6 +1,5 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { Sliders, Save, Cpu, Zap, Shield, RefreshCw } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -25,8 +24,7 @@ const submit = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="LiteSpeed Tuning" />
+            <Head title="LiteSpeed Tuning" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -189,6 +187,5 @@ const submit = () => {
                 </div>
             </form>
         </div>
-    </PanelLayout>
 </template>
 

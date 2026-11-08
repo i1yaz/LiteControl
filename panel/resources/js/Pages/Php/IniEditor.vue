@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { FileCode, Save, RefreshCw, AlertCircle, Check } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -30,8 +29,7 @@ const submit = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="MultiPHP INI Editor" />
+            <Head title="MultiPHP INI Editor" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -170,6 +168,5 @@ const submit = () => {
                 </form>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

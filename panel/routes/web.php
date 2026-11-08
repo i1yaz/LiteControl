@@ -14,6 +14,9 @@ use App\Http\Controllers\ConfigurationController;
 use App\Http\Controllers\ServerController;
 use App\Http\Controllers\SecurityController;
 use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\ThemeController;
+
+Route::post('/theme/switch', [ThemeController::class, 'switch'])->name('theme.switch');
 
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');

@@ -1,6 +1,5 @@
 <script setup>
 import { Head, useForm, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { ShieldCheck, ShieldAlert, Lock, Unlock, Server } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -34,8 +33,7 @@ const togglePort = (item) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Port Firewall" />
+            <Head title="Port Firewall" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -90,6 +88,5 @@ const togglePort = (item) => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

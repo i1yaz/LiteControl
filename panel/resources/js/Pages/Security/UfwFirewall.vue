@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { Shield, Plus, Trash2, CheckCircle2, AlertCircle } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -37,8 +36,7 @@ const deleteRule = (ruleId) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="UFW Firewall" />
+            <Head title="UFW Firewall" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -217,6 +215,5 @@ const deleteRule = (ruleId) => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

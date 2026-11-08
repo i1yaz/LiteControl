@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import { Globe, Plus, Folder, Trash2, X } from 'lucide-vue-next';
 
@@ -34,8 +33,7 @@ const deleteSubdomain = (id, domain) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Subdomains Management" />
+            <Head title="Subdomains Management" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -164,6 +162,5 @@ const deleteSubdomain = (id, domain) => {
                 </div>
             </Modal>
         </div>
-    </PanelLayout>
 </template>
 

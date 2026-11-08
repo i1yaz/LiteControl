@@ -1,6 +1,5 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { Shield, Download, CheckCircle2, Bug, ExternalLink } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -14,8 +13,7 @@ const installImunify = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="ImunifyAV Antivirus" />
+            <Head title="ImunifyAV Antivirus" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -72,6 +70,5 @@ const installImunify = () => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

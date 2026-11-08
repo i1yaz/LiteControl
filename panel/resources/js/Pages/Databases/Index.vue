@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import {
     Database,
@@ -116,10 +115,9 @@ const deleteDbUser = (id, name) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="MySQL Relational Telemetry - LiteControl" />
+    <Head title="MySQL Relational Telemetry - LiteControl" />
 
-        <div class="space-y-8">
+    <div class="space-y-8">
             <!-- Asymmetrical Spec Header -->
             <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#1b222d]">
                 <div>
@@ -564,5 +562,4 @@ const deleteDbUser = (id, name) => {
                 </div>
             </Modal>
         </div>
-    </PanelLayout>
 </template>

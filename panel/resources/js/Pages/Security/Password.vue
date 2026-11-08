@@ -1,6 +1,5 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { Lock, Save } from 'lucide-vue-next';
 
 const form = useForm({
@@ -17,8 +16,7 @@ const submit = () => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="Change Password" />
+            <Head title="Change Password" />
 
         <div class="max-w-xl mx-auto space-y-6">
             <!-- Header -->
@@ -80,6 +78,5 @@ const submit = () => {
                 </div>
             </form>
         </div>
-    </PanelLayout>
 </template>
 

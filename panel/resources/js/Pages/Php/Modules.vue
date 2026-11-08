@@ -1,7 +1,6 @@
 <script setup>
 import { shallowRef, computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import PanelLayout from '@/Layouts/PanelLayout.vue';
 import { FileCode, Search, CheckCircle2 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -25,8 +24,7 @@ const switchVersion = (ver) => {
 </script>
 
 <template>
-    <PanelLayout>
-        <Head title="PHP Modules" />
+            <Head title="PHP Modules" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -87,6 +85,5 @@ const switchVersion = (ver) => {
                 </div>
             </div>
         </div>
-    </PanelLayout>
 </template>
 

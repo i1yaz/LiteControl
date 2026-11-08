@@ -1,0 +1,13 @@
+{
+  "id": "avionics",
+  "name": "Avionics Telemetry",
+  "description": "High-contrast obsidian tactical interface with monospace instrumentation and vertical flight sidebar.",
+  "version": "1.0.0",
+  "author": "LiteControl",
+  "layout_type": "vertical-sidebar",
+  "color_scheme": "dark",
+  "progress_color": "#ff6b35",
+  "fonts": [
+    "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700;800&display=swap"
+  ]
+}

@@ -34,6 +34,7 @@ class ConfigurationController extends Controller
             'timezone' => $stats['timezone'] ?? 'UTC',
             'ols_version' => $stats['ols_version'] ?? '1.8.2',
             'default_php' => '83',
+            'default_theme' => config('themes.default', 'avionics'),
             'allow_registration' => false,
             'force_ssl' => true,
         ];
@@ -54,7 +55,15 @@ class ConfigurationController extends Controller
             'admin_email' => ['required', 'email'],
             'timezone' => ['required', 'string', 'max:50'],
             'default_php' => ['required', 'string'],
+            'default_theme' => ['nullable', 'string'],
         ]);
+
+        if (!empty($validated['default_theme'])) {
+            $request->session()->put('theme', $validated['default_theme']);
+            if ($user = $request->user()) {
+                $user->update(['theme' => $validated['default_theme']]);
+            }
+        }
 
         // Sync timezone via lc-cli
         $this->lcCli->run('server', ['timezone', 'set', $validated['timezone']]);
