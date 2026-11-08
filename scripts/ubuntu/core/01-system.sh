@@ -20,6 +20,10 @@ suppress_needrestart() {
 install_base_packages() {
     log_step "01. Installing Essential Ubuntu Base Packages"
     suppress_needrestart
+    # Ensure systemd defaults to multi-user.target so all enabled daemons boot on startup/reboot
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl set-default multi-user.target >/dev/null 2>&1 || true
+    fi
     apt_update
     apt_install \
         curl \
