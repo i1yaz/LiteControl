@@ -100,7 +100,7 @@ EOF
     fi
 
     # Ensure panel user has writable cache and config directory
-    mkdir -p "${LC_BASE_DIR}/.config" "${LC_BASE_DIR}/.cache"
+    mkdir -p "${LC_BASE_DIR}/.config/composer" "${LC_BASE_DIR}/.cache/composer"
     chown -R "${LC_USER}:${LC_GROUP}" "${LC_BASE_DIR}/.config" "${LC_BASE_DIR}/.cache"
 
     # If full Laravel app is present (has artisan), configure .env & run migrations
@@ -133,24 +133,35 @@ EOF
         local composer_bin="${LC_BASE_DIR}/bin/composer.phar"
         local php_bin="/usr/local/bin/php"
         if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+            log_info "Fetching verified Composer standalone binary..."
             mkdir -p "${LC_BASE_DIR}/bin"
-            curl -fsSL -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar || true
+            curl -4 -fsSL --connect-timeout 15 --max-time 120 -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar || true
             chmod 755 "${composer_bin}"
         fi
         local run_composer="${php_bin} ${composer_bin}"
         if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
             run_composer="/usr/local/bin/composer"
         fi
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${run_composer} install --no-dev -o --no-interaction"
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan key:generate --force"
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan migrate --force"
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan db:seed --force" 2>/dev/null || true
+
+        local composer_env="export HOME='${LC_BASE_DIR}' COMPOSER_HOME='${LC_BASE_DIR}/.config/composer' COMPOSER_CACHE_DIR='${LC_BASE_DIR}/.cache/composer' COMPOSER_MEMORY_LIMIT=-1 GIT_TERMINAL_PROMPT=0;"
+
+        log_info "Installing Panel dependencies via Composer (this may take 2-4 minutes on fresh server)..."
+        su -s /bin/bash "${LC_USER}" -c "${composer_env} cd '${LC_PANEL_DIR}' && ${run_composer} install --no-dev -o --no-interaction --no-progress"
+
+        log_info "Generating application encryption key..."
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan key:generate --force"
+
+        log_info "Running database migrations..."
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan migrate --force"
+
+        log_info "Seeding initial database data..."
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan db:seed --force" 2>/dev/null || true
 
         # Ensure admin user password matches generated panel_admin_password secret
         local admin_pass
         admin_pass=$(get_secret "panel_admin_password" 2>/dev/null || echo "")
         if [[ -n "${admin_pass}" ]]; then
-            su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan tinker --execute=\"\\App\\Models\\User::where('username', 'admin')->update(['password' => \\Illuminate\\Support\\Facades\\Hash::make('${admin_pass}')]);\"" 2>/dev/null || true
+            su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan tinker --execute=\"\\App\\Models\\User::where('username', 'admin')->update(['password' => \\Illuminate\\Support\\Facades\\Hash::make('${admin_pass}')]);\"" 2>/dev/null || true
         fi
 
         # Enable Laravel queue worker service

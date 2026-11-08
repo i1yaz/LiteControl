@@ -31,8 +31,8 @@ install_primary_lsphp() {
         "lsphp${ver}-intl" \
         "lsphp${ver}-opcache"
 
-    # Optional extensions available in LiteSpeed repo (installed individually so missing sub-packages never abort)
-    for ext in redis imagick igbinary memcached; do
+    # Extensions available in LiteSpeed repo (installed individually so missing sub-packages never abort)
+    for ext in redis imagick igbinary memcached zip mbstring; do
         if apt-cache show "lsphp${ver}-${ext}" >/dev/null 2>&1; then
             apt_install "lsphp${ver}-${ext}" || true
         fi

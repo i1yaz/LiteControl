@@ -298,7 +298,7 @@ ensure_panel_composer() {
 
     log_info "Fetching verified Composer official phar..."
     mkdir -p "${LC_BASE_DIR}/bin"
-    if curl -fsSL -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar; then
+    if curl -4 -fsSL --connect-timeout 15 --max-time 120 -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar; then
         chmod 755 "${composer_bin}"
         if "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
             log_ok "Verified Composer phar installed at ${composer_bin}."
@@ -338,7 +338,7 @@ upgrade_laravel_panel() {
         cp -a "${SNAPSHOT_DIR}/panel.env.bak" "${LC_PANEL_DIR}/.env"
     fi
 
-    mkdir -p "${LC_BASE_DIR}/.config" "${LC_BASE_DIR}/.cache"
+    mkdir -p "${LC_BASE_DIR}/.config/composer" "${LC_BASE_DIR}/.cache/composer"
     chown -R "${LC_USER}:${LC_GROUP}" "${LC_BASE_DIR}/.config" "${LC_BASE_DIR}/.cache" "${LC_PANEL_DIR}"
 
     if [[ -f "${LC_PANEL_DIR}/artisan" ]]; then
@@ -348,7 +348,8 @@ upgrade_laravel_panel() {
         if [[ -f "${LC_BASE_DIR}/bin/composer.phar" ]]; then
             composer_bin="/usr/local/bin/php ${LC_BASE_DIR}/bin/composer.phar"
         fi
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${composer_bin} install --no-dev -o --no-interaction"
+        local composer_env="export HOME='${LC_BASE_DIR}' COMPOSER_HOME='${LC_BASE_DIR}/.config/composer' COMPOSER_CACHE_DIR='${LC_BASE_DIR}/.cache/composer' COMPOSER_MEMORY_LIMIT=-1 GIT_TERMINAL_PROMPT=0;"
+        su -s /bin/bash "${LC_USER}" -c "${composer_env} cd '${LC_PANEL_DIR}' && ${composer_bin} install --no-dev -o --no-interaction --no-progress"
 
         # Build frontend assets if package.json exists and build is explicitly requested or prebuilt assets are missing
         if [[ -f "${LC_PANEL_DIR}/package.json" ]]; then

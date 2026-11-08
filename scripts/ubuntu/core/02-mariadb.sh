@@ -35,6 +35,9 @@ CREATE DATABASE IF NOT EXISTS \`litecontrol\` CHARACTER SET utf8mb4 COLLATE utf8
 CREATE USER IF NOT EXISTS 'litecontrol'@'localhost' IDENTIFIED BY '${panel_db_pass}';
 ALTER USER 'litecontrol'@'localhost' IDENTIFIED BY '${panel_db_pass}';
 GRANT ALL PRIVILEGES ON \`litecontrol\`.* TO 'litecontrol'@'localhost';
+CREATE USER IF NOT EXISTS 'litecontrol'@'127.0.0.1' IDENTIFIED BY '${panel_db_pass}';
+ALTER USER 'litecontrol'@'127.0.0.1' IDENTIFIED BY '${panel_db_pass}';
+GRANT ALL PRIVILEGES ON \`litecontrol\`.* TO 'litecontrol'@'127.0.0.1';
 FLUSH PRIVILEGES;
 EOF
 
