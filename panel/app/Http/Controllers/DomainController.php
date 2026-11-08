@@ -6,6 +6,7 @@ use App\Models\Domain;
 use App\Models\User;
 use App\Models\AuditLog;
 use App\Services\LcCliService;
+use App\Services\DomainService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -15,10 +16,12 @@ use Inertia\Response;
 class DomainController extends Controller
 {
     protected LcCliService $lcCli;
+    protected DomainService $domainService;
 
-    public function __construct(LcCliService $lcCli)
+    public function __construct(LcCliService $lcCli, DomainService $domainService)
     {
         $this->lcCli = $lcCli;
+        $this->domainService = $domainService;
     }
 
     /**
@@ -64,6 +67,8 @@ class DomainController extends Controller
             ],
             'php_version' => ['nullable', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
             'type' => ['nullable', 'string', Rule::in(['primary', 'addon', 'subdomain'])],
+            'public_path' => ['nullable', 'string', 'max:255'],
+            'ssl_enabled' => ['nullable', 'boolean'],
         ];
 
         if ($user->isAdmin()) {
@@ -89,47 +94,51 @@ class DomainController extends Controller
             }
         }
 
-        $phpVersion = $validated['php_version'] ?? '83';
-        $domainName = strtolower(trim($validated['domain']));
-        $docRoot = "/home/{$targetUser->username}/{$domainName}/public_html";
-        $type = $validated['type'] ?? 'addon';
-
-        // 1. Call lc-cli vhost add
-        $cliRes = $this->lcCli->run('vhost', [
-            'add',
-            $domainName,
-            $targetUser->username,
-            $phpVersion,
-            $docRoot,
-        ]);
-
-        if (($cliRes['status'] ?? '') !== 'success') {
+        try {
+            $res = $this->domainService->createDomain($targetUser, $validated, $user);
+        } catch (\Throwable $e) {
             return back()->withErrors([
-                'domain' => 'VirtualHost creation failed: ' . ($cliRes['message'] ?? 'CLI Error'),
+                'domain' => 'VirtualHost creation failed: ' . $e->getMessage(),
             ]);
         }
 
-        // 2. Insert into DB
-        $domain = Domain::create([
-            'user_id' => $targetUser->id,
-            'domain' => $domainName,
-            'type' => $type,
-            'document_root' => $docRoot,
-            'php_version' => $phpVersion,
-            'ssl_enabled' => false,
-            'status' => 'active',
+        $redirect = redirect()->route('domains.index')->with('success', "Domain '{$validated['domain']}' added successfully.");
+        if (!empty($res['warning'])) {
+            $redirect->with('warning', $res['warning']);
+        }
+
+        return $redirect;
+    }
+
+    /**
+     * Update an existing domain (PHP version, document root / pointing location, SSL).
+     */
+    public function update(Request $request, Domain $domain)
+    {
+        $user = Auth::user();
+
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'php_version' => ['nullable', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
+            'public_path' => ['nullable', 'string', 'max:255'],
+            'ssl_enabled' => ['nullable', 'boolean'],
         ]);
 
-        AuditLog::create([
-            'user_id' => $user->id,
-            'action' => 'domain.create',
-            'command' => "lc-cli vhost add {$domainName} {$targetUser->username} {$phpVersion}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => ['domain' => $domainName, 'target_user' => $targetUser->username],
-        ]);
+        try {
+            $res = $this->domainService->updateDomain($domain, $validated, $user);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to update domain: ' . $e->getMessage());
+        }
 
-        return redirect()->route('domains.index')->with('success', "Domain '{$domainName}' added successfully.");
+        $redirect = back()->with('success', "Domain '{$domain->domain}' updated successfully.");
+        if (!empty($res['warning'])) {
+            $redirect->with('warning', $res['warning']);
+        }
+
+        return $redirect;
     }
 
     /**

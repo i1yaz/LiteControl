@@ -1,6 +1,7 @@
 <script setup>
 import { shallowRef } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import Modal from '@/Components/Modal.vue';
 import {
     Users,
     UserPlus,
@@ -12,6 +13,9 @@ import {
     Unlock,
     Trash2,
     LogIn,
+    Pencil,
+    X,
+    Key,
     Package as PackageIcon
 } from 'lucide-vue-next';
 
@@ -48,6 +52,38 @@ const impersonateUser = (id, username) => {
     if (confirm(`Assume security context as principal '${username}'?`)) {
         router.post(`/users/${id}/impersonate`);
     }
+};
+
+const showEditModal = shallowRef(false);
+const editingUser = shallowRef(null);
+
+const editForm = useForm({
+    name: '',
+    email: '',
+    password: '',
+    package_id: '',
+    ssh_public_key: '',
+});
+
+const openEditModal = (user) => {
+    editingUser.value = user;
+    editForm.name = user.name || '';
+    editForm.email = user.email || '';
+    editForm.password = '';
+    editForm.package_id = user.package_id || props.packages?.[0]?.id || '';
+    editForm.ssh_public_key = user.ssh_public_key || '';
+    editForm.clearErrors();
+    showEditModal.value = true;
+};
+
+const submitEdit = () => {
+    if (!editingUser.value) return;
+    editForm.put(`/users/${editingUser.value.id}`, {
+        onSuccess: () => {
+            showEditModal.value = false;
+            editingUser.value = null;
+        },
+    });
 };
 </script>
 
@@ -183,6 +219,15 @@ const impersonateUser = (id, username) => {
                                             <LogIn class="w-4 h-4" />
                                         </button>
 
+                                        <!-- Edit Principal -->
+                                        <button
+                                            @click="openEditModal(user)"
+                                            title="Edit Principal"
+                                            class="text-[#5e6f85] hover:text-[#00f0a8] transition-colors p-1"
+                                        >
+                                            <Pencil class="w-4 h-4" />
+                                        </button>
+
                                         <!-- Suspend / Unsuspend -->
                                         <button
                                             v-if="user.status === 'active'"
@@ -221,5 +266,114 @@ const impersonateUser = (id, username) => {
                     </table>
                 </div>
             </div>
+
+            <!-- Edit User Modal -->
+            <Modal :show="showEditModal" max-width="md" @close="showEditModal = false">
+                <div class="p-6 space-y-5">
+                    <div class="flex items-center justify-between border-b border-[#1e2634] pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 bg-[#ff6b35]"></span>
+                            <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-white">
+                                Edit Principal: {{ editingUser?.username }}
+                            </h3>
+                        </div>
+                        <button @click="showEditModal = false" class="text-[#64748b] hover:text-white transition-colors">
+                            <X class="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <form @submit.prevent="submitEdit" class="space-y-4 font-mono text-xs">
+                        <!-- Full Name -->
+                        <div>
+                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5">Full Name</label>
+                            <input
+                                v-model="editForm.name"
+                                type="text"
+                                required
+                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#cad3e0] text-xs focus:outline-none focus:border-[#ff6b35]"
+                            />
+                            <p v-if="editForm.errors.name" class="text-[10px] text-[#ff3366] mt-1">{{ editForm.errors.name }}</p>
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5">Email Address</label>
+                            <input
+                                v-model="editForm.email"
+                                type="email"
+                                required
+                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#cad3e0] text-xs focus:outline-none focus:border-[#ff6b35]"
+                            />
+                            <p v-if="editForm.errors.email" class="text-[10px] text-[#ff3366] mt-1">{{ editForm.errors.email }}</p>
+                        </div>
+
+                        <!-- Quota Plan -->
+                        <div>
+                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5">Quota Plan</label>
+                            <select
+                                v-model="editForm.package_id"
+                                required
+                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#cad3e0] text-xs focus:outline-none focus:border-[#ff6b35]"
+                            >
+                                <option v-for="pkg in packages" :key="pkg.id" :value="pkg.id">
+                                    {{ pkg.name }} ({{ pkg.disk_quota_mb ? `${pkg.disk_quota_mb} MB` : 'Unlimited' }})
+                                </option>
+                            </select>
+                            <p v-if="editForm.errors.package_id" class="text-[10px] text-[#ff3366] mt-1">{{ editForm.errors.package_id }}</p>
+                        </div>
+
+                        <!-- Password (Optional) -->
+                        <div>
+                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5 flex items-center justify-between">
+                                <span>Password Reset</span>
+                                <span class="text-[#5e6f85] font-normal">Leave blank to keep unchanged</span>
+                            </label>
+                            <input
+                                v-model="editForm.password"
+                                type="password"
+                                placeholder="••••••••••••"
+                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#cad3e0] text-xs focus:outline-none focus:border-[#ff6b35]"
+                            />
+                            <p v-if="editForm.errors.password" class="text-[10px] text-[#ff3366] mt-1">{{ editForm.errors.password }}</p>
+                        </div>
+
+                        <!-- SSH Public Key -->
+                        <div>
+                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5 flex items-center justify-between">
+                                <span class="flex items-center gap-1.5">
+                                    <Key class="w-3.5 h-3.5 text-[#ff6b35]" />
+                                    <span>SSH Public Key</span>
+                                </span>
+                                <span class="text-[#5e6f85] font-normal">Stored in ~/.ssh/authorized_keys</span>
+                            </label>
+                            <textarea
+                                v-model="editForm.ssh_public_key"
+                                rows="3"
+                                placeholder="ssh-ed25519 AAAAC3... or leave empty to clear"
+                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[11px] font-mono text-[#cad3e0] placeholder-[#4e5c6e] focus:outline-none focus:border-[#ff6b35]"
+                            ></textarea>
+                            <p v-if="editForm.errors.ssh_public_key" class="text-[10px] text-[#ff3366] mt-1">{{ editForm.errors.ssh_public_key }}</p>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="pt-4 flex items-center justify-end gap-3 border-t border-[#1e2634]">
+                            <button
+                                type="button"
+                                @click="showEditModal = false"
+                                class="px-4 py-2 rounded-xs bg-[#161c26] hover:bg-[#202837] text-xs font-mono uppercase tracking-wider text-[#8ea0b5] transition-colors"
+                            >
+                                Abort
+                            </button>
+                            <button
+                                type="submit"
+                                :disabled="editForm.processing"
+                                class="px-5 py-2 rounded-xs bg-[#ff6b35] hover:bg-[#ff8252] disabled:opacity-50 text-xs font-mono font-bold uppercase tracking-wider text-black transition-colors shadow-[0_0_15px_rgba(255,107,53,0.25)]"
+                            >
+                                {{ editForm.processing ? 'Syncing...' : 'Save Changes' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </Modal>
         </div>
 </template>

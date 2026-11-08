@@ -80,6 +80,45 @@ class DomainAndPhpTest extends TestCase
         $this->assertEquals('82', $domain->fresh()->php_version);
     }
 
+    public function test_admin_can_provision_domain_with_custom_public_path_and_ssl(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $targetUser = User::where('username', 'client1')->first();
+
+        $response = $this->actingAs($admin)->post('/domains', [
+            'user_id' => $targetUser->id,
+            'domain' => 'laravelapp.test',
+            'php_version' => '83',
+            'public_path' => 'public',
+            'ssl_enabled' => true,
+        ]);
+
+        $response->assertRedirect('/domains');
+        $this->assertDatabaseHas('domains', [
+            'domain' => 'laravelapp.test',
+            'user_id' => $targetUser->id,
+            'public_path' => 'public',
+            'document_root' => "/home/{$targetUser->username}/laravelapp.test/public_html/public",
+        ]);
+    }
+
+    public function test_user_can_update_domain_configuration_via_put(): void
+    {
+        $client = User::where('username', 'client1')->first();
+        $domain = Domain::where('user_id', $client->id)->first();
+
+        $response = $this->actingAs($client)->put("/domains/{$domain->id}", [
+            'php_version' => '81',
+            'public_path' => 'public',
+        ]);
+
+        $response->assertRedirect();
+        $fresh = $domain->fresh();
+        $this->assertEquals('81', $fresh->php_version);
+        $this->assertEquals('public', $fresh->public_path);
+        $this->assertStringEndsWith('/public', $fresh->document_root);
+    }
+
     public function test_user_cannot_delete_another_users_domain(): void
     {
         $client = User::where('username', 'client1')->first();

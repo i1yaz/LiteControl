@@ -17,6 +17,7 @@ class Domain extends Model
         'type',
         'parent_domain_id',
         'document_root',
+        'public_path',
         'php_version',
         'ssl_enabled',
         'ssl_expires_at',
