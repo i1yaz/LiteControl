@@ -53,14 +53,18 @@ install_openlitespeed() {
         chmod 644 "${LC_CONF_DIR}/webadmin_notice.html"
     fi
 
-    # Deploy custom notice into OLS admin html and html.disabled if directory exists
-    for admin_html in "${OLS_DIR}/admin/html.disabled" "${OLS_DIR}/admin/html.open" "${OLS_DIR}/admin/html"; do
+    # Deploy custom notice into OLS admin html.disabled (do not overwrite html.open/index.html so WebAdmin login is not masked)
+    for admin_html in "${OLS_DIR}/admin/html.disabled"; do
         if [[ -d "${admin_html}" && -f "${LC_CONF_DIR}/webadmin_notice.html" ]]; then
             cp -f "${LC_CONF_DIR}/webadmin_notice.html" "${admin_html}/index.html" 2>/dev/null || true
             cp -f "${LC_CONF_DIR}/webadmin_notice.html" "${admin_html}/disabled.html" 2>/dev/null || true
             cp -f "${LC_CONF_DIR}/webadmin_notice.html" "${admin_html}/notice.html" 2>/dev/null || true
         fi
     done
+    if [[ -d "${OLS_DIR}/admin/html.open" && -f "${LC_CONF_DIR}/webadmin_notice.html" ]]; then
+        cp -f "${LC_CONF_DIR}/webadmin_notice.html" "${OLS_DIR}/admin/html.open/disabled.html" 2>/dev/null || true
+        rm -f "${OLS_DIR}/admin/html.open/index.html" "${OLS_DIR}/admin/html.open/notice.html" 2>/dev/null || true
+    fi
 
     # Remove insecure default sample scripts in Example/html
     local example_html="${OLS_DIR}/Example/html"

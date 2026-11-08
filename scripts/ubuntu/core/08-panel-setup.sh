@@ -35,8 +35,8 @@ sync_files_to_install_dir() {
         chmod 644 "${LC_CONF_DIR}/version"
     fi
 
-    # Strip any CRLF line endings from scripts and binaries
-    find "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" -type f -exec sed -i 's/\r$//' {} + 2>/dev/null || true
+    # Strip any CRLF line endings from scripts and binaries (excluding .phar)
+    find "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" -type f ! -name "*.phar" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
 
     chown -R root:root "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" "${LC_BASE_DIR}/templates"
     chmod 750 "${LC_BASE_DIR}/bin/lc-cli"
@@ -116,6 +116,8 @@ EOF
         fi
 
         if [[ -f "${LC_PANEL_DIR}/.env" ]]; then
+            sed -E -i "s@^APP_ENV=.*@APP_ENV=production@" "${LC_PANEL_DIR}/.env"
+            sed -E -i "s@^APP_DEBUG=.*@APP_DEBUG=false@" "${LC_PANEL_DIR}/.env"
             sed -E -i "s@^APP_URL=.*@APP_URL=https://${srv_ip}:${panel_port}@" "${LC_PANEL_DIR}/.env"
             sed -E -i "s@^LC_DEV_MOCK=.*@LC_DEV_MOCK=false@" "${LC_PANEL_DIR}/.env"
             sed -E -i "s@^DB_CONNECTION=.*@DB_CONNECTION=mysql@" "${LC_PANEL_DIR}/.env"
@@ -128,7 +130,18 @@ EOF
         fi
 
         chown -R "${LC_USER}:${LC_GROUP}" "${LC_PANEL_DIR}"
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction"
+        local composer_bin="${LC_BASE_DIR}/bin/composer.phar"
+        local php_bin="/usr/local/bin/php"
+        if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+            mkdir -p "${LC_BASE_DIR}/bin"
+            curl -fsSL -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar || true
+            chmod 755 "${composer_bin}"
+        fi
+        local run_composer="${php_bin} ${composer_bin}"
+        if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+            run_composer="/usr/local/bin/composer"
+        fi
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${run_composer} install --no-dev -o --no-interaction"
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan key:generate --force"
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan migrate --force"
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan db:seed --force" 2>/dev/null || true

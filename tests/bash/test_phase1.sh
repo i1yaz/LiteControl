@@ -93,6 +93,10 @@ source "${REPO_ROOT}/scripts/ubuntu/lib/common.sh"
 # ------------------------------------------------------------------------------
 echo "1. Testing LF line endings & bash -n syntax..."
 while IFS= read -r -d '' file; do
+    # Skip binary files such as composer.phar
+    if [[ "${file}" == *.phar ]]; then
+        continue
+    fi
     ASSERTIONS=$((ASSERTIONS + 1))
     if grep -q $'\r' "${file}"; then
         echo "  [FAIL] CRLF detected in ${file}"

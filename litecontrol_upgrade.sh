@@ -26,7 +26,7 @@ LC_BACKUP_ROOT="${LC_BACKUP_ROOT:-/var/backups/litecontrol}"
 
 TARGET_REF=""
 NON_INTERACTIVE=0
-BUILD_FRONTEND=1
+BUILD_FRONTEND=0
 
 # Terminal Colors
 if [[ -t 1 ]]; then
@@ -53,7 +53,8 @@ Options:
   -v, --version <tag>    Upgrade to a specific Git release tag (e.g. v1.0.0, v1.1.0)
   -b, --branch <branch>  Upgrade to a specific Git branch (e.g. main, feat-nginx-panel-server)
   -y, --yes              Run non-interactively using latest release tag (or main)
-      --skip-frontend    Skip npm frontend build if pre-built assets already exist
+      --build-frontend   Compile Vue 3/Vite frontend assets on host machine (default: disabled)
+      --skip-frontend    Skip npm frontend build (default)
   -h, --help             Show this help message
 EOF
 }
@@ -67,6 +68,10 @@ parse_args() {
                 ;;
             -y|--yes)
                 NON_INTERACTIVE=1
+                shift
+                ;;
+            --build-frontend)
+                BUILD_FRONTEND=1
                 shift
                 ;;
             --skip-frontend)
@@ -134,6 +139,8 @@ fetch_target_source() {
     fi
 
     git -C "${UPGRADE_SRC_DIR}" fetch --all --tags --prune --quiet
+    git -C "${UPGRADE_SRC_DIR}" reset --hard --quiet 2>/dev/null || true
+    git -C "${UPGRADE_SRC_DIR}" clean -fd --quiet 2>/dev/null || true
 
     # Checkout matching tag, remote branch, or commit
     if git -C "${UPGRADE_SRC_DIR}" rev-parse -q --verify "refs/tags/${TARGET_REF}" >/dev/null 2>&1; then
@@ -142,15 +149,15 @@ fetch_target_source() {
         TARGET_REF="v${TARGET_REF}"
         git -C "${UPGRADE_SRC_DIR}" checkout -f "tags/${TARGET_REF}" --quiet
     elif git -C "${UPGRADE_SRC_DIR}" rev-parse -q --verify "refs/remotes/origin/${TARGET_REF}" >/dev/null 2>&1; then
-        git -C "${UPGRADE_SRC_DIR}" checkout -B "${TARGET_REF}" "origin/${TARGET_REF}" --quiet
+        git -C "${UPGRADE_SRC_DIR}" checkout -f -B "${TARGET_REF}" "origin/${TARGET_REF}" --quiet
     else
         printf "%s[ERROR]%s Version tag or branch '%s' not found in repository %s\n" "${C_RED}" "${C_RESET}" "${TARGET_REF}" "${GITHUB_REPO_URL}" >&2
         exit 1
     fi
 
-    # Strip CRLF line endings from all Linux scripts and templates
+    # Strip CRLF line endings from all Linux scripts and templates (excluding binaries like .phar)
     find "${UPGRADE_SRC_DIR}/scripts" "${UPGRADE_SRC_DIR}/bin" "${UPGRADE_SRC_DIR}/templates" \
-        -type f -exec sed -i 's/\r$//' {} + 2>/dev/null || true
+        -type f ! -name "*.phar" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
     sed -i 's/\r$//' "${UPGRADE_SRC_DIR}/install.sh" "${UPGRADE_SRC_DIR}/litecontrol_upgrade.sh" 2>/dev/null || true
 }
 
@@ -237,7 +244,7 @@ sync_core_files_and_sudoers() {
     chmod 750 "${LC_BASE_DIR}/litecontrol_upgrade.sh"
 
     find "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" "${LC_BASE_DIR}/templates" \
-        -type f -exec sed -i 's/\r$//' {} + 2>/dev/null || true
+        -type f ! -name "*.phar" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
 
     chown -R root:root "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" "${LC_BASE_DIR}/templates"
     chmod 750 "${LC_BASE_DIR}/bin/lc-cli"
@@ -278,6 +285,34 @@ ensure_nodejs_for_frontend_build() {
     apt_install nodejs
 }
 
+ensure_panel_composer() {
+    local composer_bin="${LC_BASE_DIR}/bin/composer.phar"
+    local php_bin="/usr/local/bin/php"
+    if [[ -x "${composer_bin}" && -f "${composer_bin}" ]]; then
+        if "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+            return 0
+        fi
+        log_warn "Cached composer.phar failed verification; re-downloading official release..."
+        rm -f "${composer_bin}"
+    fi
+
+    log_info "Fetching verified Composer official phar..."
+    mkdir -p "${LC_BASE_DIR}/bin"
+    if curl -fsSL -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar; then
+        chmod 755 "${composer_bin}"
+        if "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+            log_ok "Verified Composer phar installed at ${composer_bin}."
+            return 0
+        fi
+    fi
+
+    # Fallback if download failed or curl unavailable
+    if command -v composer >/dev/null 2>&1; then
+        log_warn "Using system composer fallback."
+        return 0
+    fi
+}
+
 upgrade_laravel_panel() {
     log_step "04. Updating Laravel Panel Application, Dependencies & Database Migrations"
 
@@ -307,10 +342,15 @@ upgrade_laravel_panel() {
     chown -R "${LC_USER}:${LC_GROUP}" "${LC_BASE_DIR}/.config" "${LC_BASE_DIR}/.cache" "${LC_PANEL_DIR}"
 
     if [[ -f "${LC_PANEL_DIR}/artisan" ]]; then
+        ensure_panel_composer
         log_info "Installing Composer dependencies..."
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction"
+        local composer_bin="/usr/local/bin/composer"
+        if [[ -f "${LC_BASE_DIR}/bin/composer.phar" ]]; then
+            composer_bin="/usr/local/bin/php ${LC_BASE_DIR}/bin/composer.phar"
+        fi
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${composer_bin} install --no-dev -o --no-interaction"
 
-        # Build frontend assets if package.json exists and build is requested or manifest is missing
+        # Build frontend assets if package.json exists and build is explicitly requested or prebuilt assets are missing
         if [[ -f "${LC_PANEL_DIR}/package.json" ]]; then
             if [[ "${BUILD_FRONTEND}" -eq 1 || ! -f "${LC_PANEL_DIR}/public/build/manifest.json" ]]; then
                 ensure_nodejs_for_frontend_build
@@ -319,6 +359,8 @@ upgrade_laravel_panel() {
                     su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && npm install --no-audit --no-fund && npm run build"
                     rm -rf "${LC_PANEL_DIR}/node_modules"
                 fi
+            else
+                log_info "Pre-built frontend assets detected; skipping on-server npm build."
             fi
         fi
 
@@ -406,7 +448,7 @@ main() {
     detect_ubuntu_os
     init_litecontrol_dirs
 
-    local old_ver="unknown"
+    old_ver="unknown"
     if [[ -f "${LC_CONF_DIR}/version" ]]; then
         old_ver=$(tr -d ' \t\r\n' < "${LC_CONF_DIR}/version")
     fi
@@ -419,11 +461,8 @@ main() {
     upgrade_laravel_panel
     reconcile_panel_services
 
-    local panel_port
     panel_port=$(get_panel_port)
-    local srv_ip
     srv_ip=$(get_server_ip)
-    local final_ver
     final_ver=$(cat "${LC_CONF_DIR}/version" 2>/dev/null || echo "${TARGET_REF}")
 
     printf "\n%s======================================================================%s\n" "${C_GREEN}${C_BOLD}" "${C_RESET}"
