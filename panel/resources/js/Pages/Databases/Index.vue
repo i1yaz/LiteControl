@@ -1,7 +1,11 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
-import Modal from '@/Components/Modal.vue';
+import UiPageHeader from '@/Components/ui/UiPageHeader.vue';
+import UiButton from '@/Components/ui/UiButton.vue';
+import UiModal from '@/Components/ui/UiModal.vue';
+import UiInput from '@/Components/ui/UiInput.vue';
+import UiSelect from '@/Components/ui/UiSelect.vue';
 import {
     Database,
     Plus,
@@ -118,448 +122,339 @@ const deleteDbUser = (id, name) => {
     <Head title="MySQL Relational Telemetry - LiteControl" />
 
     <div class="space-y-8">
-            <!-- Asymmetrical Spec Header -->
-            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#1b222d]">
-                <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="text-[10px] font-mono tracking-widest uppercase text-[#ff6b35]">Storage Engine</span>
-                        <span class="text-[#3a4454] font-mono">/</span>
-                        <span class="text-[10px] font-mono text-[#6c7d93]">MARIADB_RELATIONAL_SUBSYSTEM</span>
-                    </div>
-                    <h1 class="text-2xl font-bold tracking-tight text-white font-mono uppercase flex items-center gap-3">
-                        <Database class="w-6 h-6 text-[#ff6b35]" />
-                        <span>Relational Schema Registry</span>
-                    </h1>
+        <UiPageHeader
+            title="Relational Schema Registry"
+            subtitle="Storage Engine // MARIADB_RELATIONAL_SUBSYSTEM"
+        >
+            <template #actions>
+                <a
+                    href="/phpmyadmin/"
+                    target="_blank"
+                    class="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs transition-colors border border-theme-border"
+                >
+                    <span>phpMyAdmin GUI</span>
+                    <ExternalLink class="w-3.5 h-3.5 text-theme-text-muted" />
+                </a>
+
+                <UiButton @click="showCreateDbModal = true" variant="primary">
+                    <Plus class="w-4 h-4 mr-1.5 inline" />
+                    Provision Database
+                </UiButton>
+            </template>
+        </UiPageHeader>
+
+        <!-- Databases Section -->
+        <div class="space-y-3">
+            <div class="bg-theme-bg-card border border-theme-border rounded overflow-hidden">
+                <div class="px-5 py-3 border-b border-theme-border bg-theme-bg-surface/50 flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase text-theme-text-secondary tracking-wider">
+                        Active Relational Instances ({{ databases.length }})
+                    </span>
+                    <span class="text-xs text-emerald-400">DAEMON: MARIADB_LIVE</span>
                 </div>
 
-                <div class="flex items-center gap-3">
-                    <a
-                        href="/phpmyadmin/"
-                        target="_blank"
-                        class="inline-flex items-center gap-2 px-3 py-2 rounded-xs bg-[#12161f] hover:bg-[#1a202c] text-[#8ea0b5] hover:text-white text-xs font-mono uppercase tracking-wider transition-colors border border-[#1e2634]"
-                    >
-                        <span>phpMyAdmin GUI</span>
-                        <ExternalLink class="w-3.5 h-3.5 text-[#5e6f85]" />
-                    </a>
-
-                    <button
-                        @click="showCreateDbModal = true"
-                        class="inline-flex items-center gap-2 px-4 py-2 bg-[#ff6b35] hover:bg-[#ff8252] text-black text-xs font-mono font-bold uppercase tracking-wider transition-colors shadow-[0_0_15px_rgba(255,107,53,0.25)] rounded-xs"
-                    >
-                        <Plus class="w-4 h-4 stroke-[2.5]" />
-                        <span>Provision Database</span>
-                    </button>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-theme-text-primary">
+                        <thead class="bg-theme-bg-surface/30 text-[10px] font-semibold text-theme-text-muted uppercase tracking-widest border-b border-theme-border">
+                            <tr>
+                                <th class="px-5 py-3.5">Schema Identifier</th>
+                                <th v-if="isAdmin" class="px-5 py-3.5">Assigned Principal</th>
+                                <th class="px-5 py-3.5">Authorized Principals</th>
+                                <th class="px-5 py-3.5">Allocated Footprint</th>
+                                <th class="px-5 py-3.5 text-right">Operations</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-theme-border">
+                            <tr v-for="db in databases" :key="db.id" class="hover:bg-theme-bg-surface/50 transition-colors group">
+                                <td class="px-5 py-3.5 font-bold text-theme-text-primary flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-theme-accent"></span>
+                                    <span>{{ db.db_name }}</span>
+                                </td>
+                                <td v-if="isAdmin" class="px-5 py-3.5 text-theme-text-secondary">
+                                    {{ db.user?.username || '—' }}
+                                </td>
+                                <td class="px-5 py-3.5 text-theme-text-secondary">
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <span
+                                            v-for="u in db.users"
+                                            :key="u.id"
+                                            class="px-2 py-0.5 rounded bg-theme-bg-surface text-theme-text-secondary border border-theme-border text-[10px]"
+                                        >
+                                            {{ u.db_username }}
+                                        </span>
+                                        <span v-if="!db.users || db.users.length === 0" class="text-theme-text-muted">
+                                            NONE
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="px-5 py-3.5 text-theme-text-secondary">
+                                    <span class="flex items-center gap-1.5">
+                                        <HardDrive class="w-3.5 h-3.5 text-emerald-400" />
+                                        {{ liveDbMap[db.db_name]?.size_human || '—' }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-3.5 text-right">
+                                    <button
+                                        @click="deleteDb(db.id, db.db_name)"
+                                        title="Terminate Schema"
+                                        class="text-theme-text-muted hover:text-rose-400 transition-colors p-1"
+                                    >
+                                        <Trash2 class="w-4 h-4" />
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr v-if="!databases || databases.length === 0">
+                                <td :colspan="isAdmin ? 5 : 4" class="px-5 py-8 text-center text-theme-text-muted text-xs">
+                                    NO RELATIONAL SCHEMAS PROVISIONED
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
+        </div>
 
-            <!-- Databases Section -->
-            <div class="space-y-3">
-                <div class="bg-[#0b0e14] border border-[#1b2330] rounded-xs overflow-hidden">
-                    <div class="px-5 py-3 border-b border-[#1b2330] bg-[#0f131a] flex items-center justify-between">
-                        <span class="text-[11px] font-mono uppercase text-[#7a8b9f] tracking-wider">
-                            Active Relational Instances ({{ databases.length }})
-                        </span>
-                        <span class="text-[10px] font-mono text-[#00f0a8]">DAEMON: MARIADB_LIVE</span>
-                    </div>
+        <!-- Database Users Section -->
+        <div class="space-y-3 pt-2">
+            <div class="flex items-center justify-between pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold uppercase text-theme-text-secondary tracking-wider">DATABASE USER ACCOUNTS</span>
+                </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs font-mono text-[#cad3e0]">
-                            <thead class="bg-[#090c11] text-[10px] font-semibold text-[#5a6b80] uppercase tracking-widest border-b border-[#1b2330]">
-                                <tr>
-                                    <th class="px-5 py-3.5">Schema Identifier</th>
-                                    <th v-if="isAdmin" class="px-5 py-3.5">Assigned Principal</th>
-                                    <th class="px-5 py-3.5">Authorized Principals</th>
-                                    <th class="px-5 py-3.5">Allocated Footprint</th>
-                                    <th class="px-5 py-3.5 text-right">Operations</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-[#151b24]">
-                                <tr v-for="db in databases" :key="db.id" class="hover:bg-[#12161f] transition-colors group">
-                                    <td class="px-5 py-3.5 font-bold text-white flex items-center gap-2">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-[#ff6b35]/60 group-hover:bg-[#ff6b35]"></span>
-                                        <span>{{ db.db_name }}</span>
-                                    </td>
-                                    <td v-if="isAdmin" class="px-5 py-3.5 text-[#8ea0b5]">
-                                        {{ db.user?.username || '—' }}
-                                    </td>
-                                    <td class="px-5 py-3.5 text-[#cad3e0]">
-                                        <div class="flex flex-wrap gap-1.5">
-                                            <span
-                                                v-for="u in db.users"
-                                                :key="u.id"
-                                                class="px-2 py-0.5 rounded-xs bg-[#161c26] text-[#8ea0b5] border border-[#222c3c] text-[10px]"
-                                            >
-                                                {{ u.db_username }}
-                                            </span>
-                                            <span v-if="!db.users || db.users.length === 0" class="text-[#5a6b80]">
-                                                NONE
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td class="px-5 py-3.5 text-[#8ea0b5]">
-                                        <span class="flex items-center gap-1.5">
-                                            <HardDrive class="w-3.5 h-3.5 text-[#00f0a8]" />
-                                            {{ liveDbMap[db.db_name]?.size_human || '—' }}
-                                        </span>
-                                    </td>
-                                    <td class="px-5 py-3.5 text-right">
+                <UiButton
+                    @click="showCreateUserModal = true"
+                    variant="secondary"
+                    size="sm"
+                >
+                    <UserPlus class="w-3.5 h-3.5 mr-1.5 inline text-theme-accent" />
+                    <span>Provision DB User</span>
+                </UiButton>
+            </div>
+
+            <div class="bg-theme-bg-card border border-theme-border rounded overflow-hidden">
+                <div class="px-5 py-3 border-b border-theme-border bg-theme-bg-surface/50 flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase text-theme-text-secondary tracking-wider">
+                        Registered DB Principals ({{ dbUsers.length }})
+                    </span>
+                    <span class="text-xs text-theme-text-muted">ACL_AUTH_LAYER</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-theme-text-primary">
+                        <thead class="bg-theme-bg-surface/30 text-[10px] font-semibold text-theme-text-muted uppercase tracking-widest border-b border-theme-border">
+                            <tr>
+                                <th class="px-5 py-3.5">Principal Identity</th>
+                                <th v-if="isAdmin" class="px-5 py-3.5">Owner Context</th>
+                                <th class="px-5 py-3.5">Linked Schema</th>
+                                <th class="px-5 py-3.5">Host Bind</th>
+                                <th class="px-5 py-3.5 text-right">Operations</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-theme-border">
+                            <tr v-for="u in dbUsers" :key="u.id" class="hover:bg-theme-bg-surface/50 transition-colors group">
+                                <td class="px-5 py-3.5 font-bold text-theme-text-primary flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                    {{ u.db_username }}
+                                </td>
+                                <td v-if="isAdmin" class="px-5 py-3.5 text-theme-text-secondary">
+                                    {{ u.user?.username || '—' }}
+                                </td>
+                                <td class="px-5 py-3.5 text-theme-text-primary">
+                                    <span v-if="u.database?.db_name" class="px-2 py-0.5 bg-theme-bg-surface border border-theme-border text-theme-text-secondary rounded text-[10px]">
+                                        {{ u.database.db_name }}
+                                    </span>
+                                    <span v-else class="text-theme-text-muted">NONE</span>
+                                </td>
+                                <td class="px-5 py-3.5 text-theme-text-muted">
+                                    {{ u.host || 'localhost' }}
+                                </td>
+                                <td class="px-5 py-3.5 text-right">
+                                    <div class="flex items-center justify-end gap-1.5">
                                         <button
-                                            @click="deleteDb(db.id, db.db_name)"
-                                            title="Terminate Schema"
-                                            class="text-[#5e6f85] hover:text-[#ff3366] transition-colors p-1"
+                                            @click="openGrantModal(u)"
+                                            title="Assign Schema Privileges"
+                                            class="text-theme-text-muted hover:text-emerald-400 transition-colors p-1"
+                                        >
+                                            <Shield class="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            @click="openPasswordModal(u)"
+                                            title="Rotate Credentials"
+                                            class="text-theme-text-muted hover:text-theme-accent transition-colors p-1"
+                                        >
+                                            <Key class="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            @click="deleteDbUser(u.id, u.db_username)"
+                                            title="Terminate Principal"
+                                            class="text-theme-text-muted hover:text-rose-400 transition-colors p-1"
                                         >
                                             <Trash2 class="w-4 h-4" />
                                         </button>
-                                    </td>
-                                </tr>
-                                <tr v-if="!databases || databases.length === 0">
-                                    <td :colspan="isAdmin ? 5 : 4" class="px-5 py-8 text-center text-[#5a6b80] text-xs font-mono">
-                                        NO RELATIONAL SCHEMAS PROVISIONED
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="!dbUsers || dbUsers.length === 0">
+                                <td :colspan="isAdmin ? 5 : 4" class="px-5 py-8 text-center text-theme-text-muted text-xs">
+                                    NO DATABASE USERS REGISTERED
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-
-            <!-- Database Users Section -->
-            <div class="space-y-3 pt-2">
-                <div class="flex items-center justify-between pb-2">
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] font-mono tracking-widest uppercase text-[#ff6b35]">Access Matrix</span>
-                        <span class="text-[#3a4454] font-mono">/</span>
-                        <span class="text-[10px] font-mono text-[#6c7d93]">DATABASE_USER_ACCOUNTS</span>
-                    </div>
-
-                    <button
-                        @click="showCreateUserModal = true"
-                        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xs bg-[#161c26] hover:bg-[#202837] text-[#8ea0b5] hover:text-white text-xs font-mono uppercase tracking-wider transition-colors border border-[#1e2634]"
-                    >
-                        <UserPlus class="w-3.5 h-3.5 text-[#ff6b35]" />
-                        <span>Provision DB User</span>
-                    </button>
-                </div>
-
-                <div class="bg-[#0b0e14] border border-[#1b2330] rounded-xs overflow-hidden">
-                    <div class="px-5 py-3 border-b border-[#1b2330] bg-[#0f131a] flex items-center justify-between">
-                        <span class="text-[11px] font-mono uppercase text-[#7a8b9f] tracking-wider">
-                            Registered DB Principals ({{ dbUsers.length }})
-                        </span>
-                        <span class="text-[10px] font-mono text-[#6c7d93]">ACL_AUTH_LAYER</span>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs font-mono text-[#cad3e0]">
-                            <thead class="bg-[#090c11] text-[10px] font-semibold text-[#5a6b80] uppercase tracking-widest border-b border-[#1b2330]">
-                                <tr>
-                                    <th class="px-5 py-3.5">Principal Identity</th>
-                                    <th v-if="isAdmin" class="px-5 py-3.5">Owner Context</th>
-                                    <th class="px-5 py-3.5">Linked Schema</th>
-                                    <th class="px-5 py-3.5">Host Bind</th>
-                                    <th class="px-5 py-3.5 text-right">Operations</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-[#151b24]">
-                                <tr v-for="u in dbUsers" :key="u.id" class="hover:bg-[#12161f] transition-colors group">
-                                    <td class="px-5 py-3.5 font-bold text-white flex items-center gap-2">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-[#00f0a8]/60 group-hover:bg-[#00f0a8]"></span>
-                                        {{ u.db_username }}
-                                    </td>
-                                    <td v-if="isAdmin" class="px-5 py-3.5 text-[#8ea0b5]">
-                                        {{ u.user?.username || '—' }}
-                                    </td>
-                                    <td class="px-5 py-3.5 text-[#cad3e0]">
-                                        <span v-if="u.database?.db_name" class="px-2 py-0.5 bg-[#171d27] border border-[#252f3f] text-[#8ea0b5] rounded-xs text-[10px]">
-                                            {{ u.database.db_name }}
-                                        </span>
-                                        <span v-else class="text-[#5a6b80]">NONE</span>
-                                    </td>
-                                    <td class="px-5 py-3.5 text-[#5e6f85]">
-                                        {{ u.host || 'localhost' }}
-                                    </td>
-                                    <td class="px-5 py-3.5 text-right">
-                                        <div class="flex items-center justify-end gap-1.5">
-                                            <button
-                                                @click="openGrantModal(u)"
-                                                title="Assign Schema Privileges"
-                                                class="text-[#5e6f85] hover:text-[#00f0a8] transition-colors p-1"
-                                            >
-                                                <Shield class="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                @click="openPasswordModal(u)"
-                                                title="Rotate Credentials"
-                                                class="text-[#5e6f85] hover:text-[#ff6b35] transition-colors p-1"
-                                            >
-                                                <Key class="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                @click="deleteDbUser(u.id, u.db_username)"
-                                                title="Terminate Principal"
-                                                class="text-[#5e6f85] hover:text-[#ff3366] transition-colors p-1"
-                                            >
-                                                <Trash2 class="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr v-if="!dbUsers || dbUsers.length === 0">
-                                    <td :colspan="isAdmin ? 5 : 4" class="px-5 py-8 text-center text-[#5a6b80] text-xs font-mono">
-                                        NO DATABASE PRINCIPALS DEFINED
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Create DB Modal -->
-            <Modal :show="showCreateDbModal" max-width="md" @close="showCreateDbModal = false">
-                <div class="p-6 space-y-5">
-                    <div class="flex items-center justify-between border-b border-[#1e2634] pb-3">
-                        <div class="flex items-center gap-2">
-                            <span class="w-2 h-2 bg-[#ff6b35]"></span>
-                            <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-white">Provision Schema</h3>
-                        </div>
-                        <button @click="showCreateDbModal = false" class="text-[#64748b] hover:text-white transition-colors">
-                            <X class="w-4 h-4" />
-                        </button>
-                    </div>
-
-                    <form @submit.prevent="submitDb" class="space-y-4 font-mono text-xs">
-                        <div v-if="isAdmin">
-                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5">Target Principal</label>
-                            <select
-                                v-model="dbForm.user_id"
-                                required
-                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#cad3e0] text-xs focus:outline-none focus:border-[#ff6b35]"
-                            >
-                                <option v-for="u in users" :key="u.id" :value="u.id">
-                                    {{ u.username }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5">Schema Namespace Suffix</label>
-                            <input
-                                v-model="dbForm.db_name"
-                                type="text"
-                                placeholder="app_production"
-                                required
-                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#cad3e0] text-xs focus:outline-none focus:border-[#ff6b35]"
-                            />
-                            <p class="text-[10px] text-[#5a6b80] mt-1.5">Auto-prefixed with principal tag (e.g. {{ authUser.username }}_name).</p>
-                            <p v-if="dbForm.errors.db_name" class="text-[10px] text-[#ff3366] mt-1">{{ dbForm.errors.db_name }}</p>
-                        </div>
-
-                        <div class="pt-4 flex items-center justify-end gap-3 border-t border-[#1e2634]">
-                            <button
-                                type="button"
-                                @click="showCreateDbModal = false"
-                                class="px-4 py-2 rounded-xs bg-[#161c26] hover:bg-[#202837] text-xs font-mono uppercase tracking-wider text-[#8ea0b5] transition-colors"
-                            >
-                                Abort
-                            </button>
-                            <button
-                                type="submit"
-                                :disabled="dbForm.processing"
-                                class="px-5 py-2 rounded-xs bg-[#ff6b35] hover:bg-[#ff8252] disabled:opacity-50 text-xs font-mono font-bold uppercase tracking-wider text-black transition-colors shadow-[0_0_15px_rgba(255,107,53,0.25)]"
-                            >
-                                {{ dbForm.processing ? 'Provisioning...' : 'Provision Schema' }}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </Modal>
-
-            <!-- Create DB User Modal -->
-            <Modal :show="showCreateUserModal" max-width="md" @close="showCreateUserModal = false">
-                <div class="p-6 space-y-5">
-                    <div class="flex items-center justify-between border-b border-[#1e2634] pb-3">
-                        <div class="flex items-center gap-2">
-                            <span class="w-2 h-2 bg-[#00f0a8]"></span>
-                            <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-white">Create Database Principal</h3>
-                        </div>
-                        <button @click="showCreateUserModal = false" class="text-[#64748b] hover:text-white transition-colors">
-                            <X class="w-4 h-4" />
-                        </button>
-                    </div>
-
-                    <form @submit.prevent="submitUser" class="space-y-4 font-mono text-xs">
-                        <div v-if="isAdmin">
-                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5">Target Principal</label>
-                            <select
-                                v-model="userForm.user_id"
-                                required
-                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#cad3e0] text-xs focus:outline-none focus:border-[#00f0a8]"
-                            >
-                                <option v-for="u in users" :key="u.id" :value="u.id">
-                                    {{ u.username }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5">Principal Identity</label>
-                            <input
-                                v-model="userForm.username"
-                                type="text"
-                                placeholder="service_worker"
-                                required
-                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#cad3e0] text-xs focus:outline-none focus:border-[#00f0a8]"
-                            />
-                            <p class="text-[10px] text-[#5a6b80] mt-1.5">Auto-prefixed with account username.</p>
-                            <p v-if="userForm.errors.username" class="text-[10px] text-[#ff3366] mt-1">{{ userForm.errors.username }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5">Passphrase Hash Key</label>
-                            <input
-                                v-model="userForm.password"
-                                type="password"
-                                placeholder="••••••••••••"
-                                required
-                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#cad3e0] text-xs focus:outline-none focus:border-[#00f0a8]"
-                            />
-                            <p v-if="userForm.errors.password" class="text-[10px] text-[#ff3366] mt-1">{{ userForm.errors.password }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5">Bind Target Schema (Optional)</label>
-                            <select
-                                v-model="userForm.database_id"
-                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#cad3e0] text-xs focus:outline-none focus:border-[#00f0a8]"
-                            >
-                                <option value="">None</option>
-                                <option v-for="d in databases" :key="d.id" :value="d.id">
-                                    {{ d.db_name }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="pt-4 flex items-center justify-end gap-3 border-t border-[#1e2634]">
-                            <button
-                                type="button"
-                                @click="showCreateUserModal = false"
-                                class="px-4 py-2 rounded-xs bg-[#161c26] hover:bg-[#202837] text-xs font-mono uppercase tracking-wider text-[#8ea0b5] transition-colors"
-                            >
-                                Abort
-                            </button>
-                            <button
-                                type="submit"
-                                :disabled="userForm.processing"
-                                class="px-5 py-2 rounded-xs bg-[#00f0a8] hover:bg-[#34f3b7] disabled:opacity-50 text-xs font-mono font-bold uppercase tracking-wider text-black transition-colors shadow-[0_0_15px_rgba(0,240,168,0.25)]"
-                            >
-                                {{ userForm.processing ? 'Deploying...' : 'Provision User' }}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </Modal>
-
-            <!-- Change Password Modal -->
-            <Modal :show="showPasswordModal" max-width="sm" @close="showPasswordModal = false">
-                <div class="p-6 space-y-5">
-                    <div class="flex items-center justify-between border-b border-[#1e2634] pb-3">
-                        <div class="flex items-center gap-2">
-                            <span class="w-2 h-2 bg-[#ff6b35]"></span>
-                            <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-white">Rotate Passphrase</h3>
-                        </div>
-                        <button @click="showPasswordModal = false" class="text-[#64748b] hover:text-white transition-colors">
-                            <X class="w-4 h-4" />
-                        </button>
-                    </div>
-
-                    <form @submit.prevent="submitPassword" class="space-y-4 font-mono text-xs">
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5">
-                                New Secret for {{ selectedDbUser?.db_username }}
-                            </label>
-                            <input
-                                v-model="passForm.password"
-                                type="password"
-                                required
-                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#cad3e0] text-xs focus:outline-none focus:border-[#ff6b35]"
-                            />
-                        </div>
-
-                        <div class="pt-4 flex items-center justify-end gap-3 border-t border-[#1e2634]">
-                            <button
-                                type="button"
-                                @click="showPasswordModal = false"
-                                class="px-4 py-2 rounded-xs bg-[#161c26] hover:bg-[#202837] text-xs font-mono uppercase tracking-wider text-[#8ea0b5] transition-colors"
-                            >
-                                Abort
-                            </button>
-                            <button
-                                type="submit"
-                                :disabled="passForm.processing"
-                                class="px-5 py-2 rounded-xs bg-[#ff6b35] hover:bg-[#ff8252] disabled:opacity-50 text-xs font-mono font-bold uppercase tracking-wider text-black transition-colors shadow-[0_0_15px_rgba(255,107,53,0.25)]"
-                            >
-                                Update Secret
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </Modal>
-
-            <!-- Grant Privileges Modal -->
-            <Modal :show="showGrantModal" max-width="sm" @close="showGrantModal = false">
-                <div class="p-6 space-y-5">
-                    <div class="flex items-center justify-between border-b border-[#1e2634] pb-3">
-                        <div class="flex items-center gap-2">
-                            <span class="w-2 h-2 bg-[#00f0a8]"></span>
-                            <h3 class="text-sm font-mono font-bold uppercase tracking-wider text-white">Grant ACL Permissions</h3>
-                        </div>
-                        <button @click="showGrantModal = false" class="text-[#64748b] hover:text-white transition-colors">
-                            <X class="w-4 h-4" />
-                        </button>
-                    </div>
-
-                    <form @submit.prevent="submitGrant" class="space-y-4 font-mono text-xs">
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5">Principal Identity</label>
-                            <input
-                                :value="grantForm.db_username"
-                                disabled
-                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#6c7d93] opacity-80"
-                            />
-                        </div>
-
-                        <div>
-                            <label class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5">Target Schema</label>
-                            <select
-                                v-model="grantForm.database_id"
-                                required
-                                class="w-full px-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#cad3e0] text-xs focus:outline-none focus:border-[#00f0a8]"
-                            >
-                                <option v-for="d in databases" :key="d.id" :value="d.id">
-                                    {{ d.db_name }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="pt-4 flex items-center justify-end gap-3 border-t border-[#1e2634]">
-                            <button
-                                type="button"
-                                @click="showGrantModal = false"
-                                class="px-4 py-2 rounded-xs bg-[#161c26] hover:bg-[#202837] text-xs font-mono uppercase tracking-wider text-[#8ea0b5] transition-colors"
-                            >
-                                Abort
-                            </button>
-                            <button
-                                type="submit"
-                                :disabled="grantForm.processing"
-                                class="px-5 py-2 rounded-xs bg-[#00f0a8] hover:bg-[#34f3b7] disabled:opacity-50 text-xs font-mono font-bold uppercase tracking-wider text-black transition-colors shadow-[0_0_15px_rgba(0,240,168,0.25)]"
-                            >
-                                Authorize Privileges
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </Modal>
         </div>
+
+        <!-- Create DB Modal -->
+        <UiModal :show="showCreateDbModal" title="Provision Relational Database" max-width="md" @close="showCreateDbModal = false">
+            <form @submit.prevent="submitDb" class="space-y-4">
+                <div v-if="isAdmin">
+                    <UiSelect
+                        id="db_owner"
+                        v-model="dbForm.user_id"
+                        label="Database Owner / Principal"
+                        :options="users.map(u => ({ value: u.id, label: `${u.username} (${u.name})` }))"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <UiInput
+                        id="db_name"
+                        v-model="dbForm.db_name"
+                        type="text"
+                        label="Database Name"
+                        placeholder="e.g. blog_db"
+                        :error="dbForm.errors.db_name"
+                        required
+                    />
+                </div>
+
+                <div class="pt-4 flex items-center justify-end gap-3 border-t border-theme-border">
+                    <UiButton type="button" variant="secondary" @click="showCreateDbModal = false">
+                        Abort
+                    </UiButton>
+                    <UiButton type="submit" variant="primary" :disabled="dbForm.processing">
+                        {{ dbForm.processing ? 'Provisioning...' : 'Provision Database' }}
+                    </UiButton>
+                </div>
+            </form>
+        </UiModal>
+
+        <!-- Create User Modal -->
+        <UiModal :show="showCreateUserModal" title="Provision Database User" max-width="md" @close="showCreateUserModal = false">
+            <form @submit.prevent="submitUser" class="space-y-4">
+                <div v-if="isAdmin">
+                    <UiSelect
+                        id="user_owner"
+                        v-model="userForm.user_id"
+                        label="Principal Owner"
+                        :options="users.map(u => ({ value: u.id, label: `${u.username} (${u.name})` }))"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <UiInput
+                        id="db_username"
+                        v-model="userForm.username"
+                        type="text"
+                        label="Database Username"
+                        placeholder="e.g. appuser"
+                        :error="userForm.errors.username"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <UiInput
+                        id="db_user_password"
+                        v-model="userForm.password"
+                        type="password"
+                        label="User Password"
+                        placeholder="••••••••••••"
+                        :error="userForm.errors.password"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <UiSelect
+                        id="assign_database"
+                        v-model="userForm.database_id"
+                        label="Assign Primary Database (Optional)"
+                        :options="[
+                            { value: '', label: '-- None (Assign Later) --' },
+                            ...databases.map(d => ({ value: d.id, label: d.db_name }))
+                        ]"
+                    />
+                </div>
+
+                <div class="pt-4 flex items-center justify-end gap-3 border-t border-theme-border">
+                    <UiButton type="button" variant="secondary" @click="showCreateUserModal = false">
+                        Abort
+                    </UiButton>
+                    <UiButton type="submit" variant="primary" :disabled="userForm.processing">
+                        {{ userForm.processing ? 'Provisioning...' : 'Provision DB User' }}
+                    </UiButton>
+                </div>
+            </form>
+        </UiModal>
+
+        <!-- Rotate Password Modal -->
+        <UiModal :show="showPasswordModal" title="Rotate Database User Password" max-width="sm" @close="showPasswordModal = false">
+            <form @submit.prevent="submitPassword" class="space-y-4">
+                <div>
+                    <p class="text-xs text-theme-text-secondary mb-3">
+                        Updating credentials for <strong class="text-theme-text-primary">{{ selectedDbUser?.db_username }}</strong>
+                    </p>
+                    <UiInput
+                        id="rotate_pass"
+                        v-model="passForm.password"
+                        type="password"
+                        label="New Password"
+                        placeholder="••••••••••••"
+                        :error="passForm.errors.password"
+                        required
+                    />
+                </div>
+
+                <div class="pt-4 flex items-center justify-end gap-3 border-t border-theme-border">
+                    <UiButton type="button" variant="secondary" @click="showPasswordModal = false">
+                        Cancel
+                    </UiButton>
+                    <UiButton type="submit" variant="primary" :disabled="passForm.processing">
+                        {{ passForm.processing ? 'Updating...' : 'Update Password' }}
+                    </UiButton>
+                </div>
+            </form>
+        </UiModal>
+
+        <!-- Grant Access Modal -->
+        <UiModal :show="showGrantModal" title="Grant Database Privileges" max-width="sm" @close="showGrantModal = false">
+            <form @submit.prevent="submitGrant" class="space-y-4">
+                <div>
+                    <p class="text-xs text-theme-text-secondary mb-3">
+                        Assign privileges on schema for <strong class="text-theme-text-primary">{{ grantForm.db_username }}</strong>
+                    </p>
+                    <UiSelect
+                        id="grant_db"
+                        v-model="grantForm.database_id"
+                        label="Target Database Schema"
+                        :options="databases.map(d => ({ value: d.id, label: d.db_name }))"
+                        required
+                    />
+                </div>
+
+                <div class="pt-4 flex items-center justify-end gap-3 border-t border-theme-border">
+                    <UiButton type="button" variant="secondary" @click="showGrantModal = false">
+                        Cancel
+                    </UiButton>
+                    <UiButton type="submit" variant="primary" :disabled="grantForm.processing">
+                        {{ grantForm.processing ? 'Granting...' : 'Grant All Privileges' }}
+                    </UiButton>
+                </div>
+            </form>
+        </UiModal>
+    </div>
 </template>

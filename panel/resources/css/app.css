@@ -6,16 +6,31 @@
 @source '../js/**/*.vue';
 
 @theme {
-    --font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: var(--theme-font-sans, 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif);
+    --font-mono: var(--theme-font-mono, 'JetBrains Mono', monospace);
 
-    --color-obsidian-950: #06080b;
-    --color-obsidian-900: #0a0d12;
-    --color-obsidian-850: #0f141b;
-    --color-obsidian-800: #161c26;
-    --color-obsidian-border: #1e2634;
+    --color-slate-950: var(--color-slate-950, #080d1a);
+    --color-slate-900: var(--color-slate-900, #0f172a);
+    --color-slate-800: var(--color-slate-800, #1e293b);
+    --color-slate-700: var(--color-slate-700, #334155);
+    --color-slate-600: var(--color-slate-600, #475569);
+    --color-slate-500: var(--color-slate-500, #64748b);
+    --color-slate-400: var(--color-slate-400, #94a3b8);
+    --color-slate-300: var(--color-slate-300, #cbd5e1);
+    --color-slate-200: var(--color-slate-200, #e2e8f0);
+    --color-slate-100: var(--color-slate-100, #f8fafc);
 
-    --color-plasma-orange: #ff6b35;
+    --color-indigo-600: var(--color-indigo-600, #0284c7);
+    --color-indigo-500: var(--color-indigo-500, #0ea5e9);
+    --color-indigo-400: var(--color-indigo-400, #38bdf8);
+
+    --color-obsidian-950: var(--color-slate-950, #06080b);
+    --color-obsidian-900: var(--color-slate-900, #0a0d12);
+    --color-obsidian-850: var(--theme-bg-card, #0f141b);
+    --color-obsidian-800: var(--theme-bg-surface, #161c26);
+    --color-obsidian-border: var(--theme-border, #1e2634);
+
+    --color-plasma-orange: var(--theme-accent, #ff6b35);
     --color-neon-cyan: #00f0a8;
 
     --color-theme-bg-body: var(--theme-bg-body, #080a0e);

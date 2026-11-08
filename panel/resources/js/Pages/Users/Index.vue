@@ -1,8 +1,10 @@
 <script setup>
-import { shallowRef } from 'vue';
+import { shallowRef, computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import UiPageHeader from '@/Components/ui/UiPageHeader.vue';
+import UiButton from '@/Components/ui/UiButton.vue';
+import UiDataTable from '@/Components/ui/UiDataTable.vue';
 import {
-    Users,
     UserPlus,
     Search,
     Globe,
@@ -49,177 +51,158 @@ const impersonateUser = (id, username) => {
         router.post(`/users/${id}/impersonate`);
     }
 };
+
+const tableHeaders = [
+    { label: 'Principal Identity' },
+    { label: 'Quota Plan' },
+    { label: 'Active Ingress' },
+    { label: 'Relational DBs' },
+    { label: 'Storage Footprint' },
+    { label: 'Account State' },
+    { label: 'Operations', class: 'text-right' },
+];
 </script>
 
 <template>
     <Head title="Identity & Principals - LiteControl" />
 
     <div class="space-y-6">
-            <!-- Asymmetrical Spec Header -->
-            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#1b222d]">
-                <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="text-[10px] font-mono tracking-widest uppercase text-[#ff6b35]">Access Security</span>
-                        <span class="text-[#3a4454] font-mono">/</span>
-                        <span class="text-[10px] font-mono text-[#6c7d93]">AUTH_IDENTITY_REGISTRY</span>
-                    </div>
-                    <h1 class="text-2xl font-bold tracking-tight text-white font-mono uppercase flex items-center gap-3">
-                        <Users class="w-6 h-6 text-[#ff6b35]" />
-                        <span>Principals & Tenant Accounts</span>
-                    </h1>
-                </div>
-
-                <Link
-                    href="/users/create"
-                    class="inline-flex items-center gap-2 px-4 py-2 bg-[#ff6b35] hover:bg-[#ff8252] text-black text-xs font-mono font-bold uppercase tracking-wider transition-colors shadow-[0_0_15px_rgba(255,107,53,0.25)] rounded-xs"
-                >
-                    <UserPlus class="w-4 h-4 stroke-[2.5]" />
-                    <span>Provision Principal</span>
+        <UiPageHeader
+            title="Principals & Tenant Accounts"
+            subtitle="Access Security // AUTH_IDENTITY_REGISTRY"
+        >
+            <template #actions>
+                <Link href="/users/create">
+                    <UiButton variant="primary">
+                        <UserPlus class="w-4 h-4 mr-1.5 inline" />
+                        Provision Principal
+                    </UiButton>
                 </Link>
+            </template>
+        </UiPageHeader>
+
+        <!-- Filter / Search Bar -->
+        <div class="flex items-center gap-3 bg-theme-bg-card border border-theme-border rounded p-2.5 shadow-sm">
+            <div class="relative flex-1">
+                <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" />
+                <input
+                    v-model="search"
+                    @keyup.enter="handleSearch"
+                    type="text"
+                    placeholder="FILTER_PRINCIPALS: USERNAME, EMAIL, IDENTITY_SPEC..."
+                    class="w-full pl-9 pr-4 py-1.5 bg-theme-bg-surface border border-theme-border rounded text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:border-theme-accent transition-colors"
+                />
             </div>
-
-            <!-- Filter / Search Bar -->
-            <div class="flex items-center gap-3 bg-[#0b0e14] border border-[#1b2330] rounded-xs p-2.5">
-                <div class="relative flex-1">
-                    <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#5a6b80]" />
-                    <input
-                        v-model="search"
-                        @keyup.enter="handleSearch"
-                        type="text"
-                        placeholder="FILTER_PRINCIPALS: USERNAME, EMAIL, IDENTITY_SPEC..."
-                        class="w-full pl-9 pr-4 py-1.5 bg-[#080b0f] border border-[#1e2634] rounded-xs text-xs font-mono text-[#cad3e0] placeholder-[#4e5c6e] focus:outline-none focus:border-[#ff6b35] transition-colors"
-                    />
-                </div>
-                <button
-                    @click="handleSearch"
-                    class="px-4 py-1.5 rounded-xs bg-[#161c26] hover:bg-[#202837] text-xs font-mono uppercase tracking-wider text-[#8ea0b5] transition-colors border border-[#1e2634]"
-                >
-                    Apply Filter
-                </button>
-            </div>
-
-            <!-- Users Grid Matrix -->
-            <div class="bg-[#0b0e14] border border-[#1b2330] rounded-xs overflow-hidden">
-                <div class="px-5 py-3 border-b border-[#1b2330] bg-[#0f131a] flex items-center justify-between">
-                    <span class="text-[11px] font-mono uppercase text-[#7a8b9f] tracking-wider">
-                        Registered Tenants ({{ users.total ?? users.data?.length ?? 0 }})
-                    </span>
-                    <span class="text-[10px] font-mono text-[#00f0a8]">SECURITY_ACL: ENFORCED</span>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs font-mono text-[#cad3e0]">
-                        <thead class="bg-[#090c11] text-[10px] font-semibold text-[#5a6b80] uppercase tracking-widest border-b border-[#1b2330]">
-                            <tr>
-                                <th class="px-5 py-3.5">Principal Identity</th>
-                                <th class="px-5 py-3.5">Quota Plan</th>
-                                <th class="px-5 py-3.5">Active Ingress</th>
-                                <th class="px-5 py-3.5">Relational DBs</th>
-                                <th class="px-5 py-3.5">Storage Footprint</th>
-                                <th class="px-5 py-3.5">Account State</th>
-                                <th class="px-5 py-3.5 text-right">Operations</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[#151b24]">
-                            <tr v-for="user in users.data" :key="user.id" class="hover:bg-[#12161f] transition-colors group">
-                                <td class="px-5 py-3.5">
-                                    <div class="flex items-center gap-2.5">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-[#ff6b35]/60 group-hover:bg-[#ff6b35]"></span>
-                                        <div>
-                                            <div class="font-bold text-white flex items-center gap-1.5">
-                                                <span>{{ user.username }}</span>
-                                            </div>
-                                            <div class="text-[10px] text-[#5e6f85]">{{ user.email }}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-5 py-3.5">
-                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-xs text-[10px] bg-[#161c26] text-[#8ea0b5] border border-[#222c3c]">
-                                        <PackageIcon class="w-3 h-3 text-[#ff6b35]" />
-                                        {{ user.package?.name || 'DEFAULT' }}
-                                    </span>
-                                </td>
-                                <td class="px-5 py-3.5">
-                                    <span class="inline-flex items-center gap-1.5 text-[#cad3e0]">
-                                        <Globe class="w-3.5 h-3.5 text-[#ff6b35]" />
-                                        {{ user.domains_count || 0 }}
-                                    </span>
-                                </td>
-                                <td class="px-5 py-3.5">
-                                    <span class="inline-flex items-center gap-1.5 text-[#cad3e0]">
-                                        <Database class="w-3.5 h-3.5 text-[#00f0a8]" />
-                                        {{ user.databases_count || 0 }}
-                                    </span>
-                                </td>
-                                <td class="px-5 py-3.5">
-                                    <div class="flex items-center gap-1.5 text-[#cad3e0]">
-                                        <HardDrive class="w-3.5 h-3.5 text-[#00f0a8]" />
-                                        <span>{{ diskUsageMap[user.username]?.disk_usage_human || '—' }}</span>
-                                    </div>
-                                    <div class="text-[10px] text-[#5e6f85]">
-                                        CAP: {{ user.package?.disk_quota_mb ? `${user.package.disk_quota_mb} MB` : 'UNLIMITED' }}
-                                    </div>
-                                </td>
-                                <td class="px-5 py-3.5">
-                                    <span
-                                        :class="[
-                                            'inline-flex items-center px-2 py-0.5 rounded-xs text-[10px] uppercase tracking-wider',
-                                            user.status === 'active'
-                                                ? 'bg-[#00f0a8]/10 text-[#00f0a8] border border-[#00f0a8]/30'
-                                                : 'bg-[#ff3366]/10 text-[#ff6685] border border-[#ff3366]/30'
-                                        ]"
-                                    >
-                                        {{ user.status }}
-                                    </span>
-                                </td>
-                                <td class="px-5 py-3.5 text-right">
-                                    <div class="flex items-center justify-end gap-1.5">
-                                        <!-- Impersonate Button -->
-                                        <button
-                                            @click="impersonateUser(user.id, user.username)"
-                                            title="Assume Context"
-                                            class="text-[#5e6f85] hover:text-[#ff6b35] transition-colors p-1"
-                                        >
-                                            <LogIn class="w-4 h-4" />
-                                        </button>
-
-                                        <!-- Suspend / Unsuspend -->
-                                        <button
-                                            v-if="user.status === 'active'"
-                                            @click="suspendUser(user.id, user.username)"
-                                            title="Suspend Context"
-                                            class="text-[#5e6f85] hover:text-[#ffd000] transition-colors p-1"
-                                        >
-                                            <Lock class="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            v-else
-                                            @click="unsuspendUser(user.id, user.username)"
-                                            title="Restore Context"
-                                            class="text-[#5e6f85] hover:text-[#00f0a8] transition-colors p-1"
-                                        >
-                                            <Unlock class="w-4 h-4" />
-                                        </button>
-
-                                        <!-- Delete -->
-                                        <button
-                                            @click="deleteUser(user.id, user.username)"
-                                            title="Terminate Principal"
-                                            class="text-[#5e6f85] hover:text-[#ff3366] transition-colors p-1"
-                                        >
-                                            <Trash2 class="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr v-if="!users.data || users.data.length === 0">
-                                <td colspan="7" class="px-5 py-8 text-center text-[#5a6b80] text-xs font-mono">
-                                    NO PRINCIPALS MATCHING SPECIFICATION
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <UiButton
+                @click="handleSearch"
+                variant="secondary"
+                size="sm"
+            >
+                Apply Filter
+            </UiButton>
         </div>
+
+        <!-- Users Grid Matrix via Theme-Aware DataTable -->
+        <UiDataTable
+            :headers="tableHeaders"
+            :items-count="users.data?.length || 0"
+            empty-message="NO PRINCIPALS MATCHING SPECIFICATION"
+        >
+            <tr
+                v-for="user in users.data"
+                :key="user.id"
+                class="hover:bg-theme-bg-surface/50 transition-colors group"
+            >
+                <td class="py-3.5 px-4">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-theme-accent"></span>
+                        <div>
+                            <div class="font-bold text-theme-text-primary flex items-center gap-1.5">
+                                <span>{{ user.username }}</span>
+                            </div>
+                            <div class="text-[11px] text-theme-text-muted">{{ user.email }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="py-3.5 px-4">
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-theme-bg-surface text-theme-text-secondary border border-theme-border">
+                        <PackageIcon class="w-3.5 h-3.5 text-theme-accent" />
+                        {{ user.package?.name || 'DEFAULT' }}
+                    </span>
+                </td>
+                <td class="py-3.5 px-4">
+                    <span class="inline-flex items-center gap-1.5 text-theme-text-primary">
+                        <Globe class="w-3.5 h-3.5 text-theme-accent" />
+                        {{ user.domains_count || 0 }}
+                    </span>
+                </td>
+                <td class="py-3.5 px-4">
+                    <span class="inline-flex items-center gap-1.5 text-theme-text-primary">
+                        <Database class="w-3.5 h-3.5 text-emerald-400" />
+                        {{ user.databases_count || 0 }}
+                    </span>
+                </td>
+                <td class="py-3.5 px-4">
+                    <div class="flex items-center gap-1.5 text-theme-text-primary">
+                        <HardDrive class="w-3.5 h-3.5 text-emerald-400" />
+                        <span>{{ diskUsageMap[user.username]?.disk_usage_human || '—' }}</span>
+                    </div>
+                    <div class="text-[10px] text-theme-text-muted">
+                        CAP: {{ user.package?.disk_quota_mb ? `${user.package.disk_quota_mb} MB` : 'UNLIMITED' }}
+                    </div>
+                </td>
+                <td class="py-3.5 px-4">
+                    <span
+                        :class="[
+                            'inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase tracking-wider',
+                            user.status === 'active'
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                        ]"
+                    >
+                        {{ user.status }}
+                    </span>
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                    <div class="flex items-center justify-end gap-1.5">
+                        <!-- Impersonate Button -->
+                        <button
+                            @click="impersonateUser(user.id, user.username)"
+                            title="Assume Context"
+                            class="text-theme-text-muted hover:text-theme-accent transition-colors p-1"
+                        >
+                            <LogIn class="w-4 h-4" />
+                        </button>
+
+                        <!-- Suspend / Unsuspend -->
+                        <button
+                            v-if="user.status === 'active'"
+                            @click="suspendUser(user.id, user.username)"
+                            title="Suspend Context"
+                            class="text-theme-text-muted hover:text-amber-400 transition-colors p-1"
+                        >
+                            <Lock class="w-4 h-4" />
+                        </button>
+                        <button
+                            v-else
+                            @click="unsuspendUser(user.id, user.username)"
+                            title="Restore Context"
+                            class="text-theme-text-muted hover:text-emerald-400 transition-colors p-1"
+                        >
+                            <Unlock class="w-4 h-4" />
+                        </button>
+
+                        <!-- Delete -->
+                        <button
+                            @click="deleteUser(user.id, user.username)"
+                            title="Terminate Principal"
+                            class="text-theme-text-muted hover:text-rose-400 transition-colors p-1"
+                        >
+                            <Trash2 class="w-4 h-4" />
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        </UiDataTable>
+    </div>
 </template>
