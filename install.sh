@@ -29,12 +29,8 @@ else
         apt-get update -qq && apt-get install -y -qq git curl
     fi
     mkdir -p "$(dirname "${INSTALL_SRC_DIR}")"
-    if [[ -d "${INSTALL_SRC_DIR}/.git" ]]; then
-        git -C "${INSTALL_SRC_DIR}" pull --quiet || true
-    else
-        rm -rf "${INSTALL_SRC_DIR}"
-        git clone --depth 1 "${GITHUB_REPO_URL}" "${INSTALL_SRC_DIR}"
-    fi
+    rm -rf "${INSTALL_SRC_DIR}"
+    git clone --depth 1 "${GITHUB_REPO_URL}" "${INSTALL_SRC_DIR}"
     REPO_DIR="${INSTALL_SRC_DIR}"
 fi
 

@@ -287,7 +287,10 @@ ensure_nodejs_for_frontend_build() {
 
 ensure_panel_composer() {
     local composer_bin="${LC_BASE_DIR}/bin/composer.phar"
-    local php_bin="/usr/local/bin/php"
+    local php_bin="/usr/bin/php"
+    if [[ ! -x "${php_bin}" ]]; then
+        php_bin="$(command -v php 2>/dev/null || echo "/usr/local/bin/php")"
+    fi
     if [[ -x "${composer_bin}" && -f "${composer_bin}" ]]; then
         if "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
             return 0
@@ -345,8 +348,12 @@ upgrade_laravel_panel() {
         ensure_panel_composer
         log_info "Installing Composer dependencies..."
         local composer_bin="/usr/local/bin/composer"
+        local php_bin="/usr/bin/php"
+        if [[ ! -x "${php_bin}" ]]; then
+            php_bin="$(command -v php 2>/dev/null || echo "/usr/local/bin/php")"
+        fi
         if [[ -f "${LC_BASE_DIR}/bin/composer.phar" ]]; then
-            composer_bin="/usr/local/bin/php ${LC_BASE_DIR}/bin/composer.phar"
+            composer_bin="${php_bin} -d memory_limit=-1 ${LC_BASE_DIR}/bin/composer.phar"
         fi
         local composer_env="export HOME='${LC_BASE_DIR}' COMPOSER_HOME='${LC_BASE_DIR}/.config/composer' COMPOSER_CACHE_DIR='${LC_BASE_DIR}/.cache/composer' COMPOSER_MEMORY_LIMIT=-1 GIT_TERMINAL_PROMPT=0;"
         su -s /bin/bash "${LC_USER}" -c "${composer_env} cd '${LC_PANEL_DIR}' && ${composer_bin} install --no-dev -o --no-interaction --no-progress"

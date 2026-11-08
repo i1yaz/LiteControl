@@ -131,14 +131,17 @@ EOF
 
         chown -R "${LC_USER}:${LC_GROUP}" "${LC_PANEL_DIR}"
         local composer_bin="${LC_BASE_DIR}/bin/composer.phar"
-        local php_bin="/usr/local/bin/php"
+        local php_bin="/usr/bin/php"
+        if [[ ! -x "${php_bin}" ]]; then
+            php_bin="$(command -v php 2>/dev/null || echo "/usr/local/bin/php")"
+        fi
         if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
             log_info "Fetching verified Composer standalone binary..."
             mkdir -p "${LC_BASE_DIR}/bin"
             curl -4 -fsSL --connect-timeout 15 --max-time 120 -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar || true
             chmod 755 "${composer_bin}"
         fi
-        local run_composer="${php_bin} ${composer_bin}"
+        local run_composer="${php_bin} -d memory_limit=-1 ${composer_bin}"
         if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
             run_composer="/usr/local/bin/composer"
         fi
