@@ -17,6 +17,20 @@
 
     --color-plasma-orange: #ff6b35;
     --color-neon-cyan: #00f0a8;
+
+    --color-theme-bg-body: var(--theme-bg-body, #080a0e);
+    --color-theme-bg-main: var(--theme-bg-main, #090b0e);
+    --color-theme-bg-header: var(--theme-bg-header, #0d1015);
+    --color-theme-bg-sidebar: var(--theme-bg-sidebar, #0a0d12);
+    --color-theme-bg-card: var(--theme-bg-card, #0c1017);
+    --color-theme-bg-surface: var(--theme-bg-surface, #0e1217);
+    --color-theme-border: var(--theme-border, #1e2634);
+    --color-theme-border-subtle: var(--theme-border-subtle, #191f2a);
+    --color-theme-accent: var(--theme-accent, #ff6b35);
+    --color-theme-accent-hover: var(--theme-accent-hover, #ff8252);
+    --color-theme-text-primary: var(--theme-text-primary, #f1f5f9);
+    --color-theme-text-secondary: var(--theme-text-secondary, #98a6b8);
+    --color-theme-text-muted: var(--theme-text-muted, #586477);
 }
 
 /* Technical Hairline Grid Texture & Scrollbars */

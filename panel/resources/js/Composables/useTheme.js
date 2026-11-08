@@ -63,12 +63,15 @@ export function useTheme() {
     const switchTheme = (themeId) => {
         router.post('/theme/switch', { theme: themeId }, {
             preserveScroll: true,
-            preserveState: true,
+            preserveState: false,
             onSuccess: () => {
-                loadThemeModule(themeId);
                 if (typeof document !== 'undefined') {
                     document.documentElement.setAttribute('data-theme', themeId);
                 }
+                loadThemeModule(themeId).then(() => {
+                    // Reload the Inertia page so dynamic page components re-resolve for the new theme
+                    router.reload({ preserveScroll: true });
+                });
             },
         });
     };

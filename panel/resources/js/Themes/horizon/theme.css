@@ -3,7 +3,9 @@ html[data-theme="horizon"] {
     --theme-bg-body: #0b1120;
     --theme-bg-main: #0b1120;
     --theme-bg-header: #0f172a;
+    --theme-bg-sidebar: #0f172a;
     --theme-bg-card: #0f172a;
+    --theme-bg-surface: #1e293b;
     --theme-border: #1e293b;
     --theme-border-subtle: #1e293b;
     --theme-accent: #0284c7;

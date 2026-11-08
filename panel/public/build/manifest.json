@@ -7,9 +7,25 @@
       "_runtime-dom.esm-bundler-CMeWlPEc.js"
     ]
   },
-  "_UiCard-DdkEbel0.js": {
-    "file": "assets/UiCard-DdkEbel0.js",
+  "_UiCard-A5H_I38P.js": {
+    "file": "assets/UiCard-A5H_I38P.js",
     "name": "UiCard",
+    "imports": [
+      "_runtime-core.esm-bundler-CoV3YJHl.js",
+      "resources/js/app.js"
+    ]
+  },
+  "_UiInput-Dk_nmPOj.js": {
+    "file": "assets/UiInput-Dk_nmPOj.js",
+    "name": "UiInput",
+    "imports": [
+      "_runtime-core.esm-bundler-CoV3YJHl.js",
+      "resources/js/app.js"
+    ]
+  },
+  "_UiPageHeader-CAjvtPiv.js": {
+    "file": "assets/UiPageHeader-CAjvtPiv.js",
+    "name": "UiPageHeader",
     "imports": [
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "resources/js/app.js"
@@ -331,7 +347,7 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-DkG_V9NQ.css",
+    "file": "assets/app-WiHrTQbQ.css",
     "name": "app",
     "names": [
       "app.css"
@@ -340,7 +356,7 @@
     "isEntry": true
   },
   "resources/js/Pages/Auth/Login.vue": {
-    "file": "assets/Login-BwmrkH7D.js",
+    "file": "assets/Login-DWM7zEFC.js",
     "name": "Login",
     "src": "resources/js/Pages/Auth/Login.vue",
     "isDynamicEntry": true,
@@ -349,8 +365,9 @@
       "_runtime-dom.esm-bundler-CMeWlPEc.js",
       "_dist-Du9yZf7-.js",
       "_shield-check-DkY5A489.js",
-      "resources/js/app.js",
-      "_UiCard-DdkEbel0.js"
+      "_UiInput-Dk_nmPOj.js",
+      "_UiCard-A5H_I38P.js",
+      "resources/js/app.js"
     ]
   },
   "resources/js/Pages/Backups/Index.vue": {
@@ -414,7 +431,7 @@
     ]
   },
   "resources/js/Pages/Configuration/Settings.vue": {
-    "file": "assets/Settings-XdX9DiEB.js",
+    "file": "assets/Settings-YpV7utku.js",
     "name": "Settings",
     "src": "resources/js/Pages/Configuration/Settings.vue",
     "isDynamicEntry": true,
@@ -431,7 +448,7 @@
     ]
   },
   "resources/js/Pages/Dashboard.vue": {
-    "file": "assets/Dashboard-CcV-IZ69.js",
+    "file": "assets/Dashboard-DnMd3lf0.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Dashboard.vue",
     "isDynamicEntry": true,
@@ -439,8 +456,8 @@
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "_dist-Du9yZf7-.js",
       "_useDashboardMetrics-CguAxK4z.js",
-      "_UiCard-DdkEbel0.js",
-      "resources/js/app.js",
+      "_UiCard-A5H_I38P.js",
+      "_UiPageHeader-CAjvtPiv.js",
       "_globe-BRPkwY9L.js",
       "_database-B3YLvUBK.js",
       "_package-DpRijx80.js",
@@ -469,7 +486,7 @@
     ]
   },
   "resources/js/Pages/Domains/Index.vue": {
-    "file": "assets/Index-DtirMEOs.js",
+    "file": "assets/Index-BTjI899c.js",
     "name": "Index",
     "src": "resources/js/Pages/Domains/Index.vue",
     "isDynamicEntry": true,
@@ -477,14 +494,14 @@
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "_runtime-dom.esm-bundler-CMeWlPEc.js",
       "_dist-Du9yZf7-.js",
-      "_Modal-CV6qx_MQ.js",
-      "_globe-BRPkwY9L.js",
+      "_UiPageHeader-CAjvtPiv.js",
+      "_UiInput-Dk_nmPOj.js",
+      "resources/js/app.js",
       "_plus-CJwk8iSu.js",
       "_shield-check-DkY5A489.js",
       "_shield-alert-B1j6Agw6.js",
       "_folder-DfmVeL55.js",
-      "_trash-2-D_nms9MB.js",
-      "_x-Cngi4OI8.js"
+      "_trash-2-D_nms9MB.js"
     ]
   },
   "resources/js/Pages/Domains/Subdomains.vue": {
@@ -1032,7 +1049,7 @@
     ]
   },
   "resources/js/Themes/avionics/index.js": {
-    "file": "assets/avionics-ruNGaEdi.js",
+    "file": "assets/avionics-j1rSp-kK.js",
     "name": "avionics",
     "src": "resources/js/Themes/avionics/index.js",
     "isDynamicEntry": true,
@@ -1205,7 +1222,7 @@
     ]
   },
   "resources/js/Themes/horizon/index.js": {
-    "file": "assets/horizon-BPpqNZ1E.js",
+    "file": "assets/horizon-wGQyL5xy.js",
     "name": "horizon",
     "src": "resources/js/Themes/horizon/index.js",
     "isDynamicEntry": true,
@@ -1247,11 +1264,11 @@
       "resources/js/Themes/horizon/Components/Alert.vue"
     ],
     "css": [
-      "assets/horizon-83i8xxYy.css"
+      "assets/horizon-CjEPiY6b.css"
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-FEXLkpSJ.js",
+    "file": "assets/app-DDp19Fk3.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -1306,7 +1323,7 @@
       "resources/js/Themes/horizon/Pages/Dashboard.vue"
     ],
     "css": [
-      "assets/app-DkG_V9NQ.css"
+      "assets/app-WiHrTQbQ.css"
     ]
   }
 }
