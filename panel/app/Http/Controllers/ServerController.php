@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Services\LcCliService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Process;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -321,18 +322,38 @@ class ServerController extends Controller
             ]);
         }
 
-        // 2. Real Linux check
         $olsCtrl = '/usr/local/lsws/bin/lswsctrl';
         $isOnline = false;
 
+        // Try /usr/local/lsws/bin/lswsctrl status first
         if (file_exists($olsCtrl)) {
-            $output = shell_exec("{$olsCtrl} status 2>&1");
-            // lswsctrl status returns "[ERROR] litespeed is not running." when stopped
-            // and contains "litespeed is running with PID" or "running" when active
-            $isOnline = (is_string($output) && stripos($output, 'running') !== false && stripos($output, 'not running') === false);
-        } else {
-            $output = shell_exec('systemctl is-active lshttpd 2>/dev/null || systemctl is-active lsws 2>/dev/null || systemctl is-active openlitespeed 2>/dev/null');
-            $isOnline = (is_string($output) && trim($output) === 'active');
+            $result = Process::run([$olsCtrl, 'status']);
+            // lswsctrl returns exit code 0 when running
+            if ($result->successful()) {
+                $isOnline = true;
+            } else {
+                $output = trim($result->output() . ' ' . $result->errorOutput());
+                $isOnline = (stripos($output, 'running') !== false && stripos($output, 'not running') === false);
+            }
+        }
+
+        // Fallback: check systemctl is-active
+        if (!$isOnline) {
+            foreach (['lshttpd', 'lsws', 'openlitespeed'] as $unit) {
+                $res = Process::run(['systemctl', 'is-active', $unit]);
+                if (trim($res->output()) === 'active') {
+                    $isOnline = true;
+                    break;
+                }
+            }
+        }
+
+        // Fallback: check PID file
+        if (!$isOnline && file_exists('/tmp/lshttpd/lshttpd.pid')) {
+            $pid = trim(@file_get_contents('/tmp/lshttpd/lshttpd.pid'));
+            if (!empty($pid) && is_numeric($pid) && file_exists("/proc/{$pid}")) {
+                $isOnline = true;
+            }
         }
 
         return response()->json([
