@@ -313,8 +313,8 @@ class ServerController extends Controller
      */
     public function olsStatus()
     {
-        // 1. If running on Windows / dev machine without Linux systemctl or OLS binaries, fallback to mock mode
-        if (PHP_OS_FAMILY === 'Windows') {
+        // 1. If running in mock mode on dev/Windows environment
+        if ($this->lcCli->isMockMode()) {
             return response()->json([
                 'status' => 'online',
                 'service' => 'openlitespeed',
@@ -322,42 +322,23 @@ class ServerController extends Controller
             ]);
         }
 
-        $olsCtrl = '/usr/local/lsws/bin/lswsctrl';
-        $isOnline = false;
-
-        // Try /usr/local/lsws/bin/lswsctrl status first
-        if (file_exists($olsCtrl)) {
-            $result = Process::run([$olsCtrl, 'status']);
-            // lswsctrl returns exit code 0 when running
-            if ($result->successful()) {
-                $isOnline = true;
-            } else {
-                $output = trim($result->output() . ' ' . $result->errorOutput());
-                $isOnline = (stripos($output, 'running') !== false && stripos($output, 'not running') === false);
-            }
-        }
-
-        // Fallback: check systemctl is-active
-        if (!$isOnline) {
-            foreach (['lshttpd', 'lsws', 'openlitespeed'] as $unit) {
-                $res = Process::run(['systemctl', 'is-active', $unit]);
-                if (trim($res->output()) === 'active') {
-                    $isOnline = true;
-                    break;
+        // 2. Query lc-cli service status directly (single source of truth)
+        $res = $this->lcCli->run('server', ['services']);
+        if (($res['status'] ?? '') === 'success' && is_array($res['data'] ?? null)) {
+            foreach ($res['data'] as $service) {
+                $name = $service['name'] ?? $service['service'] ?? '';
+                if (in_array($name, ['openlitespeed', 'lshttpd', 'lsws'], true)) {
+                    $isActive = ($service['status'] ?? '') === 'active';
+                    return response()->json([
+                        'status' => $isActive ? 'online' : 'offline',
+                        'service' => 'openlitespeed',
+                    ]);
                 }
             }
         }
 
-        // Fallback: check PID file
-        if (!$isOnline && file_exists('/tmp/lshttpd/lshttpd.pid')) {
-            $pid = trim(@file_get_contents('/tmp/lshttpd/lshttpd.pid'));
-            if (!empty($pid) && is_numeric($pid) && file_exists("/proc/{$pid}")) {
-                $isOnline = true;
-            }
-        }
-
         return response()->json([
-            'status' => $isOnline ? 'online' : 'offline',
+            'status' => 'offline',
             'service' => 'openlitespeed',
         ]);
     }
