@@ -51,5 +51,15 @@ class Domain extends Model
     {
         return $this->hasMany(FtpAccount::class);
     }
+
+    public function databases(): HasMany
+    {
+        return $this->hasMany(Database::class);
+    }
+
+    public function aliases(): HasMany
+    {
+        return $this->hasMany(Domain::class, 'parent_domain_id')->where('type', 'alias');
+    }
 }
 

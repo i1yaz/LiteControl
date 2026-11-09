@@ -5,10 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Domain;
 use App\Models\User;
 use App\Models\AuditLog;
+use App\Models\FtpAccount;
 use App\Services\LcCliService;
 use App\Services\DomainService;
+use App\Services\SslService;
+use App\Services\FtpService;
+use App\Services\LogReaderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,11 +22,22 @@ class DomainController extends Controller
 {
     protected LcCliService $lcCli;
     protected DomainService $domainService;
+    protected SslService $sslService;
+    protected FtpService $ftpService;
+    protected LogReaderService $logReader;
 
-    public function __construct(LcCliService $lcCli, DomainService $domainService)
-    {
+    public function __construct(
+        LcCliService $lcCli,
+        DomainService $domainService,
+        SslService $sslService,
+        FtpService $ftpService,
+        LogReaderService $logReader
+    ) {
         $this->lcCli = $lcCli;
         $this->domainService = $domainService;
+        $this->sslService = $sslService;
+        $this->ftpService = $ftpService;
+        $this->logReader = $logReader;
     }
 
     /**
@@ -185,24 +201,321 @@ class DomainController extends Controller
             'php_version' => ['required', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
         ]);
 
-        $res = $this->lcCli->run('vhost', ['php-switch', $domain->domain, $validated['php_version']]);
-
-        if (($res['status'] ?? '') === 'success') {
-            $domain->update(['php_version' => $validated['php_version']]);
-
-            AuditLog::create([
-                'user_id' => $user->id,
-                'action' => 'domain.php_switch',
-                'command' => "lc-cli vhost php-switch {$domain->domain} {$validated['php_version']}",
-                'status' => 'success',
-                'ip_address' => $request->ip(),
-                'details' => ['domain' => $domain->domain, 'new_version' => $validated['php_version']],
-            ]);
-
+        try {
+            $this->domainService->switchPhpVersion($domain, $validated['php_version'], $user);
             return back()->with('success', "Domain '{$domain->domain}' switched to PHP {$validated['php_version']}.");
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to switch PHP version: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Suspend domain.
+     */
+    public function suspend(Request $request, Domain $domain)
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
         }
 
-        return back()->with('error', 'Failed to switch PHP version: ' . ($res['message'] ?? 'CLI Error'));
+        try {
+            $this->domainService->suspendDomain($domain, $user);
+            return back()->with('success', "Domain '{$domain->domain}' has been suspended.");
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to suspend domain: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Unsuspend domain.
+     */
+    public function unsuspend(Request $request, Domain $domain)
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        try {
+            $this->domainService->unsuspendDomain($domain, $user);
+            return back()->with('success', "Domain '{$domain->domain}' has been activated.");
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to unsuspend domain: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Manage website dashboard (CyberPanel-style).
+     */
+    public function manage(Request $request, Domain $domain): Response
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $domain->load(['user.package', 'parentDomain', 'subdomains', 'aliases', 'ftpAccounts']);
+
+        // Fetch associated databases count (where database belongs to this domain or subdomains)
+        $associatedDomainIds = array_merge([$domain->id], $domain->subdomains->pluck('id')->toArray());
+        $databasesCount = \App\Models\Database::whereIn('domain_id', $associatedDomainIds)->count();
+
+        // Calculate total size via lc-cli
+        $sizeRes = $this->lcCli->run('vhost', ['size', $domain->domain]);
+        $sizeBytes = $sizeRes['data']['size_bytes'] ?? 0;
+        $sizeHuman = $this->formatBytes($sizeBytes);
+
+        // PHP installed versions
+        $phpListRes = $this->lcCli->run('php', ['list']);
+        $installedVersions = array_filter(
+            ($phpListRes['status'] ?? '') === 'success' ? ($phpListRes['data'] ?? []) : [],
+            fn($v) => !empty($v['installed'])
+        );
+
+        return Inertia::render('Domains/Manage', [
+            'domain' => $domain,
+            'databasesCount' => $databasesCount,
+            'totalSizeBytes' => $sizeBytes,
+            'totalSizeHuman' => $sizeHuman,
+            'installedPhpVersions' => array_values($installedVersions),
+            'activeTab' => $request->input('tab', 'overview'),
+        ]);
+    }
+
+    /**
+     * Add domain alias.
+     */
+    public function storeAlias(Request $request, Domain $domain)
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $validated = $request->validate([
+            'alias' => [
+                'required',
+                'string',
+                'regex:/^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/',
+                'unique:domains,domain',
+            ],
+        ]);
+
+        try {
+            $this->domainService->addAlias($domain, $validated['alias'], $user);
+            return back()->with('success', "Domain alias '{$validated['alias']}' added successfully.");
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to add domain alias: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Remove domain alias.
+     */
+    public function destroyAlias(Request $request, Domain $domain, Domain $alias)
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        if ($alias->parent_domain_id !== $domain->id || $alias->type !== 'alias') {
+            abort(404, 'Alias not associated with this domain.');
+        }
+
+        $aliasName = $alias->domain;
+        $alias->delete();
+
+        AuditLog::create([
+            'user_id' => $user->id,
+            'action' => 'domain.alias_delete',
+            'command' => "domain delete alias {$aliasName}",
+            'status' => 'success',
+            'ip_address' => $request->ip(),
+            'details' => ['parent' => $domain->domain, 'alias' => $aliasName],
+        ]);
+
+        return back()->with('success', "Domain alias '{$aliasName}' removed.");
+    }
+
+    /**
+     * Fetch access or error logs with pagination.
+     */
+    public function logs(Request $request, Domain $domain)
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $type = $request->input('type', 'access') === 'error' ? 'error' : 'access';
+        $page = (int) $request->input('page', 1);
+        $perPage = (int) $request->input('per_page', 50);
+
+        $logPath = "/home/{$domain->user->username}/{$domain->domain}/logs/{$type}.log";
+
+        // Dev sandbox fallback
+        if (PHP_OS_FAMILY !== 'Linux' || ! file_exists($logPath)) {
+            $sandboxLogDir = storage_path("app/homes/{$domain->user->username}/{$domain->domain}/logs");
+            if (! file_exists($sandboxLogDir)) {
+                @File::makeDirectory($sandboxLogDir, 0755, true);
+            }
+            $logPath = "{$sandboxLogDir}/{$type}.log";
+            if (! file_exists($logPath)) {
+                $sampleLogs = [
+                    "[" . now()->subMinutes(12)->toIso8601String() . "] [NOTICE] Worker thread started for {$domain->domain}",
+                    "[" . now()->subMinutes(8)->toIso8601String() . "] [INFO] 127.0.0.1 GET / 200 - Mozilla/5.0",
+                    "[" . now()->subMinutes(3)->toIso8601String() . "] [INFO] 127.0.0.1 GET /assets/app.css 200",
+                    "[" . now()->subMinute()->toIso8601String() . "] [NOTICE] HTTP/2 connection negotiated successfully.",
+                ];
+                file_put_contents($logPath, implode("\n", $sampleLogs) . "\n");
+            }
+        }
+
+        $logData = $this->logReader->readLogPage($logPath, $page, $perPage);
+
+        return response()->json([
+            'status' => 'success',
+            'log_type' => $type,
+            'file_path' => $logPath,
+            ...$logData,
+        ]);
+    }
+
+    /**
+     * Get raw vHost conf.
+     */
+    public function vhostConf(Request $request, Domain $domain)
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $res = $this->lcCli->run('vhost', ['conf-get', $domain->domain]);
+        $conf = $res['data']['conf'] ?? '# No configuration file found.';
+
+        return response()->json([
+            'status' => 'success',
+            'domain' => $domain->domain,
+            'conf' => $conf,
+        ]);
+    }
+
+    /**
+     * Read .htaccess content.
+     */
+    public function getHtaccess(Request $request, Domain $domain)
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $htaccessPath = "{$domain->document_root}/.htaccess";
+        $content = file_exists($htaccessPath) ? @file_get_contents($htaccessPath) : '';
+
+        return response()->json([
+            'status' => 'success',
+            'content' => $content ?: '',
+            'exists' => file_exists($htaccessPath),
+        ]);
+    }
+
+    /**
+     * Save .htaccess content.
+     */
+    public function saveHtaccess(Request $request, Domain $domain)
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $validated = $request->validate([
+            'content' => ['nullable', 'string'],
+        ]);
+
+        $htaccessPath = "{$domain->document_root}/.htaccess";
+
+        if (! file_exists($domain->document_root)) {
+            @File::makeDirectory($domain->document_root, 0755, true);
+        }
+
+        $success = @file_put_contents($htaccessPath, $validated['content'] ?? '');
+
+        if ($success === false) {
+            return back()->with('error', 'Failed to write to .htaccess file. Check filesystem permissions.');
+        }
+
+        AuditLog::create([
+            'user_id' => $user->id,
+            'action' => 'domain.htaccess_update',
+            'command' => "update .htaccess for {$domain->domain}",
+            'status' => 'success',
+            'ip_address' => $request->ip(),
+            'details' => ['domain' => $domain->domain],
+        ]);
+
+        return back()->with('success', '.htaccess rewrite rules updated successfully.');
+    }
+
+    /**
+     * Store FTP account for this domain.
+     */
+    public function storeFtp(Request $request, Domain $domain)
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $validated = $request->validate([
+            'username' => ['required', 'string', 'regex:/^[a-zA-Z0-9_]{1,32}$/'],
+            'password' => ['required', 'string', 'min:8'],
+            'dir' => ['nullable', 'string', 'max:255'],
+            'quota_mb' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        try {
+            $this->ftpService->createAccount($domain, $validated, $user);
+            return back()->with('success', "FTP account created successfully for {$domain->domain}.");
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to create FTP account: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete FTP account.
+     */
+    public function destroyFtp(Request $request, Domain $domain, FtpAccount $ftpAccount)
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        if ($ftpAccount->domain_id !== $domain->id) {
+            abort(404, 'FTP account does not belong to this domain.');
+        }
+
+        $this->ftpService->deleteAccount($ftpAccount, $user);
+        return back()->with('success', "FTP account '{$ftpAccount->username}' deleted.");
+    }
+
+    /**
+     * Format byte values to human readable string.
+     */
+    protected function formatBytes(int $bytes, int $precision = 1): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        $bytes /= (1 << (10 * $pow));
+
+        return round($bytes, $precision) . ' ' . $units[$pow];
     }
 
     /**

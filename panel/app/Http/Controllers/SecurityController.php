@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Domain;
 use App\Models\FirewallRule;
 use App\Services\LcCliService;
+use App\Services\SslService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -16,10 +17,12 @@ use Inertia\Response;
 class SecurityController extends Controller
 {
     protected LcCliService $lcCli;
+    protected SslService $sslService;
 
-    public function __construct(LcCliService $lcCli)
+    public function __construct(LcCliService $lcCli, SslService $sslService)
     {
         $this->lcCli = $lcCli;
+        $this->sslService = $sslService;
     }
 
     /**
@@ -57,27 +60,13 @@ class SecurityController extends Controller
             abort(403);
         }
 
-        $res = $this->lcCli->run('ssl', ['issue', $domain->domain, $domain->document_root, $user->email]);
+        $res = $this->sslService->issueOrRenew($domain, $user);
 
         if (($res['status'] ?? '') === 'error') {
             return redirect()->back()->with('error', $res['message'] ?? 'Failed to issue SSL certificate.');
         }
 
-        $domain->update([
-            'ssl_enabled' => true,
-            'ssl_expires_at' => now()->addDays(90),
-        ]);
-
-        AuditLog::create([
-            'user_id' => $user->id,
-            'action' => 'ssl_issue',
-            'command' => "lc-cli ssl issue {$domain->domain}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode(['domain' => $domain->domain]),
-        ]);
-
-        return redirect()->back()->with('success', "Let's Encrypt SSL certificate successfully issued for {$domain->domain}.");
+        return redirect()->back()->with('success', $res['message'] ?? "Let's Encrypt SSL certificate successfully issued.");
     }
 
     /**
@@ -98,36 +87,13 @@ class SecurityController extends Controller
             abort(403);
         }
 
-        // Write temp cert and key files to hand to CLI
-        $tempCert = tempnam(sys_get_temp_dir(), 'lc_cert_');
-        $tempKey = tempnam(sys_get_temp_dir(), 'lc_key_');
-        file_put_contents($tempCert, $validated['certificate']);
-        file_put_contents($tempKey, $validated['private_key']);
-
-        $res = $this->lcCli->run('ssl', ['custom', $domain->domain, $tempCert, $tempKey]);
-
-        @unlink($tempCert);
-        @unlink($tempKey);
+        $res = $this->sslService->installCustomSsl($domain, $validated['certificate'], $validated['private_key'], $user);
 
         if (($res['status'] ?? '') === 'error') {
             return redirect()->back()->with('error', $res['message'] ?? 'Failed to install custom SSL certificate.');
         }
 
-        $domain->update([
-            'ssl_enabled' => true,
-            'ssl_expires_at' => now()->addYear(),
-        ]);
-
-        AuditLog::create([
-            'user_id' => $user->id,
-            'action' => 'ssl_custom',
-            'command' => "lc-cli ssl custom {$domain->domain}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode(['domain' => $domain->domain]),
-        ]);
-
-        return redirect()->back()->with('success', "Custom SSL certificate installed for {$domain->domain}.");
+        return redirect()->back()->with('success', $res['message'] ?? "Custom SSL certificate installed.");
     }
 
     /**
@@ -140,18 +106,13 @@ class SecurityController extends Controller
             abort(403);
         }
 
-        $res = $this->lcCli->run('ssl', ['renew', $domain->domain]);
+        $res = $this->sslService->issueOrRenew($domain, $user, true);
 
         if (($res['status'] ?? '') === 'error') {
             return redirect()->back()->with('error', $res['message'] ?? 'Failed to renew SSL certificate.');
         }
 
-        $domain->update([
-            'ssl_enabled' => true,
-            'ssl_expires_at' => now()->addDays(90),
-        ]);
-
-        return redirect()->back()->with('success', "SSL certificate renewed for {$domain->domain}.");
+        return redirect()->back()->with('success', $res['message'] ?? "SSL certificate renewed.");
     }
 
     /**

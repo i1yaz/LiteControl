@@ -37,9 +37,20 @@ Route::middleware('auth')->group(function () {
     // Domains & Subdomains
     Route::get('/domains', [DomainController::class, 'index'])->name('domains.index');
     Route::post('/domains', [DomainController::class, 'store'])->name('domains.store');
+    Route::get('/domains/{domain}/manage', [DomainController::class, 'manage'])->name('domains.manage');
     Route::put('/domains/{domain}', [DomainController::class, 'update'])->name('domains.update');
     Route::delete('/domains/{domain}', [DomainController::class, 'destroy'])->name('domains.destroy');
+    Route::post('/domains/{domain}/suspend', [DomainController::class, 'suspend'])->name('domains.suspend');
+    Route::post('/domains/{domain}/unsuspend', [DomainController::class, 'unsuspend'])->name('domains.unsuspend');
     Route::post('/domains/{domain}/php', [DomainController::class, 'switchPhp'])->name('domains.php');
+    Route::post('/domains/{domain}/aliases', [DomainController::class, 'storeAlias'])->name('domains.aliases.store');
+    Route::delete('/domains/{domain}/aliases/{alias}', [DomainController::class, 'destroyAlias'])->name('domains.aliases.destroy');
+    Route::get('/domains/{domain}/logs', [DomainController::class, 'logs'])->name('domains.logs');
+    Route::get('/domains/{domain}/vhost-conf', [DomainController::class, 'vhostConf'])->name('domains.vhost-conf');
+    Route::get('/domains/{domain}/htaccess', [DomainController::class, 'getHtaccess'])->name('domains.htaccess.get');
+    Route::post('/domains/{domain}/htaccess', [DomainController::class, 'saveHtaccess'])->name('domains.htaccess.save');
+    Route::post('/domains/{domain}/ftp', [DomainController::class, 'storeFtp'])->name('domains.ftp.store');
+    Route::delete('/domains/{domain}/ftp/{ftpAccount}', [DomainController::class, 'destroyFtp'])->name('domains.ftp.destroy');
     Route::get('/subdomains', [DomainController::class, 'subdomains'])->name('subdomains.index');
     Route::post('/subdomains', [DomainController::class, 'storeSubdomain'])->name('subdomains.store');
 

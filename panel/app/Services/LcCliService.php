@@ -282,6 +282,50 @@ class LcCliService
                         ],
                     ];
                 }
+                if ($sub === 'suspend') {
+                    $dom = $args[1] ?? 'example.com';
+                    return [
+                        'status' => 'success',
+                        'message' => "VirtualHost '{$dom}' suspended.",
+                        'data' => ['domain' => $dom, 'status' => 'suspended'],
+                    ];
+                }
+                if ($sub === 'unsuspend') {
+                    $dom = $args[1] ?? 'example.com';
+                    return [
+                        'status' => 'success',
+                        'message' => "VirtualHost '{$dom}' unsuspended.",
+                        'data' => ['domain' => $dom, 'status' => 'active'],
+                    ];
+                }
+                if ($sub === 'alias-add') {
+                    $dom = $args[1] ?? 'example.com';
+                    $alias = $args[2] ?? 'alias.example.com';
+                    return [
+                        'status' => 'success',
+                        'message' => "Domain alias '{$alias}' registered for '{$dom}'.",
+                        'data' => ['domain' => $dom, 'alias' => $alias],
+                    ];
+                }
+                if ($sub === 'conf-get') {
+                    $dom = $args[1] ?? 'example.com';
+                    return [
+                        'status' => 'success',
+                        'message' => "Configuration retrieved for '{$dom}'.",
+                        'data' => [
+                            'domain' => $dom,
+                            'conf' => "docRoot                   /home/client1/{$dom}/public_html\nvhDomain                  {$dom}\nvhAliases                 www.{$dom}\nadminEmails               admin@{$dom}\nenableGzip                1\nenableBr                  1\n\ncontext / {\n  location                \$DOC_ROOT/\n  allowBrowse             1\n}\n",
+                        ],
+                    ];
+                }
+                if ($sub === 'size') {
+                    $dom = $args[1] ?? 'example.com';
+                    return [
+                        'status' => 'success',
+                        'message' => "Size calculated for '{$dom}'.",
+                        'data' => ['domain' => $dom, 'size_bytes' => 5242880], // 5 MB
+                    ];
+                }
                 return ['status' => 'success', 'message' => "Virtual host operation '$sub' completed", 'data' => []];
 
             case 'php':

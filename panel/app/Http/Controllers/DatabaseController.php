@@ -69,6 +69,7 @@ class DatabaseController extends Controller
 
         $rules = [
             'db_name' => ['required', 'string', 'regex:/^[a-zA-Z0-9_]{1,64}$/'],
+            'domain_id' => ['nullable', 'exists:domains,id'],
         ];
 
         if ($user->isAdmin()) {
@@ -110,6 +111,7 @@ class DatabaseController extends Controller
 
         $database = Database::create([
             'user_id' => $targetUser->id,
+            'domain_id' => $validated['domain_id'] ?? null,
             'db_name' => $finalDbName,
             'size_bytes' => 0,
         ]);

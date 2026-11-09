@@ -85,7 +85,7 @@ cmd_vhost_add() {
 
     local home_dir="${LC_HOME_ROOT}/${user}"
     local doc_root="${custom_docroot:-${home_dir}/${domain}/public_html}"
-    local log_dir="${home_dir}/logs/${domain}"
+    local log_dir="${home_dir}/${domain}/logs"
     local vh_dir="${OLS_VHOSTS_DIR}/${domain}"
     local vh_conf="${vh_dir}/vhconf.conf"
     local vh_safe_name="${domain//[^a-zA-Z0-9_]/_}"
@@ -396,6 +396,159 @@ cmd_vhost_list() {
     fi
 }
 
+cmd_vhost_suspend() {
+    local domain="${1:-}"
+    validate_domain "${domain}"
+    domain="${domain,,}"
+
+    local vh_conf="${OLS_VHOSTS_DIR}/${domain}/vhconf.conf"
+    if [[ ! -f "${vh_conf}" ]]; then
+        emit_error "VirtualHost config for '${domain}' not found."
+    fi
+
+    cp -a "${vh_conf}" "${vh_conf}.bak"
+    # Set allowBrowse to 0 in context / to suspend website
+    sed -i -E '/context \/ \{/,/\}/ s/allowBrowse[[:space:]]+[0-9]+/allowBrowse             0/' "${vh_conf}"
+
+    if ! ols_safe_reload; then
+        mv "${vh_conf}.bak" "${vh_conf}"
+        emit_error "Failed to suspend '${domain}'; rolled back."
+    fi
+    rm -f "${vh_conf}.bak"
+
+    if [[ -f "${VHOSTS_META_DIR}/${domain}.conf" ]]; then
+        sed -i "s/^STATUS=.*/STATUS=suspended/" "${VHOSTS_META_DIR}/${domain}.conf" 2>/dev/null || echo "STATUS=suspended" >> "${VHOSTS_META_DIR}/${domain}.conf"
+    fi
+
+    local data_json
+    data_json=$(printf '{"domain":"%s","status":"suspended"}' "$(json_escape "${domain}")")
+    emit_success "VirtualHost '${domain}' suspended." "${data_json}"
+}
+
+cmd_vhost_unsuspend() {
+    local domain="${1:-}"
+    validate_domain "${domain}"
+    domain="${domain,,}"
+
+    local vh_conf="${OLS_VHOSTS_DIR}/${domain}/vhconf.conf"
+    if [[ ! -f "${vh_conf}" ]]; then
+        emit_error "VirtualHost config for '${domain}' not found."
+    fi
+
+    cp -a "${vh_conf}" "${vh_conf}.bak"
+    # Restore allowBrowse to 1 in context /
+    sed -i -E '/context \/ \{/,/\}/ s/allowBrowse[[:space:]]+[0-9]+/allowBrowse             1/' "${vh_conf}"
+
+    if ! ols_safe_reload; then
+        mv "${vh_conf}.bak" "${vh_conf}"
+        emit_error "Failed to unsuspend '${domain}'; rolled back."
+    fi
+    rm -f "${vh_conf}.bak"
+
+    if [[ -f "${VHOSTS_META_DIR}/${domain}.conf" ]]; then
+        sed -i "s/^STATUS=.*/STATUS=active/" "${VHOSTS_META_DIR}/${domain}.conf" 2>/dev/null || echo "STATUS=active" >> "${VHOSTS_META_DIR}/${domain}.conf"
+    fi
+
+    local data_json
+    data_json=$(printf '{"domain":"%s","status":"active"}' "$(json_escape "${domain}")")
+    emit_success "VirtualHost '${domain}' unsuspended." "${data_json}"
+}
+
+cmd_vhost_alias_add() {
+    local domain="${1:-}"
+    local alias="${2:-}"
+
+    validate_domain "${domain}"
+    validate_domain "${alias}"
+    domain="${domain,,}"
+    alias="${alias,,}"
+
+    local vh_conf="${OLS_VHOSTS_DIR}/${domain}/vhconf.conf"
+    if [[ ! -f "${vh_conf}" ]]; then
+        emit_error "VirtualHost config for '${domain}' not found."
+    fi
+
+    cp -a "${vh_conf}" "${vh_conf}.bak"
+    # Append alias to vhAliases in vhconf.conf
+    sed -i -E "s|^vhAliases[[:space:]]+(.*)|vhAliases                 \1, ${alias}, www.${alias}|" "${vh_conf}"
+
+    # Also map alias in httpd_config.conf
+    ols_backup_config
+    if [[ -f "${OLS_CONF}" ]]; then
+        awk -v dom="${domain}" -v al="${alias}" '
+            $0 ~ "# MAP_HTTP:" dom {
+                print $0
+                print "  map                     " dom " " al ", www." al " # MAP_HTTP:" dom
+                next
+            }
+            $0 ~ "# MAP_HTTPS:" dom {
+                print $0
+                print "  map                     " dom " " al ", www." al " # MAP_HTTPS:" dom
+                next
+            }
+            { print }
+        ' "${OLS_CONF}" > "${OLS_CONF}.tmp" && mv "${OLS_CONF}.tmp" "${OLS_CONF}"
+    fi
+
+    if ! ols_safe_reload; then
+        mv "${vh_conf}.bak" "${vh_conf}"
+        ols_safe_reload || true
+        emit_error "OpenLiteSpeed rejected alias addition for '${alias}'; rolled back."
+    fi
+    rm -f "${vh_conf}.bak"
+
+    local data_json
+    data_json=$(printf '{"domain":"%s","alias":"%s"}' "$(json_escape "${domain}")" "$(json_escape "${alias}")")
+    emit_success "Domain alias '${alias}' registered for '${domain}'." "${data_json}"
+}
+
+cmd_vhost_conf_get() {
+    local domain="${1:-}"
+    validate_domain "${domain}"
+    domain="${domain,,}"
+
+    local vh_conf="${OLS_VHOSTS_DIR}/${domain}/vhconf.conf"
+    if [[ ! -f "${vh_conf}" ]]; then
+        emit_error "VirtualHost configuration for '${domain}' does not exist."
+    fi
+
+    local content
+    content=$(cat "${vh_conf}")
+
+    local data_json
+    data_json=$(printf '{"domain":"%s","conf":"%s"}' \
+        "$(json_escape "${domain}")" \
+        "$(json_escape "${content}")")
+
+    emit_success "Configuration retrieved for '${domain}'." "${data_json}"
+}
+
+cmd_vhost_size() {
+    local domain="${1:-}"
+    validate_domain "${domain}"
+    domain="${domain,,}"
+
+    local user=""
+    if [[ -f "${VHOSTS_META_DIR}/${domain}.conf" ]]; then
+        user=$(awk -F= '/^USERNAME=/{print $2}' "${VHOSTS_META_DIR}/${domain}.conf")
+    fi
+
+    local target_dir="${LC_HOME_ROOT}/${user}/${domain}"
+    if [[ -z "${user}" || ! -d "${target_dir}" ]]; then
+        target_dir="${OLS_VHOSTS_DIR}/${domain}"
+    fi
+
+    local size_bytes=0
+    if [[ -d "${target_dir}" ]]; then
+        size_bytes=$(du -sb "${target_dir}" 2>/dev/null | awk '{print $1}')
+        size_bytes="${size_bytes:-0}"
+    fi
+
+    local data_json
+    data_json=$(printf '{"domain":"%s","size_bytes":%s}' "$(json_escape "${domain}")" "${size_bytes}")
+    emit_success "Size calculated for '${domain}'." "${data_json}"
+}
+
 SUBCOMMAND="${1:-}"
 shift || true
 
@@ -405,6 +558,21 @@ case "${SUBCOMMAND}" in
         ;;
     remove)
         cmd_vhost_remove "$@"
+        ;;
+    suspend)
+        cmd_vhost_suspend "$@"
+        ;;
+    unsuspend)
+        cmd_vhost_unsuspend "$@"
+        ;;
+    alias-add)
+        cmd_vhost_alias_add "$@"
+        ;;
+    conf-get)
+        cmd_vhost_conf_get "$@"
+        ;;
+    size)
+        cmd_vhost_size "$@"
         ;;
     php-switch)
         cmd_vhost_php_switch "$@"
@@ -419,7 +587,7 @@ case "${SUBCOMMAND}" in
         cmd_vhost_list
         ;;
     *)
-        emit_error "Usage: lc-cli vhost <add|remove|php-switch|ssl|docroot|list> [args...]"
+        emit_error "Usage: lc-cli vhost <add|remove|suspend|unsuspend|alias-add|conf-get|size|php-switch|ssl|docroot|list> [args...]"
         ;;
 esac
 

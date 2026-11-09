@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Domain;
 use App\Models\AuditLog;
 use App\Services\LcCliService;
+use App\Services\DomainService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -14,10 +15,12 @@ use Inertia\Response;
 class PhpController extends Controller
 {
     protected LcCliService $lcCli;
+    protected DomainService $domainService;
 
-    public function __construct(LcCliService $lcCli)
+    public function __construct(LcCliService $lcCli, DomainService $domainService)
     {
         $this->lcCli = $lcCli;
+        $this->domainService = $domainService;
     }
 
     /**
@@ -122,14 +125,11 @@ class PhpController extends Controller
             $domains->where('user_id', $user->id);
         }
 
-        $count = 0;
-        foreach ($domains->get() as $domain) {
-            $res = $this->lcCli->run('vhost', ['php-switch', $domain->domain, $validated['php_version']]);
-            if (($res['status'] ?? '') === 'success') {
-                $domain->update(['php_version' => $validated['php_version']]);
-                $count++;
-            }
-        }
+        $count = $this->domainService->batchSwitchPhpVersion(
+            $domains->get(),
+            $validated['php_version'],
+            $user
+        );
 
         return back()->with('success', "Updated PHP version to {$validated['php_version']} for {$count} domain(s).");
     }

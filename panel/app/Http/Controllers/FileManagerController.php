@@ -15,9 +15,25 @@ class FileManagerController extends Controller
     /**
      * Get the resolved, sanitized base directory for the authenticated user.
      */
-    protected function getUserBaseDir(): string
+    protected function getUserBaseDir(?\App\Models\Domain $targetDomain = null): string
     {
         $user = Auth::user();
+
+        // If target domain specified and user is admin or owner, use domain owner's home
+        if ($targetDomain && ($user->isAdmin() || $targetDomain->user_id === $user->id)) {
+            $owner = $targetDomain->user;
+            $prodPath = "/home/{$owner->username}";
+
+            if (PHP_OS_FAMILY === 'Linux' && file_exists($prodPath)) {
+                return $prodPath;
+            }
+
+            $sandbox = storage_path("app/homes/{$owner->username}");
+            if (! file_exists($sandbox)) {
+                File::makeDirectory($sandbox . '/public_html', 0755, true, true);
+            }
+            return realpath($sandbox) ?: $sandbox;
+        }
 
         // In production on Ubuntu, user's home is /home/<username>
         $prodPath = "/home/{$user->username}";
@@ -40,10 +56,10 @@ class FileManagerController extends Controller
      * Resolve and validate a relative path within the user's home jail.
      * Prevents directory traversal attacks (e.g. ../../../etc/passwd).
      */
-    protected function resolveJailedPath(?string $subpath = ''): ?string
+    protected function resolveJailedPath(?string $subpath = '', ?\App\Models\Domain $targetDomain = null): ?string
     {
         $subpath = $subpath ?? '';
-        $baseDir = $this->getUserBaseDir();
+        $baseDir = $this->getUserBaseDir($targetDomain);
         $trimmed = trim(str_replace(['\\', '..'], ['/', ''], $subpath), '/');
         $fullPath = empty($trimmed) ? $baseDir : $baseDir . DIRECTORY_SEPARATOR . $trimmed;
 
@@ -70,10 +86,32 @@ class FileManagerController extends Controller
     /**
      * Display the file manager view.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $domainId = $request->input('domain_id');
+        $targetDomain = null;
+        $initialPath = '';
+
+        if ($domainId) {
+            $query = \App\Models\Domain::with('user');
+            if (! Auth::user()->isAdmin()) {
+                $query->where('user_id', Auth::id());
+            }
+            $targetDomain = $query->find($domainId);
+            if ($targetDomain) {
+                $initialPath = "{$targetDomain->domain}/public_html";
+                // Ensure directory exists in sandbox/dev mode
+                $resolved = $this->resolveJailedPath($initialPath, $targetDomain);
+                if ($resolved && ! file_exists($resolved)) {
+                    @File::makeDirectory($resolved, 0755, true);
+                }
+            }
+        }
+
         return Inertia::render('Files/Index', [
-            'baseDir' => "/home/" . Auth::user()->username,
+            'baseDir' => "/home/" . ($targetDomain ? $targetDomain->user->username : Auth::user()->username),
+            'initialPath' => $initialPath,
+            'targetDomain' => $targetDomain,
         ]);
     }
 
@@ -82,8 +120,10 @@ class FileManagerController extends Controller
      */
     public function list(Request $request)
     {
+        $domainId = $request->input('domain_id');
+        $targetDomain = $domainId ? \App\Models\Domain::with('user')->find($domainId) : null;
         $path = $request->input('path', '');
-        $fullPath = $this->resolveJailedPath($path);
+        $fullPath = $this->resolveJailedPath($path, $targetDomain);
 
         if (! $fullPath || ! is_dir($fullPath)) {
             return response()->json([

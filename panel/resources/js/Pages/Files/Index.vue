@@ -21,6 +21,8 @@ import {
 
 const props = defineProps({
     baseDir: String,
+    initialPath: String,
+    targetDomain: Object,
 });
 
 const currentPath = shallowRef('');
@@ -48,7 +50,8 @@ const pathSegments = computed(() => {
 const loadFiles = async (path = '') => {
     loading.value = true;
     try {
-        const res = await fetch(`/files/list?path=${encodeURIComponent(path)}`);
+        const domainParam = props.targetDomain ? `&domain_id=${props.targetDomain.id}` : '';
+        const res = await fetch(`/files/list?path=${encodeURIComponent(path)}${domainParam}`);
         const json = await res.json();
         if (json.status === 'success') {
             currentPath.value = json.current_path;
@@ -203,7 +206,7 @@ const handleFileUpload = async (e) => {
 };
 
 onMounted(() => {
-    loadFiles('');
+    loadFiles(props.initialPath || '');
 });
 </script>
 

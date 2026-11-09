@@ -137,12 +137,7 @@ class DomainService
 
         // 1. PHP Version switch
         if (!empty($data['php_version']) && $data['php_version'] !== $domain->php_version) {
-            $phpRes = $this->lcCli->run('vhost', ['php-switch', $domain->domain, $data['php_version']]);
-            if (($phpRes['status'] ?? '') === 'success') {
-                $domain->php_version = $data['php_version'];
-            } else {
-                throw new \RuntimeException($phpRes['message'] ?? 'Failed to update PHP version.');
-            }
+            $this->switchPhpVersion($domain, $data['php_version'], $actor);
         }
 
         // 2. Pointing Location / Document Root switch
@@ -203,6 +198,173 @@ class DomainService
             'ssl_issued' => $sslIssued,
             'warning' => $sslWarning,
         ];
+    }
+
+    /**
+     * Centralized, reusable PHP version switching method.
+     */
+    public function switchPhpVersion(Domain $domain, string $phpVersion, ?User $actor = null): array
+    {
+        $actor = $actor ?? Auth::user() ?? $domain->user;
+
+        $res = $this->lcCli->run('vhost', ['php-switch', $domain->domain, $phpVersion]);
+
+        if (($res['status'] ?? '') !== 'success') {
+            $msg = $res['message'] ?? 'Failed to switch PHP version.';
+            Log::error("DomainService: PHP switch failed for {$domain->domain} to {$phpVersion}: {$msg}");
+            throw new \RuntimeException($msg);
+        }
+
+        $oldVersion = $domain->php_version;
+        $domain->update(['php_version' => $phpVersion]);
+
+        AuditLog::create([
+            'user_id' => $actor->id,
+            'action' => 'domain.php_switch',
+            'command' => "lc-cli vhost php-switch {$domain->domain} {$phpVersion}",
+            'status' => 'success',
+            'ip_address' => request()->ip(),
+            'details' => [
+                'domain' => $domain->domain,
+                'old_version' => $oldVersion,
+                'new_version' => $phpVersion,
+            ],
+        ]);
+
+        return [
+            'status' => 'success',
+            'domain' => $domain,
+            'php_version' => $phpVersion,
+        ];
+    }
+
+    /**
+     * Suspend a domain virtualhost.
+     */
+    public function suspendDomain(Domain $domain, ?User $actor = null): array
+    {
+        $actor = $actor ?? Auth::user() ?? $domain->user;
+
+        $res = $this->lcCli->run('vhost', ['suspend', $domain->domain]);
+
+        if (($res['status'] ?? '') !== 'success') {
+            $msg = $res['message'] ?? 'Failed to suspend domain virtual host.';
+            Log::error("DomainService: Suspend failed for {$domain->domain}: {$msg}");
+            throw new \RuntimeException($msg);
+        }
+
+        $domain->update(['status' => 'suspended']);
+
+        AuditLog::create([
+            'user_id' => $actor->id,
+            'action' => 'domain.suspend',
+            'command' => "lc-cli vhost suspend {$domain->domain}",
+            'status' => 'success',
+            'ip_address' => request()->ip(),
+            'details' => ['domain' => $domain->domain],
+        ]);
+
+        return [
+            'status' => 'success',
+            'message' => "Domain '{$domain->domain}' has been suspended.",
+            'domain' => $domain,
+        ];
+    }
+
+    /**
+     * Unsuspend a domain virtualhost.
+     */
+    public function unsuspendDomain(Domain $domain, ?User $actor = null): array
+    {
+        $actor = $actor ?? Auth::user() ?? $domain->user;
+
+        $res = $this->lcCli->run('vhost', ['unsuspend', $domain->domain]);
+
+        if (($res['status'] ?? '') !== 'success') {
+            $msg = $res['message'] ?? 'Failed to unsuspend domain virtual host.';
+            Log::error("DomainService: Unsuspend failed for {$domain->domain}: {$msg}");
+            throw new \RuntimeException($msg);
+        }
+
+        $domain->update(['status' => 'active']);
+
+        AuditLog::create([
+            'user_id' => $actor->id,
+            'action' => 'domain.unsuspend',
+            'command' => "lc-cli vhost unsuspend {$domain->domain}",
+            'status' => 'success',
+            'ip_address' => request()->ip(),
+            'details' => ['domain' => $domain->domain],
+        ]);
+
+        return [
+            'status' => 'success',
+            'message' => "Domain '{$domain->domain}' has been activated.",
+            'domain' => $domain,
+        ];
+    }
+
+    /**
+     * Register a domain alias for a primary/addon domain.
+     */
+    public function addAlias(Domain $parentDomain, string $aliasFqdn, ?User $actor = null): Domain
+    {
+        $actor = $actor ?? Auth::user() ?? $parentDomain->user;
+        $user = $parentDomain->user;
+        $aliasFqdn = strtolower(trim($aliasFqdn));
+
+        if (Domain::where('domain', $aliasFqdn)->exists()) {
+            throw new \RuntimeException("Domain '{$aliasFqdn}' is already registered.");
+        }
+
+        $res = $this->lcCli->run('vhost', ['alias-add', $parentDomain->domain, $aliasFqdn]);
+
+        if (($res['status'] ?? '') !== 'success') {
+            throw new \RuntimeException($res['message'] ?? 'Failed to add alias virtual host.');
+        }
+
+        $aliasDomain = Domain::create([
+            'user_id' => $user->id,
+            'domain' => $aliasFqdn,
+            'type' => 'alias',
+            'parent_domain_id' => $parentDomain->id,
+            'document_root' => $parentDomain->document_root,
+            'public_path' => $parentDomain->public_path,
+            'php_version' => $parentDomain->php_version,
+            'ssl_enabled' => false,
+            'status' => 'active',
+        ]);
+
+        AuditLog::create([
+            'user_id' => $actor->id,
+            'action' => 'domain.alias_add',
+            'command' => "lc-cli vhost alias-add {$parentDomain->domain} {$aliasFqdn}",
+            'status' => 'success',
+            'ip_address' => request()->ip(),
+            'details' => [
+                'parent' => $parentDomain->domain,
+                'alias' => $aliasFqdn,
+            ],
+        ]);
+
+        return $aliasDomain;
+    }
+
+    /**
+     * Batch switch PHP version for multiple domains.
+     */
+    public function batchSwitchPhpVersion(iterable $domains, string $phpVersion, ?User $actor = null): int
+    {
+        $count = 0;
+        foreach ($domains as $domain) {
+            try {
+                $this->switchPhpVersion($domain, $phpVersion, $actor);
+                $count++;
+            } catch (\Throwable $e) {
+                Log::warning("Batch PHP switch skipped for {$domain->domain}: {$e->getMessage()}");
+            }
+        }
+        return $count;
     }
 }
 

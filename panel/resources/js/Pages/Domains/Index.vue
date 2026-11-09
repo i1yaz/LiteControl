@@ -7,7 +7,7 @@ import UiModal from '@/Components/ui/UiModal.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
 import UiSelect from '@/Components/ui/UiSelect.vue';
 import UiDataTable from '@/Components/ui/UiDataTable.vue';
-import { Globe, Plus, ShieldCheck, ShieldAlert, Folder, Trash2, Pencil, Terminal, Check } from 'lucide-vue-next';
+import { Globe, Plus, ShieldCheck, ShieldAlert, Folder, Trash2, Pencil, Terminal, Check, LayoutGrid, Settings, FolderOpen, PauseCircle, PlayCircle } from 'lucide-vue-next';
 
 const props = defineProps({
     domains: Object,
@@ -136,6 +136,14 @@ const changePhp = (domainId, newVer) => {
     router.post(`/domains/${domainId}/php`, { php_version: newVer });
 };
 
+const toggleSuspend = (dom) => {
+    const isSuspended = dom.status === 'suspended';
+    const action = isSuspended ? 'unsuspend' : 'suspend';
+    if (confirm(`Are you sure you want to ${action} domain '${dom.domain}'?`)) {
+        router.post(`/domains/${dom.id}/${action}`);
+    }
+};
+
 const copiedUser = shallowRef(null);
 const copySshCommand = (username) => {
     if (!username) return;
@@ -242,29 +250,71 @@ const copySshCommand = (username) => {
                     </span>
                 </td>
                 <td class="py-3.5 px-4 text-right">
-                    <div class="flex items-center justify-end gap-1.5">
-                        <button
-                            v-if="dom.user?.username || currentUsername"
-                            @click="copySshCommand(dom.user?.username || currentUsername)"
-                            class="text-theme-text-muted hover:text-theme-accent transition-colors p-1"
-                            :title="copiedUser === (dom.user?.username || currentUsername) ? 'Copied SSH command!' : `Copy SSH command (ssh ${(dom.user?.username || currentUsername)}@${$page.props.panel?.server_ip || 'ip'})`"
+                    <div class="flex items-center justify-end gap-1.5 flex-wrap">
+                        <!-- Manage Button (Primary Blue) -->
+                        <a
+                            :href="`/domains/${dom.id}/manage`"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-sm transition-colors"
+                            title="Manage Website"
                         >
-                            <Check v-if="copiedUser === (dom.user?.username || currentUsername)" class="w-4 h-4 text-emerald-400" />
-                            <Terminal v-else class="w-4 h-4" />
-                        </button>
+                            <LayoutGrid class="w-3.5 h-3.5" />
+                            <span>Manage</span>
+                        </a>
+
+                        <!-- Settings Button (Lands on Manage Config Tab) -->
+                        <a
+                            :href="`/domains/${dom.id}/manage?tab=config`"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-medium border border-theme-border transition-colors"
+                            title="Website Settings"
+                        >
+                            <Settings class="w-3.5 h-3.5 text-theme-text-muted" />
+                            <span>Settings</span>
+                        </a>
+
+                        <!-- Filemanager Button -->
+                        <a
+                            :href="`/files?domain_id=${dom.id}`"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-medium border border-theme-border transition-colors"
+                            title="Open File Manager"
+                        >
+                            <FolderOpen class="w-3.5 h-3.5 text-cyan-400" />
+                            <span>Filemanager</span>
+                        </a>
+
+                        <!-- Modify (Quick Edit Modal) -->
                         <button
                             @click="openEditModal(dom)"
-                            class="text-theme-text-muted hover:text-emerald-400 transition-colors p-1"
-                            title="Configure Domain & Pointing"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-medium border border-theme-border transition-colors"
+                            title="Quick Modify Domain"
                         >
-                            <Pencil class="w-4 h-4" />
+                            <Pencil class="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Modify</span>
                         </button>
+
+                        <!-- Suspend / Unsuspend Button -->
+                        <button
+                            @click="toggleSuspend(dom)"
+                            :class="[
+                                'inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border transition-colors',
+                                dom.status === 'suspended'
+                                    ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                    : 'bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary border-theme-border'
+                            ]"
+                            :title="dom.status === 'suspended' ? 'Activate / Unsuspend Domain' : 'Suspend Domain'"
+                        >
+                            <PlayCircle v-if="dom.status === 'suspended'" class="w-3.5 h-3.5 text-amber-400" />
+                            <PauseCircle v-else class="w-3.5 h-3.5 text-amber-400" />
+                            <span>{{ dom.status === 'suspended' ? 'Unsuspend' : 'Suspend' }}</span>
+                        </button>
+
+                        <!-- Delete Button (Danger Tinted) -->
                         <button
                             @click="deleteDomain(dom.id, dom.domain)"
-                            class="text-theme-text-muted hover:text-rose-400 transition-colors p-1"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-medium border border-rose-500/30 transition-colors"
                             title="Terminate VHost"
                         >
-                            <Trash2 class="w-4 h-4" />
+                            <Trash2 class="w-3.5 h-3.5" />
+                            <span>Delete</span>
                         </button>
                     </div>
                 </td>

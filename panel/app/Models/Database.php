@@ -13,6 +13,7 @@ class Database extends Model
 
     protected $fillable = [
         'user_id',
+        'domain_id',
         'db_name',
         'size_bytes',
     ];
@@ -20,6 +21,11 @@ class Database extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function domain(): BelongsTo
+    {
+        return $this->belongsTo(Domain::class);
     }
 
     public function users(): HasMany
