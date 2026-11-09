@@ -1,6 +1,7 @@
 <script setup>
-import { shallowRef, computed, useTemplateRef } from 'vue';
+import { shallowRef, ref, computed, onMounted, useTemplateRef } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
+import axios from 'axios';
 import { useClickOutside } from '@/Composables/useClickOutside';
 import { useNavigation } from '@/Composables/useNavigation';
 import { useTheme } from '@/Composables/useTheme';
@@ -8,7 +9,7 @@ import {
     LayoutDashboard, Users, Globe, Database, FolderTree,
     FileCode, Sliders, Server, Shield, Mail, Layers,
     UserCircle, LogOut, ChevronDown, Menu, X, ExternalLink,
-    CheckCircle2, AlertCircle, Palette
+    CheckCircle2, AlertCircle, Palette, Radio, RefreshCw
 } from 'lucide-vue-next';
 
 const page = usePage();
@@ -29,6 +30,29 @@ const themeDropdownRef = useTemplateRef('themeDropdownRef');
 
 useClickOutside(themeDropdownRef, () => {
     themeDropdownOpen.value = false;
+});
+
+// OLS Daemon Status
+const olsStatus = ref('checking'); // 'checking' | 'online' | 'offline'
+const checkingOls = ref(false);
+
+const fetchOlsStatus = async () => {
+    if (checkingOls.value) return;
+    checkingOls.value = true;
+    try {
+        const response = await axios.get(route('server.ols-status'));
+        olsStatus.value = response.data?.status === 'online' ? 'online' : 'offline';
+    } catch (err) {
+        olsStatus.value = 'offline';
+    } finally {
+        checkingOls.value = false;
+    }
+};
+
+onMounted(() => {
+    if (isAdmin.value) {
+        fetchOlsStatus();
+    }
 });
 
 const iconMap = {
@@ -98,8 +122,42 @@ const logout = () => {
                 </Link>
             </div>
 
-            <!-- Right Controls: Theme Selector & User Profile -->
+            <!-- Right Controls: Status, Theme Selector & User Profile -->
             <div class="flex items-center gap-3">
+                <!-- Daemon Heartbeat & Interactive Status Checker -->
+                <button
+                    v-if="isAdmin"
+                    @click="fetchOlsStatus"
+                    :disabled="checkingOls"
+                    :title="checkingOls ? 'Checking OLS Daemon status...' : 'Click to re-check OLS Daemon status'"
+                    class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700/60 hover:border-slate-600 text-xs transition-colors group cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500/50"
+                >
+                    <RefreshCw v-if="checkingOls" class="w-3.5 h-3.5 text-sky-400 animate-spin" />
+                    <Radio
+                        v-else
+                        class="w-3.5 h-3.5 transition-colors"
+                        :class="olsStatus === 'online' ? 'text-emerald-400 animate-pulse' : (olsStatus === 'offline' ? 'text-rose-400' : 'text-amber-400')"
+                    />
+
+                    <span class="text-slate-400 font-medium text-[11px]">OLS:</span>
+
+                    <span
+                        class="font-semibold text-[11px] transition-colors"
+                        :class="{
+                            'text-emerald-400': olsStatus === 'online',
+                            'text-rose-400': olsStatus === 'offline',
+                            'text-amber-400': olsStatus === 'checking'
+                        }"
+                    >
+                        {{ olsStatus.toUpperCase() }}
+                    </span>
+
+                    <RefreshCw
+                        class="w-3 h-3 text-slate-500 group-hover:text-slate-300 transition-colors ml-0.5"
+                        :class="{ 'animate-spin text-sky-400': checkingOls }"
+                    />
+                </button>
+
                 <!-- Theme Switcher Dropdown -->
                 <div class="relative" ref="themeDropdownRef">
                     <button
