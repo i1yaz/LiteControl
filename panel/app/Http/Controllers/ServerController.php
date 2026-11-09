@@ -312,7 +312,8 @@ class ServerController extends Controller
      */
     public function olsStatus()
     {
-        if ($this->lcCli->isMockMode()) {
+        // 1. If running on Windows / dev machine without Linux systemctl or OLS binaries, fallback to mock mode
+        if (PHP_OS_FAMILY === 'Windows') {
             return response()->json([
                 'status' => 'online',
                 'service' => 'openlitespeed',
@@ -320,15 +321,15 @@ class ServerController extends Controller
             ]);
         }
 
-        // Fast check without heavy overhead
-        // 1. Check OLS control script or systemctl
-        $output = '';
+        // 2. Real Linux check
         $olsCtrl = '/usr/local/lsws/bin/lswsctrl';
         $isOnline = false;
 
-        if (is_executable($olsCtrl)) {
-            $output = shell_exec("{$olsCtrl} status 2>/dev/null");
-            $isOnline = (is_string($output) && stripos($output, 'running') !== false);
+        if (file_exists($olsCtrl)) {
+            $output = shell_exec("{$olsCtrl} status 2>&1");
+            // lswsctrl status returns "[ERROR] litespeed is not running." when stopped
+            // and contains "litespeed is running with PID" or "running" when active
+            $isOnline = (is_string($output) && stripos($output, 'running') !== false && stripos($output, 'not running') === false);
         } else {
             $output = shell_exec('systemctl is-active lshttpd 2>/dev/null || systemctl is-active lsws 2>/dev/null || systemctl is-active openlitespeed 2>/dev/null');
             $isOnline = (is_string($output) && trim($output) === 'active');

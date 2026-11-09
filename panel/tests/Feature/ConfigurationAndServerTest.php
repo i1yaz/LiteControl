@@ -257,5 +257,28 @@ class ConfigurationAndServerTest extends TestCase
             ->has('stats.ram_percent')
         );
     }
+
+    public function test_admin_can_check_ols_daemon_status(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+
+        $response = $this->actingAs($admin)->get('/server/ols-status');
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'status',
+            'service',
+        ]);
+        $this->assertContains($response->json('status'), ['online', 'offline']);
+    }
+
+    public function test_non_admin_cannot_check_ols_daemon_status(): void
+    {
+        $client = User::where('username', 'client1')->first();
+
+        $response = $this->actingAs($client)->get('/server/ols-status');
+
+        $response->assertStatus(403);
+    }
 }
 
