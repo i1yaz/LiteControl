@@ -75,6 +75,53 @@ class UserAndPackageTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_create_hosting_user_without_domain_and_with_ssh_key(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $package = Package::first();
+
+        $response = $this->actingAs($admin)->post('/users', [
+            'username' => 'nodomainuser',
+            'name' => 'No Domain User',
+            'email' => 'nodomain@example.com',
+            'password' => 'secret123456',
+            'package_id' => $package->id,
+            'ssh_public_key' => 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1234567890 testing@host',
+        ]);
+
+        $response->assertRedirect('/users');
+        $this->assertDatabaseHas('users', [
+            'username' => 'nodomainuser',
+            'email' => 'nodomain@example.com',
+            'ssh_public_key' => 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1234567890 testing@host',
+        ]);
+
+        $createdUser = User::where('username', 'nodomainuser')->first();
+        $this->assertEquals(0, Domain::where('user_id', $createdUser->id)->count());
+    }
+
+    public function test_admin_can_update_user_profile_and_ssh_key(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $targetUser = User::where('username', 'client1')->first();
+        $package = Package::first();
+
+        $response = $this->actingAs($admin)->put("/users/{$targetUser->id}", [
+            'name' => 'Demo User Updated',
+            'email' => 'demouser_updated@example.com',
+            'package_id' => $package->id,
+            'ssh_public_key' => 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGupdatedkey demo@host',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('users', [
+            'id' => $targetUser->id,
+            'name' => 'Demo User Updated',
+            'email' => 'demouser_updated@example.com',
+            'ssh_public_key' => 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGupdatedkey demo@host',
+        ]);
+    }
+
     public function test_user_creation_rejects_reserved_usernames(): void
     {
         $admin = User::where('role', 'admin')->first();

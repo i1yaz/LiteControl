@@ -37,6 +37,7 @@ Route::middleware('auth')->group(function () {
     // Domains & Subdomains
     Route::get('/domains', [DomainController::class, 'index'])->name('domains.index');
     Route::post('/domains', [DomainController::class, 'store'])->name('domains.store');
+    Route::put('/domains/{domain}', [DomainController::class, 'update'])->name('domains.update');
     Route::delete('/domains/{domain}', [DomainController::class, 'destroy'])->name('domains.destroy');
     Route::post('/domains/{domain}/php', [DomainController::class, 'switchPhp'])->name('domains.php');
     Route::get('/subdomains', [DomainController::class, 'subdomains'])->name('subdomains.index');
@@ -91,6 +92,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::post('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
         Route::post('/users/{user}/unsuspend', [UserController::class, 'unsuspend'])->name('users.unsuspend');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');

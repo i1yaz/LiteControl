@@ -282,6 +282,43 @@ cmd_user_list() {
     fi
 }
 
+cmd_user_ssh_key() {
+    local user="${1:-}"
+    local key_data="${2:-}"
+
+    validate_username "${user}"
+    if ! user_exists "${user}"; then
+        emit_error "User '${user}' does not exist."
+    fi
+
+    local home_dir="${LC_HOME_ROOT}/${user}"
+    local ssh_dir="${home_dir}/.ssh"
+    local auth_file="${ssh_dir}/authorized_keys"
+
+    mkdir -p "${ssh_dir}"
+
+    if [[ -z "${key_data}" || "${key_data}" == "-" || "${key_data}" == "clear" ]]; then
+        rm -f "${auth_file}"
+    else
+        # Normalize and write key
+        printf "%s\n" "${key_data}" > "${auth_file}"
+        chmod 600 "${auth_file}"
+    fi
+
+    chmod 700 "${ssh_dir}"
+
+    if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+        chown -R "${user}:${user}" "${ssh_dir}" 2>/dev/null || true
+    fi
+
+    local data_json
+    data_json=$(printf '{"username":"%s","has_key":%s}' \
+        "$(json_escape "${user}")" \
+        "$([[ -f "${auth_file}" && -s "${auth_file}" ]] && echo "true" || echo "false")")
+
+    emit_success "SSH key configuration updated for '${user}'." "${data_json}"
+}
+
 SUBCOMMAND="${1:-}"
 shift || true
 
@@ -304,8 +341,11 @@ case "${SUBCOMMAND}" in
     list)
         cmd_user_list
         ;;
+    ssh-key)
+        cmd_user_ssh_key "$@"
+        ;;
     *)
-        emit_error "Usage: lc-cli user <add|suspend|unsuspend|delete|quota|list> [args...]"
+        emit_error "Usage: lc-cli user <add|suspend|unsuspend|delete|quota|ssh-key|list> [args...]"
         ;;
 esac
 

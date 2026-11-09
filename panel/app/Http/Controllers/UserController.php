@@ -7,6 +7,7 @@ use App\Models\Package;
 use App\Models\Domain;
 use App\Models\AuditLog;
 use App\Services\LcCliService;
+use App\Services\DomainService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -17,10 +18,12 @@ use Inertia\Response;
 class UserController extends Controller
 {
     protected LcCliService $lcCli;
+    protected DomainService $domainService;
 
-    public function __construct(LcCliService $lcCli)
+    public function __construct(LcCliService $lcCli, DomainService $domainService)
     {
         $this->lcCli = $lcCli;
+        $this->domainService = $domainService;
     }
 
     /**
@@ -98,17 +101,19 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
             'package_id' => ['required', 'exists:packages,id'],
+            'ssh_public_key' => ['nullable', 'string'],
             'domain' => [
-                'required',
+                'nullable',
                 'string',
                 'regex:/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/',
                 'unique:domains,domain',
             ],
+            'public_path' => ['nullable', 'string', 'max:255'],
             'php_version' => ['nullable', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
+            'ssl_enabled' => ['nullable', 'boolean'],
         ]);
 
         $package = Package::findOrFail($validated['package_id']);
-        $phpVersion = $validated['php_version'] ?? '83';
 
         // 1. Create Linux user via lc-cli
         $cliRes = $this->lcCli->run('user', [
@@ -124,7 +129,16 @@ class UserController extends Controller
             ]);
         }
 
-        // 2. Create database user record
+        // 2. Set SSH public key if provided
+        if (!empty($validated['ssh_public_key'])) {
+            $this->lcCli->run('user', [
+                'ssh-key',
+                $validated['username'],
+                $validated['ssh_public_key'],
+            ]);
+        }
+
+        // 3. Create database user record
         $user = User::create([
             'username' => $validated['username'],
             'name' => $validated['name'],
@@ -134,28 +148,29 @@ class UserController extends Controller
             'package_id' => $package->id,
             'home_directory' => "/home/{$validated['username']}",
             'status' => 'active',
+            'ssh_public_key' => $validated['ssh_public_key'] ?? null,
         ]);
 
-        // 3. Create primary vhost via lc-cli
-        $docRoot = "/home/{$validated['username']}/{$validated['domain']}/public_html";
-        $vhostRes = $this->lcCli->run('vhost', [
-            'add',
-            $validated['domain'],
-            $validated['username'],
-            $phpVersion,
-            $docRoot,
-        ]);
+        $warning = null;
+        $domainCreated = false;
 
-        // 4. Create primary domain in DB
-        Domain::create([
-            'user_id' => $user->id,
-            'domain' => $validated['domain'],
-            'type' => 'primary',
-            'document_root' => $docRoot,
-            'php_version' => $phpVersion,
-            'ssl_enabled' => false,
-            'status' => 'active',
-        ]);
+        // 4. Optionally create primary domain if provided
+        if (!empty($validated['domain'])) {
+            try {
+                $domainRes = $this->domainService->createDomain($user, [
+                    'domain' => $validated['domain'],
+                    'php_version' => $validated['php_version'] ?? '83',
+                    'public_path' => $validated['public_path'] ?? null,
+                    'ssl_enabled' => $validated['ssl_enabled'] ?? true,
+                    'type' => 'primary',
+                ], Auth::user());
+
+                $domainCreated = true;
+                $warning = $domainRes['warning'] ?? null;
+            } catch (\Throwable $e) {
+                $warning = "User created, but domain provisioning encountered an error: " . $e->getMessage();
+            }
+        }
 
         AuditLog::create([
             'user_id' => Auth::id(),
@@ -163,10 +178,69 @@ class UserController extends Controller
             'command' => "lc-cli user add {$user->username}",
             'status' => 'success',
             'ip_address' => $request->ip(),
-            'details' => ['username' => $user->username, 'domain' => $validated['domain'], 'package' => $package->name],
+            'details' => [
+                'username' => $user->username,
+                'package' => $package->name,
+                'domain' => $validated['domain'] ?? null,
+            ],
         ]);
 
-        return redirect()->route('users.index')->with('success', "User '{$user->username}' and primary domain '{$validated['domain']}' created successfully.");
+        $msg = $domainCreated
+            ? "User '{$user->username}' and primary domain '{$validated['domain']}' created successfully."
+            : "User '{$user->username}' created successfully.";
+
+        $redirect = redirect()->route('users.index')->with('success', $msg);
+        if ($warning) {
+            $redirect->with('warning', $warning);
+        }
+
+        return $redirect;
+    }
+
+    /**
+     * Update an existing hosting user.
+     */
+    public function update(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'password' => ['nullable', 'string', 'min:8'],
+            'package_id' => ['required', 'exists:packages,id'],
+            'ssh_public_key' => ['nullable', 'string'],
+        ]);
+
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+
+        if (!empty($validated['password'])) {
+            $user->password = $validated['password'];
+        }
+
+        if ($user->package_id !== (int)$validated['package_id']) {
+            $newPackage = Package::findOrFail($validated['package_id']);
+            $user->package_id = $newPackage->id;
+            $this->lcCli->run('user', ['quota', $user->username, (string)$newPackage->disk_quota_mb]);
+        }
+
+        $newKey = $validated['ssh_public_key'] ?? null;
+        if ($newKey !== $user->ssh_public_key) {
+            $user->ssh_public_key = $newKey;
+            $this->lcCli->run('user', ['ssh-key', $user->username, !empty($newKey) ? $newKey : 'clear']);
+        }
+
+        $user->save();
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'user.update',
+            'command' => "lc-cli user update {$user->username}",
+            'status' => 'success',
+            'ip_address' => $request->ip(),
+            'details' => ['username' => $user->username, 'package_id' => $user->package_id],
+        ]);
+
+        return back()->with('success', "User '{$user->username}' updated successfully.");
     }
 
     /**

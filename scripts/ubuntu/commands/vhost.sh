@@ -312,6 +312,58 @@ cmd_vhost_ssl() {
     emit_success "SSL certificate updated for '${domain}'." "${data_json}"
 }
 
+cmd_vhost_docroot() {
+    local domain="${1:-}"
+    local new_docroot="${2:-}"
+
+    validate_domain "${domain}"
+    domain="${domain,,}"
+
+    if [[ -z "${new_docroot}" ]]; then
+        emit_error "New document root is required: lc-cli vhost docroot <domain> <new_docroot>"
+    fi
+
+    local vh_conf="${OLS_VHOSTS_DIR}/${domain}/vhconf.conf"
+    if [[ ! -f "${vh_conf}" ]]; then
+        emit_error "VirtualHost configuration for '${domain}' does not exist."
+    fi
+
+    local user=""
+    if [[ -f "${VHOSTS_META_DIR}/${domain}.conf" ]]; then
+        user=$(awk -F= '/^USERNAME=/{print $2}' "${VHOSTS_META_DIR}/${domain}.conf")
+    fi
+
+    mkdir -p "${new_docroot}"
+
+    if [[ -n "${user}" && "${LC_TEST_MODE:-0}" != "1" ]]; then
+        chown -R "${user}:${user}" "${new_docroot}" 2>/dev/null || true
+        chmod 750 "${new_docroot}"
+        if command -v setfacl >/dev/null 2>&1; then
+            setfacl -m u:nobody:rx "${new_docroot}" 2>/dev/null || true
+        fi
+    fi
+
+    cp "${vh_conf}" "${vh_conf}.bak"
+    sed -i -E "s|^docRoot[[:space:]]+.*|docRoot                   ${new_docroot}|g" "${vh_conf}"
+
+    if ! ols_safe_reload; then
+        mv "${vh_conf}.bak" "${vh_conf}"
+        ols_safe_reload || true
+        emit_error "OpenLiteSpeed rejected document root change for '${domain}'; configuration rolled back."
+    fi
+    rm -f "${vh_conf}.bak"
+
+    if [[ -f "${VHOSTS_META_DIR}/${domain}.conf" ]]; then
+        sed -i "s|^DOC_ROOT=.*|DOC_ROOT=${new_docroot}|" "${VHOSTS_META_DIR}/${domain}.conf"
+    fi
+
+    local data_json
+    data_json=$(printf '{"domain":"%s","doc_root":"%s"}' \
+        "$(json_escape "${domain}")" \
+        "$(json_escape "${new_docroot}")")
+    emit_success "Document root updated successfully for '${domain}'." "${data_json}"
+}
+
 cmd_vhost_list() {
     mkdir -p "${VHOSTS_META_DIR}"
     local items=""
@@ -360,11 +412,14 @@ case "${SUBCOMMAND}" in
     ssl)
         cmd_vhost_ssl "$@"
         ;;
+    docroot)
+        cmd_vhost_docroot "$@"
+        ;;
     list)
         cmd_vhost_list
         ;;
     *)
-        emit_error "Usage: lc-cli vhost <add|remove|php-switch|ssl|list> [args...]"
+        emit_error "Usage: lc-cli vhost <add|remove|php-switch|ssl|docroot|list> [args...]"
         ;;
 esac
 

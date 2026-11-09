@@ -1,8 +1,11 @@
 <script setup>
 import { shallowRef, computed } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import UiPageHeader from '@/Components/ui/UiPageHeader.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
+import UiModal from '@/Components/ui/UiModal.vue';
+import UiInput from '@/Components/ui/UiInput.vue';
+import UiSelect from '@/Components/ui/UiSelect.vue';
 import UiDataTable from '@/Components/ui/UiDataTable.vue';
 import {
     UserPlus,
@@ -14,6 +17,8 @@ import {
     Unlock,
     Trash2,
     LogIn,
+    Pencil,
+    Key,
     Package as PackageIcon
 } from 'lucide-vue-next';
 
@@ -50,6 +55,45 @@ const impersonateUser = (id, username) => {
     if (confirm(`Assume security context as principal '${username}'?`)) {
         router.post(`/users/${id}/impersonate`);
     }
+};
+
+const showEditModal = shallowRef(false);
+const editingUser = shallowRef(null);
+
+const editForm = useForm({
+    name: '',
+    email: '',
+    password: '',
+    package_id: '',
+    ssh_public_key: '',
+});
+
+const packageOptions = computed(() => {
+    return (props.packages || []).map(pkg => ({
+        value: pkg.id,
+        label: `${pkg.name} (${pkg.disk_quota_mb ? `${pkg.disk_quota_mb} MB` : 'Unlimited'})`,
+    }));
+});
+
+const openEditModal = (user) => {
+    editingUser.value = user;
+    editForm.name = user.name || '';
+    editForm.email = user.email || '';
+    editForm.password = '';
+    editForm.package_id = user.package_id || props.packages?.[0]?.id || '';
+    editForm.ssh_public_key = user.ssh_public_key || '';
+    editForm.clearErrors();
+    showEditModal.value = true;
+};
+
+const submitEdit = () => {
+    if (!editingUser.value) return;
+    editForm.put(`/users/${editingUser.value.id}`, {
+        onSuccess: () => {
+            showEditModal.value = false;
+            editingUser.value = null;
+        },
+    });
 };
 
 const tableHeaders = [
@@ -174,6 +218,15 @@ const tableHeaders = [
                             <LogIn class="w-4 h-4" />
                         </button>
 
+                        <!-- Edit Principal -->
+                        <button
+                            @click="openEditModal(user)"
+                            title="Edit Principal"
+                            class="text-theme-text-muted hover:text-emerald-400 transition-colors p-1"
+                        >
+                            <Pencil class="w-4 h-4" />
+                        </button>
+
                         <!-- Suspend / Unsuspend -->
                         <button
                             v-if="user.status === 'active'"
@@ -204,5 +257,100 @@ const tableHeaders = [
                 </td>
             </tr>
         </UiDataTable>
+
+        <!-- Edit User Modal -->
+        <UiModal
+            :show="showEditModal"
+            :title="`Edit Principal: ${editingUser?.username}`"
+            max-width="md"
+            @close="showEditModal = false"
+        >
+            <form @submit.prevent="submitEdit" class="space-y-4">
+                <!-- Full Name -->
+                <div>
+                    <UiInput
+                        id="name"
+                        v-model="editForm.name"
+                        type="text"
+                        label="Full Name"
+                        :error="editForm.errors.name"
+                        required
+                    />
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <UiInput
+                        id="email"
+                        v-model="editForm.email"
+                        type="email"
+                        label="Email Address"
+                        :error="editForm.errors.email"
+                        required
+                    />
+                </div>
+
+                <!-- Quota Plan -->
+                <div>
+                    <UiSelect
+                        id="package_id"
+                        v-model="editForm.package_id"
+                        label="Quota Plan"
+                        :options="packageOptions"
+                        :error="editForm.errors.package_id"
+                        required
+                    />
+                </div>
+
+                <!-- Password (Optional) -->
+                <div>
+                    <UiInput
+                        id="password"
+                        v-model="editForm.password"
+                        type="password"
+                        label="Password Reset (Leave blank to keep unchanged)"
+                        placeholder="••••••••••••"
+                        :error="editForm.errors.password"
+                    />
+                </div>
+
+                <!-- SSH Public Key -->
+                <div>
+                    <label class="block text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-1 flex items-center justify-between">
+                        <span class="flex items-center gap-1.5">
+                            <Key class="w-3.5 h-3.5 text-theme-accent" />
+                            <span>SSH Public Key</span>
+                        </span>
+                        <span class="text-theme-text-muted font-normal lowercase">Stored in ~/.ssh/authorized_keys</span>
+                    </label>
+                    <textarea
+                        v-model="editForm.ssh_public_key"
+                        rows="3"
+                        placeholder="ssh-ed25519 AAAAC3... or leave empty to clear"
+                        class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded text-xs font-mono text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:border-theme-accent transition-colors"
+                    ></textarea>
+                    <p v-if="editForm.errors.ssh_public_key" class="text-xs text-rose-400 mt-1">{{ editForm.errors.ssh_public_key }}</p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="pt-4 flex items-center justify-end gap-3 border-t border-theme-border">
+                    <UiButton
+                        type="button"
+                        variant="secondary"
+                        @click="showEditModal = false"
+                    >
+                        Abort
+                    </UiButton>
+                    <UiButton
+                        type="submit"
+                        variant="primary"
+                        :loading="editForm.processing"
+                        :disabled="editForm.processing"
+                    >
+                        {{ editForm.processing ? 'Syncing...' : 'Save Changes' }}
+                    </UiButton>
+                </div>
+            </form>
+        </UiModal>
     </div>
 </template>
