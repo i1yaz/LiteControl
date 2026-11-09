@@ -62,6 +62,7 @@ class HandleInertiaRequests extends Middleware
                 'is_mock_mode' => (bool) env('LC_DEV_MOCK', true),
                 'theme' => $activeTheme,
                 'available_themes' => $availableThemes,
+                'server_ip' => $request->server('SERVER_ADDR', '127.0.0.1'),
             ],
         ];
     }

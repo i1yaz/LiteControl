@@ -29,7 +29,7 @@ export const PANEL_NAVIGATION = [
         icon: 'domains',
         adminOnly: false,
         children: [
-            { id: 'domains.index', label: 'VHost Records', route: '/domains' },
+            { id: 'domains.index', label: 'Domains', route: '/domains' },
             { id: 'subdomains.index', label: 'Subdomains', route: '/subdomains' },
         ],
     },

@@ -1,6 +1,6 @@
 <script setup>
 import { shallowRef, computed } from 'vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import UiPageHeader from '@/Components/ui/UiPageHeader.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiModal from '@/Components/ui/UiModal.vue';
@@ -19,7 +19,9 @@ import {
     LogIn,
     Pencil,
     Key,
-    Package as PackageIcon
+    Package as PackageIcon,
+    Terminal,
+    Check
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -93,6 +95,22 @@ const submitEdit = () => {
             showEditModal.value = false;
             editingUser.value = null;
         },
+    });
+};
+
+const page = usePage();
+const copiedUser = shallowRef(null);
+const copySshCommand = (username) => {
+    if (!username) return;
+    const serverIp = page.props.panel?.server_ip || window.location.hostname || '127.0.0.1';
+    const cmd = `ssh ${username}@${serverIp}`;
+    navigator.clipboard?.writeText(cmd).then(() => {
+        copiedUser.value = username;
+        setTimeout(() => {
+            if (copiedUser.value === username) {
+                copiedUser.value = null;
+            }
+        }, 2000);
     });
 };
 
@@ -209,6 +227,16 @@ const tableHeaders = [
                 </td>
                 <td class="py-3.5 px-4 text-right">
                     <div class="flex items-center justify-end gap-1.5">
+                        <!-- Copy SSH Command -->
+                        <button
+                            @click="copySshCommand(user.username)"
+                            :title="copiedUser === user.username ? 'Copied SSH command!' : `Copy SSH command (ssh ${user.username}@${$page.props.panel?.server_ip || 'ip'})`"
+                            class="text-theme-text-muted hover:text-theme-accent transition-colors p-1"
+                        >
+                            <Check v-if="copiedUser === user.username" class="w-4 h-4 text-emerald-400" />
+                            <Terminal v-else class="w-4 h-4" />
+                        </button>
+
                         <!-- Impersonate Button -->
                         <button
                             @click="impersonateUser(user.id, user.username)"

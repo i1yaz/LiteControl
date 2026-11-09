@@ -7,7 +7,7 @@ import UiModal from '@/Components/ui/UiModal.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
 import UiSelect from '@/Components/ui/UiSelect.vue';
 import UiDataTable from '@/Components/ui/UiDataTable.vue';
-import { Globe, Plus, ShieldCheck, ShieldAlert, Folder, Trash2, Pencil } from 'lucide-vue-next';
+import { Globe, Plus, ShieldCheck, ShieldAlert, Folder, Trash2, Pencil, Terminal, Check } from 'lucide-vue-next';
 
 const props = defineProps({
     domains: Object,
@@ -135,6 +135,21 @@ const deleteDomain = (id, name) => {
 const changePhp = (domainId, newVer) => {
     router.post(`/domains/${domainId}/php`, { php_version: newVer });
 };
+
+const copiedUser = shallowRef(null);
+const copySshCommand = (username) => {
+    if (!username) return;
+    const serverIp = page.props.panel?.server_ip || window.location.hostname || '127.0.0.1';
+    const cmd = `ssh ${username}@${serverIp}`;
+    navigator.clipboard?.writeText(cmd).then(() => {
+        copiedUser.value = username;
+        setTimeout(() => {
+            if (copiedUser.value === username) {
+                copiedUser.value = null;
+            }
+        }, 2000);
+    });
+};
 </script>
 
 <template>
@@ -228,6 +243,15 @@ const changePhp = (domainId, newVer) => {
                 </td>
                 <td class="py-3.5 px-4 text-right">
                     <div class="flex items-center justify-end gap-1.5">
+                        <button
+                            v-if="dom.user?.username || currentUsername"
+                            @click="copySshCommand(dom.user?.username || currentUsername)"
+                            class="text-theme-text-muted hover:text-theme-accent transition-colors p-1"
+                            :title="copiedUser === (dom.user?.username || currentUsername) ? 'Copied SSH command!' : `Copy SSH command (ssh ${(dom.user?.username || currentUsername)}@${$page.props.panel?.server_ip || 'ip'})`"
+                        >
+                            <Check v-if="copiedUser === (dom.user?.username || currentUsername)" class="w-4 h-4 text-emerald-400" />
+                            <Terminal v-else class="w-4 h-4" />
+                        </button>
                         <button
                             @click="openEditModal(dom)"
                             class="text-theme-text-muted hover:text-emerald-400 transition-colors p-1"
