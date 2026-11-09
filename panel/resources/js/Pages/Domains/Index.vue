@@ -281,6 +281,18 @@ const copySshCommand = (username) => {
                             <span>Filemanager</span>
                         </a>
 
+                        <!-- Copy SSH Command Button -->
+                        <button
+                            v-if="dom.user?.username || currentUsername"
+                            @click="copySshCommand(dom.user?.username || currentUsername)"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-medium border border-theme-border transition-colors"
+                            :title="copiedUser === (dom.user?.username || currentUsername) ? 'Copied SSH command!' : `Copy SSH command (ssh ${(dom.user?.username || currentUsername)}@${$page.props.panel?.server_ip || 'ip'})`"
+                        >
+                            <Check v-if="copiedUser === (dom.user?.username || currentUsername)" class="w-3.5 h-3.5 text-emerald-400" />
+                            <Terminal v-else class="w-3.5 h-3.5 text-theme-accent" />
+                            <span>{{ copiedUser === (dom.user?.username || currentUsername) ? 'Copied!' : 'SSH' }}</span>
+                        </button>
+
                         <!-- Modify (Quick Edit Modal) -->
                         <button
                             @click="openEditModal(dom)"

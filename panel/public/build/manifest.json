@@ -7,16 +7,16 @@
       "_runtime-dom.esm-bundler-CMeWlPEc.js"
     ]
   },
-  "_UiCard-Cx9EGQD9.js": {
-    "file": "assets/UiCard-Cx9EGQD9.js",
+  "_UiCard-CJQvrT3D.js": {
+    "file": "assets/UiCard-CJQvrT3D.js",
     "name": "UiCard",
     "imports": [
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "resources/js/app.js"
     ]
   },
-  "_UiDataTable-Davi-iuO.js": {
-    "file": "assets/UiDataTable-Davi-iuO.js",
+  "_UiDataTable-CrpC1NOS.js": {
+    "file": "assets/UiDataTable-CrpC1NOS.js",
     "name": "UiDataTable",
     "imports": [
       "_runtime-core.esm-bundler-CoV3YJHl.js",
@@ -24,24 +24,24 @@
       "_createLucideIcon-BSz11Qpw.js"
     ]
   },
-  "_UiInput-_fx9mjaG.js": {
-    "file": "assets/UiInput-_fx9mjaG.js",
+  "_UiInput-DZiVY5L5.js": {
+    "file": "assets/UiInput-DZiVY5L5.js",
     "name": "UiInput",
     "imports": [
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "resources/js/app.js"
     ]
   },
-  "_UiPageHeader-DE0wLDYJ.js": {
-    "file": "assets/UiPageHeader-DE0wLDYJ.js",
+  "_UiPageHeader-B2vCWodP.js": {
+    "file": "assets/UiPageHeader-B2vCWodP.js",
     "name": "UiPageHeader",
     "imports": [
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "resources/js/app.js"
     ]
   },
-  "_UiSelect-C8Kcjcsn.js": {
-    "file": "assets/UiSelect-C8Kcjcsn.js",
+  "_UiSelect-CJwicQ24.js": {
+    "file": "assets/UiSelect-CJwicQ24.js",
     "name": "UiSelect",
     "imports": [
       "_runtime-core.esm-bundler-CoV3YJHl.js",
@@ -408,7 +408,7 @@
     "isEntry": true
   },
   "resources/js/Pages/Auth/Login.vue": {
-    "file": "assets/Login-CoL-sqsB.js",
+    "file": "assets/Login-Xrp4eXeO.js",
     "name": "Login",
     "src": "resources/js/Pages/Auth/Login.vue",
     "isDynamicEntry": true,
@@ -417,8 +417,8 @@
       "_runtime-dom.esm-bundler-CMeWlPEc.js",
       "_dist-Du9yZf7-.js",
       "_shield-check-DkY5A489.js",
-      "_UiInput-_fx9mjaG.js",
-      "_UiCard-Cx9EGQD9.js",
+      "_UiInput-DZiVY5L5.js",
+      "_UiCard-CJQvrT3D.js",
       "resources/js/app.js"
     ]
   },
@@ -483,7 +483,7 @@
     ]
   },
   "resources/js/Pages/Configuration/Settings.vue": {
-    "file": "assets/Settings-QOVIsyRS.js",
+    "file": "assets/Settings-BztQ8DDi.js",
     "name": "Settings",
     "src": "resources/js/Pages/Configuration/Settings.vue",
     "isDynamicEntry": true,
@@ -500,7 +500,7 @@
     ]
   },
   "resources/js/Pages/Dashboard.vue": {
-    "file": "assets/Dashboard-BBOsmmMi.js",
+    "file": "assets/Dashboard-CFiyJ4Q0.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Dashboard.vue",
     "isDynamicEntry": true,
@@ -508,8 +508,8 @@
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "_dist-Du9yZf7-.js",
       "_useDashboardMetrics-CguAxK4z.js",
-      "_UiCard-Cx9EGQD9.js",
-      "_UiPageHeader-DE0wLDYJ.js",
+      "_UiCard-CJQvrT3D.js",
+      "_UiPageHeader-B2vCWodP.js",
       "_globe-BRPkwY9L.js",
       "_database-B3YLvUBK.js",
       "_package-DpRijx80.js",
@@ -517,7 +517,7 @@
     ]
   },
   "resources/js/Pages/Databases/Index.vue": {
-    "file": "assets/Index-WDlhNNiP.js",
+    "file": "assets/Index-Bq1Y6y--.js",
     "name": "Index",
     "src": "resources/js/Pages/Databases/Index.vue",
     "isDynamicEntry": true,
@@ -525,9 +525,9 @@
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "_runtime-dom.esm-bundler-CMeWlPEc.js",
       "_dist-Du9yZf7-.js",
-      "_UiPageHeader-DE0wLDYJ.js",
-      "_UiInput-_fx9mjaG.js",
-      "_UiSelect-C8Kcjcsn.js",
+      "_UiPageHeader-B2vCWodP.js",
+      "_UiInput-DZiVY5L5.js",
+      "_UiSelect-CJwicQ24.js",
       "_plus-CJwk8iSu.js",
       "_user-plus-BUnzdGX-.js",
       "_key-BjLysGGh.js",
@@ -538,7 +538,7 @@
     ]
   },
   "resources/js/Pages/Domains/Index.vue": {
-    "file": "assets/Index-DFRRhaET.js",
+    "file": "assets/Index-BsKhb3CA.js",
     "name": "Index",
     "src": "resources/js/Pages/Domains/Index.vue",
     "isDynamicEntry": true,
@@ -546,15 +546,17 @@
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "_runtime-dom.esm-bundler-CMeWlPEc.js",
       "_dist-Du9yZf7-.js",
-      "_UiPageHeader-DE0wLDYJ.js",
-      "_UiInput-_fx9mjaG.js",
-      "_UiSelect-C8Kcjcsn.js",
-      "_UiDataTable-Davi-iuO.js",
+      "_UiPageHeader-B2vCWodP.js",
+      "_UiInput-DZiVY5L5.js",
+      "_UiSelect-CJwicQ24.js",
+      "_UiDataTable-CrpC1NOS.js",
       "_plus-CJwk8iSu.js",
       "_shield-check-DkY5A489.js",
       "_shield-alert-B1j6Agw6.js",
       "_folder-DfmVeL55.js",
       "_trash-2-D_nms9MB.js",
+      "_terminal-Bp5Hj-uc.js",
+      "_check-DZOOb90E.js",
       "_layout-grid-PO4EUBs1.js",
       "_createLucideIcon-BSz11Qpw.js"
     ]
@@ -999,7 +1001,7 @@
     ]
   },
   "resources/js/Pages/Users/Index.vue": {
-    "file": "assets/Index-DSTzrQry.js",
+    "file": "assets/Index-DXDmFV0A.js",
     "name": "Index",
     "src": "resources/js/Pages/Users/Index.vue",
     "isDynamicEntry": true,
@@ -1007,10 +1009,10 @@
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "_runtime-dom.esm-bundler-CMeWlPEc.js",
       "_dist-Du9yZf7-.js",
-      "_UiPageHeader-DE0wLDYJ.js",
-      "_UiInput-_fx9mjaG.js",
-      "_UiSelect-C8Kcjcsn.js",
-      "_UiDataTable-Davi-iuO.js",
+      "_UiPageHeader-B2vCWodP.js",
+      "_UiInput-DZiVY5L5.js",
+      "_UiSelect-CJwicQ24.js",
+      "_UiDataTable-CrpC1NOS.js",
       "_user-plus-BUnzdGX-.js",
       "_search-B4t2vcXJ.js",
       "_globe-BRPkwY9L.js",
@@ -1149,7 +1151,7 @@
     ]
   },
   "resources/js/Themes/avionics/index.js": {
-    "file": "assets/avionics-BZfWk2wt.js",
+    "file": "assets/avionics-dgpOuPfy.js",
     "name": "avionics",
     "src": "resources/js/Themes/avionics/index.js",
     "isDynamicEntry": true,
@@ -1324,7 +1326,7 @@
     ]
   },
   "resources/js/Themes/horizon/index.js": {
-    "file": "assets/horizon-DqpooNjO.js",
+    "file": "assets/horizon-g73pC-so.js",
     "name": "horizon",
     "src": "resources/js/Themes/horizon/index.js",
     "isDynamicEntry": true,
@@ -1373,7 +1375,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-CmwG8DUI.js",
+    "file": "assets/app-a3o8n7ZV.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
