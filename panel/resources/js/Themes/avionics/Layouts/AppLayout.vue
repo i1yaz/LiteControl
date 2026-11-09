@@ -40,7 +40,7 @@ const fetchOlsStatus = async () => {
     if (checkingOls.value) return;
     checkingOls.value = true;
     try {
-        const response = await axios.get(route('server.ols-status'));
+        const response = await axios.get('/server/ols-status');
         olsStatus.value = response.data?.status === 'online' ? 'online' : 'offline';
     } catch (err) {
         olsStatus.value = 'offline';
