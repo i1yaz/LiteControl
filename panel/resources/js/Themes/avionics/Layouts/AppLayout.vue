@@ -156,7 +156,10 @@ const logout = () => {
                         {{ olsStatus.toUpperCase() }}
                     </span>
 
-                    <RefreshCw class="w-3 h-3 text-[#586477] opacity-0 group-hover:opacity-100 transition-opacity ml-0.5" />
+                    <RefreshCw
+                        class="w-3 h-3 text-[#586477] group-hover:text-white transition-colors ml-0.5"
+                        :class="{ 'animate-spin text-[#ff6b35]': checkingOls }"
+                    />
                 </button>
 
                 <!-- Theme Switcher Dropdown -->
