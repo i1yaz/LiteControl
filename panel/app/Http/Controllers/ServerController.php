@@ -305,5 +305,39 @@ class ServerController extends Controller
             'stats' => $stats,
         ]);
     }
+
+    /**
+     * Fast check of OLS daemon status.
+     * Returns JSON with status: 'online' | 'offline'.
+     */
+    public function olsStatus()
+    {
+        if ($this->lcCli->isMockMode()) {
+            return response()->json([
+                'status' => 'online',
+                'service' => 'openlitespeed',
+                'mock' => true,
+            ]);
+        }
+
+        // Fast check without heavy overhead
+        // 1. Check OLS control script or systemctl
+        $output = '';
+        $olsCtrl = '/usr/local/lsws/bin/lswsctrl';
+        $isOnline = false;
+
+        if (is_executable($olsCtrl)) {
+            $output = shell_exec("{$olsCtrl} status 2>/dev/null");
+            $isOnline = (is_string($output) && stripos($output, 'running') !== false);
+        } else {
+            $output = shell_exec('systemctl is-active lshttpd 2>/dev/null || systemctl is-active lsws 2>/dev/null || systemctl is-active openlitespeed 2>/dev/null');
+            $isOnline = (is_string($output) && trim($output) === 'active');
+        }
+
+        return response()->json([
+            'status' => $isOnline ? 'online' : 'offline',
+            'service' => 'openlitespeed',
+        ]);
+    }
 }
 

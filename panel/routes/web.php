@@ -122,6 +122,7 @@ Route::middleware('auth')->group(function () {
 
         // Server Management (Admin Only)
         Route::get('/server/services', [ServerController::class, 'services'])->name('server.services');
+        Route::get('/server/ols-status', [ServerController::class, 'olsStatus'])->name('server.ols-status');
         Route::post('/server/services/{service}/{action}', [ServerController::class, 'serviceAction'])->name('server.services.action');
         Route::post('/server/webadmin/enable', [ServerController::class, 'enableWebAdmin'])->name('server.webadmin.enable');
         Route::post('/server/webadmin/disable', [ServerController::class, 'disableWebAdmin'])->name('server.webadmin.disable');
