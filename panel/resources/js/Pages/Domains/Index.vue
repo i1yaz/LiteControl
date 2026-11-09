@@ -63,7 +63,7 @@ const tableHeaders = computed(() => {
     headers.push(
         { label: 'Routing Topology' },
         { label: 'TLS / SSL Ingress' },
-        { label: 'PHP SuEXEC Runtime' },
+        { label: 'PHP Runtime' },
         { label: 'Storage Root' },
         { label: 'Operations', class: 'text-right' }
     );
@@ -384,7 +384,7 @@ const copySshCommand = (username) => {
                     <UiSelect
                         id="php_version"
                         v-model="form.php_version"
-                        label="SuEXEC PHP Engine Profile"
+                        label="PHP Runtime"
                         :options="phpOptions"
                     />
                 </div>
@@ -463,7 +463,7 @@ const copySshCommand = (username) => {
                     <UiSelect
                         id="edit_php_version"
                         v-model="editForm.php_version"
-                        label="SuEXEC PHP Engine Profile"
+                        label="PHP Runtime"
                         :options="phpOptions"
                     />
                 </div>

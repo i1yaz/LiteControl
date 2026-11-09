@@ -69,7 +69,7 @@ export const WEBSITE_MANAGE_ACTIONS = [
         id: 'change-php',
         tabId: 'config',
         title: 'Change PHP',
-        description: 'Switch SuEXEC PHP engine profile for this website',
+        description: 'Switch PHP runtime version for this website',
         icon: 'Cpu',
         type: 'panel',
         panelKey: 'ChangePhpPanel',
