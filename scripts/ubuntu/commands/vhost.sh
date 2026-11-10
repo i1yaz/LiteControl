@@ -123,6 +123,10 @@ EOF
             setfacl -m u:nobody:x "${home_dir}" 2>/dev/null || true
             setfacl -m u:nobody:x "${home_dir}/${domain}" 2>/dev/null || true
             setfacl -m u:nobody:rx "${doc_root}" 2>/dev/null || true
+            setfacl -m u:"${LC_USER}":rwx "${home_dir}" 2>/dev/null || true
+            setfacl -m u:"${LC_USER}":rwx "${home_dir}/${domain}" 2>/dev/null || true
+            setfacl -R -m u:"${LC_USER}":rwx "${doc_root}" 2>/dev/null || true
+            setfacl -R -d -m u:"${LC_USER}":rwx "${doc_root}" 2>/dev/null || true
         fi
     fi
 
@@ -340,6 +344,8 @@ cmd_vhost_docroot() {
         chmod 750 "${new_docroot}"
         if command -v setfacl >/dev/null 2>&1; then
             setfacl -m u:nobody:rx "${new_docroot}" 2>/dev/null || true
+            setfacl -R -m u:"${LC_USER}":rwx "${new_docroot}" 2>/dev/null || true
+            setfacl -R -d -m u:"${LC_USER}":rwx "${new_docroot}" 2>/dev/null || true
         fi
     fi
 
