@@ -26,7 +26,7 @@ LC_BACKUP_ROOT="${LC_BACKUP_ROOT:-/var/backups/litecontrol}"
 
 TARGET_REF=""
 NON_INTERACTIVE=0
-BUILD_FRONTEND=0
+BUILD_FRONTEND=1
 
 # Terminal Colors
 if [[ -t 1 ]]; then
@@ -349,14 +349,15 @@ upgrade_laravel_panel() {
         local composer_env="export HOME='${LC_BASE_DIR}' COMPOSER_HOME='${LC_BASE_DIR}/.config/composer' COMPOSER_CACHE_DIR='${LC_BASE_DIR}/.cache/composer' COMPOSER_MEMORY_LIMIT=-1 GIT_TERMINAL_PROMPT=0;"
         su -s /bin/bash "${LC_USER}" -c "${composer_env} cd '${LC_PANEL_DIR}' && ${composer_bin} install --no-dev -o --no-interaction --no-progress"
 
-        # Build frontend assets if package.json exists and build is explicitly requested or prebuilt assets are missing
+        # Build frontend assets if package.json exists
         if [[ -f "${LC_PANEL_DIR}/package.json" ]]; then
             if [[ "${BUILD_FRONTEND}" -eq 1 || ! -f "${LC_PANEL_DIR}/public/build/manifest.json" ]]; then
                 log_info "Building Vue 3 + Vite frontend assets using isolated Node 24 runtime..."
+                rm -rf "${LC_PANEL_DIR}/public/build"
                 su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} scripts/isolated-build.php"
                 rm -rf "${LC_PANEL_DIR}/node_modules"
             else
-                log_info "Pre-built frontend assets detected; skipping on-server frontend build."
+                log_info "Frontend build skipped (--skip-frontend specified)."
             fi
         fi
 
