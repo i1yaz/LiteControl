@@ -128,8 +128,8 @@ cmd_user_add() {
         chown -R "${user}:${user}" "${home_dir}"
         if command -v setfacl >/dev/null 2>&1; then
             setfacl -m u:nobody:x "${home_dir}" 2>/dev/null || true
-            setfacl -m u:"${LC_USER}":rwx "${home_dir}" 2>/dev/null || true
-            setfacl -d -m u:"${LC_USER}":rwx "${home_dir}" 2>/dev/null || true
+            setfacl -m u:"${LC_USER}":r-x "${home_dir}" 2>/dev/null || true
+            setfacl -d -m u:"${LC_USER}":r-x "${home_dir}" 2>/dev/null || true
         fi
     fi
 

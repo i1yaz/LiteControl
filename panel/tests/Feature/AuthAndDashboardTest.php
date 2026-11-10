@@ -19,6 +19,7 @@ class AuthAndDashboardTest extends TestCase
         parent::setUp();
 
         $this->seed();
+        $this->seed(\Database\Seeders\DemoDataSeeder::class);
     }
 
     public function test_guest_is_redirected_to_login(): void

@@ -20,6 +20,7 @@ class DatabaseAndBackupTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        $this->seed(\Database\Seeders\DemoDataSeeder::class);
     }
 
     public function test_user_can_view_databases(): void

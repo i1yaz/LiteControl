@@ -16,6 +16,7 @@ class ConfigurationAndServerTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        $this->seed(\Database\Seeders\DemoDataSeeder::class);
     }
 
     public function test_admin_can_view_settings_page(): void

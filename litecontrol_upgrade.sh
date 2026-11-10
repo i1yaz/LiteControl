@@ -427,24 +427,28 @@ reconcile_panel_services() {
     fi
 
     # Ensure permissions for all existing user home and vhost directories so panel worker can manage files
+    # (Top-level doorways only - NEVER touches or overwrites inner customer files)
     if command -v setfacl >/dev/null 2>&1; then
         for u_dir in "${LC_HOME_ROOT}"/*; do
             if [[ -d "${u_dir}" ]]; then
+                chmod 711 "${u_dir}" 2>/dev/null || true
                 setfacl -m u:nobody:x "${u_dir}" 2>/dev/null || true
-                setfacl -m u:"${LC_USER}":rwx "${u_dir}" 2>/dev/null || true
-                setfacl -d -m u:"${LC_USER}":rwx "${u_dir}" 2>/dev/null || true
+                setfacl -m u:"${LC_USER}":r-x "${u_dir}" 2>/dev/null || true
+                setfacl -d -m u:"${LC_USER}":r-x "${u_dir}" 2>/dev/null || true
 
                 # Check inside each domain directory
                 for vh_dir in "${u_dir}"/*; do
                     if [[ -d "${vh_dir}" && "$(basename "${vh_dir}")" != "logs" && "$(basename "${vh_dir}")" != "backups" && "$(basename "${vh_dir}")" != "tmp" ]]; then
+                        chmod 755 "${vh_dir}" 2>/dev/null || true
                         setfacl -m u:nobody:x "${vh_dir}" 2>/dev/null || true
-                        setfacl -m u:"${LC_USER}":rwx "${vh_dir}" 2>/dev/null || true
-                        setfacl -d -m u:"${LC_USER}":rwx "${vh_dir}" 2>/dev/null || true
+                        setfacl -m u:"${LC_USER}":r-x "${vh_dir}" 2>/dev/null || true
+                        setfacl -d -m u:"${LC_USER}":r-x "${vh_dir}" 2>/dev/null || true
 
                         if [[ -d "${vh_dir}/public_html" ]]; then
-                            setfacl -R -m u:nobody:rx "${vh_dir}/public_html" 2>/dev/null || true
-                            setfacl -R -m u:"${LC_USER}":rwx "${vh_dir}/public_html" 2>/dev/null || true
-                            setfacl -R -d -m u:"${LC_USER}":rwx "${vh_dir}/public_html" 2>/dev/null || true
+                            chmod 755 "${vh_dir}/public_html" 2>/dev/null || true
+                            setfacl -m u:nobody:r-x "${vh_dir}/public_html" 2>/dev/null || true
+                            setfacl -m u:"${LC_USER}":rwx "${vh_dir}/public_html" 2>/dev/null || true
+                            setfacl -d -m u:"${LC_USER}":rwx "${vh_dir}/public_html" 2>/dev/null || true
                         fi
                     fi
                 done

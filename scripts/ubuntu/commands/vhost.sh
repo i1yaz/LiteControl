@@ -118,15 +118,19 @@ EOF
 
     if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
         chown -R "${user}:${user}" "${home_dir}/${domain}" "${log_dir}" 2>/dev/null || true
-        chmod 750 "${doc_root}" "${log_dir}"
+        chmod 750 "${log_dir}"
+        # Ensure directories are 755 and regular files are 644
+        find "${home_dir}/${domain}" -type d -exec chmod 755 {} + 2>/dev/null || true
+        find "${home_dir}/${domain}" -type f -exec chmod 644 {} + 2>/dev/null || true
+
         if command -v setfacl >/dev/null 2>&1; then
             setfacl -m u:nobody:x "${home_dir}" 2>/dev/null || true
             setfacl -m u:nobody:x "${home_dir}/${domain}" 2>/dev/null || true
-            setfacl -m u:nobody:rx "${doc_root}" 2>/dev/null || true
-            setfacl -m u:"${LC_USER}":rwx "${home_dir}" 2>/dev/null || true
-            setfacl -m u:"${LC_USER}":rwx "${home_dir}/${domain}" 2>/dev/null || true
-            setfacl -R -m u:"${LC_USER}":rwx "${doc_root}" 2>/dev/null || true
-            setfacl -R -d -m u:"${LC_USER}":rwx "${doc_root}" 2>/dev/null || true
+            setfacl -R -m u:nobody:rX "${doc_root}" 2>/dev/null || true
+            setfacl -m u:"${LC_USER}":r-x "${home_dir}" 2>/dev/null || true
+            setfacl -m u:"${LC_USER}":r-x "${home_dir}/${domain}" 2>/dev/null || true
+            setfacl -R -m u:"${LC_USER}":rwX "${doc_root}" 2>/dev/null || true
+            setfacl -R -d -m u:"${LC_USER}":rwX "${doc_root}" 2>/dev/null || true
         fi
     fi
 
@@ -341,11 +345,12 @@ cmd_vhost_docroot() {
 
     if [[ -n "${user}" && "${LC_TEST_MODE:-0}" != "1" ]]; then
         chown -R "${user}:${user}" "${new_docroot}" 2>/dev/null || true
-        chmod 750 "${new_docroot}"
+        find "${new_docroot}" -type d -exec chmod 755 {} + 2>/dev/null || true
+        find "${new_docroot}" -type f -exec chmod 644 {} + 2>/dev/null || true
         if command -v setfacl >/dev/null 2>&1; then
-            setfacl -m u:nobody:rx "${new_docroot}" 2>/dev/null || true
-            setfacl -R -m u:"${LC_USER}":rwx "${new_docroot}" 2>/dev/null || true
-            setfacl -R -d -m u:"${LC_USER}":rwx "${new_docroot}" 2>/dev/null || true
+            setfacl -R -m u:nobody:rX "${new_docroot}" 2>/dev/null || true
+            setfacl -R -m u:"${LC_USER}":rwX "${new_docroot}" 2>/dev/null || true
+            setfacl -R -d -m u:"${LC_USER}":rwX "${new_docroot}" 2>/dev/null || true
         fi
     fi
 
@@ -564,10 +569,11 @@ cmd_vhost_fix_permissions() {
             local uname
             uname="$(basename "${u_dir}")"
 
+            # 1. Home directory: 711, traverse-only for nobody & litecontrol (no group write)
             chmod 711 "${u_dir}" 2>/dev/null || true
             setfacl -m u:nobody:x "${u_dir}" 2>/dev/null || true
-            setfacl -m u:"${LC_USER}":rwx "${u_dir}" 2>/dev/null || true
-            setfacl -d -m u:"${LC_USER}":rwx "${u_dir}" 2>/dev/null || true
+            setfacl -m u:"${LC_USER}":r-x "${u_dir}" 2>/dev/null || true
+            setfacl -d -m u:"${LC_USER}":r-x "${u_dir}" 2>/dev/null || true
 
             for d_dir in "${u_dir}"/*; do
                 [[ -d "${d_dir}" ]] || continue
@@ -582,22 +588,31 @@ cmd_vhost_fix_permissions() {
                     continue
                 fi
 
+                # 2. Domain root directory: 755
                 chown -R "${uname}:${uname}" "${d_dir}" 2>/dev/null || true
+                chmod 755 "${d_dir}" 2>/dev/null || true
                 setfacl -m u:nobody:x "${d_dir}" 2>/dev/null || true
-                setfacl -m u:"${LC_USER}":rwx "${d_dir}" 2>/dev/null || true
-                setfacl -d -m u:"${LC_USER}":rwx "${d_dir}" 2>/dev/null || true
+                setfacl -m u:"${LC_USER}":r-x "${d_dir}" 2>/dev/null || true
+                setfacl -d -m u:"${LC_USER}":r-x "${d_dir}" 2>/dev/null || true
 
-                if [[ -d "${d_dir}/public_html" ]]; then
-                    chmod -R 755 "${d_dir}/public_html" 2>/dev/null || true
-                    setfacl -R -m u:nobody:rx "${d_dir}/public_html" 2>/dev/null || true
-                    setfacl -R -m u:"${LC_USER}":rwx "${d_dir}/public_html" 2>/dev/null || true
-                    setfacl -R -d -m u:"${LC_USER}":rwx "${d_dir}/public_html" 2>/dev/null || true
+                # 3. Inside website files & directories:
+                #    - Directories strictly 755
+                #    - Regular files strictly 644 (NO execute bit!)
+                #    - rwX ACLs only grant X to folders, never to files
+                find "${d_dir}" -type d -exec chmod 755 {} + 2>/dev/null || true
+                find "${d_dir}" -type f -exec chmod 644 {} + 2>/dev/null || true
+                if [[ -d "${d_dir}/logs" ]]; then
+                    chmod 750 "${d_dir}/logs" 2>/dev/null || true
                 fi
+
+                setfacl -R -m u:nobody:rX "${d_dir}" 2>/dev/null || true
+                setfacl -R -m u:"${LC_USER}":rwX "${d_dir}" 2>/dev/null || true
+                setfacl -R -d -m u:"${LC_USER}":rwX "${d_dir}" 2>/dev/null || true
             done
         done
     fi
 
-    emit_success "Permissions repaired for ${target_domain:-all domains}."
+    emit_success "Permissions repaired for ${target_domain:-all domains} (755 directories, 644 files)."
 }
 
 SUBCOMMAND="${1:-}"

@@ -15,6 +15,7 @@ class ThemeSystemTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        $this->seed(\Database\Seeders\DemoDataSeeder::class);
     }
 
     public function test_theme_manager_discovers_available_themes(): void

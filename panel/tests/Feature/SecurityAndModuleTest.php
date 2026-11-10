@@ -19,6 +19,7 @@ class SecurityAndModuleTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        $this->seed(\Database\Seeders\DemoDataSeeder::class);
     }
 
     public function test_user_and_admin_can_view_ssl_page(): void

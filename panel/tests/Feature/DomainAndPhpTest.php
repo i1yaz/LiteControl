@@ -17,6 +17,7 @@ class DomainAndPhpTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        $this->seed(\Database\Seeders\DemoDataSeeder::class);
     }
 
     public function test_user_can_view_domains_list(): void
