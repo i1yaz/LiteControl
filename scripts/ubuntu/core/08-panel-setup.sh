@@ -100,8 +100,8 @@ EOF
     fi
 
     # Ensure panel user has writable cache and config directory
-    mkdir -p "${LC_BASE_DIR}/.config/composer" "${LC_BASE_DIR}/.cache/composer"
-    chown -R "${LC_USER}:${LC_GROUP}" "${LC_BASE_DIR}/.config" "${LC_BASE_DIR}/.cache"
+    mkdir -p "${LC_BASE_DIR}/.config/composer" "${LC_BASE_DIR}/.cache/composer" "${LC_BASE_DIR}/.npm"
+    chown -R "${LC_USER}:${LC_GROUP}" "${LC_BASE_DIR}/.config" "${LC_BASE_DIR}/.cache" "${LC_BASE_DIR}/.npm"
 
     # If full Laravel app is present (has artisan), configure .env & run migrations
     if [[ -f "${LC_PANEL_DIR}/artisan" ]]; then

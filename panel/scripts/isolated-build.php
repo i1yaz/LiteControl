@@ -158,10 +158,20 @@ $currentPath = getenv('PATH') ?: '';
 putenv("PATH={$nodeBinDir}" . PATH_SEPARATOR . $currentPath);
 $_ENV['PATH'] = "{$nodeBinDir}" . PATH_SEPARATOR . $currentPath;
 
+// Configure npm cache directory inside isolated node dir or local writable dir to avoid root-owned ~/.npm permission issues
+$npmCacheDir = $nodeDir . DIRECTORY_SEPARATOR . '.npm-cache';
+if (!is_dir($npmCacheDir)) {
+    @mkdir($npmCacheDir, 0755, true);
+}
+putenv("npm_config_cache={$npmCacheDir}");
+$_ENV['npm_config_cache'] = $npmCacheDir;
+
+$cacheFlag = " --cache=" . escapeshellarg($npmCacheDir);
+
 // Run npm install
 echo ">> Running npm install via isolated Node/npm...\n";
 $procInstall = proc_open(
-    escapeshellarg($npmBinary) . " install --include=optional --no-audit --no-fund",
+    escapeshellarg($npmBinary) . " install --include=optional --no-audit --no-fund" . $cacheFlag,
     [0 => STDIN, 1 => STDOUT, 2 => STDERR],
     $pipes,
     $baseDir
