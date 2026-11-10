@@ -131,6 +131,11 @@ EOF
             setfacl -m u:"${LC_USER}":r-x "${home_dir}/${domain}" 2>/dev/null || true
             setfacl -R -m u:"${LC_USER}":rwX "${doc_root}" 2>/dev/null || true
             setfacl -R -d -m u:"${LC_USER}":rwX "${doc_root}" 2>/dev/null || true
+
+            # Clamp ACL mask so `ls -l` displays clean standard permissions (755 for dirs, 644 for files)
+            # without confusing rwx display caused by default ACL mask calculation:
+            find "${doc_root}" -type d -exec setfacl -m m::r-x,d:m::r-x {} + 2>/dev/null || true
+            find "${doc_root}" -type f -exec setfacl -m m::r-- {} + 2>/dev/null || true
         fi
     fi
 
@@ -351,6 +356,8 @@ cmd_vhost_docroot() {
             setfacl -R -m u:nobody:rX "${new_docroot}" 2>/dev/null || true
             setfacl -R -m u:"${LC_USER}":rwX "${new_docroot}" 2>/dev/null || true
             setfacl -R -d -m u:"${LC_USER}":rwX "${new_docroot}" 2>/dev/null || true
+            find "${new_docroot}" -type d -exec setfacl -m m::r-x,d:m::r-x {} + 2>/dev/null || true
+            find "${new_docroot}" -type f -exec setfacl -m m::r-- {} + 2>/dev/null || true
         fi
     fi
 
@@ -608,6 +615,10 @@ cmd_vhost_fix_permissions() {
                 setfacl -R -m u:nobody:rX "${d_dir}" 2>/dev/null || true
                 setfacl -R -m u:"${LC_USER}":rwX "${d_dir}" 2>/dev/null || true
                 setfacl -R -d -m u:"${LC_USER}":rwX "${d_dir}" 2>/dev/null || true
+
+                # Clamp masks so `ls -l` shows clean 755 for dirs and 644 for files:
+                find "${d_dir}" -type d -exec setfacl -m m::r-x,d:m::r-x {} + 2>/dev/null || true
+                find "${d_dir}" -type f -exec setfacl -m m::r-- {} + 2>/dev/null || true
             done
         done
     fi

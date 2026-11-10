@@ -447,8 +447,9 @@ reconcile_panel_services() {
                         if [[ -d "${vh_dir}/public_html" ]]; then
                             chmod 755 "${vh_dir}/public_html" 2>/dev/null || true
                             setfacl -m u:nobody:r-x "${vh_dir}/public_html" 2>/dev/null || true
-                            setfacl -m u:"${LC_USER}":rwx "${vh_dir}/public_html" 2>/dev/null || true
-                            setfacl -d -m u:"${LC_USER}":rwx "${vh_dir}/public_html" 2>/dev/null || true
+                            setfacl -m u:"${LC_USER}":rwX "${vh_dir}/public_html" 2>/dev/null || true
+                            setfacl -d -m u:"${LC_USER}":rwX "${vh_dir}/public_html" 2>/dev/null || true
+                            setfacl -m m::r-x,d:m::r-x "${vh_dir}/public_html" 2>/dev/null || true
                         fi
                     fi
                 done
