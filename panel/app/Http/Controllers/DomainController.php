@@ -505,6 +505,35 @@ class DomainController extends Controller
     }
 
     /**
+     * Fix permissions for domain (CyberPanel-style one click repair).
+     */
+    public function fixPermissions(Request $request, Domain $domain)
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $res = $this->lcCli->run('vhost', ['fix-permissions', $domain->domain]);
+
+        AuditLog::record(
+            'domain.fix_permissions',
+            "Repaired permissions for domain '{$domain->domain}'",
+            [
+                'domain' => $domain->domain,
+                'cli_result' => $res,
+            ],
+            $user
+        );
+
+        if (($res['status'] ?? '') === 'success') {
+            return back()->with('success', "Permissions successfully repaired for '{$domain->domain}'.");
+        }
+
+        return back()->with('error', $res['message'] ?? 'Failed to repair domain permissions.');
+    }
+
+    /**
      * Format byte values to human readable string.
      */
     protected function formatBytes(int $bytes, int $precision = 1): string

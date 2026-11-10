@@ -555,6 +555,51 @@ cmd_vhost_size() {
     emit_success "Size calculated for '${domain}'." "${data_json}"
 }
 
+cmd_vhost_fix_permissions() {
+    local target_domain="${1:-}"
+
+    if command -v setfacl >/dev/null 2>&1; then
+        for u_dir in "${LC_HOME_ROOT}"/*; do
+            [[ -d "${u_dir}" ]] || continue
+            local uname
+            uname="$(basename "${u_dir}")"
+
+            chmod 711 "${u_dir}" 2>/dev/null || true
+            setfacl -m u:nobody:x "${u_dir}" 2>/dev/null || true
+            setfacl -m u:"${LC_USER}":rwx "${u_dir}" 2>/dev/null || true
+            setfacl -d -m u:"${LC_USER}":rwx "${u_dir}" 2>/dev/null || true
+
+            for d_dir in "${u_dir}"/*; do
+                [[ -d "${d_dir}" ]] || continue
+                local dname
+                dname="$(basename "${d_dir}")"
+
+                if [[ "${dname}" == "logs" || "${dname}" == "backups" || "${dname}" == "tmp" ]]; then
+                    continue
+                fi
+
+                if [[ -n "${target_domain}" && "${dname}" != "${target_domain}" ]]; then
+                    continue
+                fi
+
+                chown -R "${uname}:${uname}" "${d_dir}" 2>/dev/null || true
+                setfacl -m u:nobody:x "${d_dir}" 2>/dev/null || true
+                setfacl -m u:"${LC_USER}":rwx "${d_dir}" 2>/dev/null || true
+                setfacl -d -m u:"${LC_USER}":rwx "${d_dir}" 2>/dev/null || true
+
+                if [[ -d "${d_dir}/public_html" ]]; then
+                    chmod -R 755 "${d_dir}/public_html" 2>/dev/null || true
+                    setfacl -R -m u:nobody:rx "${d_dir}/public_html" 2>/dev/null || true
+                    setfacl -R -m u:"${LC_USER}":rwx "${d_dir}/public_html" 2>/dev/null || true
+                    setfacl -R -d -m u:"${LC_USER}":rwx "${d_dir}/public_html" 2>/dev/null || true
+                fi
+            done
+        done
+    fi
+
+    emit_success "Permissions repaired for ${target_domain:-all domains}."
+}
+
 SUBCOMMAND="${1:-}"
 shift || true
 
@@ -589,11 +634,14 @@ case "${SUBCOMMAND}" in
     docroot)
         cmd_vhost_docroot "$@"
         ;;
+    fix-permissions)
+        cmd_vhost_fix_permissions "$@"
+        ;;
     list)
         cmd_vhost_list
         ;;
     *)
-        emit_error "Usage: lc-cli vhost <add|remove|suspend|unsuspend|alias-add|conf-get|size|php-switch|ssl|docroot|list> [args...]"
+        emit_error "Usage: lc-cli vhost <add|remove|suspend|unsuspend|alias-add|conf-get|size|php-switch|ssl|docroot|fix-permissions|list> [args...]"
         ;;
 esac
 

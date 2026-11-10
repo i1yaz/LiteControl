@@ -381,6 +381,43 @@ class FileManagerController extends Controller
     }
 
     /**
+     * Change permissions of a file or directory (chmod).
+     */
+    public function chmod(Request $request)
+    {
+        $domainId = $request->input('domain_id');
+        $targetDomain = $this->resolveTargetDomain($request);
+        if ($domainId && ! $targetDomain) {
+            return response()->json(['status' => 'error', 'message' => 'Access denied.'], 403);
+        }
+
+        $request->validate([
+            'path' => ['required', 'string'],
+            'permissions' => ['required', 'string', 'regex:/^[0-7]{3,4}$/'],
+        ]);
+
+        $path = $request->input('path');
+        $octal = octdec($request->input('permissions'));
+        $fullPath = $this->resolveJailedPath($path, $targetDomain);
+
+        if (! $fullPath || ! file_exists($fullPath)) {
+            return response()->json(['status' => 'error', 'message' => 'Target file or directory not found.'], 404);
+        }
+
+        if (! @chmod($fullPath, $octal)) {
+            return response()->json(['status' => 'error', 'message' => 'Failed to change permissions.'], 500);
+        }
+
+        $newPerms = substr(sprintf('%o', @fileperms($fullPath) ?: 0), -4);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Permissions updated successfully.',
+            'permissions' => $newPerms,
+        ]);
+    }
+
+    /**
      * Format byte values to human readable string.
      */
     protected function formatBytes(int $bytes, int $precision = 1): string

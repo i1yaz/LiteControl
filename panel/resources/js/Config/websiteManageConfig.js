@@ -123,6 +123,15 @@ export const WEBSITE_MANAGE_ACTIONS = [
         type: 'panel',
         panelKey: 'DeleteFtpPanel',
     },
+    {
+        id: 'fix-permissions',
+        tabId: 'files',
+        title: 'Fix Permissions',
+        description: 'Restore standard directory (755) and file (644) ownership and ACLs',
+        icon: 'ShieldCheck',
+        type: 'action',
+        actionKey: 'fixPermissions',
+    },
 ];
 
 export const REWRITE_TEMPLATES = [

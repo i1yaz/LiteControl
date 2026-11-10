@@ -16,7 +16,9 @@ import {
     RefreshCw,
     X,
     Save,
-    HardDrive
+    HardDrive,
+    KeyRound,
+    ShieldCheck
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -37,6 +39,104 @@ const showEditorModal = shallowRef(false);
 const editingPath = shallowRef('');
 const editorContent = shallowRef('');
 const editorLoading = shallowRef(false);
+
+// cPanel-style permissions modal state
+const showChmodModal = shallowRef(false);
+const chmodTarget = shallowRef(null);
+const chmodPerms = shallowRef({
+    userRead: true,
+    userWrite: true,
+    userExec: false,
+    groupRead: true,
+    groupWrite: false,
+    groupExec: false,
+    worldRead: true,
+    worldWrite: false,
+    worldExec: false,
+});
+const chmodLoading = shallowRef(false);
+
+const computedOctal = computed(() => {
+    let u = (chmodPerms.value.userRead ? 4 : 0) + (chmodPerms.value.userWrite ? 2 : 0) + (chmodPerms.value.userExec ? 1 : 0);
+    let g = (chmodPerms.value.groupRead ? 4 : 0) + (chmodPerms.value.groupWrite ? 2 : 0) + (chmodPerms.value.groupExec ? 1 : 0);
+    let w = (chmodPerms.value.worldRead ? 4 : 0) + (chmodPerms.value.worldWrite ? 2 : 0) + (chmodPerms.value.worldExec ? 1 : 0);
+    return `0${u}${g}${w}`;
+});
+
+const openChmodModal = (item) => {
+    chmodTarget.value = item;
+    // Parse existing permissions (e.g., '0755' or '0644')
+    const raw = String(item.permissions || '0644').slice(-3);
+    const u = parseInt(raw[0], 10) || 0;
+    const g = parseInt(raw[1], 10) || 0;
+    const w = parseInt(raw[2], 10) || 0;
+
+    chmodPerms.value = {
+        userRead: Boolean(u & 4),
+        userWrite: Boolean(u & 2),
+        userExec: Boolean(u & 1),
+        groupRead: Boolean(g & 4),
+        groupWrite: Boolean(g & 2),
+        groupExec: Boolean(g & 1),
+        worldRead: Boolean(w & 4),
+        worldWrite: Boolean(w & 2),
+        worldExec: Boolean(w & 1),
+    };
+    showChmodModal.value = true;
+};
+
+const saveChmod = async () => {
+    if (!chmodTarget.value) return;
+    chmodLoading.value = true;
+    try {
+        const res = await fetch('/files/chmod', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            },
+            body: JSON.stringify({
+                path: chmodTarget.value.path,
+                permissions: computedOctal.value,
+                domain_id: props.targetDomain?.id || null,
+            }),
+        });
+        const json = await res.json();
+        if (json.status === 'success') {
+            showChmodModal.value = false;
+            loadFiles(currentPath.value);
+        } else {
+            alert(json.message || 'Failed to update permissions.');
+        }
+    } catch (e) {
+        alert('Network error updating permissions.');
+    } finally {
+        chmodLoading.value = false;
+    }
+};
+
+// CyberPanel-style one-click fix permissions
+const fixDomainPermissions = async () => {
+    if (!props.targetDomain) return;
+    if (!confirm(`Restore standard permissions (755 folders, 644 files) for '${props.targetDomain.domain}'?`)) return;
+
+    loading.value = true;
+    try {
+        const res = await fetch(`/domains/${props.targetDomain.id}/fix-permissions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            },
+        });
+        alert(`Permissions repair initiated for ${props.targetDomain.domain}.`);
+        loadFiles(currentPath.value);
+    } catch (e) {
+        alert('Error initiating permissions repair.');
+    } finally {
+        loading.value = false;
+    }
+};
 
 const pathSegments = computed(() => {
     if (!currentPath.value) return [];
@@ -239,6 +339,16 @@ onMounted(() => {
 
                 <!-- Action Toolbar -->
                 <div class="flex items-center gap-2">
+                    <button
+                        v-if="targetDomain"
+                        @click="fixDomainPermissions"
+                        class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition-colors"
+                        title="Reset permissions to standard 755 (dirs) / 644 (files)"
+                    >
+                        <ShieldCheck class="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Fix Permissions</span>
+                    </button>
+
                     <label class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer transition-colors border border-slate-700">
                         <Upload class="w-3.5 h-3.5 text-cyan-400" />
                         <span>Upload</span>
@@ -342,13 +452,26 @@ onMounted(() => {
                                     {{ item.is_dir ? '—' : item.size_human }}
                                 </td>
                                 <td class="px-5 py-3 text-slate-400">
-                                    {{ item.permissions }}
+                                    <button
+                                        @click="openChmodModal(item)"
+                                        class="hover:text-cyan-400 hover:underline transition-colors font-mono cursor-pointer"
+                                        title="Click to edit permissions (chmod)"
+                                    >
+                                        {{ item.permissions }}
+                                    </button>
                                 </td>
                                 <td class="px-5 py-3 text-slate-400">
                                     {{ item.modified_at || '—' }}
                                 </td>
                                 <td class="px-5 py-3 text-right">
                                     <div class="flex items-center justify-end gap-2">
+                                        <button
+                                            @click="openChmodModal(item)"
+                                            title="Change Permissions"
+                                            class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 transition-colors"
+                                        >
+                                            <KeyRound class="w-3.5 h-3.5" />
+                                        </button>
                                         <button
                                             v-if="!item.is_dir"
                                             @click="openEditor(item.path)"
@@ -462,6 +585,100 @@ onMounted(() => {
                             class="w-full flex-1 p-3 bg-slate-900 border border-slate-800 rounded-lg font-mono text-xs text-slate-100 focus:outline-none focus:border-cyan-500 resize-none leading-relaxed"
                             spellcheck="false"
                         ></textarea>
+                    </div>
+                </div>
+            </Modal>
+
+            <!-- cPanel-Style Change Permissions Modal -->
+            <Modal :show="showChmodModal" max-width="md" @close="showChmodModal = false">
+                <div class="p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div class="flex items-center gap-2">
+                            <KeyRound class="w-4 h-4 text-amber-400" />
+                            <h3 class="text-sm font-bold text-white">Change Permissions</h3>
+                        </div>
+                        <button @click="showChmodModal = false" class="text-slate-400 hover:text-white">
+                            <X class="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    <div v-if="chmodTarget" class="text-xs text-slate-400 break-all font-mono">
+                        {{ chmodTarget.name }} ({{ chmodTarget.is_dir ? 'Directory' : 'File' }})
+                    </div>
+
+                    <!-- Permissions Checkbox Matrix Table -->
+                    <div class="border border-slate-800 rounded-lg overflow-hidden text-xs">
+                        <table class="w-full text-center">
+                            <thead class="bg-slate-950/70 border-b border-slate-800 text-slate-400 font-semibold uppercase">
+                                <tr>
+                                    <th class="py-2.5 px-3 text-left">Mode</th>
+                                    <th class="py-2.5 px-3">User</th>
+                                    <th class="py-2.5 px-3">Group</th>
+                                    <th class="py-2.5 px-3">World</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800 font-mono text-slate-300">
+                                <tr>
+                                    <td class="py-2.5 px-3 text-left font-semibold text-slate-200">Read (4)</td>
+                                    <td class="py-2.5 px-3">
+                                        <input type="checkbox" v-model="chmodPerms.userRead" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0" />
+                                    </td>
+                                    <td class="py-2.5 px-3">
+                                        <input type="checkbox" v-model="chmodPerms.groupRead" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0" />
+                                    </td>
+                                    <td class="py-2.5 px-3">
+                                        <input type="checkbox" v-model="chmodPerms.worldRead" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 px-3 text-left font-semibold text-slate-200">Write (2)</td>
+                                    <td class="py-2.5 px-3">
+                                        <input type="checkbox" v-model="chmodPerms.userWrite" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0" />
+                                    </td>
+                                    <td class="py-2.5 px-3">
+                                        <input type="checkbox" v-model="chmodPerms.groupWrite" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0" />
+                                    </td>
+                                    <td class="py-2.5 px-3">
+                                        <input type="checkbox" v-model="chmodPerms.worldWrite" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 px-3 text-left font-semibold text-slate-200">Execute (1)</td>
+                                    <td class="py-2.5 px-3">
+                                        <input type="checkbox" v-model="chmodPerms.userExec" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0" />
+                                    </td>
+                                    <td class="py-2.5 px-3">
+                                        <input type="checkbox" v-model="chmodPerms.groupExec" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0" />
+                                    </td>
+                                    <td class="py-2.5 px-3">
+                                        <input type="checkbox" v-model="chmodPerms.worldExec" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0" />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Octal Display -->
+                    <div class="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs">
+                        <span class="text-slate-400 font-semibold uppercase">Permission Value:</span>
+                        <span class="font-mono text-base font-bold text-cyan-400">{{ computedOctal }}</span>
+                    </div>
+
+                    <!-- Modal Actions -->
+                    <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-800">
+                        <button
+                            @click="showChmodModal = false"
+                            class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            @click="saveChmod"
+                            :disabled="chmodLoading"
+                            class="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-xs font-semibold text-white shadow-sm transition-colors"
+                        >
+                            {{ chmodLoading ? 'Saving...' : 'Change Permissions' }}
+                        </button>
                     </div>
                 </div>
             </Modal>

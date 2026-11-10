@@ -46,7 +46,7 @@ Core Commands:
 
 Management Subcommands:
   user     <add|suspend|unsuspend|delete|list|quota>
-  vhost    <add|remove|list|php-switch|ssl>
+  vhost    <add|remove|list|php-switch|ssl|fix-permissions>
   php      <list|install|remove|ext-list|ext-enable|ext-disable|ini-get|ini-set|limits>
   tuning   <get|set>
   server   <stats|services|service-action|processes|kill-process|timezone|hostname|logs|webadmin-status|webadmin-enable|webadmin-disable>

@@ -86,6 +86,15 @@ const selectTab = (tabId) => {
 };
 
 const handleTriggerAction = (action) => {
+    if (action.type === 'action' && action.actionKey === 'fixPermissions') {
+        if (confirm(`Repair permissions for website '${props.domain.domain}'?\n\nThis will restore standard directory (755) and file (644) permissions and ensure panel and web server access.`)) {
+            router.post(`/domains/${props.domain.id}/fix-permissions`, {}, {
+                preserveScroll: true,
+            });
+        }
+        return;
+    }
+
     if (activeAction.value?.id === action.id) {
         activeAction.value = null; // Toggle close
     } else {

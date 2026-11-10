@@ -51,6 +51,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/domains/{domain}/htaccess', [DomainController::class, 'saveHtaccess'])->name('domains.htaccess.save');
     Route::post('/domains/{domain}/ftp', [DomainController::class, 'storeFtp'])->name('domains.ftp.store');
     Route::delete('/domains/{domain}/ftp/{ftpAccount}', [DomainController::class, 'destroyFtp'])->name('domains.ftp.destroy');
+    Route::post('/domains/{domain}/fix-permissions', [DomainController::class, 'fixPermissions'])->name('domains.fix-permissions');
     Route::get('/subdomains', [DomainController::class, 'subdomains'])->name('subdomains.index');
     Route::post('/subdomains', [DomainController::class, 'storeSubdomain'])->name('subdomains.store');
 
@@ -77,6 +78,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/files/save', [FileManagerController::class, 'save'])->name('files.save');
     Route::post('/files/create', [FileManagerController::class, 'create'])->name('files.create');
     Route::post('/files/delete', [FileManagerController::class, 'delete'])->name('files.delete');
+    Route::post('/files/chmod', [FileManagerController::class, 'chmod'])->name('files.chmod');
     Route::post('/files/upload', [FileManagerController::class, 'upload'])->name('files.upload');
 
     // Backup & Restore
