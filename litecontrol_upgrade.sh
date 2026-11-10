@@ -276,15 +276,6 @@ sync_core_files_and_sudoers() {
     log_ok "CLI engine, scripts, and templates updated."
 }
 
-ensure_nodejs_for_frontend_build() {
-    if command -v npm >/dev/null 2>&1 && command -v node >/dev/null 2>&1; then
-        return 0
-    fi
-    log_info "Node.js / npm not found. Installing Node.js 20.x LTS for Vite frontend compilation..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - >/dev/null 2>&1 || true
-    apt_install nodejs
-}
-
 ensure_panel_composer() {
     local composer_bin="${LC_BASE_DIR}/bin/composer.phar"
     local php_bin="/usr/bin/php"
@@ -361,14 +352,11 @@ upgrade_laravel_panel() {
         # Build frontend assets if package.json exists and build is explicitly requested or prebuilt assets are missing
         if [[ -f "${LC_PANEL_DIR}/package.json" ]]; then
             if [[ "${BUILD_FRONTEND}" -eq 1 || ! -f "${LC_PANEL_DIR}/public/build/manifest.json" ]]; then
-                ensure_nodejs_for_frontend_build
-                if command -v npm >/dev/null 2>&1; then
-                    log_info "Building Vue 3 + Vite frontend assets..."
-                    su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && npm install --no-audit --no-fund && npm run build"
-                    rm -rf "${LC_PANEL_DIR}/node_modules"
-                fi
+                log_info "Building Vue 3 + Vite frontend assets using isolated Node 24 runtime..."
+                su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} scripts/isolated-build.php"
+                rm -rf "${LC_PANEL_DIR}/node_modules"
             else
-                log_info "Pre-built frontend assets detected; skipping on-server npm build."
+                log_info "Pre-built frontend assets detected; skipping on-server frontend build."
             fi
         fi
 

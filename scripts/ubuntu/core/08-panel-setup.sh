@@ -151,6 +151,12 @@ EOF
         log_info "Installing Panel dependencies via Composer (this may take 2-4 minutes on fresh server)..."
         su -s /bin/bash "${LC_USER}" -c "${composer_env} cd '${LC_PANEL_DIR}' && ${run_composer} install --no-dev -o --no-interaction --no-progress"
 
+        if [[ -f "${LC_PANEL_DIR}/scripts/isolated-build.php" ]]; then
+            log_info "Compiling frontend assets with isolated Node 24 runtime..."
+            su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} scripts/isolated-build.php"
+            rm -rf "${LC_PANEL_DIR}/node_modules"
+        fi
+
         log_info "Generating application encryption key..."
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan key:generate --force"
 
