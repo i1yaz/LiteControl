@@ -7,7 +7,7 @@ import UiModal from '@/Components/ui/UiModal.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
 import UiSelect from '@/Components/ui/UiSelect.vue';
 import UiDataTable from '@/Components/ui/UiDataTable.vue';
-import { Globe, Plus, ShieldCheck, ShieldAlert, Folder, Trash2, Pencil, Terminal, Check, LayoutGrid, Settings, FolderOpen, PauseCircle, PlayCircle } from 'lucide-vue-next';
+import { Globe, Plus, ShieldCheck, ShieldAlert, Folder, Trash2, Pencil, Terminal, Check, LayoutGrid, FolderOpen, PauseCircle, PlayCircle } from 'lucide-vue-next';
 
 const props = defineProps({
     domains: Object,
@@ -260,16 +260,6 @@ const copySshCommand = (username) => {
                         >
                             <LayoutGrid class="w-3.5 h-3.5" />
                             <span>Manage</span>
-                        </a>
-
-                        <!-- Settings Button (Lands on Manage Config Tab) -->
-                        <a
-                            :href="`/domains/${dom.id}/manage?tab=config`"
-                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-medium border border-theme-border transition-colors"
-                            title="Website Settings"
-                        >
-                            <Settings class="w-3.5 h-3.5 text-theme-text-muted" />
-                            <span>Settings</span>
                         </a>
 
                         <!-- Filemanager Button -->
