@@ -28,7 +28,7 @@ const form = useForm({
     php_version: '83',
     public_path: '',
     ssl_enabled: true,
-    type: 'addon',
+    type: 'primary',
     user_id: props.users?.[0]?.id || '',
 });
 
@@ -95,6 +95,7 @@ const editDocRootPreview = computed(() => {
 
 const openAddModal = () => {
     form.reset();
+    form.type = 'primary';
     form.ssl_enabled = true;
     showModal.value = true;
 };

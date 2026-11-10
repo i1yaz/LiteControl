@@ -38,11 +38,8 @@ class DomainService
         $baseDocRoot = "/home/{$user->username}/{$domainName}/public_html";
         $docRoot = !empty($publicSubpath) ? "{$baseDocRoot}/{$publicSubpath}" : $baseDocRoot;
 
-        // Auto-assign type: if user has 0 non-subdomain domains, this is their primary domain
-        $existingCount = Domain::where('user_id', $user->id)
-            ->where('type', '!=', 'subdomain')
-            ->count();
-        $type = $data['type'] ?? ($existingCount === 0 ? 'primary' : 'addon');
+        // Auto-assign type: default to primary (or explicit type if provided)
+        $type = $data['type'] ?? 'primary';
 
         // 1. Provision virtual host via lc-cli
         $cliRes = $this->lcCli->run('vhost', [
