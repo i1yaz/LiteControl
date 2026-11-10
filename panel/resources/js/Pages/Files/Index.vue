@@ -47,11 +47,14 @@ const pathSegments = computed(() => {
     }));
 });
 
+const targetDomainParam = computed(() => {
+    return props.targetDomain ? `&domain_id=${props.targetDomain.id}` : '';
+});
+
 const loadFiles = async (path = '') => {
     loading.value = true;
     try {
-        const domainParam = props.targetDomain ? `&domain_id=${props.targetDomain.id}` : '';
-        const res = await fetch(`/files/list?path=${encodeURIComponent(path)}${domainParam}`);
+        const res = await fetch(`/files/list?path=${encodeURIComponent(path)}${targetDomainParam.value}`);
         const json = await res.json();
         if (json.status === 'success') {
             currentPath.value = json.current_path;
@@ -90,6 +93,7 @@ const createItem = async () => {
                 path: currentPath.value,
                 name: newItemName.value,
                 type: newItemType.value,
+                domain_id: props.targetDomain?.id || null,
             }),
         });
         const json = await res.json();
@@ -114,7 +118,10 @@ const deleteItem = async (path, name) => {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
             },
-            body: JSON.stringify({ path }),
+            body: JSON.stringify({
+                path,
+                domain_id: props.targetDomain?.id || null,
+            }),
         });
         const json = await res.json();
         if (json.status === 'success') {
@@ -132,7 +139,7 @@ const openEditor = async (path) => {
     editorLoading.value = true;
     showEditorModal.value = true;
     try {
-        const res = await fetch(`/files/content?path=${encodeURIComponent(path)}`);
+        const res = await fetch(`/files/content?path=${encodeURIComponent(path)}${targetDomainParam.value}`);
         const json = await res.json();
         if (json.status === 'success') {
             editorContent.value = json.content;
@@ -160,6 +167,7 @@ const saveEditorContent = async () => {
             body: JSON.stringify({
                 path: editingPath.value,
                 content: editorContent.value,
+                domain_id: props.targetDomain?.id || null,
             }),
         });
         const json = await res.json();
@@ -182,6 +190,9 @@ const handleFileUpload = async (e) => {
 
     const formData = new FormData();
     formData.append('path', currentPath.value);
+    if (props.targetDomain?.id) {
+        formData.append('domain_id', props.targetDomain.id);
+    }
     for (let i = 0; i < files.length; i++) {
         formData.append('files[]', files[i]);
     }

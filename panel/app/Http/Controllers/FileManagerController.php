@@ -13,6 +13,32 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class FileManagerController extends Controller
 {
     /**
+     * Resolve target domain and verify caller has authorization to access it.
+     * Only administrators and the domain's owner are authorized.
+     */
+    protected function resolveTargetDomain(Request $request): ?\App\Models\Domain
+    {
+        $domainId = $request->input('domain_id');
+        if (! $domainId) {
+            return null;
+        }
+
+        $user = Auth::user();
+        $targetDomain = \App\Models\Domain::with('user')->find($domainId);
+
+        if (! $targetDomain) {
+            return null;
+        }
+
+        // Authorization check: Admin or owner only
+        if ($user && ($user->isAdmin() || (int) $targetDomain->user_id === (int) $user->id)) {
+            return $targetDomain;
+        }
+
+        return null;
+    }
+
+    /**
      * Get the resolved, sanitized base directory for the authenticated user.
      */
     protected function getUserBaseDir(?\App\Models\Domain $targetDomain = null): string
@@ -20,7 +46,7 @@ class FileManagerController extends Controller
         $user = Auth::user();
 
         // If target domain specified and user is admin or owner, use domain owner's home
-        if ($targetDomain && ($user->isAdmin() || $targetDomain->user_id === $user->id)) {
+        if ($targetDomain && ($user->isAdmin() || (int) $targetDomain->user_id === (int) $user->id)) {
             $owner = $targetDomain->user;
             $prodPath = "/home/{$owner->username}";
 
@@ -93,17 +119,21 @@ class FileManagerController extends Controller
         $initialPath = '';
 
         if ($domainId) {
-            $query = \App\Models\Domain::with('user');
-            if (! Auth::user()->isAdmin()) {
-                $query->where('user_id', Auth::id());
-            }
-            $targetDomain = $query->find($domainId);
+            $targetDomain = $this->resolveTargetDomain($request);
             if ($targetDomain) {
-                $initialPath = "{$targetDomain->domain}/public_html";
-                // Ensure directory exists in sandbox/dev mode
+                // If domain has a configured public_path (e.g., 'public'), initialPath targets it
+                $relDocRoot = $targetDomain->public_path
+                    ? "{$targetDomain->domain}/public_html/{$targetDomain->public_path}"
+                    : "{$targetDomain->domain}/public_html";
+
+                $initialPath = $relDocRoot;
+
+                // Ensure directory exists on disk
                 $resolved = $this->resolveJailedPath($initialPath, $targetDomain);
-                if ($resolved && ! file_exists($resolved)) {
-                    @File::makeDirectory($resolved, 0755, true);
+                if (! $resolved || ! file_exists($resolved)) {
+                    $baseDir = $this->getUserBaseDir($targetDomain);
+                    $targetDir = $baseDir . DIRECTORY_SEPARATOR . trim($initialPath, '/');
+                    @File::makeDirectory($targetDir, 0755, true);
                 }
             }
         }
@@ -121,9 +151,31 @@ class FileManagerController extends Controller
     public function list(Request $request)
     {
         $domainId = $request->input('domain_id');
-        $targetDomain = $domainId ? \App\Models\Domain::with('user')->find($domainId) : null;
+        $targetDomain = $this->resolveTargetDomain($request);
+
+        // If domain_id was requested by non-admin who does not own it
+        if ($domainId && ! $targetDomain) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid directory or access denied.',
+            ], 403);
+        }
+
         $path = $request->input('path', '');
         $fullPath = $this->resolveJailedPath($path, $targetDomain);
+
+        // Auto-provision directory if valid path inside domain was requested but not created on disk yet
+        if ((! $fullPath || ! file_exists($fullPath)) && $targetDomain && !empty($path)) {
+            $baseDir = $this->getUserBaseDir($targetDomain);
+            $trimmed = trim(str_replace(['\\', '..'], ['/', ''], $path), '/');
+            $candidate = $baseDir . DIRECTORY_SEPARATOR . $trimmed;
+            $realBase = realpath($baseDir) ?: $baseDir;
+
+            if (str_starts_with($candidate, $realBase)) {
+                @File::makeDirectory($candidate, 0755, true);
+                $fullPath = $this->resolveJailedPath($path, $targetDomain);
+            }
+        }
 
         if (! $fullPath || ! is_dir($fullPath)) {
             return response()->json([
@@ -178,8 +230,14 @@ class FileManagerController extends Controller
      */
     public function content(Request $request)
     {
+        $domainId = $request->input('domain_id');
+        $targetDomain = $this->resolveTargetDomain($request);
+        if ($domainId && ! $targetDomain) {
+            return response()->json(['status' => 'error', 'message' => 'File not found or access denied.'], 403);
+        }
+
         $path = $request->input('path');
-        $fullPath = $this->resolveJailedPath($path);
+        $fullPath = $this->resolveJailedPath($path, $targetDomain);
 
         if (! $fullPath || ! is_file($fullPath)) {
             return response()->json(['status' => 'error', 'message' => 'File not found or access denied.'], 404);
@@ -204,9 +262,15 @@ class FileManagerController extends Controller
      */
     public function save(Request $request)
     {
+        $domainId = $request->input('domain_id');
+        $targetDomain = $this->resolveTargetDomain($request);
+        if ($domainId && ! $targetDomain) {
+            return response()->json(['status' => 'error', 'message' => 'File not found or access denied.'], 403);
+        }
+
         $path = $request->input('path');
         $content = $request->input('content', '');
-        $fullPath = $this->resolveJailedPath($path);
+        $fullPath = $this->resolveJailedPath($path, $targetDomain);
 
         if (! $fullPath || ! is_file($fullPath)) {
             return response()->json(['status' => 'error', 'message' => 'File not found or access denied.'], 404);
@@ -222,6 +286,12 @@ class FileManagerController extends Controller
      */
     public function create(Request $request)
     {
+        $domainId = $request->input('domain_id');
+        $targetDomain = $this->resolveTargetDomain($request);
+        if ($domainId && ! $targetDomain) {
+            return response()->json(['status' => 'error', 'message' => 'Access denied.'], 403);
+        }
+
         $path = $request->input('path', '');
         $name = $request->input('name');
         $type = $request->input('type', 'file'); // 'file' or 'folder'
@@ -231,7 +301,7 @@ class FileManagerController extends Controller
         }
 
         $targetSubpath = trim($path . '/' . $name, '/');
-        $fullPath = $this->resolveJailedPath($targetSubpath);
+        $fullPath = $this->resolveJailedPath($targetSubpath, $targetDomain);
 
         if (! $fullPath) {
             return response()->json(['status' => 'error', 'message' => 'Access denied.'], 403);
@@ -255,8 +325,14 @@ class FileManagerController extends Controller
      */
     public function delete(Request $request)
     {
+        $domainId = $request->input('domain_id');
+        $targetDomain = $this->resolveTargetDomain($request);
+        if ($domainId && ! $targetDomain) {
+            return response()->json(['status' => 'error', 'message' => 'Access denied.'], 403);
+        }
+
         $path = $request->input('path');
-        $fullPath = $this->resolveJailedPath($path);
+        $fullPath = $this->resolveJailedPath($path, $targetDomain);
 
         if (! $fullPath || ! file_exists($fullPath)) {
             return response()->json(['status' => 'error', 'message' => 'Target not found.'], 404);
@@ -276,13 +352,19 @@ class FileManagerController extends Controller
      */
     public function upload(Request $request)
     {
+        $domainId = $request->input('domain_id');
+        $targetDomain = $this->resolveTargetDomain($request);
+        if ($domainId && ! $targetDomain) {
+            return response()->json(['status' => 'error', 'message' => 'Access denied.'], 403);
+        }
+
         $request->validate([
             'path' => ['nullable', 'string'],
             'files.*' => ['required', 'file', 'max:102400'], // 100MB max per file
         ]);
 
         $path = $request->input('path', '');
-        $destDir = $this->resolveJailedPath($path);
+        $destDir = $this->resolveJailedPath($path, $targetDomain);
 
         if (! $destDir || ! is_dir($destDir)) {
             return response()->json(['status' => 'error', 'message' => 'Target directory does not exist.'], 422);

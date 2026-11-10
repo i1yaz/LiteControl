@@ -7,16 +7,16 @@
       "_runtime-dom.esm-bundler-CMeWlPEc.js"
     ]
   },
-  "_UiCard-Cae2iO6p.js": {
-    "file": "assets/UiCard-Cae2iO6p.js",
+  "_UiCard-DrQAKEGY.js": {
+    "file": "assets/UiCard-DrQAKEGY.js",
     "name": "UiCard",
     "imports": [
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "resources/js/app.js"
     ]
   },
-  "_UiDataTable-BwdV_m6j.js": {
-    "file": "assets/UiDataTable-BwdV_m6j.js",
+  "_UiDataTable-c4w1xqmG.js": {
+    "file": "assets/UiDataTable-c4w1xqmG.js",
     "name": "UiDataTable",
     "imports": [
       "_runtime-core.esm-bundler-CoV3YJHl.js",
@@ -24,24 +24,24 @@
       "_createLucideIcon-BSz11Qpw.js"
     ]
   },
-  "_UiInput-BBnYLuBP.js": {
-    "file": "assets/UiInput-BBnYLuBP.js",
+  "_UiInput-CS8GVZdZ.js": {
+    "file": "assets/UiInput-CS8GVZdZ.js",
     "name": "UiInput",
     "imports": [
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "resources/js/app.js"
     ]
   },
-  "_UiPageHeader-DQFXVdGL.js": {
-    "file": "assets/UiPageHeader-DQFXVdGL.js",
+  "_UiPageHeader-Bk9S2Zz1.js": {
+    "file": "assets/UiPageHeader-Bk9S2Zz1.js",
     "name": "UiPageHeader",
     "imports": [
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "resources/js/app.js"
     ]
   },
-  "_UiSelect-O4w33OOn.js": {
-    "file": "assets/UiSelect-O4w33OOn.js",
+  "_UiSelect-DM_FF3oY.js": {
+    "file": "assets/UiSelect-DM_FF3oY.js",
     "name": "UiSelect",
     "imports": [
       "_runtime-core.esm-bundler-CoV3YJHl.js",
@@ -408,7 +408,7 @@
     "isEntry": true
   },
   "resources/js/Pages/Auth/Login.vue": {
-    "file": "assets/Login-BG0l6Cle.js",
+    "file": "assets/Login-D_XYzlJQ.js",
     "name": "Login",
     "src": "resources/js/Pages/Auth/Login.vue",
     "isDynamicEntry": true,
@@ -417,8 +417,8 @@
       "_runtime-dom.esm-bundler-CMeWlPEc.js",
       "_dist-Du9yZf7-.js",
       "_shield-check-DkY5A489.js",
-      "_UiInput-BBnYLuBP.js",
-      "_UiCard-Cae2iO6p.js",
+      "_UiInput-CS8GVZdZ.js",
+      "_UiCard-DrQAKEGY.js",
       "resources/js/app.js"
     ]
   },
@@ -483,7 +483,7 @@
     ]
   },
   "resources/js/Pages/Configuration/Settings.vue": {
-    "file": "assets/Settings-YbH4OE34.js",
+    "file": "assets/Settings-BxVGvQDx.js",
     "name": "Settings",
     "src": "resources/js/Pages/Configuration/Settings.vue",
     "isDynamicEntry": true,
@@ -500,7 +500,7 @@
     ]
   },
   "resources/js/Pages/Dashboard.vue": {
-    "file": "assets/Dashboard-DJSS3iv0.js",
+    "file": "assets/Dashboard-CwE2gTwc.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Dashboard.vue",
     "isDynamicEntry": true,
@@ -508,8 +508,8 @@
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "_dist-Du9yZf7-.js",
       "_useDashboardMetrics-CguAxK4z.js",
-      "_UiCard-Cae2iO6p.js",
-      "_UiPageHeader-DQFXVdGL.js",
+      "_UiCard-DrQAKEGY.js",
+      "_UiPageHeader-Bk9S2Zz1.js",
       "_globe-BRPkwY9L.js",
       "_database-B3YLvUBK.js",
       "_package-DpRijx80.js",
@@ -517,7 +517,7 @@
     ]
   },
   "resources/js/Pages/Databases/Index.vue": {
-    "file": "assets/Index-ByEYMtR7.js",
+    "file": "assets/Index-CeMoxtZP.js",
     "name": "Index",
     "src": "resources/js/Pages/Databases/Index.vue",
     "isDynamicEntry": true,
@@ -525,9 +525,9 @@
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "_runtime-dom.esm-bundler-CMeWlPEc.js",
       "_dist-Du9yZf7-.js",
-      "_UiPageHeader-DQFXVdGL.js",
-      "_UiInput-BBnYLuBP.js",
-      "_UiSelect-O4w33OOn.js",
+      "_UiPageHeader-Bk9S2Zz1.js",
+      "_UiInput-CS8GVZdZ.js",
+      "_UiSelect-DM_FF3oY.js",
       "_plus-CJwk8iSu.js",
       "_user-plus-BUnzdGX-.js",
       "_key-BjLysGGh.js",
@@ -538,7 +538,7 @@
     ]
   },
   "resources/js/Pages/Domains/Index.vue": {
-    "file": "assets/Index-lL-T7q3r.js",
+    "file": "assets/Index-DLS-rbgw.js",
     "name": "Index",
     "src": "resources/js/Pages/Domains/Index.vue",
     "isDynamicEntry": true,
@@ -546,10 +546,10 @@
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "_runtime-dom.esm-bundler-CMeWlPEc.js",
       "_dist-Du9yZf7-.js",
-      "_UiPageHeader-DQFXVdGL.js",
-      "_UiInput-BBnYLuBP.js",
-      "_UiSelect-O4w33OOn.js",
-      "_UiDataTable-BwdV_m6j.js",
+      "_UiPageHeader-Bk9S2Zz1.js",
+      "_UiInput-CS8GVZdZ.js",
+      "_UiSelect-DM_FF3oY.js",
+      "_UiDataTable-c4w1xqmG.js",
       "_plus-CJwk8iSu.js",
       "_shield-check-DkY5A489.js",
       "_shield-alert-B1j6Agw6.js",
@@ -613,7 +613,7 @@
     ]
   },
   "resources/js/Pages/Files/Index.vue": {
-    "file": "assets/Index-CqZjfKjU.js",
+    "file": "assets/Index-B9-nQOKG.js",
     "name": "Index",
     "src": "resources/js/Pages/Files/Index.vue",
     "isDynamicEntry": true,
@@ -1001,7 +1001,7 @@
     ]
   },
   "resources/js/Pages/Users/Index.vue": {
-    "file": "assets/Index-aGksWNU6.js",
+    "file": "assets/Index-ChzxiEey.js",
     "name": "Index",
     "src": "resources/js/Pages/Users/Index.vue",
     "isDynamicEntry": true,
@@ -1009,10 +1009,10 @@
       "_runtime-core.esm-bundler-CoV3YJHl.js",
       "_runtime-dom.esm-bundler-CMeWlPEc.js",
       "_dist-Du9yZf7-.js",
-      "_UiPageHeader-DQFXVdGL.js",
-      "_UiInput-BBnYLuBP.js",
-      "_UiSelect-O4w33OOn.js",
-      "_UiDataTable-BwdV_m6j.js",
+      "_UiPageHeader-Bk9S2Zz1.js",
+      "_UiInput-CS8GVZdZ.js",
+      "_UiSelect-DM_FF3oY.js",
+      "_UiDataTable-c4w1xqmG.js",
       "_user-plus-BUnzdGX-.js",
       "_search-B4t2vcXJ.js",
       "_globe-BRPkwY9L.js",
@@ -1151,7 +1151,7 @@
     ]
   },
   "resources/js/Themes/avionics/index.js": {
-    "file": "assets/avionics-DmlmSOH5.js",
+    "file": "assets/avionics-C5clUgZ6.js",
     "name": "avionics",
     "src": "resources/js/Themes/avionics/index.js",
     "isDynamicEntry": true,
@@ -1326,7 +1326,7 @@
     ]
   },
   "resources/js/Themes/horizon/index.js": {
-    "file": "assets/horizon-DK6bCfxm.js",
+    "file": "assets/horizon-Cl-o4I8_.js",
     "name": "horizon",
     "src": "resources/js/Themes/horizon/index.js",
     "isDynamicEntry": true,
@@ -1375,7 +1375,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-BwxuteKR.js",
+    "file": "assets/app-CtKp7wmg.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
