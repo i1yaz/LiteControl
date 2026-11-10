@@ -161,7 +161,7 @@ $_ENV['PATH'] = "{$nodeBinDir}" . PATH_SEPARATOR . $currentPath;
 // Run npm install
 echo ">> Running npm install via isolated Node/npm...\n";
 $procInstall = proc_open(
-    escapeshellarg($npmBinary) . " install --no-audit --no-fund",
+    escapeshellarg($npmBinary) . " install --include=optional --no-audit --no-fund",
     [0 => STDIN, 1 => STDOUT, 2 => STDERR],
     $pipes,
     $baseDir
