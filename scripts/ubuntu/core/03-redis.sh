@@ -18,8 +18,8 @@ install_and_configure_redis() {
     local redis_conf="/etc/redis/redis.conf"
     if [[ -f "${redis_conf}" ]]; then
         cp -a "${redis_conf}" "${redis_conf}.bak"
-        # Ensure Redis binds strictly to localhost
-        sed -i 's/^bind .*/bind 127.0.0.1 -::1/' "${redis_conf}" || true
+        # Ensure Redis binds strictly to IPv4 localhost
+        sed -i 's/^bind .*/bind 127.0.0.1/' "${redis_conf}" || true
         # Ensure systemd supervision is enabled
         sed -i 's/^#\?supervised .*/supervised systemd/' "${redis_conf}" || true
 
