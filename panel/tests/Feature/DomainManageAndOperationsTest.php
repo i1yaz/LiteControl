@@ -143,6 +143,24 @@ class DomainManageAndOperationsTest extends TestCase
         $this->assertDatabaseMissing('ftp_accounts', ['username' => 'client1_testftp']);
     }
 
+    public function test_save_vhost_conf_endpoint(): void
+    {
+        $response = $this->actingAs($this->client)->postJson("/domains/{$this->domain->id}/vhost-conf", [
+            'conf' => "docRoot /home/client1/example.com/public_html\nvhDomain example.com\n",
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'status' => 'success',
+            'message' => 'VirtualHost configuration validated and saved successfully.',
+        ]);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $this->client->id,
+            'action' => 'domain.vhost_conf_update',
+        ]);
+    }
+
     public function test_read_logs_endpoint(): void
     {
         $response = $this->actingAs($this->client)->get("/domains/{$this->domain->id}/logs?type=access&page=1");

@@ -318,6 +318,17 @@ class LcCliService
                         ],
                     ];
                 }
+                if ($sub === 'conf-set') {
+                    $dom = $args[1] ?? 'example.com';
+                    return [
+                        'status' => 'success',
+                        'message' => "VirtualHost configuration for '{$dom}' validated and applied.",
+                        'data' => [
+                            'domain' => $dom,
+                            'status' => 'saved',
+                        ],
+                    ];
+                }
                 if ($sub === 'size') {
                     $dom = $args[1] ?? 'example.com';
                     return [

@@ -541,6 +541,55 @@ cmd_vhost_conf_get() {
     emit_success "Configuration retrieved for '${domain}'." "${data_json}"
 }
 
+cmd_vhost_conf_set() {
+    local domain="${1:-}"
+    local b64_content="${2:-}"
+    validate_domain "${domain}"
+    domain="${domain,,}"
+
+    local vh_conf="${OLS_VHOSTS_DIR}/${domain}/vhconf.conf"
+    if [[ ! -f "${vh_conf}" ]]; then
+        emit_error "VirtualHost configuration for '${domain}' does not exist."
+    fi
+
+    # Read new content either from base64 argument or stdin
+    local new_content=""
+    if [[ -n "${b64_content}" ]]; then
+        new_content=$(echo "${b64_content}" | base64 -d 2>/dev/null || true)
+    elif [[ ! -t 0 ]]; then
+        new_content=$(cat)
+    fi
+
+    if [[ -z "${new_content}" ]]; then
+        emit_error "No configuration content provided."
+    fi
+
+    # Create backup for atomic test & rollback
+    cp -a "${vh_conf}" "${vh_conf}.bak"
+    printf "%s\n" "${new_content}" > "${vh_conf}"
+
+    # Syntax test using OpenLiteSpeed binary
+    local test_output=""
+    if ! test_output=$("${OLS_BIN}" -t 2>&1); then
+        # Rollback on syntax failure
+        mv "${vh_conf}.bak" "${vh_conf}"
+        emit_error "OpenLiteSpeed configuration test failed. Changes rolled back. Error: ${test_output}"
+    fi
+
+    # Reload OpenLiteSpeed safely
+    if ! ols_safe_reload; then
+        mv "${vh_conf}.bak" "${vh_conf}"
+        ols_safe_reload || true
+        emit_error "OpenLiteSpeed failed to reload configuration. Changes rolled back."
+    fi
+
+    rm -f "${vh_conf}.bak"
+
+    local data_json
+    data_json=$(printf '{"domain":"%s","status":"saved"}' "$(json_escape "${domain}")")
+    emit_success "VirtualHost configuration for '${domain}' validated and applied." "${data_json}"
+}
+
 cmd_vhost_size() {
     local domain="${1:-}"
     validate_domain "${domain}"
@@ -648,6 +697,9 @@ case "${SUBCOMMAND}" in
     conf-get)
         cmd_vhost_conf_get "$@"
         ;;
+    conf-set)
+        cmd_vhost_conf_set "$@"
+        ;;
     size)
         cmd_vhost_size "$@"
         ;;
@@ -667,7 +719,7 @@ case "${SUBCOMMAND}" in
         cmd_vhost_list
         ;;
     *)
-        emit_error "Usage: lc-cli vhost <add|remove|suspend|unsuspend|alias-add|conf-get|size|php-switch|ssl|docroot|fix-permissions|list> [args...]"
+        emit_error "Usage: lc-cli vhost <add|remove|suspend|unsuspend|alias-add|conf-get|conf-set|size|php-switch|ssl|docroot|fix-permissions|list> [args...]"
         ;;
 esac
 

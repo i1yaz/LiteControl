@@ -47,6 +47,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/domains/{domain}/aliases/{alias}', [DomainController::class, 'destroyAlias'])->name('domains.aliases.destroy');
     Route::get('/domains/{domain}/logs', [DomainController::class, 'logs'])->name('domains.logs');
     Route::get('/domains/{domain}/vhost-conf', [DomainController::class, 'vhostConf'])->name('domains.vhost-conf');
+    Route::post('/domains/{domain}/vhost-conf', [DomainController::class, 'saveVhostConf'])->name('domains.vhost-conf.save');
     Route::get('/domains/{domain}/htaccess', [DomainController::class, 'getHtaccess'])->name('domains.htaccess.get');
     Route::post('/domains/{domain}/htaccess', [DomainController::class, 'saveHtaccess'])->name('domains.htaccess.save');
     Route::post('/domains/{domain}/ftp', [DomainController::class, 'storeFtp'])->name('domains.ftp.store');

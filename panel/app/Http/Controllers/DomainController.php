@@ -404,6 +404,43 @@ class DomainController extends Controller
     }
 
     /**
+     * Save Virtual Host configuration with syntax test and rollback guard.
+     */
+    public function saveVhostConf(Request $request, Domain $domain)
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $validated = $request->validate([
+            'conf' => ['required', 'string'],
+        ]);
+
+        $b64Conf = base64_encode($validated['conf']);
+        $res = $this->lcCli->run('vhost', ['conf-set', $domain->domain, $b64Conf]);
+
+        if (($res['status'] ?? '') !== 'success') {
+            return response()->json([
+                'status' => 'error',
+                'message' => $res['message'] ?? 'Failed to apply VirtualHost configuration.',
+            ], 422);
+        }
+
+        AuditLog::create([
+            'user_id' => $user->id,
+            'action' => 'domain.vhost_conf_update',
+            'command' => "update vhconf for {$domain->domain}",
+            'ip_address' => $request->ip(),
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'VirtualHost configuration validated and saved successfully.',
+        ]);
+    }
+
+    /**
      * Read .htaccess content.
      */
     public function getHtaccess(Request $request, Domain $domain)
