@@ -6,11 +6,16 @@ use App\Models\Domain;
 use App\Models\User;
 use App\Models\AuditLog;
 use App\Models\FtpAccount;
-use App\Services\LcCliService;
 use App\Services\DomainService;
 use App\Services\SslService;
 use App\Services\FtpService;
 use App\Services\LogReaderService;
+use App\Services\System\VhostService;
+use App\Services\System\PhpCliService;
+use App\Actions\Domain\DeleteDomainAction;
+use App\Actions\Domain\UpdateVhostConfAction;
+use App\Actions\Domain\FixDomainPermissionsAction;
+use App\Actions\Domain\CreateSubdomainAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -20,24 +25,27 @@ use Inertia\Response;
 
 class DomainController extends Controller
 {
-    protected LcCliService $lcCli;
     protected DomainService $domainService;
     protected SslService $sslService;
     protected FtpService $ftpService;
     protected LogReaderService $logReader;
+    protected VhostService $vhostService;
+    protected PhpCliService $phpCliService;
 
     public function __construct(
-        LcCliService $lcCli,
         DomainService $domainService,
         SslService $sslService,
         FtpService $ftpService,
-        LogReaderService $logReader
+        LogReaderService $logReader,
+        VhostService $vhostService,
+        PhpCliService $phpCliService
     ) {
-        $this->lcCli = $lcCli;
         $this->domainService = $domainService;
         $this->sslService = $sslService;
         $this->ftpService = $ftpService;
         $this->logReader = $logReader;
+        $this->vhostService = $vhostService;
+        $this->phpCliService = $phpCliService;
     }
 
     /**
@@ -56,9 +64,12 @@ class DomainController extends Controller
 
         $domains = $query->latest()->paginate(20)->withQueryString();
 
-        // Get supported PHP versions from lc-cli
-        $phpListRes = $this->lcCli->run('php', ['list']);
-        $phpVersions = ($phpListRes['status'] ?? '') === 'success' ? ($phpListRes['data'] ?? []) : [];
+        // Get supported PHP versions from PhpCliService
+        try {
+            $phpVersions = $this->phpCliService->listVersions();
+        } catch (\Throwable $e) {
+            $phpVersions = [];
+        }
 
         return Inertia::render('Domains/Index', [
             'domains' => $domains,
@@ -160,7 +171,7 @@ class DomainController extends Controller
     /**
      * Delete a domain.
      */
-    public function destroy(Request $request, Domain $domain)
+    public function destroy(Request $request, Domain $domain, DeleteDomainAction $deleteDomainAction)
     {
         $user = Auth::user();
 
@@ -168,20 +179,8 @@ class DomainController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        // Call lc-cli vhost remove
-        $this->lcCli->run('vhost', ['remove', $domain->domain, '--delete-files']);
-
         $domainName = $domain->domain;
-        $domain->delete();
-
-        AuditLog::create([
-            'user_id' => $user->id,
-            'action' => 'domain.delete',
-            'command' => "lc-cli vhost remove {$domainName} --delete-files",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => ['domain' => $domainName],
-        ]);
+        $deleteDomainAction->handle($domain, $user, true, $request->ip());
 
         return redirect()->route('domains.index')->with('success', "Domain '{$domainName}' removed.");
     }
@@ -261,15 +260,22 @@ class DomainController extends Controller
         $associatedDomainIds = array_merge([$domain->id], $domain->subdomains->pluck('id')->toArray());
         $databasesCount = \App\Models\Database::whereIn('domain_id', $associatedDomainIds)->count();
 
-        // Calculate total size via lc-cli
-        $sizeRes = $this->lcCli->run('vhost', ['size', $domain->domain]);
-        $sizeBytes = $sizeRes['data']['size_bytes'] ?? 0;
+        // Calculate total size via VhostService
+        try {
+            $sizeBytes = $this->vhostService->getSize($domain->domain);
+        } catch (\Throwable $e) {
+            $sizeBytes = 0;
+        }
         $sizeHuman = $this->formatBytes($sizeBytes);
 
         // PHP installed versions
-        $phpListRes = $this->lcCli->run('php', ['list']);
+        try {
+            $phpVersions = $this->phpCliService->listVersions();
+        } catch (\Throwable $e) {
+            $phpVersions = [];
+        }
         $installedVersions = array_filter(
-            ($phpListRes['status'] ?? '') === 'success' ? ($phpListRes['data'] ?? []) : [],
+            $phpVersions,
             fn($v) => !empty($v['installed'])
         );
 
@@ -393,8 +399,14 @@ class DomainController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $res = $this->lcCli->run('vhost', ['conf-get', $domain->domain]);
-        $conf = $res['data']['conf'] ?? '# No configuration file found.';
+        try {
+            $conf = $this->vhostService->getConf($domain->domain);
+            if (empty($conf)) {
+                $conf = '# No configuration file found.';
+            }
+        } catch (\Throwable $e) {
+            $conf = '# No configuration file found.';
+        }
 
         return response()->json([
             'status' => 'success',
@@ -406,7 +418,7 @@ class DomainController extends Controller
     /**
      * Save Virtual Host configuration with syntax test and rollback guard.
      */
-    public function saveVhostConf(Request $request, Domain $domain)
+    public function saveVhostConf(Request $request, Domain $domain, UpdateVhostConfAction $updateVhostConfAction)
     {
         $user = Auth::user();
         if (! $user->isAdmin() && $domain->user_id !== $user->id) {
@@ -417,22 +429,14 @@ class DomainController extends Controller
             'conf' => ['required', 'string'],
         ]);
 
-        $b64Conf = base64_encode($validated['conf']);
-        $res = $this->lcCli->run('vhost', ['conf-set', $domain->domain, $b64Conf]);
-
-        if (($res['status'] ?? '') !== 'success') {
+        try {
+            $updateVhostConfAction->handle($domain, $validated['conf'], $user, $request->ip());
+        } catch (\Throwable $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => $res['message'] ?? 'Failed to apply VirtualHost configuration.',
+                'message' => $e->getMessage() ?: 'Failed to apply VirtualHost configuration.',
             ], 422);
         }
-
-        AuditLog::create([
-            'user_id' => $user->id,
-            'action' => 'domain.vhost_conf_update',
-            'command' => "update vhconf for {$domain->domain}",
-            'ip_address' => $request->ip(),
-        ]);
 
         return response()->json([
             'status' => 'success',
@@ -544,24 +548,18 @@ class DomainController extends Controller
     /**
      * Fix permissions for domain (CyberPanel-style one click repair).
      */
-    public function fixPermissions(Request $request, Domain $domain)
+    public function fixPermissions(Request $request, Domain $domain, FixDomainPermissionsAction $fixDomainPermissionsAction)
     {
         $user = Auth::user();
         if (! $user->isAdmin() && $domain->user_id !== $user->id) {
             abort(403, 'Unauthorized');
         }
 
-        $res = $this->lcCli->run('vhost', ['fix-permissions', $domain->domain]);
-
-        AuditLog::record(
-            'domain.fix_permissions',
-            "Repaired permissions for domain '{$domain->domain}'",
-            [
-                'domain' => $domain->domain,
-                'cli_result' => $res,
-            ],
-            $user
-        );
+        try {
+            $res = $fixDomainPermissionsAction->handle($domain, $user);
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage() ?: 'Failed to repair domain permissions.');
+        }
 
         if (($res['status'] ?? '') === 'success') {
             return back()->with('success', "Permissions successfully repaired for '{$domain->domain}'.");
@@ -613,7 +611,7 @@ class DomainController extends Controller
     /**
      * Store a new subdomain.
      */
-    public function storeSubdomain(Request $request)
+    public function storeSubdomain(Request $request, CreateSubdomainAction $createSubdomainAction)
     {
         $user = Auth::user();
 
@@ -642,30 +640,11 @@ class DomainController extends Controller
             }
         }
 
-        $docRoot = "/home/{$parentDomain->user->username}/{$subdomainFqdn}/public_html";
-
-        $cliRes = $this->lcCli->run('vhost', [
-            'add',
-            $subdomainFqdn,
-            $parentDomain->user->username,
-            $parentDomain->php_version ?? '83',
-            $docRoot,
-        ]);
-
-        if (($cliRes['status'] ?? '') !== 'success') {
-            return back()->withErrors(['subdomain_prefix' => 'VirtualHost creation failed: ' . ($cliRes['message'] ?? 'CLI Error')]);
+        try {
+            $createSubdomainAction->handle($parentDomain, $validated['subdomain_prefix'], $user);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['subdomain_prefix' => $e->getMessage()]);
         }
-
-        Domain::create([
-            'user_id' => $parentDomain->user_id,
-            'domain' => $subdomainFqdn,
-            'type' => 'subdomain',
-            'parent_domain_id' => $parentDomain->id,
-            'document_root' => $docRoot,
-            'php_version' => $parentDomain->php_version ?? '83',
-            'ssl_enabled' => false,
-            'status' => 'active',
-        ]);
 
         return redirect()->route('subdomains.index')->with('success', "Subdomain '{$subdomainFqdn}' created successfully.");
     }

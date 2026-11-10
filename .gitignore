@@ -8,6 +8,7 @@
 .phpunit.result.cache
 /.codex
 /.agent
+/.agents
 /.cursor/
 /.idea
 /.nova
