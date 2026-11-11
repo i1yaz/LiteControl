@@ -2,11 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Security\AddFirewallRuleAction;
+use App\Actions\Security\DeleteFirewallRuleAction;
+use App\Actions\Security\UpdatePanelPortAction;
+use App\Actions\Security\UpdatePanelSslAction;
+use App\Actions\Security\UpdateSshPortAction;
+use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
 use App\Models\Domain;
 use App\Models\FirewallRule;
-use App\Services\LcCliService;
 use App\Services\SslService;
+use App\Services\System\FirewallCliService;
+use App\Services\System\ModuleCliService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -16,14 +23,11 @@ use Inertia\Response;
 
 class SecurityController extends Controller
 {
-    protected LcCliService $lcCli;
-    protected SslService $sslService;
-
-    public function __construct(LcCliService $lcCli, SslService $sslService)
-    {
-        $this->lcCli = $lcCli;
-        $this->sslService = $sslService;
-    }
+    public function __construct(
+        protected SslService $sslService,
+        protected FirewallCliService $firewallCli,
+        protected ModuleCliService $moduleCli
+    ) {}
 
     /**
      * Domain SSL Certificates Manager.
@@ -120,9 +124,9 @@ class SecurityController extends Controller
      */
     public function ufw(): Response
     {
-        $res = $this->lcCli->run('security', ['ufw-status']);
-        $rules = $res['data']['rules'] ?? [];
-        $active = $res['data']['active'] ?? true;
+        $ufwData = $this->firewallCli->getUfwStatus();
+        $rules = $ufwData['rules'] ?? [];
+        $active = $ufwData['active'] ?? true;
 
         $dbRules = FirewallRule::latest()->get();
 
@@ -136,7 +140,7 @@ class SecurityController extends Controller
     /**
      * Add UFW Rule.
      */
-    public function storeUfwRule(Request $request)
+    public function storeUfwRule(Request $request, AddFirewallRuleAction $action)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:50'],
@@ -146,65 +150,25 @@ class SecurityController extends Controller
             'source_ip' => ['nullable', 'string', 'max:45'],
         ]);
 
-        $sub = $validated['action'] === 'allow' ? 'ufw-allow' : 'ufw-deny';
-        $proto = $validated['protocol'] === 'any' ? 'tcp' : $validated['protocol'];
-        $src = $validated['source_ip'] ?: '';
-
-        $cliArgs = [$sub, $validated['port'], $proto];
-        if (!empty($src)) {
-            $cliArgs[] = $src;
+        try {
+            $action->handle($validated, Auth::user(), $request->ip());
+            return redirect()->back()->with('success', "Firewall rule created and applied: {$validated['action']} port {$validated['port']}.");
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage() ?: 'Failed to apply firewall rule.');
         }
-
-        $res = $this->lcCli->run('security', $cliArgs);
-
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? 'Failed to apply firewall rule.');
-        }
-
-        FirewallRule::create([
-            'name' => $validated['name'],
-            'port' => $validated['port'],
-            'protocol' => $validated['protocol'],
-            'action' => $validated['action'],
-            'source_ip' => $validated['source_ip'] ?: 'Anywhere',
-        ]);
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'create_firewall_rule',
-            'command' => "lc-cli security {$sub} {$validated['port']}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode($validated),
-        ]);
-
-        return redirect()->back()->with('success', "Firewall rule created and applied: {$validated['action']} port {$validated['port']}.");
     }
 
     /**
      * Delete UFW Rule.
      */
-    public function deleteUfwRule(Request $request, $rule)
+    public function deleteUfwRule(Request $request, $rule, DeleteFirewallRuleAction $action)
     {
-        $res = $this->lcCli->run('security', ['ufw-delete', (string)$rule]);
-
-        if (is_numeric($rule)) {
-            $dbRule = FirewallRule::find($rule);
-            if ($dbRule) {
-                $dbRule->delete();
-            }
+        try {
+            $action->handle($rule, Auth::user(), $request->ip());
+            return redirect()->back()->with('success', "Firewall rule removed successfully.");
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage() ?: 'Failed to remove firewall rule.');
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'delete_firewall_rule',
-            'command' => "lc-cli security ufw-delete {$rule}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode(['rule' => $rule]),
-        ]);
-
-        return redirect()->back()->with('success', "Firewall rule removed successfully.");
     }
 
     /**
@@ -212,8 +176,8 @@ class SecurityController extends Controller
      */
     public function portFirewall(): Response
     {
-        $res = $this->lcCli->run('security', ['ufw-status']);
-        $rules = $res['data']['rules'] ?? [];
+        $ufwData = $this->firewallCli->getUfwStatus();
+        $rules = $ufwData['rules'] ?? [];
 
         $standardPorts = [
             ['name' => 'HTTP (Web)', 'port' => '80', 'protocol' => 'tcp', 'status' => 'open'],
@@ -247,28 +211,18 @@ class SecurityController extends Controller
     /**
      * Update Panel Port.
      */
-    public function updatePanelPort(Request $request)
+    public function updatePanelPort(Request $request, UpdatePanelPortAction $action)
     {
         $validated = $request->validate([
             'port' => ['required', 'integer', 'min:1024', 'max:65535'],
         ]);
 
-        $res = $this->lcCli->run('security', ['panel-port', (string)$validated['port']]);
-
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? 'Failed to change panel port.');
+        try {
+            $action->handle((int) $validated['port'], Auth::user(), $request->ip());
+            return redirect()->back()->with('success', "Panel listening port changed to {$validated['port']}.");
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage() ?: 'Failed to change panel port.');
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'change_panel_port',
-            'command' => "lc-cli security panel-port {$validated['port']}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode($validated),
-        ]);
-
-        return redirect()->back()->with('success', "Panel listening port changed to {$validated['port']}.");
     }
 
     /**
@@ -284,28 +238,18 @@ class SecurityController extends Controller
     /**
      * Update SSH Port.
      */
-    public function updateSshPort(Request $request)
+    public function updateSshPort(Request $request, UpdateSshPortAction $action)
     {
         $validated = $request->validate([
             'port' => ['required', 'integer', 'min:1', 'max:65535'],
         ]);
 
-        $res = $this->lcCli->run('security', ['ssh-port', (string)$validated['port']]);
-
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? 'Failed to change SSH port.');
+        try {
+            $action->handle((int) $validated['port'], Auth::user(), $request->ip());
+            return redirect()->back()->with('success', "SSH service port changed to {$validated['port']}.");
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage() ?: 'Failed to change SSH port.');
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'change_ssh_port',
-            'command' => "lc-cli security ssh-port {$validated['port']}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode($validated),
-        ]);
-
-        return redirect()->back()->with('success', "SSH service port changed to {$validated['port']}.");
     }
 
     /**
@@ -322,7 +266,7 @@ class SecurityController extends Controller
     /**
      * Update Panel SSL.
      */
-    public function updatePanelSsl(Request $request)
+    public function updatePanelSsl(Request $request, UpdatePanelSslAction $action)
     {
         $validated = $request->validate([
             'type' => ['required', 'in:letsencrypt,custom'],
@@ -331,34 +275,12 @@ class SecurityController extends Controller
             'private_key' => ['required_if:type,custom', 'nullable', 'string'],
         ]);
 
-        if ($validated['type'] === 'letsencrypt') {
-            $res = $this->lcCli->run('ssl', ['panel-ssl', 'issue', $validated['domain']]);
-        } else {
-            $tempCert = tempnam(sys_get_temp_dir(), 'panel_cert_');
-            $tempKey = tempnam(sys_get_temp_dir(), 'panel_key_');
-            file_put_contents($tempCert, $validated['certificate']);
-            file_put_contents($tempKey, $validated['private_key']);
-
-            $res = $this->lcCli->run('ssl', ['panel-ssl', 'custom', $tempCert, $tempKey]);
-
-            @unlink($tempCert);
-            @unlink($tempKey);
+        try {
+            $action->handle($validated, Auth::user(), $request->ip());
+            return redirect()->back()->with('success', 'LiteControl panel SSL certificate updated successfully.');
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage() ?: 'Failed to apply panel SSL certificate.');
         }
-
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? 'Failed to apply panel SSL certificate.');
-        }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'update_panel_ssl',
-            'command' => 'lc-cli ssl panel-ssl',
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode(['type' => $validated['type']]),
-        ]);
-
-        return redirect()->back()->with('success', 'LiteControl panel SSL certificate updated successfully.');
     }
 
     /**
@@ -445,12 +367,11 @@ class SecurityController extends Controller
      */
     public function csf(): Response
     {
-        $res = $this->lcCli->run('module', ['status', 'csf']);
-        $installed = ($res['status'] ?? '') === 'success' && !empty($res['data']['installed']);
+        $data = $this->moduleCli->getModuleStatus('csf');
 
         return Inertia::render('Security/CsfFirewall', [
-            'installed' => $installed,
-            'status' => $res['data']['state'] ?? 'not_installed',
+            'installed' => !empty($data['installed']),
+            'status' => $data['state'] ?? 'not_installed',
         ]);
     }
 
@@ -459,12 +380,11 @@ class SecurityController extends Controller
      */
     public function modSecurity(): Response
     {
-        $res = $this->lcCli->run('module', ['status', 'modsecurity']);
-        $installed = ($res['status'] ?? '') === 'success' && !empty($res['data']['installed']);
+        $data = $this->moduleCli->getModuleStatus('modsecurity');
 
         return Inertia::render('Security/ModSecurity', [
-            'installed' => $installed,
-            'status' => $res['data']['state'] ?? 'not_installed',
+            'installed' => !empty($data['installed']),
+            'status' => $data['state'] ?? 'not_installed',
         ]);
     }
 
@@ -473,12 +393,11 @@ class SecurityController extends Controller
      */
     public function imunifyAv(): Response
     {
-        $res = $this->lcCli->run('module', ['status', 'imunifyav']);
-        $installed = ($res['status'] ?? '') === 'success' && !empty($res['data']['installed']);
+        $data = $this->moduleCli->getModuleStatus('imunifyav');
 
         return Inertia::render('Security/ImunifyAv', [
-            'installed' => $installed,
-            'status' => $res['data']['state'] ?? 'not_installed',
+            'installed' => !empty($data['installed']),
+            'status' => $data['state'] ?? 'not_installed',
         ]);
     }
 }
