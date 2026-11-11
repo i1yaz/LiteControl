@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Models\Domain;
 use App\Models\Database as DbModel;
 use App\Models\Package;
-use App\Services\LcCliService;
+use App\Services\System\ServerCliService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,7 +14,7 @@ use Inertia\Response;
 class DashboardController extends Controller
 {
     public function __construct(
-        protected LcCliService $cli
+        protected ServerCliService $serverCli
     ) {}
 
     public function index(Request $request): Response
@@ -22,9 +22,9 @@ class DashboardController extends Controller
         $user = $request->user();
         $isAdmin = $user->isAdmin();
 
-        // Get server statistics from lc-cli (or mock service)
-        $serverStatsResponse = $this->cli->run('server', ['stats']);
-        $stats = $serverStatsResponse['data'] ?? [
+        // Get server statistics from typed ServerCliService
+        $statsData = $this->serverCli->getStats();
+        $stats = !empty($statsData) ? $statsData : [
             'cpu_percent' => 0,
             'ram_percent' => 0,
             'disk_percent' => 0,
@@ -77,4 +77,3 @@ class DashboardController extends Controller
         ]);
     }
 }
-
