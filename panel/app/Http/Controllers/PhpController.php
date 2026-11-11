@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Php\InstallPhpVersionAction;
+use App\Actions\Php\RemovePhpVersionAction;
+use App\Actions\Php\TogglePhpExtensionAction;
+use App\Actions\Php\UpdatePhpIniAction;
+use App\Exceptions\System\LcCliException;
 use App\Models\Domain;
-use App\Models\AuditLog;
-use App\Services\LcCliService;
 use App\Services\DomainService;
+use App\Services\System\PhpCliService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -14,14 +18,10 @@ use Inertia\Response;
 
 class PhpController extends Controller
 {
-    protected LcCliService $lcCli;
-    protected DomainService $domainService;
-
-    public function __construct(LcCliService $lcCli, DomainService $domainService)
-    {
-        $this->lcCli = $lcCli;
-        $this->domainService = $domainService;
-    }
+    public function __construct(
+        protected PhpCliService $phpCli,
+        protected DomainService $domainService
+    ) {}
 
     /**
      * MultiPHP INI Editor.
@@ -30,14 +30,21 @@ class PhpController extends Controller
     {
         $version = $request->input('version', '83');
 
-        $iniRes = $this->lcCli->run('php', ['ini-get', $version]);
-        $iniData = ($iniRes['status'] ?? '') === 'success' ? ($iniRes['data'] ?? []) : [];
+        try {
+            $iniData = $this->phpCli->getIni($version);
+        } catch (LcCliException $e) {
+            $iniData = [];
+        }
 
-        $versionsRes = $this->lcCli->run('php', ['list']);
-        $installedVersions = array_filter(
-            ($versionsRes['status'] ?? '') === 'success' ? ($versionsRes['data'] ?? []) : [],
-            fn($v) => !empty($v['installed'])
-        );
+        try {
+            $versions = $this->phpCli->listVersions();
+            $installedVersions = array_filter(
+                $versions,
+                fn($v) => !empty($v['installed'])
+            );
+        } catch (LcCliException $e) {
+            $installedVersions = [];
+        }
 
         return Inertia::render('Php/IniEditor', [
             'currentVersion' => $version,
@@ -49,7 +56,7 @@ class PhpController extends Controller
     /**
      * Update PHP INI directives.
      */
-    public function updateIni(Request $request)
+    public function updateIni(Request $request, UpdatePhpIniAction $updatePhpIniAction)
     {
         if (! Auth::user()->isAdmin()) {
             abort(403, 'Administrator privileges required to modify PHP INI configuration.');
@@ -63,22 +70,13 @@ class PhpController extends Controller
 
         $ver = $validated['version'];
 
-        foreach ($validated['directives'] as $key => $val) {
-            if ($val !== null) {
-                $this->lcCli->run('php', ['ini-set', $ver, $key, (string) $val]);
-            }
+        try {
+            $updatePhpIniAction->handle($ver, $validated['directives'], Auth::user(), $request->ip());
+
+            return back()->with('success', "PHP {$ver} configuration directives updated successfully.");
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Failed updating PHP configuration: ' . $e->getMessage());
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'php.ini_update',
-            'command' => "lc-cli php ini-set {$ver}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => ['version' => $ver, 'updated' => array_keys($validated['directives'])],
-        ]);
-
-        return back()->with('success', "PHP {$ver} configuration directives updated successfully.");
     }
 
     /**
@@ -95,11 +93,15 @@ class PhpController extends Controller
 
         $domains = $domainsQuery->latest()->get();
 
-        $versionsRes = $this->lcCli->run('php', ['list']);
-        $installedVersions = array_filter(
-            ($versionsRes['status'] ?? '') === 'success' ? ($versionsRes['data'] ?? []) : [],
-            fn($v) => !empty($v['installed'])
-        );
+        try {
+            $versions = $this->phpCli->listVersions();
+            $installedVersions = array_filter(
+                $versions,
+                fn($v) => !empty($v['installed'])
+            );
+        } catch (LcCliException $e) {
+            $installedVersions = [];
+        }
 
         return Inertia::render('Php/MultiPhpManager', [
             'domains' => $domains,
@@ -141,17 +143,24 @@ class PhpController extends Controller
     {
         $version = $request->input('version', '83');
 
-        $extRes = $this->lcCli->run('php', ['ext-list', $version]);
-        $extensionsData = ($extRes['status'] ?? '') === 'success' ? ($extRes['data'] ?? []) : [
-            'installed' => [],
-            'available' => [],
-        ];
+        try {
+            $extensionsData = $this->phpCli->listExtensions($version);
+        } catch (LcCliException $e) {
+            $extensionsData = [
+                'installed' => [],
+                'available' => [],
+            ];
+        }
 
-        $versionsRes = $this->lcCli->run('php', ['list']);
-        $installedVersions = array_filter(
-            ($versionsRes['status'] ?? '') === 'success' ? ($versionsRes['data'] ?? []) : [],
-            fn($v) => !empty($v['installed'])
-        );
+        try {
+            $versions = $this->phpCli->listVersions();
+            $installedVersions = array_filter(
+                $versions,
+                fn($v) => !empty($v['installed'])
+            );
+        } catch (LcCliException $e) {
+            $installedVersions = [];
+        }
 
         return Inertia::render('Php/Extensions', [
             'currentVersion' => $version,
@@ -163,7 +172,7 @@ class PhpController extends Controller
     /**
      * Toggle PHP extension (enable/disable).
      */
-    public function toggleExtension(Request $request)
+    public function toggleExtension(Request $request, TogglePhpExtensionAction $togglePhpExtensionAction)
     {
         if (! Auth::user()->isAdmin()) {
             abort(403, 'Administrator privileges required.');
@@ -175,23 +184,19 @@ class PhpController extends Controller
             'action' => ['required', 'in:enable,disable'],
         ]);
 
-        $sub = $validated['action'] === 'enable' ? 'ext-enable' : 'ext-disable';
-        $res = $this->lcCli->run('php', [$sub, $validated['version'], $validated['extension']]);
-
-        if (($res['status'] ?? '') === 'success') {
-            AuditLog::create([
-                'user_id' => Auth::id(),
-                'action' => "php.extension_{$validated['action']}",
-                'command' => "lc-cli php {$sub} {$validated['version']} {$validated['extension']}",
-                'status' => 'success',
-                'ip_address' => $request->ip(),
-                'details' => $validated,
-            ]);
+        try {
+            $togglePhpExtensionAction->handle(
+                $validated['version'],
+                $validated['extension'],
+                $validated['action'],
+                Auth::user(),
+                $request->ip()
+            );
 
             return back()->with('success', "Extension '{$validated['extension']}' for PHP {$validated['version']} has been {$validated['action']}d.");
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Extension operation failed: ' . $e->getMessage());
         }
-
-        return back()->with('error', 'Extension operation failed: ' . ($res['message'] ?? 'Error'));
     }
 
     /**
@@ -203,8 +208,11 @@ class PhpController extends Controller
             abort(403, 'Administrator privileges required.');
         }
 
-        $versionsRes = $this->lcCli->run('php', ['list']);
-        $allVersions = ($versionsRes['status'] ?? '') === 'success' ? ($versionsRes['data'] ?? []) : [];
+        try {
+            $allVersions = $this->phpCli->listVersions();
+        } catch (LcCliException $e) {
+            $allVersions = [];
+        }
 
         return Inertia::render('Php/Versions', [
             'phpVersions' => $allVersions,
@@ -214,7 +222,7 @@ class PhpController extends Controller
     /**
      * Install a PHP version.
      */
-    public function installVersion(Request $request)
+    public function installVersion(Request $request, InstallPhpVersionAction $installPhpVersionAction)
     {
         if (! Auth::user()->isAdmin()) {
             abort(403, 'Administrator privileges required.');
@@ -224,28 +232,19 @@ class PhpController extends Controller
             'version' => ['required', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
         ]);
 
-        $res = $this->lcCli->run('php', ['install', $validated['version']]);
-
-        if (($res['status'] ?? '') === 'success') {
-            AuditLog::create([
-                'user_id' => Auth::id(),
-                'action' => 'php.install',
-                'command' => "lc-cli php install {$validated['version']}",
-                'status' => 'success',
-                'ip_address' => $request->ip(),
-                'details' => ['version' => $validated['version']],
-            ]);
+        try {
+            $installPhpVersionAction->handle($validated['version'], Auth::user(), $request->ip());
 
             return back()->with('success', "PHP {$validated['version']} installed successfully.");
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Installation failed: ' . $e->getMessage());
         }
-
-        return back()->with('error', 'Installation failed: ' . ($res['message'] ?? 'CLI Error'));
     }
 
     /**
      * Remove a PHP version.
      */
-    public function removeVersion(Request $request)
+    public function removeVersion(Request $request, RemovePhpVersionAction $removePhpVersionAction)
     {
         if (! Auth::user()->isAdmin()) {
             abort(403, 'Administrator privileges required.');
@@ -259,22 +258,13 @@ class PhpController extends Controller
             return back()->with('error', 'Cannot remove primary panel PHP version (lsphp83).');
         }
 
-        $res = $this->lcCli->run('php', ['remove', $validated['version']]);
-
-        if (($res['status'] ?? '') === 'success') {
-            AuditLog::create([
-                'user_id' => Auth::id(),
-                'action' => 'php.remove',
-                'command' => "lc-cli php remove {$validated['version']}",
-                'status' => 'success',
-                'ip_address' => $request->ip(),
-                'details' => ['version' => $validated['version']],
-            ]);
+        try {
+            $removePhpVersionAction->handle($validated['version'], Auth::user(), $request->ip());
 
             return back()->with('success', "PHP {$validated['version']} removed successfully.");
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Removal failed: ' . $e->getMessage());
         }
-
-        return back()->with('error', 'Removal failed: ' . ($res['message'] ?? 'CLI Error'));
     }
 
     /**
@@ -284,14 +274,21 @@ class PhpController extends Controller
     {
         $version = $request->input('version', '83');
 
-        $modRes = $this->lcCli->run('php', ['modules', $version]);
-        $modules = ($modRes['status'] ?? '') === 'success' ? ($modRes['data'] ?? []) : [];
+        try {
+            $modules = $this->phpCli->listLoadedModules($version);
+        } catch (LcCliException $e) {
+            $modules = [];
+        }
 
-        $versionsRes = $this->lcCli->run('php', ['list']);
-        $installedVersions = array_filter(
-            ($versionsRes['status'] ?? '') === 'success' ? ($versionsRes['data'] ?? []) : [],
-            fn($v) => !empty($v['installed'])
-        );
+        try {
+            $versions = $this->phpCli->listVersions();
+            $installedVersions = array_filter(
+                $versions,
+                fn($v) => !empty($v['installed'])
+            );
+        } catch (LcCliException $e) {
+            $installedVersions = [];
+        }
 
         return Inertia::render('Php/Modules', [
             'currentVersion' => $version,
@@ -300,4 +297,3 @@ class PhpController extends Controller
         ]);
     }
 }
-
