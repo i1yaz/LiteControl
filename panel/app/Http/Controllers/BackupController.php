@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Backup\AddBackupScheduleAction;
+use App\Actions\Backup\CreateBackupAction;
+use App\Actions\Backup\RemoveBackupScheduleAction;
+use App\Actions\Backup\RestoreBackupAction;
+use App\Exceptions\System\LcCliException;
 use App\Models\Backup;
 use App\Models\BackupSchedule;
 use App\Models\User;
-use App\Models\AuditLog;
-use App\Services\LcCliService;
+use App\Services\System\BackupCliService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -14,12 +18,9 @@ use Inertia\Response;
 
 class BackupController extends Controller
 {
-    protected LcCliService $lcCli;
-
-    public function __construct(LcCliService $lcCli)
-    {
-        $this->lcCli = $lcCli;
-    }
+    public function __construct(
+        protected BackupCliService $backupCli
+    ) {}
 
     /**
      * Display a listing of backups and schedules.
@@ -40,8 +41,7 @@ class BackupController extends Controller
         $schedules = $scheduleQuery->latest()->get();
 
         // Also fetch filesystem backups reported by lc-cli
-        $cliRes = $this->lcCli->run('backup', ['list', $user->isAdmin() ? '' : $user->username]);
-        $cliBackups = ($cliRes['status'] ?? '') === 'success' ? ($cliRes['data'] ?? []) : [];
+        $cliBackups = $this->backupCli->listBackups($user->isAdmin() ? null : $user->username);
 
         return Inertia::render('Backups/Index', [
             'backups' => $backups,
@@ -54,7 +54,7 @@ class BackupController extends Controller
     /**
      * Create an on-demand full backup.
      */
-    public function create(Request $request)
+    public function create(Request $request, CreateBackupAction $createBackupAction)
     {
         $user = Auth::user();
 
@@ -63,42 +63,21 @@ class BackupController extends Controller
             $targetUser = User::findOrFail($request->input('user_id'));
         }
 
-        $cliRes = $this->lcCli->run('backup', ['create', $targetUser->username]);
+        try {
+            $backup = $createBackupAction->handle($targetUser, $user, $request->ip());
 
-        if (($cliRes['status'] ?? '') === 'success') {
-            $data = $cliRes['data'] ?? [];
-            $filename = $data['filename'] ?? ("backup-" . $targetUser->username . "-" . now()->format('Ymd_His') . ".tar.gz");
-            $path = $data['path'] ?? ("/home/{$targetUser->username}/backups/{$filename}");
-            $size = $data['size_bytes'] ?? 0;
-
-            $backup = Backup::create([
-                'user_id' => $targetUser->id,
-                'filename' => $filename,
-                'path' => $path,
-                'size_bytes' => $size,
-                'type' => 'manual',
-                'status' => 'completed',
-            ]);
-
-            AuditLog::create([
-                'user_id' => $user->id,
-                'action' => 'backup.create',
-                'command' => "lc-cli backup create {$targetUser->username}",
-                'status' => 'success',
-                'ip_address' => $request->ip(),
-                'details' => ['filename' => $filename, 'target_user' => $targetUser->username],
-            ]);
-
-            return back()->with('success', "Backup '{$filename}' created successfully.");
+            return back()->with('success', "Backup '{$backup->filename}' created successfully.");
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Backup creation failed: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Backup creation failed: ' . $e->getMessage());
         }
-
-        return back()->with('error', 'Backup creation failed: ' . ($cliRes['message'] ?? 'Error'));
     }
 
     /**
      * Restore an existing backup archive.
      */
-    public function restore(Request $request)
+    public function restore(Request $request, RestoreBackupAction $restoreBackupAction)
     {
         $user = Auth::user();
 
@@ -106,22 +85,15 @@ class BackupController extends Controller
             'backup_path' => ['required', 'string'],
         ]);
 
-        $res = $this->lcCli->run('backup', ['restore', $validated['backup_path']]);
-
-        if (($res['status'] ?? '') === 'success') {
-            AuditLog::create([
-                'user_id' => $user->id,
-                'action' => 'backup.restore',
-                'command' => "lc-cli backup restore {$validated['backup_path']}",
-                'status' => 'success',
-                'ip_address' => $request->ip(),
-                'details' => ['path' => $validated['backup_path']],
-            ]);
+        try {
+            $restoreBackupAction->handle($validated['backup_path'], $user, $request->ip());
 
             return back()->with('success', 'Backup restored successfully.');
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Restore failed: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Restore failed: ' . $e->getMessage());
         }
-
-        return back()->with('error', 'Restore failed: ' . ($res['message'] ?? 'Error'));
     }
 
     /**
@@ -148,7 +120,7 @@ class BackupController extends Controller
     /**
      * Store automated backup schedule.
      */
-    public function storeSchedule(Request $request)
+    public function storeSchedule(Request $request, AddBackupScheduleAction $addBackupScheduleAction)
     {
         $user = Auth::user();
 
@@ -158,36 +130,46 @@ class BackupController extends Controller
             'destination' => ['required', 'in:local,sftp,s3'],
         ]);
 
-        $schedule = BackupSchedule::create([
-            'user_id' => $user->id,
-            'frequency' => $validated['frequency'],
-            'retention_count' => $validated['retention_count'],
-            'destination' => $validated['destination'],
-            'is_active' => true,
-        ]);
+        try {
+            $addBackupScheduleAction->handle(
+                $user,
+                $validated['frequency'],
+                (int) $validated['retention_count'],
+                $validated['destination'],
+                $user,
+                $request->ip()
+            );
 
-        // Register schedule with lc-cli
-        $this->lcCli->run('backup', ['schedule', 'add', $user->username, $validated['frequency'], (string) $validated['retention_count']]);
-
-        return back()->with('success', 'Automated backup schedule configured.');
+            return back()->with('success', 'Automated backup schedule configured.');
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Failed to configure schedule: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to configure schedule: ' . $e->getMessage());
+        }
     }
 
     /**
      * Delete automated backup schedule.
      */
-    public function destroySchedule(Request $request, BackupSchedule $schedule)
-    {
+    public function destroySchedule(
+        Request $request,
+        BackupSchedule $schedule,
+        RemoveBackupScheduleAction $removeBackupScheduleAction
+    ) {
         $user = Auth::user();
 
         if (! $user->isAdmin() && $schedule->user_id !== $user->id) {
             abort(403, 'Unauthorized');
         }
 
-        $this->lcCli->run('backup', ['schedule', 'remove', $schedule->user->username ?? $user->username]);
+        try {
+            $removeBackupScheduleAction->handle($schedule, $user, $request->ip());
 
-        $schedule->delete();
-
-        return back()->with('success', 'Backup schedule removed.');
+            return back()->with('success', 'Backup schedule removed.');
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Failed to remove schedule: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Failed to remove schedule: ' . $e->getMessage());
+        }
     }
 }
-
