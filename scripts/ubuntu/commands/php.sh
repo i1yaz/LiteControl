@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/common.sh
 source "${SCRIPT_DIR}/../lib/common.sh"
 
-SUPPORTED_PHP=("74" "80" "81" "82" "83" "84" "85")
+SUPPORTED_PHP=("74" "80" "81" "82" "83" "84" "85" "86")
 COMMON_EXTENSIONS=("mysql" "curl" "intl" "opcache" "redis" "imagick" "igbinary" "memcached" "apcu" "soap" "ldap" "pgsql" "sqlite3" "snmp" "tidy" "imap")
 
 emit_error() {
@@ -38,8 +38,8 @@ normalize_ver() {
     local raw="${1:-}"
     raw="${raw#lsphp}"
     raw="${raw//./}"
-    if ! [[ "${raw}" =~ ^(74|80|81|82|83|84|85)$ ]]; then
-        emit_error "Unsupported PHP version '${1}'. Supported: 74, 80, 81, 82, 83, 84, 85."
+    if ! [[ "${raw}" =~ ^(74|80|81|82|83|84|85|86)$ ]]; then
+        emit_error "Unsupported PHP version '${1}'. Supported: 74, 80, 81, 82, 83, 84, 85, 86."
     fi
     printf "%s" "${raw}"
 }
@@ -100,6 +100,11 @@ cmd_php_install() {
             add-apt-repository -y ppa:openlitespeed/php >/dev/null 2>&1 || true
             apt_update
         fi
+
+        if ! apt-cache show "lsphp${ver}" >/dev/null 2>&1; then
+            emit_error "LSPHP ${dotted} (lsphp${ver}) is not available in OpenLiteSpeed repositories for this OS release."
+        fi
+
         apt_install "lsphp${ver}" "lsphp${ver}-common" "lsphp${ver}-mysql" "lsphp${ver}-curl" "lsphp${ver}-intl" "lsphp${ver}-opcache" || true
         for ext in redis imagick igbinary; do
             if apt-cache show "lsphp${ver}-${ext}" >/dev/null 2>&1; then

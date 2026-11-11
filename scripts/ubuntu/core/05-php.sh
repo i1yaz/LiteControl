@@ -89,7 +89,32 @@ install_primary_lsphp() {
 install_panel_nginx_and_fpm() {
     log_step "05b. Installing Dedicated Panel Nginx & PHP-FPM"
 
-    # Install nginx and standard php-fpm packages for out-of-band panel daemon
+    local panel_ver="${LC_PANEL_PHP_VER:-83}"
+    local dotted_panel_ver="${panel_ver:0:1}.${panel_ver:1:1}"
+
+    # Ensure repository has the specific PHP version needed by panel (e.g. PHP 8.3 on Ubuntu 22.04)
+    if ! apt-cache show "php${dotted_panel_ver}-fpm" >/dev/null 2>&1; then
+        log_info "Adding ppa:ondrej/php repository for PHP ${dotted_panel_ver}-fpm..."
+        if ! command -v add-apt-repository >/dev/null 2>&1; then
+            apt_install software-properties-common || true
+        fi
+        add-apt-repository -y ppa:ondrej/php >/dev/null 2>&1 || true
+        apt_update
+    fi
+
+    # Install nginx and explicit version-matched php-fpm packages for out-of-band panel daemon
+    apt_install nginx \
+        "php${dotted_panel_ver}-fpm" \
+        "php${dotted_panel_ver}-cli" \
+        "php${dotted_panel_ver}-mysql" \
+        "php${dotted_panel_ver}-curl" \
+        "php${dotted_panel_ver}-intl" \
+        "php${dotted_panel_ver}-mbstring" \
+        "php${dotted_panel_ver}-xml" \
+        "php${dotted_panel_ver}-zip" \
+        "php${dotted_panel_ver}-redis" \
+        "php${dotted_panel_ver}-bcmath" \
+        "php${dotted_panel_ver}-gd" || \
     apt_install nginx php-fpm php-cli php-mysql php-curl php-intl php-mbstring php-xml php-zip php-redis php-bcmath php-gd || true
 
     # Immediately stop, disable, and prevent stock nginx from conflicting with OpenLiteSpeed on port 80/443

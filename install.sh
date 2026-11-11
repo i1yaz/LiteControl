@@ -51,7 +51,7 @@ Usage: sudo bash install.sh [OPTIONS]
 Core Options:
   --port <1024-65535>    Set custom LiteControl panel port (default: 8090)
   --random-port          Generate a random panel port between 2000 and 9999
-  --php <74|80|81|82|83|84> Set primary LSPHP version (default: 83)
+  --php <74|80|81|82|83|84|85|86> Set primary LSPHP version (default: 83)
 
 Optional Module Flags (omitted by default to keep server lean):
   --with-ftp             Install Pure-FTPd server module

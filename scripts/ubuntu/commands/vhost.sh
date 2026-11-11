@@ -49,8 +49,8 @@ normalize_php_ver() {
     local raw="${1:-83}"
     raw="${raw#lsphp}"
     raw="${raw//./}"
-    if ! [[ "${raw}" =~ ^(74|80|81|82|83|84|85)$ ]]; then
-        emit_error "Unsupported PHP version '${1}'. Expected one of: 74, 80, 81, 82, 83, 84, 85."
+    if ! [[ "${raw}" =~ ^(74|80|81|82|83|84|85|86)$ ]]; then
+        emit_error "Unsupported PHP version '${1}'. Expected one of: 74, 80, 81, 82, 83, 84, 85, 86."
     fi
     printf "%s" "${raw}"
 }

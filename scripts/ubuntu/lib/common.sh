@@ -38,6 +38,7 @@ export LC_VERSION="${LC_VERSION:-$(get_lc_version 2>/dev/null || echo "0.1.0-alp
 export LC_USER="litecontrol"
 export LC_GROUP="litecontrol"
 export LC_PHP_VER="${LC_PHP_VER:-83}"
+export LC_PANEL_PHP_VER="${LC_PANEL_PHP_VER:-83}"
 export LC_DEFAULT_PORT="${LC_DEFAULT_PORT:-8090}"
 
 # OpenLiteSpeed Paths (overridable for unit test sandboxing)

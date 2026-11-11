@@ -131,9 +131,19 @@ EOF
 
         chown -R "${LC_USER}:${LC_GROUP}" "${LC_PANEL_DIR}"
         local composer_bin="${LC_BASE_DIR}/bin/composer.phar"
-        local php_bin="/usr/bin/php"
+        local panel_ver="${LC_PANEL_PHP_VER:-83}"
+        local dotted_panel_ver="${panel_ver:0:1}.${panel_ver:1:1}"
+        local php_bin="/usr/bin/php${dotted_panel_ver}"
+
+        # If versioned php CLI does not exist, check primary LSPHP or system default
         if [[ ! -x "${php_bin}" ]]; then
-            php_bin="$(command -v php 2>/dev/null || echo "/usr/local/bin/php")"
+            php_bin="${OLS_DIR}/lsphp${panel_ver}/bin/php"
+        fi
+        if [[ ! -x "${php_bin}" ]]; then
+            php_bin="/usr/local/bin/php"
+        fi
+        if [[ ! -x "${php_bin}" ]]; then
+            php_bin="$(command -v php 2>/dev/null || echo "/usr/bin/php")"
         fi
         if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
             log_info "Fetching verified Composer standalone binary..."
@@ -266,8 +276,10 @@ configure_panel_server() {
     cp "${LC_BASE_DIR}/templates/panel/php-fpm.conf.tpl" "${PANEL_FPM_CONF}"
 
     # Locate php-fpm binary (e.g. /usr/sbin/php-fpm8.3 or /usr/sbin/php-fpm)
+    local panel_ver="${LC_PANEL_PHP_VER:-83}"
+    local dotted_panel_ver="${panel_ver:0:1}.${panel_ver:1:1}"
     local php_fpm_bin
-    php_fpm_bin=$(command -v php-fpm"${LC_PHP_VER:0:1}.${LC_PHP_VER:1:1}" 2>/dev/null || command -v php-fpm 2>/dev/null || echo "/usr/sbin/php-fpm")
+    php_fpm_bin=$(command -v php-fpm"${dotted_panel_ver}" 2>/dev/null || command -v php-fpm"${LC_PHP_VER:0:1}.${LC_PHP_VER:1:1}" 2>/dev/null || command -v php-fpm 2>/dev/null || echo "/usr/sbin/php-fpm")
 
     # Install Systemd units
     sed "s|__PHP_FPM_BIN__|${php_fpm_bin}|g" "${LC_BASE_DIR}/templates/system/litecontrol-php.service" > /etc/systemd/system/litecontrol-php.service
