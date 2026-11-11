@@ -2,24 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Database\ChangeDatabaseUserPasswordAction;
+use App\Actions\Database\CreateDatabaseAction;
+use App\Actions\Database\CreateDatabaseUserAction;
+use App\Actions\Database\DeleteDatabaseAction;
+use App\Actions\Database\DeleteDatabaseUserAction;
+use App\Actions\Database\GrantDatabaseAccessAction;
+use App\Exceptions\System\LcCliException;
 use App\Models\Database;
 use App\Models\DatabaseUser;
 use App\Models\User;
-use App\Models\AuditLog;
-use App\Services\LcCliService;
+use App\Services\System\DatabaseCliService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 
 class DatabaseController extends Controller
 {
-    protected LcCliService $lcCli;
-
-    public function __construct(LcCliService $lcCli)
-    {
-        $this->lcCli = $lcCli;
-    }
+    public function __construct(
+        protected DatabaseCliService $databaseCli
+    ) {}
 
     /**
      * Display a listing of databases and database users.
@@ -39,17 +43,19 @@ class DatabaseController extends Controller
         $databases = $dbQuery->latest()->get();
         $dbUsers = $dbUsersQuery->latest()->get();
 
-        // Optionally fetch real-time sizes from lc-cli db list
-        $cliRes = $this->lcCli->run('db', ['list']);
+        // Fetch real-time sizes from DatabaseCliService
         $liveDbMap = [];
-        if (($cliRes['status'] ?? '') === 'success' && is_array($cliRes['data'] ?? null)) {
-            foreach ($cliRes['data'] as $dbItem) {
+        try {
+            $cliData = $this->databaseCli->listDatabases();
+            foreach ($cliData as $dbItem) {
                 $liveDbMap[$dbItem['name'] ?? ''] = [
                     'size_bytes' => $dbItem['size_bytes'] ?? 0,
                     'size_human' => $dbItem['size_human'] ?? '0 B',
                     'tables' => $dbItem['tables'] ?? 0,
                 ];
             }
+        } catch (\Throwable $e) {
+            // Keep empty map if listing fails
         }
 
         return Inertia::render('Databases/Index', [
@@ -63,7 +69,7 @@ class DatabaseController extends Controller
     /**
      * Store a newly created database.
      */
-    public function store(Request $request)
+    public function store(Request $request, CreateDatabaseAction $createDatabaseAction)
     {
         $user = Auth::user();
 
@@ -102,28 +108,17 @@ class DatabaseController extends Controller
             return back()->withErrors(['db_name' => "Database '{$finalDbName}' already exists."]);
         }
 
-        // Call lc-cli db create-db
-        $cliRes = $this->lcCli->run('db', ['create-db', $finalDbName]);
-
-        if (($cliRes['status'] ?? '') !== 'success') {
-            return back()->withErrors(['db_name' => 'Failed to create database: ' . ($cliRes['message'] ?? 'Error')]);
+        try {
+            $createDatabaseAction->handle(
+                dbName: $finalDbName,
+                targetUser: $targetUser,
+                actor: $user,
+                domainId: $validated['domain_id'] ?? null,
+                ipAddress: $request->ip()
+            );
+        } catch (LcCliException $e) {
+            return back()->withErrors(['db_name' => 'Failed to create database: ' . $e->getMessage()]);
         }
-
-        $database = Database::create([
-            'user_id' => $targetUser->id,
-            'domain_id' => $validated['domain_id'] ?? null,
-            'db_name' => $finalDbName,
-            'size_bytes' => 0,
-        ]);
-
-        AuditLog::create([
-            'user_id' => $user->id,
-            'action' => 'db.create',
-            'command' => "lc-cli db create-db {$finalDbName}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => ['db_name' => $finalDbName, 'user' => $targetUser->username],
-        ]);
 
         return redirect()->route('databases.index')->with('success', "Database '{$finalDbName}' created successfully.");
     }
@@ -131,7 +126,7 @@ class DatabaseController extends Controller
     /**
      * Delete a database.
      */
-    public function destroy(Request $request, Database $database)
+    public function destroy(Request $request, Database $database, DeleteDatabaseAction $deleteDatabaseAction)
     {
         $user = Auth::user();
 
@@ -139,24 +134,15 @@ class DatabaseController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $protected = ['mysql', 'information_schema', 'performance_schema', 'sys', 'litecontrol', 'pdns'];
-        if (in_array(strtolower($database->db_name), $protected, true)) {
-            return back()->with('error', "Database '{$database->db_name}' is a protected system database.");
-        }
-
-        $res = $this->lcCli->run('db', ['delete-db', $database->db_name]);
-
         $name = $database->db_name;
-        $database->delete();
 
-        AuditLog::create([
-            'user_id' => $user->id,
-            'action' => 'db.delete',
-            'command' => "lc-cli db delete-db {$name}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => ['db_name' => $name],
-        ]);
+        try {
+            $deleteDatabaseAction->handle($database, $user, $request->ip());
+        } catch (InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Failed to delete database: ' . $e->getMessage());
+        }
 
         return redirect()->route('databases.index')->with('success', "Database '{$name}' deleted successfully.");
     }
@@ -164,7 +150,7 @@ class DatabaseController extends Controller
     /**
      * Store a database user.
      */
-    public function storeUser(Request $request)
+    public function storeUser(Request $request, CreateDatabaseUserAction $createDatabaseUserAction)
     {
         $user = Auth::user();
 
@@ -193,33 +179,18 @@ class DatabaseController extends Controller
             return back()->withErrors(['username' => "Database user '{$finalDbUser}' already exists."]);
         }
 
-        $cliRes = $this->lcCli->run('db', ['create-user', $finalDbUser, $validated['password']]);
-
-        if (($cliRes['status'] ?? '') !== 'success') {
-            return back()->withErrors(['username' => 'Failed to create DB user: ' . ($cliRes['message'] ?? 'Error')]);
+        try {
+            $createDatabaseUserAction->handle(
+                username: $finalDbUser,
+                password: $validated['password'],
+                targetUser: $targetUser,
+                actor: $user,
+                databaseId: !empty($validated['database_id']) ? (int) $validated['database_id'] : null,
+                ipAddress: $request->ip()
+            );
+        } catch (LcCliException $e) {
+            return back()->withErrors(['username' => 'Failed to create DB user: ' . $e->getMessage()]);
         }
-
-        $dbUser = DatabaseUser::create([
-            'user_id' => $targetUser->id,
-            'database_id' => $validated['database_id'] ?? null,
-            'db_username' => $finalDbUser,
-            'host' => 'localhost',
-        ]);
-
-        // If a database was assigned, grant privileges
-        if (!empty($validated['database_id'])) {
-            $database = Database::findOrFail($validated['database_id']);
-            $this->lcCli->run('db', ['grant', $finalDbUser, $database->db_name]);
-        }
-
-        AuditLog::create([
-            'user_id' => $user->id,
-            'action' => 'db_user.create',
-            'command' => "lc-cli db create-user {$finalDbUser}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => ['db_username' => $finalDbUser],
-        ]);
 
         return redirect()->route('databases.index')->with('success', "Database user '{$finalDbUser}' created successfully.");
     }
@@ -227,7 +198,7 @@ class DatabaseController extends Controller
     /**
      * Grant database user privileges to a database.
      */
-    public function grantPrivileges(Request $request)
+    public function grantPrivileges(Request $request, GrantDatabaseAccessAction $grantDatabaseAccessAction)
     {
         $user = Auth::user();
 
@@ -242,10 +213,11 @@ class DatabaseController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $res = $this->lcCli->run('db', ['grant', $validated['db_username'], $database->db_name]);
-
-        // Link in DB table if not linked
-        DatabaseUser::where('db_username', $validated['db_username'])->update(['database_id' => $database->id]);
+        try {
+            $grantDatabaseAccessAction->handle($validated['db_username'], $database, $user, $request->ip());
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Failed to grant privileges: ' . $e->getMessage());
+        }
 
         return back()->with('success', "Granted '{$validated['db_username']}' full privileges on '{$database->db_name}'.");
     }
@@ -253,8 +225,11 @@ class DatabaseController extends Controller
     /**
      * Update database user password.
      */
-    public function updatePassword(Request $request, DatabaseUser $dbUser)
-    {
+    public function updatePassword(
+        Request $request,
+        DatabaseUser $dbUser,
+        ChangeDatabaseUserPasswordAction $changePasswordAction
+    ) {
         $user = Auth::user();
 
         if (! $user->isAdmin() && $dbUser->user_id !== $user->id) {
@@ -265,32 +240,36 @@ class DatabaseController extends Controller
             'password' => ['required', 'string', 'min:8'],
         ]);
 
-        $res = $this->lcCli->run('db', ['password', $dbUser->db_username, $validated['password']]);
-
-        if (($res['status'] ?? '') === 'success') {
+        try {
+            $changePasswordAction->handle($dbUser, $validated['password'], $user, $request->ip());
             return back()->with('success', "Password for DB user '{$dbUser->db_username}' updated.");
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Failed to update password: ' . $e->getMessage());
         }
-
-        return back()->with('error', 'Failed to update password: ' . ($res['message'] ?? 'Error'));
     }
 
     /**
      * Delete a database user.
      */
-    public function destroyUser(Request $request, DatabaseUser $dbUser)
-    {
+    public function destroyUser(
+        Request $request,
+        DatabaseUser $dbUser,
+        DeleteDatabaseUserAction $deleteDatabaseUserAction
+    ) {
         $user = Auth::user();
 
         if (! $user->isAdmin() && $dbUser->user_id !== $user->id) {
             abort(403, 'Unauthorized');
         }
 
-        $this->lcCli->run('db', ['delete-user', $dbUser->db_username]);
-
         $name = $dbUser->db_username;
-        $dbUser->delete();
+
+        try {
+            $deleteDatabaseUserAction->handle($dbUser, $user, $request->ip());
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Failed to delete database user: ' . $e->getMessage());
+        }
 
         return redirect()->route('databases.index')->with('success', "Database user '{$name}' deleted.");
     }
 }
-
