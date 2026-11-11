@@ -227,5 +227,27 @@ class ServerCliService
 
         return $res['data'] ?? [];
     }
+
+    /**
+     * Retrieve server and panel logs.
+     *
+     * @param string $type Log type: ols-error, ols-access, or panel-error
+     * @param int $lines Number of lines to tail
+     * @return array
+     */
+    public function getLogs(string $type = 'ols-error', int $lines = 100): array
+    {
+        if (!in_array($type, ['ols-error', 'ols-access', 'panel-error'])) {
+            $type = 'ols-error';
+        }
+
+        $res = $this->lcCli->run('server', ['logs', $type, (string) $lines]);
+
+        if (($res['status'] ?? '') === 'success' && isset($res['data']) && is_array($res['data'])) {
+            return $res['data'];
+        }
+
+        return [];
+    }
 }
 
