@@ -7,7 +7,7 @@ import UiModal from '@/Components/ui/UiModal.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
 import UiSelect from '@/Components/ui/UiSelect.vue';
 import UiDataTable from '@/Components/ui/UiDataTable.vue';
-import { Globe, Plus, ShieldCheck, ShieldAlert, Folder, Trash2, Pencil, Terminal, Check, LayoutGrid, FolderOpen, PauseCircle, PlayCircle } from 'lucide-vue-next';
+import { Globe, Plus, ShieldCheck, ShieldAlert, Folder, Trash2, Pencil, Terminal, Check, LayoutGrid, FolderOpen, PauseCircle, PlayCircle, Download } from 'lucide-vue-next';
 
 const props = defineProps({
     domains: Object,
@@ -137,6 +137,29 @@ const changePhp = (domainId, newVer) => {
     router.post(`/domains/${domainId}/php`, { php_version: newVer });
 };
 
+const missingPhpVersion = computed(() => {
+    const err = page.props.flash?.error || '';
+    const match = err.match(/PHP version lsphp(\d+) is not installed/i);
+    return match ? match[1] : null;
+});
+
+const formatPhpVersion = (ver) => {
+    if (!ver || ver.length < 2) return ver;
+    return `${ver[0]}.${ver.slice(1)}`;
+};
+
+const installingPhp = shallowRef(false);
+const installPhpVersion = (ver) => {
+    if (confirm(`Install lsphp${ver} (PHP ${formatPhpVersion(ver)}) from the official LiteSpeed repository?`)) {
+        installingPhp.value = true;
+        router.post('/php/versions/install', { version: ver }, {
+            onFinish: () => {
+                installingPhp.value = false;
+            },
+        });
+    }
+};
+
 const toggleSuspend = (dom) => {
     const isSuspended = dom.status === 'suspended';
     const action = isSuspended ? 'unsuspend' : 'suspend';
@@ -181,6 +204,22 @@ const copySshCommand = (username) => {
         <div v-if="$page.props.flash?.warning" class="p-3 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-300 flex items-start gap-2.5">
             <span class="font-bold shrink-0">[WARN]:</span>
             <span>{{ $page.props.flash.warning }}</span>
+        </div>
+
+        <!-- Quick Install Missing PHP Version (Admin Only) -->
+        <div v-if="isAdmin && missingPhpVersion" class="p-3 bg-purple-500/10 border border-purple-500/20 rounded text-xs text-purple-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <span>
+                PHP <strong>{{ formatPhpVersion(missingPhpVersion) }}</strong> (<code>lsphp{{ missingPhpVersion }}</code>) is not installed on this server.
+            </span>
+            <UiButton
+                @click="installPhpVersion(missingPhpVersion)"
+                :disabled="installingPhp"
+                variant="primary"
+                class="shrink-0"
+            >
+                <Download class="w-3.5 h-3.5 mr-1.5 inline" />
+                {{ installingPhp ? `Installing PHP ${formatPhpVersion(missingPhpVersion)}...` : `Install PHP ${formatPhpVersion(missingPhpVersion)}` }}
+            </UiButton>
         </div>
 
         <!-- VHost Grid Matrix via Theme-Aware DataTable -->
