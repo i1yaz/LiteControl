@@ -1,6 +1,7 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
+import { confirmDialog } from '@/Composables/useDialog';
 import Modal from '@/Components/Modal.vue';
 import { Globe, Plus, Folder, Trash2, X } from '@lucide/vue';
 
@@ -25,8 +26,13 @@ const submit = () => {
     });
 };
 
-const deleteSubdomain = (id, domain) => {
-    if (confirm(`Are you sure you want to delete subdomain '${domain}'?`)) {
+const deleteSubdomain = async (id, domain) => {
+    if (await confirmDialog({
+        title: 'Delete Subdomain',
+        message: `Are you sure you want to delete subdomain '${domain}'?`,
+        confirmText: 'Delete',
+        variant: 'danger',
+    })) {
         router.delete(`/domains/${id}`);
     }
 };

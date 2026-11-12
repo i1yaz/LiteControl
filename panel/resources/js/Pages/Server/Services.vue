@@ -2,14 +2,20 @@
 import { ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { Server, RefreshCw, Play, Square, RotateCw, ShieldCheck, ShieldAlert, ExternalLink, Globe, Lock } from '@lucide/vue';
+import { confirmDialog } from '@/Composables/useDialog';
 
 const props = defineProps({
     services: Array,
     webAdmin: Object,
 });
 
-const serviceAction = (service, action) => {
-    if (action === 'stop' && !confirm(`Are you sure you want to STOP ${service}? This may disrupt hosted sites.`)) {
+const serviceAction = async (service, action) => {
+    if (action === 'stop' && !(await confirmDialog({
+        title: 'Stop Service',
+        message: `Are you sure you want to STOP ${service}? This may disrupt hosted sites.`,
+        confirmText: 'Stop Service',
+        variant: 'danger',
+    }))) {
         return;
     }
     router.post(`/server/services/${service}/${action}`);
@@ -19,9 +25,14 @@ const form = useForm({
     allowed_ips: props.webAdmin?.allowed_ips || '',
 });
 
-const toggleWebAdmin = () => {
+const toggleWebAdmin = async () => {
     if (props.webAdmin?.enabled) {
-        if (!confirm('Disable OpenLiteSpeed WebAdmin console on port ' + (props.webAdmin?.port || 7080) + '?')) {
+        if (!(await confirmDialog({
+            title: 'Disable WebAdmin',
+            message: 'Disable OpenLiteSpeed WebAdmin console on port ' + (props.webAdmin?.port || 7080) + '?',
+            confirmText: 'Disable',
+            variant: 'warning',
+        }))) {
             return;
         }
         router.post('/server/webadmin/disable');

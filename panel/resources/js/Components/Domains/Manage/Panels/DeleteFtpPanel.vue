@@ -1,6 +1,7 @@
 <script setup>
 import { router } from '@inertiajs/vue3';
 import { UserMinus, Trash2, X, Folder } from '@lucide/vue';
+import { confirmDialog } from '@/Composables/useDialog';
 
 const props = defineProps({
     domain: {
@@ -11,8 +12,13 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
-const deleteFtp = (acc) => {
-    if (confirm(`Are you sure you want to delete FTP account '${acc.username}'?`)) {
+const deleteFtp = async (acc) => {
+    if (await confirmDialog({
+        title: 'Delete FTP Account',
+        message: `Are you sure you want to delete FTP account '${acc.username}'?`,
+        confirmText: 'Delete',
+        variant: 'danger',
+    })) {
         router.delete(`/domains/${props.domain.id}/ftp/${acc.id}`, {
             preserveScroll: true,
         });

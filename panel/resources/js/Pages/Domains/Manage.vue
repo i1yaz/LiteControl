@@ -1,6 +1,7 @@
 <script setup>
 import { shallowRef, computed, onMounted } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
+import { confirmDialog } from '@/Composables/useDialog';
 import {
     Globe,
     Folder,
@@ -85,9 +86,14 @@ const selectTab = (tabId) => {
     window.history.replaceState({}, '', url.toString());
 };
 
-const handleTriggerAction = (action) => {
+const handleTriggerAction = async (action) => {
     if (action.type === 'action' && action.actionKey === 'fixPermissions') {
-        if (confirm(`Repair permissions for website '${props.domain.domain}'?\n\nThis will restore standard directory (755) and file (644) permissions and ensure panel and web server access.`)) {
+        if (await confirmDialog({
+            title: 'Repair Permissions',
+            message: `Repair permissions for website '${props.domain.domain}'?\n\nThis will restore standard directory (755) and file (644) permissions and ensure panel and web server access.`,
+            confirmText: 'Repair',
+            variant: 'warning',
+        })) {
             router.post(`/domains/${props.domain.id}/fix-permissions`, {}, {
                 preserveScroll: true,
             });
@@ -106,16 +112,26 @@ const closePanel = () => {
     activeAction.value = null;
 };
 
-const toggleSuspend = () => {
+const toggleSuspend = async () => {
     const isSuspended = props.domain.status === 'suspended';
     const action = isSuspended ? 'unsuspend' : 'suspend';
-    if (confirm(`Are you sure you want to ${action} website '${props.domain.domain}'?`)) {
+    if (await confirmDialog({
+        title: isSuspended ? 'Unsuspend Website' : 'Suspend Website',
+        message: `Are you sure you want to ${action} website '${props.domain.domain}'?`,
+        confirmText: isSuspended ? 'Unsuspend' : 'Suspend',
+        variant: isSuspended ? 'primary' : 'warning',
+    })) {
         router.post(`/domains/${props.domain.id}/${action}`);
     }
 };
 
-const deleteDomain = () => {
-    if (confirm(`Terminate domain '${props.domain.domain}'? This removes VirtualHost configuration and website files.`)) {
+const deleteDomain = async () => {
+    if (await confirmDialog({
+        title: 'Terminate Domain',
+        message: `Terminate domain '${props.domain.domain}'? This removes VirtualHost configuration and website files.`,
+        confirmText: 'Terminate',
+        variant: 'danger',
+    })) {
         router.delete(`/domains/${props.domain.id}`);
     }
 };

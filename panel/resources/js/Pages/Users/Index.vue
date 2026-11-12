@@ -1,6 +1,7 @@
 <script setup>
 import { shallowRef, computed } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { confirmDialog } from '@/Composables/useDialog';
 import UiPageHeader from '@/Components/ui/UiPageHeader.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiModal from '@/Components/ui/UiModal.vue';
@@ -37,8 +38,13 @@ const handleSearch = () => {
     router.get('/users', { search: search.value }, { preserveState: true, replace: true });
 };
 
-const suspendUser = (id, username) => {
-    if (confirm(`Are you sure you want to suspend principal '${username}'? Their virtual hosts will be deactivated.`)) {
+const suspendUser = async (id, username) => {
+    if (await confirmDialog({
+        title: 'Suspend User',
+        message: `Are you sure you want to suspend principal '${username}'? Their virtual hosts will be deactivated.`,
+        confirmText: 'Suspend',
+        variant: 'warning',
+    })) {
         router.post(`/users/${id}/suspend`);
     }
 };
@@ -47,14 +53,23 @@ const unsuspendUser = (id, username) => {
     router.post(`/users/${id}/unsuspend`);
 };
 
-const deleteUser = (id, username) => {
-    if (confirm(`Terminate user principal '${username}'? ALL vhosts, schemas, and storage volumes will be permanently purged!`)) {
+const deleteUser = async (id, username) => {
+    if (await confirmDialog({
+        title: 'Terminate User',
+        message: `Terminate user principal '${username}'? ALL vhosts, schemas, and storage volumes will be permanently purged!`,
+        confirmText: 'Terminate',
+        variant: 'danger',
+    })) {
         router.delete(`/users/${id}`);
     }
 };
 
-const impersonateUser = (id, username) => {
-    if (confirm(`Assume security context as principal '${username}'?`)) {
+const impersonateUser = async (id, username) => {
+    if (await confirmDialog({
+        title: 'Impersonate User',
+        message: `Assume security context as principal '${username}'?`,
+        confirmText: 'Impersonate',
+    })) {
         router.post(`/users/${id}/impersonate`);
     }
 };

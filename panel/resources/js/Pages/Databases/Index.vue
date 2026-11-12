@@ -1,6 +1,7 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
+import { confirmDialog } from '@/Composables/useDialog';
 import UiPageHeader from '@/Components/ui/UiPageHeader.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiModal from '@/Components/ui/UiModal.vue';
@@ -105,14 +106,24 @@ const submitGrant = () => {
     });
 };
 
-const deleteDb = (id, name) => {
-    if (confirm(`Are you sure you want to terminate database '${name}'? All tables and data will be permanently dropped.`)) {
+const deleteDb = async (id, name) => {
+    if (await confirmDialog({
+        title: 'Terminate Database',
+        message: `Are you sure you want to terminate database '${name}'? All tables and data will be permanently dropped.`,
+        confirmText: 'Terminate',
+        variant: 'danger',
+    })) {
         router.delete(`/databases/${id}`);
     }
 };
 
-const deleteDbUser = (id, name) => {
-    if (confirm(`Are you sure you want to delete database principal '${name}'?`)) {
+const deleteDbUser = async (id, name) => {
+    if (await confirmDialog({
+        title: 'Delete Database Principal',
+        message: `Are you sure you want to delete database principal '${name}'?`,
+        confirmText: 'Delete',
+        variant: 'danger',
+    })) {
         router.delete(`/databases/users/${id}`);
     }
 };

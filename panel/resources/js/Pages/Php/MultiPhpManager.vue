@@ -2,6 +2,7 @@
 import { ref, shallowRef, computed } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { FileCode, Globe, CheckSquare, Square, RefreshCw } from '@lucide/vue';
+import { alertDialog } from '@/Composables/useDialog';
 
 const props = defineProps({
     domains: Array,
@@ -27,9 +28,13 @@ const batchForm = useForm({
     php_version: '83',
 });
 
-const applyBatch = () => {
+const applyBatch = async () => {
     if (selectedDomains.value.length === 0) {
-        alert('Please select at least one domain to switch PHP version.');
+        await alertDialog({
+            title: 'No Domains Selected',
+            message: 'Please select at least one domain to switch PHP version.',
+            variant: 'warning',
+        });
         return;
     }
 

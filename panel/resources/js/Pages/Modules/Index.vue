@@ -1,19 +1,29 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
 import { Layers, Download, Trash2, CheckCircle2, AlertCircle, ArrowUpRight } from '@lucide/vue';
+import { confirmDialog } from '@/Composables/useDialog';
 
 const props = defineProps({
     modules: Array,
 });
 
-const installModule = (mod) => {
-    if (confirm(`Install optional module '${mod.title || mod.name}'? This will download packages and configure system services.`)) {
+const installModule = async (mod) => {
+    if (await confirmDialog({
+        title: 'Install Module',
+        message: `Install optional module '${mod.title || mod.name}'? This will download packages and configure system services.`,
+        confirmText: 'Install',
+    })) {
         router.post(`/modules/${mod.name}/install`);
     }
 };
 
-const removeModule = (mod) => {
-    if (confirm(`Are you sure you want to uninstall module '${mod.title || mod.name}'?`)) {
+const removeModule = async (mod) => {
+    if (await confirmDialog({
+        title: 'Uninstall Module',
+        message: `Are you sure you want to uninstall module '${mod.title || mod.name}'?`,
+        confirmText: 'Uninstall',
+        variant: 'danger',
+    })) {
         router.post(`/modules/${mod.name}/remove`);
     }
 };

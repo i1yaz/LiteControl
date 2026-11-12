@@ -2,6 +2,7 @@
 import { shallowRef, computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import { Cpu, RefreshCw, XCircle, Search, AlertCircle } from '@lucide/vue';
+import { confirmDialog } from '@/Composables/useDialog';
 
 const props = defineProps({
     processes: Array,
@@ -19,8 +20,13 @@ const filteredProcesses = computed(() => {
     );
 });
 
-const killProcess = (pid) => {
-    if (confirm(`Are you sure you want to terminate PID ${pid}?`)) {
+const killProcess = async (pid) => {
+    if (await confirmDialog({
+        title: 'Terminate Process',
+        message: `Are you sure you want to terminate PID ${pid}?`,
+        confirmText: 'Terminate',
+        variant: 'danger',
+    })) {
         router.post(`/server/processes/${pid}/kill`);
     }
 };

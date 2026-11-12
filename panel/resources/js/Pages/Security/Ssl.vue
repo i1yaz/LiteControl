@@ -2,6 +2,7 @@
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { ShieldCheck, ShieldAlert, Lock, RefreshCw, Key, Plus, CheckCircle2 } from '@lucide/vue';
+import { confirmDialog } from '@/Composables/useDialog';
 
 const props = defineProps({
     domains: Array,
@@ -20,8 +21,12 @@ const customForm = useForm({
     private_key: '',
 });
 
-const issueSsl = (domain) => {
-    if (confirm(`Issue Let's Encrypt SSL certificate for ${domain.domain}?`)) {
+const issueSsl = async (domain) => {
+    if (await confirmDialog({
+        title: 'Issue SSL Certificate',
+        message: `Issue Let's Encrypt SSL certificate for ${domain.domain}?`,
+        confirmText: 'Issue SSL',
+    })) {
         issueForm.domain_id = domain.id;
         issueForm.post('/security/ssl/issue');
     }

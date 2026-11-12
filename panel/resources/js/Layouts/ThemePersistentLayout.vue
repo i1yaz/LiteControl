@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useTheme } from '@/Composables/useTheme';
+import UiConfirmDialog from '@/Components/ui/UiConfirmDialog.vue';
 
 const props = defineProps({
     isAuth: {
@@ -26,4 +27,5 @@ const layoutComponent = computed(() => {
     <div v-else>
         <slot />
     </div>
+    <UiConfirmDialog />
 </template>

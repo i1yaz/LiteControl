@@ -1,6 +1,7 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
 import { Terminal, Save, AlertTriangle, ShieldCheck } from '@lucide/vue';
+import { confirmDialog } from '@/Composables/useDialog';
 
 const props = defineProps({
     currentPort: Number,
@@ -10,8 +11,13 @@ const form = useForm({
     port: props.currentPort || 22,
 });
 
-const submit = () => {
-    if (confirm(`Change SSH port to ${form.port}? Make sure you remember this port when opening SSH sessions.`)) {
+const submit = async () => {
+    if (await confirmDialog({
+        title: 'Change SSH Port',
+        message: `Change SSH port to ${form.port}? Make sure you remember this port when opening SSH sessions.`,
+        confirmText: 'Change Port',
+        variant: 'warning',
+    })) {
         form.post('/security/ssh-port');
     }
 };

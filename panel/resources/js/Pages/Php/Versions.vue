@@ -1,23 +1,37 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
 import { FileCode, Download, Trash2, CheckCircle2, AlertTriangle, ShieldCheck } from '@lucide/vue';
+import { confirmDialog, alertDialog } from '@/Composables/useDialog';
 
 const props = defineProps({
     phpVersions: Array,
 });
 
-const installVer = (ver) => {
-    if (confirm(`Install lsphp${ver} from the official LiteSpeed repository? This will register an external processor.`)) {
+const installVer = async (ver) => {
+    if (await confirmDialog({
+        title: 'Install PHP Version',
+        message: `Install lsphp${ver} from the official LiteSpeed repository? This will register an external processor.`,
+        confirmText: 'Install',
+    })) {
         router.post('/php/versions/install', { version: ver });
     }
 };
 
-const removeVer = (ver) => {
+const removeVer = async (ver) => {
     if (ver === '83') {
-        alert('lsphp83 is the primary control panel runtime and cannot be uninstalled.');
+        await alertDialog({
+            title: 'Cannot Uninstall',
+            message: 'lsphp83 is the primary control panel runtime and cannot be uninstalled.',
+            variant: 'warning',
+        });
         return;
     }
-    if (confirm(`Uninstall lsphp${ver}? Any virtual hosts assigned to this version will need to be re-pointed.`)) {
+    if (await confirmDialog({
+        title: 'Uninstall PHP Version',
+        message: `Uninstall lsphp${ver}? Any virtual hosts assigned to this version will need to be re-pointed.`,
+        confirmText: 'Uninstall',
+        variant: 'danger',
+    })) {
         router.post('/php/versions/remove', { version: ver });
     }
 };

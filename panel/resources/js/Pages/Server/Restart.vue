@@ -1,6 +1,7 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
 import { RotateCw, RefreshCw, AlertTriangle, Server, Database, Zap } from '@lucide/vue';
+import { confirmDialog } from '@/Composables/useDialog';
 
 const props = defineProps({
     stats: Object,
@@ -10,9 +11,14 @@ const form = useForm({
     action: 'ols_restart',
 });
 
-const execute = (actionName) => {
+const execute = async (actionName) => {
     form.action = actionName;
-    if (confirm(`Confirm restart action: ${actionName}?`)) {
+    if (await confirmDialog({
+        title: 'Confirm Restart',
+        message: `Confirm restart action: ${actionName}?`,
+        confirmText: 'Restart',
+        variant: 'warning',
+    })) {
         form.post('/server/restart');
     }
 };

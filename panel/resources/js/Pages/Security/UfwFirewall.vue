@@ -2,6 +2,7 @@
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { Shield, Plus, Trash2, CheckCircle2, AlertCircle } from '@lucide/vue';
+import { confirmDialog } from '@/Composables/useDialog';
 
 const props = defineProps({
     active: Boolean,
@@ -28,8 +29,13 @@ const submitRule = () => {
     });
 };
 
-const deleteRule = (ruleId) => {
-    if (confirm(`Are you sure you want to delete firewall rule ${ruleId}?`)) {
+const deleteRule = async (ruleId) => {
+    if (await confirmDialog({
+        title: 'Delete Firewall Rule',
+        message: `Are you sure you want to delete firewall rule ${ruleId}?`,
+        confirmText: 'Delete',
+        variant: 'danger',
+    })) {
         router.delete(`/security/ufw/rules/${ruleId}`);
     }
 };

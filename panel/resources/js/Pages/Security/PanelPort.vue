@@ -1,6 +1,7 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
 import { Sliders, Save, AlertTriangle, ShieldCheck } from '@lucide/vue';
+import { confirmDialog } from '@/Composables/useDialog';
 
 const props = defineProps({
     currentPort: Number,
@@ -10,8 +11,13 @@ const form = useForm({
     port: props.currentPort || 8090,
 });
 
-const submit = () => {
-    if (confirm(`Changing the panel port will reload OpenLiteSpeed and require you to access LiteControl via https://<IP>:${form.port}/. Proceed?`)) {
+const submit = async () => {
+    if (await confirmDialog({
+        title: 'Change Panel Port',
+        message: `Changing the panel port will reload OpenLiteSpeed and require you to access LiteControl via https://<IP>:${form.port}/. Proceed?`,
+        confirmText: 'Proceed',
+        variant: 'warning',
+    })) {
         form.post('/security/panel-port');
     }
 };

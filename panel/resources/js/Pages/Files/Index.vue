@@ -1,6 +1,7 @@
 <script setup>
 import { shallowRef, computed, onMounted } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
+import { confirmDialog, alertDialog } from '@/Composables/useDialog';
 import Modal from '@/Components/Modal.vue';
 import {
     FolderTree,
@@ -120,10 +121,10 @@ const saveChmod = async () => {
             showChmodModal.value = false;
             loadFiles(currentPath.value);
         } else {
-            alert(json.message || 'Failed to update permissions.');
+            await alertDialog({ title: 'Error', message: json.message || 'Failed to update permissions.', variant: 'danger' });
         }
     } catch (e) {
-        alert('Network error updating permissions.');
+        await alertDialog({ title: 'Network Error', message: 'Network error updating permissions.', variant: 'danger' });
     } finally {
         chmodLoading.value = false;
     }
@@ -132,7 +133,12 @@ const saveChmod = async () => {
 // CyberPanel-style one-click fix permissions
 const fixDomainPermissions = async () => {
     if (!props.targetDomain) return;
-    if (!confirm(`Restore standard permissions (755 folders, 644 files) for '${props.targetDomain.domain}'?`)) return;
+    if (!(await confirmDialog({
+        title: 'Repair Permissions',
+        message: `Restore standard permissions (755 folders, 644 files) for '${props.targetDomain.domain}'?`,
+        confirmText: 'Repair',
+        variant: 'warning',
+    }))) return;
 
     loading.value = true;
     try {
@@ -143,10 +149,10 @@ const fixDomainPermissions = async () => {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
             },
         });
-        alert(`Permissions repair initiated for ${props.targetDomain.domain}.`);
+        await alertDialog({ title: 'Permissions Repair', message: `Permissions repair initiated for ${props.targetDomain.domain}.` });
         loadFiles(currentPath.value);
     } catch (e) {
-        alert('Error initiating permissions repair.');
+        await alertDialog({ title: 'Error', message: 'Error initiating permissions repair.', variant: 'danger' });
     } finally {
         loading.value = false;
     }
@@ -174,10 +180,10 @@ const loadFiles = async (path = '') => {
             currentPath.value = json.current_path;
             items.value = json.items || [];
         } else {
-            alert(json.message || 'Error listing directory.');
+            await alertDialog({ title: 'Error', message: json.message || 'Error listing directory.', variant: 'danger' });
         }
     } catch (e) {
-        alert('Network error loading files.');
+        await alertDialog({ title: 'Network Error', message: 'Network error loading files.', variant: 'danger' });
     } finally {
         loading.value = false;
     }
@@ -216,15 +222,20 @@ const createItem = async () => {
             newItemName.value = '';
             loadFiles(currentPath.value);
         } else {
-            alert(json.message || 'Error creating item.');
+            await alertDialog({ title: 'Error', message: json.message || 'Error creating item.', variant: 'danger' });
         }
     } catch (e) {
-        alert('Request error.');
+        await alertDialog({ title: 'Request Error', message: 'Request error.', variant: 'danger' });
     }
 };
 
 const deleteItem = async (path, name) => {
-    if (!confirm(`Are you sure you want to delete '${name}'?`)) return;
+    if (!(await confirmDialog({
+        title: 'Delete Item',
+        message: `Are you sure you want to delete '${name}'?`,
+        confirmText: 'Delete',
+        variant: 'danger',
+    }))) return;
     try {
         const res = await fetch('/files/delete', {
             method: 'POST',
@@ -241,10 +252,10 @@ const deleteItem = async (path, name) => {
         if (json.status === 'success') {
             loadFiles(currentPath.value);
         } else {
-            alert(json.message || 'Failed to delete item.');
+            await alertDialog({ title: 'Error', message: json.message || 'Failed to delete item.', variant: 'danger' });
         }
     } catch (e) {
-        alert('Request error.');
+        await alertDialog({ title: 'Request Error', message: 'Request error.', variant: 'danger' });
     }
 };
 
@@ -258,11 +269,11 @@ const openEditor = async (path) => {
         if (json.status === 'success') {
             editorContent.value = json.content;
         } else {
-            alert(json.message || 'Could not open file.');
+            await alertDialog({ title: 'Error', message: json.message || 'Could not open file.', variant: 'danger' });
             showEditorModal.value = false;
         }
     } catch (e) {
-        alert('Network error.');
+        await alertDialog({ title: 'Network Error', message: 'Network error.', variant: 'danger' });
         showEditorModal.value = false;
     } finally {
         editorLoading.value = false;
@@ -289,10 +300,10 @@ const saveEditorContent = async () => {
             showEditorModal.value = false;
             loadFiles(currentPath.value);
         } else {
-            alert(json.message || 'Failed to save file.');
+            await alertDialog({ title: 'Error', message: json.message || 'Failed to save file.', variant: 'danger' });
         }
     } catch (e) {
-        alert('Save error.');
+        await alertDialog({ title: 'Save Error', message: 'Save error.', variant: 'danger' });
     } finally {
         editorLoading.value = false;
     }
@@ -323,10 +334,10 @@ const handleFileUpload = async (e) => {
         if (json.status === 'success') {
             loadFiles(currentPath.value);
         } else {
-            alert(json.message || 'Upload failed.');
+            await alertDialog({ title: 'Upload Failed', message: json.message || 'Upload failed.', variant: 'danger' });
         }
     } catch (e) {
-        alert('Upload network error.');
+        await alertDialog({ title: 'Upload Error', message: 'Upload network error.', variant: 'danger' });
     }
 };
 

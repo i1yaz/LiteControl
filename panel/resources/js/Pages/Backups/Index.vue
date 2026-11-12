@@ -1,6 +1,7 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
+import { confirmDialog } from '@/Composables/useDialog';
 import Modal from '@/Components/Modal.vue';
 import {
     FolderTree,
@@ -40,14 +41,24 @@ const triggerBackup = () => {
     backupForm.post('/backups/create');
 };
 
-const triggerRestore = (path, name) => {
-    if (confirm(`Are you sure you want to restore backup '${name}'? Existing database and home files will be overwritten.`)) {
+const triggerRestore = async (path, name) => {
+    if (await confirmDialog({
+        title: 'Restore Backup',
+        message: `Are you sure you want to restore backup '${name}'? Existing database and home files will be overwritten.`,
+        confirmText: 'Restore',
+        variant: 'warning',
+    })) {
         router.post('/backups/restore', { backup_path: path });
     }
 };
 
-const deleteBackup = (id, name) => {
-    if (confirm(`Delete backup '${name}'?`)) {
+const deleteBackup = async (id, name) => {
+    if (await confirmDialog({
+        title: 'Delete Backup',
+        message: `Delete backup '${name}'?`,
+        confirmText: 'Delete',
+        variant: 'danger',
+    })) {
         router.delete(`/backups/${id}`);
     }
 };
@@ -60,8 +71,13 @@ const submitSchedule = () => {
     });
 };
 
-const deleteSchedule = (id) => {
-    if (confirm('Delete this automated backup schedule?')) {
+const deleteSchedule = async (id) => {
+    if (await confirmDialog({
+        title: 'Delete Schedule',
+        message: 'Delete this automated backup schedule?',
+        confirmText: 'Delete',
+        variant: 'danger',
+    })) {
         router.delete(`/backups/schedules/${id}`);
     }
 };

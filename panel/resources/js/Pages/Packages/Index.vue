@@ -1,6 +1,7 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
+import { confirmDialog, alertDialog } from '@/Composables/useDialog';
 import Modal from '@/Components/Modal.vue';
 import { Package, Plus, Edit2, Trash2, Users, HardDrive, Activity, Globe, Database, Mail, X } from '@lucide/vue';
 
@@ -60,12 +61,21 @@ const submit = () => {
     }
 };
 
-const deletePackage = (id, name, usersCount) => {
+const deletePackage = async (id, name, usersCount) => {
     if (usersCount > 0) {
-        alert(`Cannot delete package '${name}' because it has ${usersCount} assigned users.`);
+        await alertDialog({
+            title: 'Cannot Delete Package',
+            message: `Cannot delete package '${name}' because it has ${usersCount} assigned users.`,
+            variant: 'warning',
+        });
         return;
     }
-    if (confirm(`Are you sure you want to delete package '${name}'?`)) {
+    if (await confirmDialog({
+        title: 'Delete Package',
+        message: `Are you sure you want to delete package '${name}'?`,
+        confirmText: 'Delete',
+        variant: 'danger',
+    })) {
         router.delete(`/packages/${id}`);
     }
 };

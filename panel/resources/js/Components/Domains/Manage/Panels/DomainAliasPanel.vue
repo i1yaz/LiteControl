@@ -2,6 +2,7 @@
 import { shallowRef } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { Globe, Plus, Trash2, X } from '@lucide/vue';
+import { confirmDialog } from '@/Composables/useDialog';
 
 const props = defineProps({
     domain: {
@@ -25,8 +26,13 @@ const submitAlias = () => {
     });
 };
 
-const deleteAlias = (alias) => {
-    if (confirm(`Remove domain alias '${alias.domain}'?`)) {
+const deleteAlias = async (alias) => {
+    if (await confirmDialog({
+        title: 'Remove Domain Alias',
+        message: `Remove domain alias '${alias.domain}'?`,
+        confirmText: 'Remove',
+        variant: 'danger',
+    })) {
         router.delete(`/domains/${props.domain.id}/aliases/${alias.id}`, {
             preserveScroll: true,
         });

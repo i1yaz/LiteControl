@@ -1,6 +1,7 @@
 <script setup>
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { ShieldCheck, ShieldAlert, Lock, Unlock, Server } from '@lucide/vue';
+import { confirmDialog } from '@/Composables/useDialog';
 
 const props = defineProps({
     standardPorts: Array,
@@ -14,10 +15,15 @@ const isPortOpen = (port) => {
     });
 };
 
-const togglePort = (item) => {
+const togglePort = async (item) => {
     const open = isPortOpen(item.port);
     if (open) {
-        if (confirm(`Close port ${item.port} (${item.name})?`)) {
+        if (await confirmDialog({
+            title: 'Close Port',
+            message: `Close port ${item.port} (${item.name})?`,
+            confirmText: 'Close Port',
+            variant: 'danger',
+        })) {
             router.delete(`/security/ufw/rules/${item.port}`);
         }
     } else {

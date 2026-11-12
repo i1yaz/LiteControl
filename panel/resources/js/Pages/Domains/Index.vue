@@ -1,6 +1,7 @@
 <script setup>
 import { shallowRef, computed } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
+import { confirmDialog } from '@/Composables/useDialog';
 import UiPageHeader from '@/Components/ui/UiPageHeader.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiModal from '@/Components/ui/UiModal.vue';
@@ -127,8 +128,13 @@ const submitEdit = () => {
     });
 };
 
-const deleteDomain = (id, name) => {
-    if (confirm(`Are you sure you want to terminate domain '${name}'? This removes the vhost configuration and website files.`)) {
+const deleteDomain = async (id, name) => {
+    if (await confirmDialog({
+        title: 'Terminate Domain',
+        message: `Are you sure you want to terminate domain '${name}'? This removes the vhost configuration and website files.`,
+        confirmText: 'Terminate',
+        variant: 'danger',
+    })) {
         router.delete(`/domains/${id}`);
     }
 };
@@ -149,8 +155,12 @@ const formatPhpVersion = (ver) => {
 };
 
 const installingPhp = shallowRef(false);
-const installPhpVersion = (ver) => {
-    if (confirm(`Install lsphp${ver} (PHP ${formatPhpVersion(ver)}) from the official LiteSpeed repository?`)) {
+const installPhpVersion = async (ver) => {
+    if (await confirmDialog({
+        title: 'Install PHP Version',
+        message: `Install lsphp${ver} (PHP ${formatPhpVersion(ver)}) from the official LiteSpeed repository?`,
+        confirmText: 'Install',
+    })) {
         installingPhp.value = true;
         router.post('/php/versions/install', { version: ver }, {
             onFinish: () => {
@@ -160,10 +170,15 @@ const installPhpVersion = (ver) => {
     }
 };
 
-const toggleSuspend = (dom) => {
+const toggleSuspend = async (dom) => {
     const isSuspended = dom.status === 'suspended';
     const action = isSuspended ? 'unsuspend' : 'suspend';
-    if (confirm(`Are you sure you want to ${action} domain '${dom.domain}'?`)) {
+    if (await confirmDialog({
+        title: isSuspended ? 'Unsuspend Domain' : 'Suspend Domain',
+        message: `Are you sure you want to ${action} domain '${dom.domain}'?`,
+        confirmText: isSuspended ? 'Unsuspend' : 'Suspend',
+        variant: isSuspended ? 'primary' : 'warning',
+    })) {
         router.post(`/domains/${dom.id}/${action}`);
     }
 };
