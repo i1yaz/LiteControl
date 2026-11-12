@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AuditLog;
-use App\Services\LcCliService;
+use App\Actions\Module\InstallModuleAction;
+use App\Actions\Module\RemoveModuleAction;
+use App\Exceptions\System\LcCliException;
+use App\Services\System\ModuleCliService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -11,20 +13,16 @@ use Inertia\Response;
 
 class ModuleController extends Controller
 {
-    protected LcCliService $lcCli;
-
-    public function __construct(LcCliService $lcCli)
-    {
-        $this->lcCli = $lcCli;
-    }
+    public function __construct(
+        protected ModuleCliService $moduleCli
+    ) {}
 
     /**
      * Optional Modules Manager.
      */
     public function index(): Response
     {
-        $res = $this->lcCli->run('module', ['list']);
-        $modules = ($res['status'] ?? '') === 'success' ? ($res['data'] ?? []) : [];
+        $modules = $this->moduleCli->listModules();
 
         return Inertia::render('Modules/Index', [
             'modules' => $modules,
@@ -34,57 +32,38 @@ class ModuleController extends Controller
     /**
      * Install an optional module on-demand.
      */
-    public function install(Request $request, string $module)
+    public function install(Request $request, string $module, InstallModuleAction $installModuleAction)
     {
         $allowed = ['ftp', 'dns', 'mail', 'csf', 'modsecurity', 'imunifyav'];
         if (!in_array($module, $allowed)) {
             return redirect()->back()->with('error', "Unsupported module '$module'.");
         }
 
-        $res = $this->lcCli->run('module', ['install', $module]);
+        try {
+            $installModuleAction->handle($module, Auth::user(), $request->ip());
 
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? "Failed to install module $module.");
+            return redirect()->back()->with('success', "Module '$module' installation completed successfully.");
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'install_module',
-            'command' => "lc-cli module install $module",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode(['module' => $module]),
-        ]);
-
-        return redirect()->back()->with('success', "Module '$module' installation completed successfully.");
     }
 
     /**
      * Remove / uninstall an optional module.
      */
-    public function remove(Request $request, string $module)
+    public function remove(Request $request, string $module, RemoveModuleAction $removeModuleAction)
     {
         $allowed = ['ftp', 'dns', 'mail', 'csf', 'modsecurity', 'imunifyav'];
         if (!in_array($module, $allowed)) {
             return redirect()->back()->with('error', "Unsupported module '$module'.");
         }
 
-        $res = $this->lcCli->run('module', ['remove', $module]);
+        try {
+            $removeModuleAction->handle($module, Auth::user(), $request->ip());
 
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? "Failed to remove module $module.");
+            return redirect()->back()->with('success', "Module '$module' removed successfully.");
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'remove_module',
-            'command' => "lc-cli module remove $module",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode(['module' => $module]),
-        ]);
-
-        return redirect()->back()->with('success', "Module '$module' removed successfully.");
     }
 }
-

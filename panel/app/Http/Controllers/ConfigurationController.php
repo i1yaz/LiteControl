@@ -2,8 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AuditLog;
-use App\Services\LcCliService;
+use App\Actions\Configuration\UpdatePhpLimitsAction;
+use App\Actions\Configuration\UpdateSettingsAction;
+use App\Actions\Configuration\UpdateTuningAction;
+use App\Exceptions\System\LcCliException;
+use App\Services\System\PhpCliService;
+use App\Services\System\ServerCliService;
+use App\Services\System\TuningCliService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -11,20 +17,18 @@ use Inertia\Response;
 
 class ConfigurationController extends Controller
 {
-    protected LcCliService $lcCli;
-
-    public function __construct(LcCliService $lcCli)
-    {
-        $this->lcCli = $lcCli;
-    }
+    public function __construct(
+        protected ServerCliService $serverCli,
+        protected TuningCliService $tuningCli,
+        protected PhpCliService $phpCli
+    ) {}
 
     /**
      * General Panel & Server Settings.
      */
     public function settings(Request $request): Response
     {
-        $statsRes = $this->lcCli->run('server', ['stats']);
-        $stats = ($statsRes['status'] ?? '') === 'success' ? ($statsRes['data'] ?? []) : [];
+        $stats = $this->serverCli->getStats();
 
         $settings = [
             'panel_name' => config('app.name', 'LiteControl'),
@@ -48,7 +52,7 @@ class ConfigurationController extends Controller
     /**
      * Update General Settings.
      */
-    public function updateSettings(Request $request)
+    public function updateSettings(Request $request, UpdateSettingsAction $action): RedirectResponse
     {
         $validated = $request->validate([
             'panel_name' => ['required', 'string', 'max:60'],
@@ -58,26 +62,13 @@ class ConfigurationController extends Controller
             'default_theme' => ['nullable', 'string'],
         ]);
 
-        if (!empty($validated['default_theme'])) {
-            $request->session()->put('theme', $validated['default_theme']);
-            if ($user = $request->user()) {
-                $user->update(['theme' => $validated['default_theme']]);
-            }
+        try {
+            $action->handle($validated, $request->user(), $request->ip());
+
+            return redirect()->back()->with('success', 'Panel settings updated successfully.');
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        // Sync timezone via lc-cli
-        $this->lcCli->run('server', ['timezone', 'set', $validated['timezone']]);
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'update_settings',
-            'command' => 'configuration.settings',
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode($validated),
-        ]);
-
-        return redirect()->back()->with('success', 'Panel settings updated successfully.');
     }
 
     /**
@@ -85,8 +76,7 @@ class ConfigurationController extends Controller
      */
     public function tuning(Request $request): Response
     {
-        $res = $this->lcCli->run('tuning', ['get']);
-        $tuning = ($res['status'] ?? '') === 'success' ? ($res['data'] ?? []) : [];
+        $tuning = $this->tuningCli->getTuning();
 
         return Inertia::render('Configuration/LiteSpeedTuning', [
             'tuning' => $tuning,
@@ -96,7 +86,7 @@ class ConfigurationController extends Controller
     /**
      * Update OpenLiteSpeed Tuning parameters.
      */
-    public function updateTuning(Request $request)
+    public function updateTuning(Request $request, UpdateTuningAction $action): RedirectResponse
     {
         $validated = $request->validate([
             'maxConnections' => ['required', 'integer', 'min:10', 'max:100000'],
@@ -110,27 +100,13 @@ class ConfigurationController extends Controller
             'quicEnable' => ['required', 'in:0,1'],
         ]);
 
-        $args = ['set'];
-        foreach ($validated as $key => $val) {
-            $args[] = "{$key}={$val}";
+        try {
+            $action->handle($validated, $request->user(), $request->ip());
+
+            return redirect()->back()->with('success', 'LiteSpeed tuning parameters updated and applied successfully.');
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        $res = $this->lcCli->run('tuning', $args);
-
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? 'Failed to update tuning configuration.');
-        }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'update_tuning',
-            'command' => 'lc-cli tuning set',
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode($validated),
-        ]);
-
-        return redirect()->back()->with('success', 'LiteSpeed tuning parameters updated and applied successfully.');
     }
 
     /**
@@ -139,14 +115,25 @@ class ConfigurationController extends Controller
     public function phpLimit(Request $request): Response
     {
         $version = $request->input('version', '83');
-        $iniRes = $this->lcCli->run('php', ['ini-get', $version]);
-        $directives = $iniRes['data']['directives'] ?? [];
 
-        $listRes = $this->lcCli->run('php', ['list']);
-        $installedVersions = array_filter(
-            ($listRes['status'] ?? '') === 'success' ? ($listRes['data'] ?? []) : [],
-            fn($v) => !empty($v['installed'])
-        );
+        $directives = [];
+        try {
+            $iniRes = $this->phpCli->getIni($version);
+            $directives = $iniRes['directives'] ?? [];
+        } catch (\Throwable) {
+            // Fallback for missing/invalid PHP INI
+        }
+
+        $installedVersions = [];
+        try {
+            $listRes = $this->phpCli->listVersions();
+            $installedVersions = array_filter(
+                $listRes,
+                fn($v) => !empty($v['installed'])
+            );
+        } catch (\Throwable) {
+            // Fallback for list failure
+        }
 
         return Inertia::render('Configuration/PhpLimit', [
             'currentVersion' => $version,
@@ -164,7 +151,7 @@ class ConfigurationController extends Controller
     /**
      * Update PHP Limits for a specific version.
      */
-    public function updatePhpLimit(Request $request)
+    public function updatePhpLimit(Request $request, UpdatePhpLimitsAction $action): RedirectResponse
     {
         $validated = $request->validate([
             'version' => ['required', 'string', 'in:74,80,81,82,83,84,85'],
@@ -178,20 +165,13 @@ class ConfigurationController extends Controller
         $version = $validated['version'];
         unset($validated['version']);
 
-        foreach ($validated as $key => $val) {
-            $this->lcCli->run('php', ['ini-set', $version, "{$key}={$val}"]);
+        try {
+            $action->handle($version, $validated, $request->user(), $request->ip());
+
+            return redirect()->back()->with('success', "PHP {$version} resource limits updated successfully.");
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'update_php_limits',
-            'command' => "lc-cli php ini-set $version",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode($validated),
-        ]);
-
-        return redirect()->back()->with('success', "PHP {$version} resource limits updated successfully.");
     }
 
     /**
@@ -206,8 +186,7 @@ class ConfigurationController extends Controller
             $type = 'ols-error';
         }
 
-        $res = $this->lcCli->run('server', ['logs', $type, (string)$lines]);
-        $data = ($res['status'] ?? '') === 'success' ? ($res['data'] ?? []) : [];
+        $data = $this->serverCli->getLogs($type, $lines);
 
         return Inertia::render('Configuration/ErrorLogs', [
             'logType' => $type,
@@ -217,4 +196,3 @@ class ConfigurationController extends Controller
         ]);
     }
 }
-

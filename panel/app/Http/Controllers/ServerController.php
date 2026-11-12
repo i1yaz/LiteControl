@@ -2,37 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AuditLog;
-use App\Services\LcCliService;
+use App\Actions\Server\KillProcessAction;
+use App\Actions\Server\ManageServiceAction;
+use App\Actions\Server\ToggleWebAdminAction;
+use App\Actions\Server\UpdateHostnameAction;
+use App\Actions\Server\UpdateTimezoneAction;
+use App\Exceptions\System\LcCliException;
+use App\Services\System\ServerCliService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Process;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ServerController extends Controller
 {
-    protected LcCliService $lcCli;
-
-    public function __construct(LcCliService $lcCli)
-    {
-        $this->lcCli = $lcCli;
-    }
+    public function __construct(
+        protected ServerCliService $serverCli
+    ) {}
 
     /**
      * Service Manager.
      */
     public function services(): Response
     {
-        $res = $this->lcCli->run('server', ['services']);
-        $services = ($res['status'] ?? '') === 'success' ? ($res['data'] ?? []) : [];
-
-        $webAdminRes = $this->lcCli->run('server', ['webadmin-status']);
-        $webAdmin = ($webAdminRes['status'] ?? '') === 'success' ? ($webAdminRes['data'] ?? []) : [
-            'enabled' => false,
-            'port' => 7080,
-            'allowed_ips' => '',
-        ];
+        $services = $this->serverCli->getServices();
+        $webAdmin = $this->serverCli->getWebAdminStatus();
 
         return Inertia::render('Server/Services', [
             'services' => $services,
@@ -43,27 +36,17 @@ class ServerController extends Controller
     /**
      * Enable or update OpenLiteSpeed WebAdmin console settings.
      */
-    public function enableWebAdmin(Request $request)
+    public function enableWebAdmin(Request $request, ToggleWebAdminAction $toggleWebAdminAction)
     {
         $validated = $request->validate([
             'allowed_ips' => 'nullable|string|max:500',
         ]);
 
-        $ips = trim($validated['allowed_ips'] ?? '');
-        $res = $this->lcCli->run('server', array_filter(['webadmin-enable', $ips]));
-
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? 'Failed to enable WebAdmin console.');
+        try {
+            $toggleWebAdminAction->enable($validated['allowed_ips'] ?? null, $request->user(), $request->ip());
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'webadmin_enabled',
-            'command' => "lc-cli server webadmin-enable" . ($ips ? " {$ips}" : ''),
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode(['allowed_ips' => $ips]),
-        ]);
 
         return redirect()->back()->with('success', 'OpenLiteSpeed WebAdmin console enabled successfully.');
     }
@@ -71,22 +54,13 @@ class ServerController extends Controller
     /**
      * Disable OpenLiteSpeed WebAdmin console.
      */
-    public function disableWebAdmin(Request $request)
+    public function disableWebAdmin(Request $request, ToggleWebAdminAction $toggleWebAdminAction)
     {
-        $res = $this->lcCli->run('server', ['webadmin-disable']);
-
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? 'Failed to disable WebAdmin console.');
+        try {
+            $toggleWebAdminAction->disable($request->user(), $request->ip());
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'webadmin_disabled',
-            'command' => 'lc-cli server webadmin-disable',
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode([]),
-        ]);
 
         return redirect()->back()->with('success', 'OpenLiteSpeed WebAdmin console disabled successfully.');
     }
@@ -94,26 +68,17 @@ class ServerController extends Controller
     /**
      * Execute an action on a system service.
      */
-    public function serviceAction(Request $request, string $service, string $action)
+    public function serviceAction(Request $request, string $service, string $action, ManageServiceAction $manageServiceAction)
     {
         if (!in_array($action, ['start', 'stop', 'restart', 'reload'])) {
             return redirect()->back()->with('error', "Invalid action '{$action}'.");
         }
 
-        $res = $this->lcCli->run('server', ['service-action', $service, $action]);
-
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? "Failed to {$action} service {$service}.");
+        try {
+            $manageServiceAction->handle($service, $action, $request->user(), $request->ip());
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => "service_{$action}",
-            'command' => "lc-cli server service-action {$service} {$action}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode(['service' => $service, 'action' => $action]),
-        ]);
 
         return redirect()->back()->with('success', "Service '{$service}' successfully {$action}ed.");
     }
@@ -123,8 +88,7 @@ class ServerController extends Controller
      */
     public function processes(): Response
     {
-        $res = $this->lcCli->run('server', ['processes']);
-        $processes = ($res['status'] ?? '') === 'success' ? ($res['data'] ?? []) : [];
+        $processes = $this->serverCli->getProcesses();
 
         return Inertia::render('Server/ProcessManager', [
             'processes' => $processes,
@@ -134,26 +98,17 @@ class ServerController extends Controller
     /**
      * Terminate a running process.
      */
-    public function killProcess(Request $request, int $pid)
+    public function killProcess(Request $request, int $pid, KillProcessAction $killProcessAction)
     {
         if ($pid <= 1) {
             return redirect()->back()->with('error', 'Cannot terminate system init PID.');
         }
 
-        $res = $this->lcCli->run('server', ['kill-process', (string)$pid]);
-
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? "Failed to kill process {$pid}.");
+        try {
+            $killProcessAction->handle($pid, $request->user(), $request->ip());
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'kill_process',
-            'command' => "lc-cli server kill-process {$pid}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode(['pid' => $pid]),
-        ]);
 
         return redirect()->back()->with('success', "Process {$pid} terminated successfully.");
     }
@@ -163,8 +118,7 @@ class ServerController extends Controller
      */
     public function timezone(): Response
     {
-        $res = $this->lcCli->run('server', ['timezone', 'get']);
-        $currentTz = $res['data']['timezone'] ?? 'UTC';
+        $currentTz = $this->serverCli->getTimezone();
 
         $popularZones = [
             'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
@@ -182,26 +136,17 @@ class ServerController extends Controller
     /**
      * Update Time Zone.
      */
-    public function updateTimezone(Request $request)
+    public function updateTimezone(Request $request, UpdateTimezoneAction $updateTimezoneAction)
     {
         $validated = $request->validate([
             'timezone' => ['required', 'string', 'regex:/^[A-Za-z0-9_+-]+(\/[A-Za-z0-9_+-]+)*$/'],
         ]);
 
-        $res = $this->lcCli->run('server', ['timezone', 'set', $validated['timezone']]);
-
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? 'Failed to update timezone.');
+        try {
+            $updateTimezoneAction->handle($validated['timezone'], $request->user(), $request->ip());
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'update_timezone',
-            'command' => "lc-cli server timezone set {$validated['timezone']}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode($validated),
-        ]);
 
         return redirect()->back()->with('success', "Timezone updated to {$validated['timezone']}.");
     }
@@ -211,8 +156,7 @@ class ServerController extends Controller
      */
     public function hostname(): Response
     {
-        $res = $this->lcCli->run('server', ['hostname', 'get']);
-        $currentHostname = $res['data']['hostname'] ?? 'panel.local';
+        $currentHostname = $this->serverCli->getHostname();
 
         return Inertia::render('Server/ChangeHostname', [
             'currentHostname' => $currentHostname,
@@ -222,26 +166,17 @@ class ServerController extends Controller
     /**
      * Update Server Hostname.
      */
-    public function updateHostname(Request $request)
+    public function updateHostname(Request $request, UpdateHostnameAction $updateHostnameAction)
     {
         $validated = $request->validate([
             'hostname' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9]([a-zA-Z0-9.-]{0,61}[a-zA-Z0-9])?$/'],
         ]);
 
-        $res = $this->lcCli->run('server', ['hostname', 'set', $validated['hostname']]);
-
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? 'Failed to update hostname.');
+        try {
+            $updateHostnameAction->handle($validated['hostname'], $request->user(), $request->ip());
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'update_hostname',
-            'command' => "lc-cli server hostname set {$validated['hostname']}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode($validated),
-        ]);
 
         return redirect()->back()->with('success', "Hostname successfully updated to '{$validated['hostname']}'.");
     }
@@ -251,8 +186,7 @@ class ServerController extends Controller
      */
     public function restart(): Response
     {
-        $res = $this->lcCli->run('server', ['stats']);
-        $stats = ($res['status'] ?? '') === 'success' ? ($res['data'] ?? []) : [];
+        $stats = $this->serverCli->getStats();
 
         return Inertia::render('Server/Restart', [
             'stats' => $stats,
@@ -262,7 +196,7 @@ class ServerController extends Controller
     /**
      * Execute Server / Service Restart.
      */
-    public function executeRestart(Request $request)
+    public function executeRestart(Request $request, ManageServiceAction $manageServiceAction)
     {
         $validated = $request->validate([
             'action' => ['required', 'string', 'in:ols_restart,ols_reload,mariadb_restart,redis_restart'],
@@ -276,20 +210,12 @@ class ServerController extends Controller
         ];
 
         $target = $actionMap[$validated['action']];
-        $res = $this->lcCli->run('server', ['service-action', $target['service'], $target['act']]);
 
-        if (($res['status'] ?? '') === 'error') {
-            return redirect()->back()->with('error', $res['message'] ?? "Restart failed for {$target['service']}.");
+        try {
+            $manageServiceAction->handle($target['service'], $target['act'], $request->user(), $request->ip());
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'server_restart_action',
-            'command' => "lc-cli server service-action {$target['service']} {$target['act']}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => json_encode($validated),
-        ]);
 
         return redirect()->back()->with('success', "Successfully executed {$target['act']} on {$target['service']}.");
     }
@@ -299,8 +225,7 @@ class ServerController extends Controller
      */
     public function statistics(): Response
     {
-        $res = $this->lcCli->run('server', ['stats']);
-        $stats = ($res['status'] ?? '') === 'success' ? ($res['data'] ?? []) : [];
+        $stats = $this->serverCli->getStats();
 
         return Inertia::render('Server/SystemStatistics', [
             'stats' => $stats,
@@ -314,7 +239,7 @@ class ServerController extends Controller
     public function olsStatus()
     {
         // 1. If running in mock mode on dev/Windows environment
-        if ($this->lcCli->isMockMode()) {
+        if ($this->serverCli->isMockMode()) {
             return response()->json([
                 'status' => 'online',
                 'service' => 'openlitespeed',
@@ -323,17 +248,15 @@ class ServerController extends Controller
         }
 
         // 2. Query lc-cli service status directly (single source of truth)
-        $res = $this->lcCli->run('server', ['services']);
-        if (($res['status'] ?? '') === 'success' && is_array($res['data'] ?? null)) {
-            foreach ($res['data'] as $service) {
-                $name = $service['name'] ?? $service['service'] ?? '';
-                if (in_array($name, ['openlitespeed', 'lshttpd', 'lsws'], true)) {
-                    $isActive = ($service['status'] ?? '') === 'active';
-                    return response()->json([
-                        'status' => $isActive ? 'online' : 'offline',
-                        'service' => 'openlitespeed',
-                    ]);
-                }
+        $services = $this->serverCli->getServices();
+        foreach ($services as $service) {
+            $name = $service['name'] ?? $service['service'] ?? '';
+            if (in_array($name, ['openlitespeed', 'lshttpd', 'lsws'], true)) {
+                $isActive = ($service['status'] ?? '') === 'active';
+                return response()->json([
+                    'status' => $isActive ? 'online' : 'offline',
+                    'service' => 'openlitespeed',
+                ]);
             }
         }
 
@@ -343,4 +266,3 @@ class ServerController extends Controller
         ]);
     }
 }
-
