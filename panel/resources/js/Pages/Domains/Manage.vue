@@ -136,6 +136,12 @@ const deleteDomain = async () => {
     }
 };
 
+const toggleOpenBasedir = () => {
+    router.post(`/domains/${props.domain.id}/open-basedir`, {
+        enabled: !props.domain.open_basedir_enabled,
+    }, { preserveScroll: true });
+};
+
 onMounted(() => {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
@@ -257,6 +263,25 @@ onMounted(() => {
 
             <!-- Other Tabs: Action Buttons Grid -->
             <div v-else class="space-y-6">
+                <!-- open_basedir Protection Toggle (Files Tab) -->
+                <div v-if="currentTab === 'files'" class="bg-theme-bg-surface border border-theme-border rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-theme-text-primary">PHP open_basedir Protection</h3>
+                        <p class="text-xs text-theme-text-muted mt-0.5">
+                            Restrict PHP file access to this domain's root directory and /tmp. Default: OFF.
+                        </p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            :checked="domain.open_basedir_enabled"
+                            @change="toggleOpenBasedir"
+                            class="sr-only peer"
+                        />
+                        <div class="w-10 h-5 bg-theme-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                    </label>
+                </div>
+
                 <ManageActionGrid
                     :actions="tabActions"
                     :active-action="activeAction"

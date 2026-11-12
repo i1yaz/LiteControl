@@ -53,6 +53,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/domains/{domain}/ftp', [DomainController::class, 'storeFtp'])->name('domains.ftp.store');
     Route::delete('/domains/{domain}/ftp/{ftpAccount}', [DomainController::class, 'destroyFtp'])->name('domains.ftp.destroy');
     Route::post('/domains/{domain}/fix-permissions', [DomainController::class, 'fixPermissions'])->name('domains.fix-permissions');
+    Route::post('/domains/{domain}/open-basedir', [DomainController::class, 'toggleOpenBasedir'])->name('domains.open-basedir');
     Route::get('/subdomains', [DomainController::class, 'subdomains'])->name('subdomains.index');
     Route::post('/subdomains', [DomainController::class, 'storeSubdomain'])->name('subdomains.store');
 

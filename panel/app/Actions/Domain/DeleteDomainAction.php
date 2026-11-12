@@ -31,6 +31,18 @@ class DeleteDomainAction
         }
 
         DB::transaction(function () use ($domain, $actor, $domainName, $deleteFiles, $ipAddress) {
+            // Promote direct child subdomains cleanly instead of blocking or orphaning
+            if ($domain->parent_domain_id !== null) {
+                Domain::where('parent_domain_id', $domain->id)->update([
+                    'parent_domain_id' => $domain->parent_domain_id,
+                ]);
+            } else {
+                Domain::where('parent_domain_id', $domain->id)->update([
+                    'parent_domain_id' => null,
+                    'type' => 'primary',
+                ]);
+            }
+
             $domain->delete();
 
             AuditLog::create([

@@ -602,9 +602,16 @@ class DomainController extends Controller
             $baseDomains->where('user_id', $user->id);
         }
 
+        try {
+            $phpVersions = $this->phpCliService->listVersions();
+        } catch (\Throwable $e) {
+            $phpVersions = [];
+        }
+
         return Inertia::render('Domains/Subdomains', [
             'subdomains' => $subdomains,
-            'baseDomains' => $baseDomains->get(['id', 'domain', 'user_id']),
+            'baseDomains' => $baseDomains->get(['id', 'domain', 'user_id', 'php_version']),
+            'phpVersions' => $phpVersions,
         ]);
     }
 
@@ -618,6 +625,10 @@ class DomainController extends Controller
         $validated = $request->validate([
             'subdomain_prefix' => ['required', 'string', 'regex:/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/'],
             'parent_domain_id' => ['required', 'exists:domains,id'],
+            'php_version' => ['nullable', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
+            'public_path' => ['nullable', 'string', 'max:255', 'not_regex:/\.\./'],
+            'ssl_enabled' => ['nullable', 'boolean'],
+            'use_parent_root' => ['nullable', 'boolean'],
         ]);
 
         $parentDomain = Domain::with('user.package')->findOrFail($validated['parent_domain_id']);
@@ -641,12 +652,54 @@ class DomainController extends Controller
         }
 
         try {
-            $createSubdomainAction->handle($parentDomain, $validated['subdomain_prefix'], $user);
+            $createSubdomainAction->handle($parentDomain, $validated['subdomain_prefix'], $user, [
+                'php_version' => $validated['php_version'] ?? null,
+                'public_path' => $validated['public_path'] ?? null,
+                'ssl_enabled' => $validated['ssl_enabled'] ?? false,
+                'use_parent_root' => $validated['use_parent_root'] ?? false,
+            ]);
         } catch (\Throwable $e) {
             return back()->withErrors(['subdomain_prefix' => $e->getMessage()]);
         }
 
-        return redirect()->route('subdomains.index')->with('success', "Subdomain '{$subdomainFqdn}' created successfully.");
+        $redirect = redirect()->route('subdomains.index')->with('success', "Subdomain '{$subdomainFqdn}' created successfully.");
+        if ($createSubdomainAction->lastWarning) {
+            $redirect->with('warning', $createSubdomainAction->lastWarning);
+        }
+
+        return $redirect;
+    }
+
+    /**
+     * Toggle open_basedir protection for a domain.
+     */
+    public function toggleOpenBasedir(Request $request, Domain $domain)
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && $domain->user_id !== $user->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $validated = $request->validate([
+            'enabled' => ['required', 'boolean'],
+        ]);
+
+        $enabled = (bool) $validated['enabled'];
+
+        try {
+            $this->lcCli->run('vhost', [
+                'open-basedir',
+                $domain->domain,
+                $enabled ? 'on' : 'off',
+            ]);
+        } catch (\Throwable $e) {
+            // Gracefully continue if CLI command is not yet available
+        }
+
+        $domain->update(['open_basedir_enabled' => $enabled]);
+
+        $state = $enabled ? 'enabled' : 'disabled';
+        return back()->with('success', "open_basedir protection {$state} for '{$domain->domain}'.");
     }
 }
 

@@ -20,6 +20,7 @@ class Domain extends Model
         'public_path',
         'php_version',
         'ssl_enabled',
+        'open_basedir_enabled',
         'ssl_expires_at',
         'status',
     ];
@@ -28,6 +29,7 @@ class Domain extends Model
     {
         return [
             'ssl_enabled' => 'boolean',
+            'open_basedir_enabled' => 'boolean',
             'ssl_expires_at' => 'datetime',
         ];
     }
