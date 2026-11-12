@@ -1,6 +1,6 @@
 <script setup>
 import { shallowRef, computed, onMounted } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
 import {
     FolderTree,
@@ -18,14 +18,28 @@ import {
     Save,
     HardDrive,
     KeyRound,
-    ShieldCheck
+    ShieldCheck,
+    Globe
 } from 'lucide-vue-next';
 
 const props = defineProps({
     baseDir: String,
     initialPath: String,
     targetDomain: Object,
+    availableDomains: {
+        type: Array,
+        default: () => [],
+    },
 });
+
+const onDomainChange = (e) => {
+    const val = e.target.value;
+    if (val) {
+        router.get('/files', { domain_id: val });
+    } else {
+        router.get('/files');
+    }
+};
 
 const currentPath = shallowRef('');
 const items = shallowRef([]);
@@ -338,7 +352,22 @@ onMounted(() => {
                 </div>
 
                 <!-- Action Toolbar -->
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- Domain Switcher -->
+                    <div v-if="availableDomains && availableDomains.length > 0" class="relative flex items-center">
+                        <Globe class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+                        <select
+                            :value="targetDomain?.id || ''"
+                            @change="onDomainChange"
+                            class="pl-8 pr-8 py-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-200 text-xs font-medium focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-colors cursor-pointer"
+                        >
+                            <option value="">Home Directory (/home/...)</option>
+                            <option v-for="d in availableDomains" :key="d.id" :value="d.id">
+                                {{ d.domain }}
+                            </option>
+                        </select>
+                    </div>
+
                     <button
                         v-if="targetDomain"
                         @click="fixDomainPermissions"

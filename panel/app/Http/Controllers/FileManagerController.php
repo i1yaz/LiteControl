@@ -138,10 +138,18 @@ class FileManagerController extends Controller
             }
         }
 
+        $user = Auth::user();
+        $domainsQuery = \App\Models\Domain::query()->select('id', 'domain', 'user_id', 'document_root', 'public_path');
+        if (! $user->isAdmin()) {
+            $domainsQuery->where('user_id', $user->id);
+        }
+        $availableDomains = $domainsQuery->orderBy('domain')->get();
+
         return Inertia::render('Files/Index', [
             'baseDir' => "/home/" . ($targetDomain ? $targetDomain->user->username : Auth::user()->username),
             'initialPath' => $initialPath,
             'targetDomain' => $targetDomain,
+            'availableDomains' => $availableDomains,
         ]);
     }
 
