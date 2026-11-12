@@ -71,6 +71,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/databases/users/{dbUser}/password', [DatabaseController::class, 'updatePassword'])->name('databases.users.password');
     Route::delete('/databases/users/{dbUser}', [DatabaseController::class, 'destroyUser'])->name('databases.users.destroy');
     Route::post('/databases/grant', [DatabaseController::class, 'grantPrivileges'])->name('databases.grant');
+    Route::get('/phpmyadmin/sso', [DatabaseController::class, 'phpmyadminSso'])->name('phpmyadmin.sso');
 
     // Web File Manager
     Route::get('/files', [FileManagerController::class, 'index'])->name('files.index');

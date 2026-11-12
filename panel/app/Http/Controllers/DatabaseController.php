@@ -290,4 +290,30 @@ class DatabaseController extends Controller
 
         return redirect()->route('databases.index')->with('success', "Database user '{$name}' deleted.");
     }
+
+    /**
+     * Issue a short-lived single-use SSO token and redirect to phpMyAdmin signon.
+     */
+    public function phpmyadminSso()
+    {
+        if (! Auth::user()->isAdmin()) {
+            abort(403, 'Unauthorized');
+        }
+
+        $tmpDir = rtrim((string) env('PMA_TMP_DIR', '/usr/local/litecontrol/phpmyadmin/tmp'), '/');
+        if (! is_dir($tmpDir)) {
+            abort(503, 'phpMyAdmin is not configured on this server.');
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $tokenFile = $tmpDir . '/sso_' . $token;
+
+        if (@file_put_contents($tokenFile, (string) time()) === false) {
+            abort(500, 'Unable to initialize phpMyAdmin SSO session.');
+        }
+
+        @chmod($tokenFile, 0600);
+
+        return redirect()->away('/phpmyadmin/signon.php?token=' . $token);
+    }
 }

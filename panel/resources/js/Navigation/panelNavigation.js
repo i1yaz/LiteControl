@@ -40,7 +40,7 @@ export const PANEL_NAVIGATION = [
         adminOnly: false,
         children: [
             { id: 'databases.index', label: 'MySQL Engines', route: '/databases' },
-            { id: 'databases.pma', label: 'phpMyAdmin', route: '/phpmyadmin/', external: true },
+            { id: 'databases.pma', label: 'phpMyAdmin', route: '/phpmyadmin/sso', external: true },
         ],
     },
     {
