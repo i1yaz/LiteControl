@@ -11,6 +11,7 @@ use App\Actions\Database\GrantDatabaseAccessAction;
 use App\Exceptions\System\LcCliException;
 use App\Models\Database;
 use App\Models\DatabaseUser;
+use App\Models\Domain;
 use App\Models\User;
 use App\Services\System\DatabaseCliService;
 use Illuminate\Http\Request;
@@ -32,7 +33,7 @@ class DatabaseController extends Controller
     {
         $user = Auth::user();
 
-        $dbQuery = Database::with(['user:id,username', 'users']);
+        $dbQuery = Database::with(['user:id,username', 'domain:id,domain', 'users']);
         $dbUsersQuery = DatabaseUser::with(['user:id,username', 'database:id,db_name']);
 
         if (! $user->isAdmin()) {
@@ -58,10 +59,16 @@ class DatabaseController extends Controller
             // Keep empty map if listing fails
         }
 
+        $domainsQuery = Domain::orderBy('domain');
+        if (! $user->isAdmin()) {
+            $domainsQuery->where('user_id', $user->id);
+        }
+
         return Inertia::render('Databases/Index', [
             'databases' => $databases,
             'dbUsers' => $dbUsers,
             'liveDbMap' => $liveDbMap,
+            'domains' => $domainsQuery->get(['id', 'domain', 'user_id']),
             'users' => $user->isAdmin() ? User::where('role', 'user')->get(['id', 'username', 'name']) : [],
         ]);
     }
@@ -87,6 +94,17 @@ class DatabaseController extends Controller
         $targetUser = $user->isAdmin() && !empty($validated['user_id'])
             ? User::with('package')->findOrFail($validated['user_id'])
             : $user->load('package');
+
+        if (!empty($validated['domain_id'])) {
+            $domainBelongsToTarget = Domain::where('id', $validated['domain_id'])
+                ->where('user_id', $targetUser->id)
+                ->exists();
+            if (! $domainBelongsToTarget) {
+                return back()->withErrors([
+                    'domain_id' => 'Selected domain does not belong to the database owner.',
+                ]);
+            }
+        }
 
         // Check package limit for non-admin
         if (! $user->isAdmin() && $targetUser->package) {

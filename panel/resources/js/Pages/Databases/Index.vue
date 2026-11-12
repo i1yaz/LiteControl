@@ -1,5 +1,5 @@
 <script setup>
-import { shallowRef } from 'vue';
+import { shallowRef, computed, watch } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { confirmDialog } from '@/Composables/useDialog';
 import UiPageHeader from '@/Components/ui/UiPageHeader.vue';
@@ -25,6 +25,7 @@ const props = defineProps({
     databases: Array,
     dbUsers: Array,
     liveDbMap: Object,
+    domains: Array,
     users: Array,
 });
 
@@ -41,6 +42,19 @@ const selectedDbUser = shallowRef(null);
 const dbForm = useForm({
     db_name: '',
     user_id: props.users?.[0]?.id || '',
+    domain_id: '',
+});
+
+const availableDomains = computed(() => {
+    const list = props.domains || [];
+    if (!isAdmin || !dbForm.user_id) {
+        return list;
+    }
+    return list.filter(d => String(d.user_id) === String(dbForm.user_id));
+});
+
+watch(() => dbForm.user_id, () => {
+    dbForm.domain_id = '';
 });
 
 const userForm = useForm({
@@ -170,6 +184,7 @@ const deleteDbUser = async (id, name) => {
                             <tr>
                                 <th class="px-5 py-3.5">Schema Identifier</th>
                                 <th v-if="isAdmin" class="px-5 py-3.5">Assigned Principal</th>
+                                <th class="px-5 py-3.5">Associated Domain</th>
                                 <th class="px-5 py-3.5">Authorized Principals</th>
                                 <th class="px-5 py-3.5">Allocated Footprint</th>
                                 <th class="px-5 py-3.5 text-right">Operations</th>
@@ -183,6 +198,9 @@ const deleteDbUser = async (id, name) => {
                                 </td>
                                 <td v-if="isAdmin" class="px-5 py-3.5 text-theme-text-secondary">
                                     {{ db.user?.username || '—' }}
+                                </td>
+                                <td class="px-5 py-3.5 text-theme-text-secondary">
+                                    {{ db.domain?.domain || '—' }}
                                 </td>
                                 <td class="px-5 py-3.5 text-theme-text-secondary">
                                     <div class="flex flex-wrap gap-1.5">
@@ -215,7 +233,7 @@ const deleteDbUser = async (id, name) => {
                                 </td>
                             </tr>
                             <tr v-if="!databases || databases.length === 0">
-                                <td :colspan="isAdmin ? 5 : 4" class="px-5 py-8 text-center text-theme-text-muted text-xs">
+                                <td :colspan="isAdmin ? 6 : 5" class="px-5 py-8 text-center text-theme-text-muted text-xs">
                                     NO RELATIONAL SCHEMAS PROVISIONED
                                 </td>
                             </tr>
@@ -338,6 +356,19 @@ const deleteDbUser = async (id, name) => {
                         placeholder="e.g. blog_db"
                         :error="dbForm.errors.db_name"
                         required
+                    />
+                </div>
+
+                <div>
+                    <UiSelect
+                        id="db_domain"
+                        v-model="dbForm.domain_id"
+                        label="Associated Domain / Subdomain (Optional)"
+                        :options="[
+                            { value: '', label: 'None (Standalone Database)' },
+                            ...availableDomains.map(d => ({ value: d.id, label: d.domain }))
+                        ]"
+                        :error="dbForm.errors.domain_id"
                     />
                 </div>
 
