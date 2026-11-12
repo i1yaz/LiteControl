@@ -56,7 +56,7 @@ class DatabaseController extends Controller
             'databases' => $databases,
             'dbUsers' => $dbUsers,
             'liveDbMap' => $liveDbMap,
-            'users' => $user->isAdmin() ? User::where('role', 'user')->get(['id', 'username']) : [],
+            'users' => $user->isAdmin() ? User::where('role', 'user')->get(['id', 'username', 'name']) : [],
         ]);
     }
 
