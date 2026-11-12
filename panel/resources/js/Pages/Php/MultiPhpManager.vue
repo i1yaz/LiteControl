@@ -1,7 +1,7 @@
 <script setup>
 import { ref, shallowRef, computed } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { FileCode, Globe, CheckSquare, Square, RefreshCw } from 'lucide-vue-next';
+import { FileCode, Globe, CheckSquare, Square, RefreshCw } from '@lucide/vue';
 
 const props = defineProps({
     domains: Array,

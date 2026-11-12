@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { ShieldCheck, ShieldAlert, Lock, Unlock, Server } from 'lucide-vue-next';
+import { ShieldCheck, ShieldAlert, Lock, Unlock, Server } from '@lucide/vue';
 
 const props = defineProps({
     standardPorts: Array,

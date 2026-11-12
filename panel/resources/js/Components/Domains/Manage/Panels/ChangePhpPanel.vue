@@ -1,7 +1,7 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { useForm } from '@inertiajs/vue3';
-import { Cpu, Check, X } from 'lucide-vue-next';
+import { Cpu, Check, X } from '@lucide/vue';
 
 const props = defineProps({
     domain: {

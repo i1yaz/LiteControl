@@ -1,6 +1,6 @@
 <script setup>
 import { router } from '@inertiajs/vue3';
-import { UserMinus, Trash2, X, Folder } from 'lucide-vue-next';
+import { UserMinus, Trash2, X, Folder } from '@lucide/vue';
 
 const props = defineProps({
     domain: {

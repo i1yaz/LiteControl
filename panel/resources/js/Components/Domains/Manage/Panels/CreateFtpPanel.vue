@@ -1,6 +1,6 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { UserPlus, Check, X } from 'lucide-vue-next';
+import { UserPlus, Check, X } from '@lucide/vue';
 
 const props = defineProps({
     domain: {

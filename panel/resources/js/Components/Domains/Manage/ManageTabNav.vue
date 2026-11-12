@@ -7,7 +7,7 @@ import {
     SlidersHorizontal,
     Lock,
     Folder
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 const props = defineProps({
     tabs: {

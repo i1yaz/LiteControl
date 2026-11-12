@@ -11,7 +11,7 @@ import {
     Trash2,
     ExternalLink,
     ChevronLeft
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 import ManageTabNav from '@/Components/Domains/Manage/ManageTabNav.vue';
 import ManageActionGrid from '@/Components/Domains/Manage/ManageActionGrid.vue';

@@ -1,7 +1,7 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { Sliders, Save, FileCode, CheckCircle2 } from 'lucide-vue-next';
+import { Sliders, Save, FileCode, CheckCircle2 } from '@lucide/vue';
 
 const props = defineProps({
     currentVersion: String,

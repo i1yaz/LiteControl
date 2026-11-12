@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { Server, RefreshCw, Play, Square, RotateCw, ShieldCheck, ShieldAlert, ExternalLink, Globe, Lock } from 'lucide-vue-next';
+import { Server, RefreshCw, Play, Square, RotateCw, ShieldCheck, ShieldAlert, ExternalLink, Globe, Lock } from '@lucide/vue';
 
 const props = defineProps({
     services: Array,

@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import { FileCode, Download, Trash2, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-vue-next';
+import { FileCode, Download, Trash2, CheckCircle2, AlertTriangle, ShieldCheck } from '@lucide/vue';
 
 const props = defineProps({
     phpVersions: Array,

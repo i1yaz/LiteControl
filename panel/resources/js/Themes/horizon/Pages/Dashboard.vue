@@ -5,7 +5,7 @@ import {
     Cpu, HardDrive, Globe, Database, Package,
     Clock, Zap, Server, ArrowUpRight, Users, CheckCircle2,
     Sliders, FolderTree
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 const props = defineProps({
     isAdmin: Boolean,

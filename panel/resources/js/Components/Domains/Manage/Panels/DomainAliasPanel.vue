@@ -1,7 +1,7 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
-import { Globe, Plus, Trash2, X } from 'lucide-vue-next';
+import { Globe, Plus, Trash2, X } from '@lucide/vue';
 
 const props = defineProps({
     domain: {

@@ -20,7 +20,7 @@ import {
     KeyRound,
     ShieldCheck,
     Globe
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 const props = defineProps({
     baseDir: String,

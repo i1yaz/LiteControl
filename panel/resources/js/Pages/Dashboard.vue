@@ -6,7 +6,7 @@ import UiPageHeader from '@/Components/ui/UiPageHeader.vue';
 import {
     Cpu, HardDrive, Globe, Database, Package,
     Clock, Zap, ArrowUpRight, Users, Server
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 const props = defineProps({
     isAdmin: Boolean,

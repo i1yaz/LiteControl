@@ -1,7 +1,7 @@
 <script setup>
 import { shallowRef, onMounted } from 'vue';
 import { useForm } from '@inertiajs/vue3';
-import { FileEdit, Save, RefreshCw, X } from 'lucide-vue-next';
+import { FileEdit, Save, RefreshCw, X } from '@lucide/vue';
 import { REWRITE_TEMPLATES } from '@/Config/websiteManageConfig';
 
 const props = defineProps({

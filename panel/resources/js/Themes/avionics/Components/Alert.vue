@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { AlertCircle, CheckCircle2, Info, AlertTriangle } from 'lucide-vue-next';
+import { AlertCircle, CheckCircle2, Info, AlertTriangle } from '@lucide/vue';
 
 const props = defineProps({
     variant: {

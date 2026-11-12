@@ -1,7 +1,7 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { ShieldCheck, Lock, Save, Key, Globe } from 'lucide-vue-next';
+import { ShieldCheck, Lock, Save, Key, Globe } from '@lucide/vue';
 
 const props = defineProps({
     panelHost: String,

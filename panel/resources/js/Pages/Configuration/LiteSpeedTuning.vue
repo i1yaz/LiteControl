@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import { Sliders, Save, Cpu, Zap, Shield, RefreshCw } from 'lucide-vue-next';
+import { Sliders, Save, Cpu, Zap, Shield, RefreshCw } from '@lucide/vue';
 
 const props = defineProps({
     tuning: Object,

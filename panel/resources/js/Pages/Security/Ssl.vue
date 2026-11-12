@@ -1,7 +1,7 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { ShieldCheck, ShieldAlert, Lock, RefreshCw, Key, Plus, CheckCircle2 } from 'lucide-vue-next';
+import { ShieldCheck, ShieldAlert, Lock, RefreshCw, Key, Plus, CheckCircle2 } from '@lucide/vue';
 
 const props = defineProps({
     domains: Array,

@@ -1,6 +1,6 @@
 <script setup>
 import { shallowRef, ref, onMounted } from 'vue';
-import { FileCode, RefreshCw, Save, AlertTriangle, CheckCircle2 } from 'lucide-vue-next';
+import { FileCode, RefreshCw, Save, AlertTriangle, CheckCircle2 } from '@lucide/vue';
 import axios from 'axios';
 
 const props = defineProps({

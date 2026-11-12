@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import { Activity, RefreshCw, Cpu, HardDrive, Server, Clock, Globe } from 'lucide-vue-next';
+import { Activity, RefreshCw, Cpu, HardDrive, Server, Clock, Globe } from '@lucide/vue';
 
 const props = defineProps({
     stats: Object,

@@ -1,7 +1,7 @@
 <script setup>
 import { shallowRef, computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import { FileCode, Search, CheckCircle2 } from 'lucide-vue-next';
+import { FileCode, Search, CheckCircle2 } from '@lucide/vue';
 
 const props = defineProps({
     currentVersion: String,

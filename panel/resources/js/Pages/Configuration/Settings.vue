@@ -1,7 +1,7 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
 import { useTheme } from '@/Composables/useTheme';
-import { Sliders, Save, Server, Globe, Mail, Clock, ShieldCheck, CheckCircle2 } from 'lucide-vue-next';
+import { Sliders, Save, Server, Globe, Mail, Clock, ShieldCheck, CheckCircle2 } from '@lucide/vue';
 
 const props = defineProps({
     settings: Object,

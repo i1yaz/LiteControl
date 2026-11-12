@@ -1,6 +1,6 @@
 <script setup>
 import { shallowRef, onMounted, watch } from 'vue';
-import { FileText, RefreshCw, ChevronLeft, ChevronRight, X } from 'lucide-vue-next';
+import { FileText, RefreshCw, ChevronLeft, ChevronRight, X } from '@lucide/vue';
 
 const props = defineProps({
     domain: {

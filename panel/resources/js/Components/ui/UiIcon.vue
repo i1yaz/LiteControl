@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useTheme } from '@/Composables/useTheme';
-import { HelpCircle } from 'lucide-vue-next';
+import { HelpCircle } from '@lucide/vue';
 
 const props = defineProps({
     name: {

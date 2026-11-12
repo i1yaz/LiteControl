@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import { Globe, Save, AlertTriangle } from 'lucide-vue-next';
+import { Globe, Save, AlertTriangle } from '@lucide/vue';
 
 const props = defineProps({
     currentHostname: String,

@@ -1,6 +1,6 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { KeyRound, ShieldCheck, X } from 'lucide-vue-next';
+import { KeyRound, ShieldCheck, X } from '@lucide/vue';
 
 const props = defineProps({
     domain: {

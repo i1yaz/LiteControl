@@ -1,6 +1,6 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { ShieldCheck, RefreshCw, X, AlertCircle } from 'lucide-vue-next';
+import { ShieldCheck, RefreshCw, X, AlertCircle } from '@lucide/vue';
 
 const props = defineProps({
     domain: {

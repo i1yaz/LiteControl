@@ -7,7 +7,7 @@ import UiModal from '@/Components/ui/UiModal.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
 import UiSelect from '@/Components/ui/UiSelect.vue';
 import UiDataTable from '@/Components/ui/UiDataTable.vue';
-import { Globe, Plus, ShieldCheck, ShieldAlert, Folder, Trash2, Pencil, Terminal, Check, LayoutGrid, FolderOpen, PauseCircle, PlayCircle, Download } from 'lucide-vue-next';
+import { Globe, Plus, ShieldCheck, ShieldAlert, Folder, Trash2, Pencil, Terminal, Check, LayoutGrid, FolderOpen, PauseCircle, PlayCircle, Download } from '@lucide/vue';
 
 const props = defineProps({
     domains: Object,

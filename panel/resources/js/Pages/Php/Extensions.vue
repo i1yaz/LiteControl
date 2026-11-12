@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { FileCode, CheckCircle2, Circle, AlertCircle, RefreshCw } from 'lucide-vue-next';
+import { FileCode, CheckCircle2, Circle, AlertCircle, RefreshCw } from '@lucide/vue';
 
 const props = defineProps({
     currentVersion: String,

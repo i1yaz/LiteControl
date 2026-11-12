@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import { RotateCw, RefreshCw, AlertTriangle, Server, Database, Zap } from 'lucide-vue-next';
+import { RotateCw, RefreshCw, AlertTriangle, Server, Database, Zap } from '@lucide/vue';
 
 const props = defineProps({
     stats: Object,

@@ -1,6 +1,6 @@
 <script setup>
 import { useForm, Head } from '@inertiajs/vue3';
-import { ShieldCheck } from 'lucide-vue-next';
+import { ShieldCheck } from '@lucide/vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiInput from '@/Components/ui/UiInput.vue';
 import UiAlert from '@/Components/ui/UiAlert.vue';

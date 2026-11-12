@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import { Sliders, Save, AlertTriangle, ShieldCheck } from 'lucide-vue-next';
+import { Sliders, Save, AlertTriangle, ShieldCheck } from '@lucide/vue';
 
 const props = defineProps({
     currentPort: Number,

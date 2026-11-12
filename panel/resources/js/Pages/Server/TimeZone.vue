@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import { Clock, Save, Globe } from 'lucide-vue-next';
+import { Clock, Save, Globe } from '@lucide/vue';
 
 const props = defineProps({
     currentTimezone: String,

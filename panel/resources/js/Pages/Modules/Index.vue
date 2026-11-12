@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import { Layers, Download, Trash2, CheckCircle2, AlertCircle, ArrowUpRight } from 'lucide-vue-next';
+import { Layers, Download, Trash2, CheckCircle2, AlertCircle, ArrowUpRight } from '@lucide/vue';
 
 const props = defineProps({
     modules: Array,

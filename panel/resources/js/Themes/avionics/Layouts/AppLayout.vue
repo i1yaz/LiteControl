@@ -10,7 +10,7 @@ import {
     FileCode, Sliders, Server, Shield, Mail, Layers,
     UserCircle, LogOut, ChevronDown, Menu, X, ExternalLink,
     CheckCircle2, AlertCircle, Cpu, Radio, Palette, RefreshCw
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 const page = usePage();
 const flash = computed(() => page.props.flash || {});

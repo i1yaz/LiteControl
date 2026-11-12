@@ -7,7 +7,7 @@ import {
     FileCode, Sliders, Server, Shield, Mail, Layers, Plus,
     Trash2, Cpu, RefreshCw, Key, Lock, Check, X, Search,
     ExternalLink, AlertCircle, CheckCircle2, ChevronRight
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 export default {
     id: 'avionics',

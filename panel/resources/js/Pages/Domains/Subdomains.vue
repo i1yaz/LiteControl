@@ -2,7 +2,7 @@
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
-import { Globe, Plus, Folder, Trash2, X } from 'lucide-vue-next';
+import { Globe, Plus, Folder, Trash2, X } from '@lucide/vue';
 
 const props = defineProps({
     subdomains: Object,

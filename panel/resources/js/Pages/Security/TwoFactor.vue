@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import { ShieldCheck, ShieldAlert, KeyRound, QrCode } from 'lucide-vue-next';
+import { ShieldCheck, ShieldAlert, KeyRound, QrCode } from '@lucide/vue';
 
 const props = defineProps({
     enabled: Boolean,

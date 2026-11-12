@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import { ShieldCheck, ShieldAlert, Download, CheckCircle2, Zap } from 'lucide-vue-next';
+import { ShieldCheck, ShieldAlert, Download, CheckCircle2, Zap } from '@lucide/vue';
 
 const props = defineProps({
     installed: Boolean,

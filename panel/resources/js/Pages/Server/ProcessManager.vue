@@ -1,7 +1,7 @@
 <script setup>
 import { shallowRef, computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import { Cpu, RefreshCw, XCircle, Search, AlertCircle } from 'lucide-vue-next';
+import { Cpu, RefreshCw, XCircle, Search, AlertCircle } from '@lucide/vue';
 
 const props = defineProps({
     processes: Array,

@@ -7,7 +7,7 @@ import {
     ShieldAlert,
     Clock,
     Lock
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 const props = defineProps({
     domain: {

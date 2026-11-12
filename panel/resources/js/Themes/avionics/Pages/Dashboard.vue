@@ -4,7 +4,7 @@ import { useDashboardMetrics } from '@/Composables/Domain/useDashboardMetrics';
 import {
     Cpu, HardDrive, Globe, Database, Package,
     Clock, Zap, Terminal, ArrowUpRight, Users
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 const props = defineProps({
     isAdmin: Boolean,

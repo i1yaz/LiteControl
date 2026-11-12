@@ -1,5 +1,5 @@
 <script setup>
-import { Cpu } from 'lucide-vue-next';
+import { Cpu } from '@lucide/vue';
 </script>
 
 <template>

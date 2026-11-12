@@ -2,7 +2,7 @@
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
-import { Package, Plus, Edit2, Trash2, Users, HardDrive, Activity, Globe, Database, Mail, X } from 'lucide-vue-next';
+import { Package, Plus, Edit2, Trash2, Users, HardDrive, Activity, Globe, Database, Mail, X } from '@lucide/vue';
 
 const props = defineProps({
     packages: Array,

@@ -1,7 +1,7 @@
 <script setup>
 import { shallowRef } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import { FileText, RefreshCw, Terminal, Filter } from 'lucide-vue-next';
+import { FileText, RefreshCw, Terminal, Filter } from '@lucide/vue';
 
 const props = defineProps({
     logType: String,

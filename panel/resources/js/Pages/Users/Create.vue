@@ -1,7 +1,7 @@
 <script setup>
 import { shallowRef, computed } from 'vue';
 import { useForm, Head, Link } from '@inertiajs/vue3';
-import { UserPlus, ArrowLeft, Key, Globe, ShieldCheck, ChevronDown, ChevronRight } from 'lucide-vue-next';
+import { UserPlus, ArrowLeft, Key, Globe, ShieldCheck, ChevronDown, ChevronRight } from '@lucide/vue';
 
 const props = defineProps({
     packages: Array,

@@ -1,6 +1,6 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import { Lock, Save } from 'lucide-vue-next';
+import { Lock, Save } from '@lucide/vue';
 
 const form = useForm({
     current_password: '',
