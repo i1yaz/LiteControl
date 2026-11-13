@@ -1,21 +1,17 @@
 <?php
 
-namespace App\Services\System;
+namespace App\Domains\ServerOps\Infrastructure;
 
+use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use App\Exceptions\System\LcCliException;
 use App\Support\Cli\LcCliService;
 
-class ModuleCliService
+class CliModuleAdapter implements ModuleDriverInterface
 {
     public function __construct(
         protected LcCliService $lcCli
     ) {}
 
-    /**
-     * List all optional modules and their status.
-     *
-     * @return array
-     */
     public function listModules(): array
     {
         $res = $this->lcCli->run('module', ['list']);
@@ -27,12 +23,6 @@ class ModuleCliService
         return [];
     }
 
-    /**
-     * Get module status and installation state.
-     *
-     * @param string $module
-     * @return array
-     */
     public function getModuleStatus(string $module): array
     {
         $res = $this->lcCli->run('module', ['status', $module]);
@@ -44,13 +34,6 @@ class ModuleCliService
         return ['installed' => false, 'state' => 'not_installed'];
     }
 
-    /**
-     * Install an optional module.
-     *
-     * @param string $module
-     * @return array
-     * @throws LcCliException
-     */
     public function installModule(string $module): array
     {
         $res = $this->lcCli->run('module', ['install', $module]);
@@ -62,13 +45,6 @@ class ModuleCliService
         return $res['data'] ?? [];
     }
 
-    /**
-     * Remove / uninstall an optional module.
-     *
-     * @param string $module
-     * @return array
-     * @throws LcCliException
-     */
     public function removeModule(string $module): array
     {
         $res = $this->lcCli->run('module', ['remove', $module]);

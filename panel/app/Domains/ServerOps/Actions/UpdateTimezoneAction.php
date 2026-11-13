@@ -1,30 +1,26 @@
 <?php
 
-namespace App\Actions\Server;
+namespace App\Domains\ServerOps\Actions;
 
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
 use App\Models\User;
-use App\Services\System\ServerCliService;
 
 class UpdateTimezoneAction
 {
     public function __construct(
-        protected ServerCliService $serverCli
+        protected ServerDriverInterface $serverDriver
     ) {}
 
     /**
      * Update server timezone.
      *
-     * @param string $timezone
-     * @param User|null $actor
-     * @param string|null $ipAddress
-     * @return array
      * @throws LcCliException
      */
     public function handle(string $timezone, ?User $actor = null, ?string $ipAddress = null): array
     {
-        $result = $this->serverCli->setTimezone($timezone);
+        $result = $this->serverDriver->setTimezone($timezone);
 
         AuditLog::create([
             'user_id' => $actor?->id,

@@ -14,7 +14,7 @@ use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
 use App\Models\Domain;
 use App\Services\SslService;
-use App\Services\System\ModuleCliService;
+use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use Illuminate\Http\Request;
 use App\Services\TotpService;
 use Illuminate\Support\Facades\Auth;
@@ -30,7 +30,7 @@ class SecurityController extends Controller
     public function __construct(
         protected SslService $sslService,
         protected FirewallDriverInterface $firewallDriver,
-        protected ModuleCliService $moduleCli
+        protected ModuleDriverInterface $moduleCli
     ) {}
 
     /**

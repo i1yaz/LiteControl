@@ -2,15 +2,15 @@
 
 namespace Tests\Feature\Actions\Server;
 
-use App\Actions\Server\KillProcessAction;
-use App\Actions\Server\ManageServiceAction;
-use App\Actions\Server\ToggleWebAdminAction;
-use App\Actions\Server\UpdateHostnameAction;
-use App\Actions\Server\UpdateTimezoneAction;
+use App\Domains\ServerOps\Actions\KillProcessAction;
+use App\Domains\ServerOps\Actions\ManageServiceAction;
+use App\Domains\ServerOps\Actions\ToggleWebAdminAction;
+use App\Domains\ServerOps\Actions\UpdateHostnameAction;
+use App\Domains\ServerOps\Actions\UpdateTimezoneAction;
 use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
 use App\Models\User;
-use App\Services\System\ServerCliService;
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -33,7 +33,7 @@ class ServerActionsTest extends TestCase
 
     public function test_manage_service_action_success(): void
     {
-        $cliMock = Mockery::mock(ServerCliService::class);
+        $cliMock = Mockery::mock(ServerDriverInterface::class);
         $cliMock->shouldReceive('executeServiceAction')
             ->once()
             ->with('openlitespeed', 'restart')
@@ -53,7 +53,7 @@ class ServerActionsTest extends TestCase
 
     public function test_manage_service_action_failure_throws_exception(): void
     {
-        $cliMock = Mockery::mock(ServerCliService::class);
+        $cliMock = Mockery::mock(ServerDriverInterface::class);
         $cliMock->shouldReceive('executeServiceAction')
             ->once()
             ->with('mariadb', 'start')
@@ -69,7 +69,7 @@ class ServerActionsTest extends TestCase
 
     public function test_toggle_webadmin_enable_action(): void
     {
-        $cliMock = Mockery::mock(ServerCliService::class);
+        $cliMock = Mockery::mock(ServerDriverInterface::class);
         $cliMock->shouldReceive('enableWebAdmin')
             ->once()
             ->with('192.168.1.100')
@@ -88,7 +88,7 @@ class ServerActionsTest extends TestCase
 
     public function test_toggle_webadmin_disable_action(): void
     {
-        $cliMock = Mockery::mock(ServerCliService::class);
+        $cliMock = Mockery::mock(ServerDriverInterface::class);
         $cliMock->shouldReceive('disableWebAdmin')
             ->once()
             ->andReturn([]);
@@ -106,7 +106,7 @@ class ServerActionsTest extends TestCase
 
     public function test_kill_process_action_success(): void
     {
-        $cliMock = Mockery::mock(ServerCliService::class);
+        $cliMock = Mockery::mock(ServerDriverInterface::class);
         $cliMock->shouldReceive('killProcess')
             ->once()
             ->with(1234)
@@ -125,7 +125,7 @@ class ServerActionsTest extends TestCase
 
     public function test_update_timezone_action_success(): void
     {
-        $cliMock = Mockery::mock(ServerCliService::class);
+        $cliMock = Mockery::mock(ServerDriverInterface::class);
         $cliMock->shouldReceive('setTimezone')
             ->once()
             ->with('America/New_York')
@@ -144,7 +144,7 @@ class ServerActionsTest extends TestCase
 
     public function test_update_hostname_action_success(): void
     {
-        $cliMock = Mockery::mock(ServerCliService::class);
+        $cliMock = Mockery::mock(ServerDriverInterface::class);
         $cliMock->shouldReceive('setHostname')
             ->once()
             ->with('cloud.server.local')

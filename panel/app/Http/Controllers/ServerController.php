@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Server\KillProcessAction;
-use App\Actions\Server\ManageServiceAction;
-use App\Actions\Server\ToggleWebAdminAction;
-use App\Actions\Server\UpdateHostnameAction;
-use App\Actions\Server\UpdateTimezoneAction;
+use App\Domains\ServerOps\Actions\KillProcessAction;
+use App\Domains\ServerOps\Actions\ManageServiceAction;
+use App\Domains\ServerOps\Actions\ToggleWebAdminAction;
+use App\Domains\ServerOps\Actions\UpdateHostnameAction;
+use App\Domains\ServerOps\Actions\UpdateTimezoneAction;
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use App\Exceptions\System\LcCliException;
-use App\Services\System\ServerCliService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,7 +16,7 @@ use Inertia\Response;
 class ServerController extends Controller
 {
     public function __construct(
-        protected ServerCliService $serverCli
+        protected ServerDriverInterface $serverCli
     ) {}
 
     /**

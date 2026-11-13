@@ -1,30 +1,26 @@
 <?php
 
-namespace App\Actions\Server;
+namespace App\Domains\ServerOps\Actions;
 
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
 use App\Models\User;
-use App\Services\System\ServerCliService;
 
 class UpdateHostnameAction
 {
     public function __construct(
-        protected ServerCliService $serverCli
+        protected ServerDriverInterface $serverDriver
     ) {}
 
     /**
      * Update server hostname.
      *
-     * @param string $hostname
-     * @param User|null $actor
-     * @param string|null $ipAddress
-     * @return array
      * @throws LcCliException
      */
     public function handle(string $hostname, ?User $actor = null, ?string $ipAddress = null): array
     {
-        $result = $this->serverCli->setHostname($hostname);
+        $result = $this->serverDriver->setHostname($hostname);
 
         AuditLog::create([
             'user_id' => $actor?->id,

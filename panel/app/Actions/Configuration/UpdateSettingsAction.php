@@ -5,12 +5,12 @@ namespace App\Actions\Configuration;
 use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
 use App\Models\User;
-use App\Services\System\ServerCliService;
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 
 class UpdateSettingsAction
 {
     public function __construct(
-        protected ServerCliService $serverCli
+        protected ServerDriverInterface $serverCli
     ) {}
 
     /**

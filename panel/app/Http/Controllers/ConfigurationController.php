@@ -7,7 +7,7 @@ use App\Actions\Configuration\UpdateSettingsAction;
 use App\Actions\Configuration\UpdateTuningAction;
 use App\Exceptions\System\LcCliException;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
-use App\Services\System\ServerCliService;
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use App\Services\System\TuningCliService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,7 +18,7 @@ use Inertia\Response;
 class ConfigurationController extends Controller
 {
     public function __construct(
-        protected ServerCliService $serverCli,
+        protected ServerDriverInterface $serverCli,
         protected TuningCliService $tuningCli,
         protected PhpRuntimeDriverInterface $phpCli
     ) {}

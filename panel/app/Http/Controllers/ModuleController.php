@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Module\InstallModuleAction;
-use App\Actions\Module\RemoveModuleAction;
+use App\Domains\ServerOps\Actions\InstallModuleAction;
+use App\Domains\ServerOps\Actions\RemoveModuleAction;
+use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use App\Exceptions\System\LcCliException;
-use App\Services\System\ModuleCliService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -14,7 +14,7 @@ use Inertia\Response;
 class ModuleController extends Controller
 {
     public function __construct(
-        protected ModuleCliService $moduleCli
+        protected ModuleDriverInterface $moduleCli
     ) {}
 
     /**

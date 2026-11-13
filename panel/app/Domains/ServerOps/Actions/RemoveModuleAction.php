@@ -1,30 +1,26 @@
 <?php
 
-namespace App\Actions\Module;
+namespace App\Domains\ServerOps\Actions;
 
+use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
 use App\Models\User;
-use App\Services\System\ModuleCliService;
 
 class RemoveModuleAction
 {
     public function __construct(
-        protected ModuleCliService $moduleCli
+        protected ModuleDriverInterface $moduleDriver
     ) {}
 
     /**
      * Remove / uninstall an optional module.
      *
-     * @param string $module
-     * @param User $actor
-     * @param string|null $ipAddress
-     * @return array
      * @throws LcCliException
      */
     public function handle(string $module, User $actor, ?string $ipAddress = null): array
     {
-        $result = $this->moduleCli->removeModule($module);
+        $result = $this->moduleDriver->removeModule($module);
 
         AuditLog::create([
             'user_id' => $actor->id,

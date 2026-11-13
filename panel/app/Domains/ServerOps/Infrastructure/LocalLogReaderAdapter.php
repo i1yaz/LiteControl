@@ -1,19 +1,14 @@
 <?php
 
-namespace App\Services;
+namespace App\Domains\ServerOps\Infrastructure;
 
-use App\Models\Domain;
+use App\Domains\ServerOps\Contracts\LogReaderInterface;
 
-class LogReaderService
+class LocalLogReaderAdapter implements LogReaderInterface
 {
     /**
      * Efficiently read a page of log lines in reverse (newest first) using fseek chunking.
      * Memory-safe: avoids loading the entire file into memory.
-     *
-     * @param string $filePath
-     * @param int $page 1-indexed
-     * @param int $perPage Number of lines per page
-     * @return array ['lines' => array, 'has_next' => bool, 'has_prev' => bool, 'page' => int, 'per_page' => int]
      */
     public function readLogPage(string $filePath, int $page = 1, int $perPage = 50): array
     {
@@ -56,26 +51,23 @@ class LogReaderService
         }
 
         $targetSkip = ($page - 1) * $perPage;
-        $targetCollect = $perPage + 1; // +1 to know if there's a next page
+        $targetCollect = $perPage + 1;
 
         $chunkSize = 8192;
         $pos = $fileSize;
         $buffer = '';
         $collectedLines = [];
-        $totalCollected = 0;
 
         while ($pos > 0 && count($collectedLines) < ($targetSkip + $targetCollect)) {
             $readSize = min($chunkSize, $pos);
             $pos -= $readSize;
             fseek($handle, $pos);
             $chunk = fread($handle, $readSize);
-            $buffer = $chunk . $buffer;
+            $buffer = $chunk.$buffer;
 
             $lines = explode("\n", $buffer);
-            // The first element might be incomplete unless pos is 0
             $buffer = ($pos > 0) ? array_shift($lines) : '';
 
-            // Process lines in reverse
             for ($i = count($lines) - 1; $i >= 0; $i--) {
                 $line = trim($lines[$i], "\r\n");
                 if ($line !== '') {

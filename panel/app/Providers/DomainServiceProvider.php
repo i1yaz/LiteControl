@@ -11,7 +11,13 @@ use App\Domains\PhpRuntime\Infrastructure\CliPhpRuntimeAdapter;
 use App\Domains\Security\Contracts\FirewallDriverInterface;
 use App\Domains\Security\Infrastructure\CliFirewallAdapter;
 use App\Domains\ServerOps\Contracts\FileManagerDriverInterface;
+use App\Domains\ServerOps\Contracts\LogReaderInterface;
+use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
+use App\Domains\ServerOps\Infrastructure\CliModuleAdapter;
+use App\Domains\ServerOps\Infrastructure\CliServerAdapter;
 use App\Domains\ServerOps\Infrastructure\LocalFileManagerAdapter;
+use App\Domains\ServerOps\Infrastructure\LocalLogReaderAdapter;
 use Illuminate\Support\ServiceProvider;
 
 class DomainServiceProvider extends ServiceProvider
@@ -26,6 +32,9 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(PhpRuntimeDriverInterface::class, CliPhpRuntimeAdapter::class);
         $this->app->bind(FirewallDriverInterface::class, CliFirewallAdapter::class);
         $this->app->bind(FileManagerDriverInterface::class, LocalFileManagerAdapter::class);
+        $this->app->bind(ServerDriverInterface::class, CliServerAdapter::class);
+        $this->app->bind(ModuleDriverInterface::class, CliModuleAdapter::class);
+        $this->app->bind(LogReaderInterface::class, LocalLogReaderAdapter::class);
     }
 
     /**

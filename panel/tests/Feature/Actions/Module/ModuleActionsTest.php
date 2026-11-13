@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Actions\Module;
 
-use App\Actions\Module\InstallModuleAction;
-use App\Actions\Module\RemoveModuleAction;
+use App\Domains\ServerOps\Actions\InstallModuleAction;
+use App\Domains\ServerOps\Actions\RemoveModuleAction;
 use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
 use App\Models\User;
-use App\Services\System\ModuleCliService;
+use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -30,7 +30,7 @@ class ModuleActionsTest extends TestCase
 
     public function test_install_module_action_success(): void
     {
-        $moduleMock = Mockery::mock(ModuleCliService::class);
+        $moduleMock = Mockery::mock(ModuleDriverInterface::class);
         $moduleMock->shouldReceive('installModule')
             ->once()
             ->with('modsecurity')
@@ -52,7 +52,7 @@ class ModuleActionsTest extends TestCase
 
     public function test_install_module_action_throws_on_failure(): void
     {
-        $moduleMock = Mockery::mock(ModuleCliService::class);
+        $moduleMock = Mockery::mock(ModuleDriverInterface::class);
         $moduleMock->shouldReceive('installModule')
             ->once()
             ->with('invalid')
@@ -68,7 +68,7 @@ class ModuleActionsTest extends TestCase
 
     public function test_remove_module_action_success(): void
     {
-        $moduleMock = Mockery::mock(ModuleCliService::class);
+        $moduleMock = Mockery::mock(ModuleDriverInterface::class);
         $moduleMock->shouldReceive('removeModule')
             ->once()
             ->with('csf')
@@ -90,7 +90,7 @@ class ModuleActionsTest extends TestCase
 
     public function test_remove_module_action_throws_on_failure(): void
     {
-        $moduleMock = Mockery::mock(ModuleCliService::class);
+        $moduleMock = Mockery::mock(ModuleDriverInterface::class);
         $moduleMock->shouldReceive('removeModule')
             ->once()
             ->with('ftp')

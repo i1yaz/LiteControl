@@ -1,31 +1,22 @@
 <?php
 
-namespace App\Services\System;
+namespace App\Domains\ServerOps\Infrastructure;
 
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use App\Exceptions\System\LcCliException;
 use App\Support\Cli\LcCliService;
 
-class ServerCliService
+class CliServerAdapter implements ServerDriverInterface
 {
     public function __construct(
         protected LcCliService $lcCli
     ) {}
 
-    /**
-     * Check if LcCliService is running in mock mode.
-     *
-     * @return bool
-     */
     public function isMockMode(): bool
     {
         return $this->lcCli->isMockMode();
     }
 
-    /**
-     * Retrieve system performance & resource stats.
-     *
-     * @return array
-     */
     public function getStats(): array
     {
         $res = $this->lcCli->run('server', ['stats']);
@@ -37,11 +28,6 @@ class ServerCliService
         return [];
     }
 
-    /**
-     * Retrieve list of system services and their running status.
-     *
-     * @return array
-     */
     public function getServices(): array
     {
         $res = $this->lcCli->run('server', ['services']);
@@ -53,14 +39,6 @@ class ServerCliService
         return [];
     }
 
-    /**
-     * Execute an action (start, stop, restart, reload) on a system service.
-     *
-     * @param string $service
-     * @param string $action
-     * @return array
-     * @throws LcCliException
-     */
     public function executeServiceAction(string $service, string $action): array
     {
         $args = ['service-action', $service, $action];
@@ -73,11 +51,6 @@ class ServerCliService
         return $res['data'] ?? [];
     }
 
-    /**
-     * Retrieve OpenLiteSpeed WebAdmin status and configuration.
-     *
-     * @return array
-     */
     public function getWebAdminStatus(): array
     {
         $res = $this->lcCli->run('server', ['webadmin-status']);
@@ -93,13 +66,6 @@ class ServerCliService
         ];
     }
 
-    /**
-     * Enable or update OpenLiteSpeed WebAdmin console.
-     *
-     * @param string|null $allowedIps
-     * @return array
-     * @throws LcCliException
-     */
     public function enableWebAdmin(?string $allowedIps = null): array
     {
         $ips = trim($allowedIps ?? '');
@@ -113,12 +79,6 @@ class ServerCliService
         return $res['data'] ?? [];
     }
 
-    /**
-     * Disable OpenLiteSpeed WebAdmin console.
-     *
-     * @return array
-     * @throws LcCliException
-     */
     public function disableWebAdmin(): array
     {
         $args = ['webadmin-disable'];
@@ -131,11 +91,6 @@ class ServerCliService
         return $res['data'] ?? [];
     }
 
-    /**
-     * Retrieve list of running processes.
-     *
-     * @return array
-     */
     public function getProcesses(): array
     {
         $res = $this->lcCli->run('server', ['processes']);
@@ -147,13 +102,6 @@ class ServerCliService
         return [];
     }
 
-    /**
-     * Terminate a running process by PID.
-     *
-     * @param int $pid
-     * @return array
-     * @throws LcCliException
-     */
     public function killProcess(int $pid): array
     {
         $args = ['kill-process', (string) $pid];
@@ -166,11 +114,6 @@ class ServerCliService
         return $res['data'] ?? [];
     }
 
-    /**
-     * Retrieve current server timezone.
-     *
-     * @return string
-     */
     public function getTimezone(): string
     {
         $res = $this->lcCli->run('server', ['timezone', 'get']);
@@ -178,13 +121,6 @@ class ServerCliService
         return $res['data']['timezone'] ?? 'UTC';
     }
 
-    /**
-     * Update server timezone.
-     *
-     * @param string $timezone
-     * @return array
-     * @throws LcCliException
-     */
     public function setTimezone(string $timezone): array
     {
         $args = ['timezone', 'set', $timezone];
@@ -197,11 +133,6 @@ class ServerCliService
         return $res['data'] ?? [];
     }
 
-    /**
-     * Retrieve current server hostname.
-     *
-     * @return string
-     */
     public function getHostname(): string
     {
         $res = $this->lcCli->run('server', ['hostname', 'get']);
@@ -209,13 +140,6 @@ class ServerCliService
         return $res['data']['hostname'] ?? 'panel.local';
     }
 
-    /**
-     * Update server hostname.
-     *
-     * @param string $hostname
-     * @return array
-     * @throws LcCliException
-     */
     public function setHostname(string $hostname): array
     {
         $args = ['hostname', 'set', $hostname];
@@ -228,16 +152,9 @@ class ServerCliService
         return $res['data'] ?? [];
     }
 
-    /**
-     * Retrieve server and panel logs.
-     *
-     * @param string $type Log type: ols-error, ols-access, or panel-error
-     * @param int $lines Number of lines to tail
-     * @return array
-     */
     public function getLogs(string $type = 'ols-error', int $lines = 100): array
     {
-        if (!in_array($type, ['ols-error', 'ols-access', 'panel-error'])) {
+        if (! in_array($type, ['ols-error', 'ols-access', 'panel-error'])) {
             $type = 'ols-error';
         }
 

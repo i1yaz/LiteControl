@@ -1,31 +1,26 @@
 <?php
 
-namespace App\Actions\Server;
+namespace App\Domains\ServerOps\Actions;
 
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
 use App\Models\User;
-use App\Services\System\ServerCliService;
 
 class ManageServiceAction
 {
     public function __construct(
-        protected ServerCliService $serverCli
+        protected ServerDriverInterface $serverDriver
     ) {}
 
     /**
      * Execute a service management action (start, stop, restart, reload).
      *
-     * @param string $service
-     * @param string $action
-     * @param User|null $actor
-     * @param string|null $ipAddress
-     * @return array
      * @throws LcCliException
      */
     public function handle(string $service, string $action, ?User $actor = null, ?string $ipAddress = null): array
     {
-        $result = $this->serverCli->executeServiceAction($service, $action);
+        $result = $this->serverDriver->executeServiceAction($service, $action);
 
         AuditLog::create([
             'user_id' => $actor?->id,

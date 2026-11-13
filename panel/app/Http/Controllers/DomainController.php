@@ -9,7 +9,7 @@ use App\Models\FtpAccount;
 use App\Services\DomainService;
 use App\Services\SslService;
 use App\Services\FtpService;
-use App\Services\LogReaderService;
+use App\Domains\ServerOps\Contracts\LogReaderInterface;
 use App\Services\System\VhostService;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Actions\Domain\DeleteDomainAction;
@@ -28,7 +28,7 @@ class DomainController extends Controller
     protected DomainService $domainService;
     protected SslService $sslService;
     protected FtpService $ftpService;
-    protected LogReaderService $logReader;
+    protected LogReaderInterface $logReader;
     protected VhostService $vhostService;
     protected PhpRuntimeDriverInterface $PhpRuntimeDriverInterface;
 
@@ -36,7 +36,7 @@ class DomainController extends Controller
         DomainService $domainService,
         SslService $sslService,
         FtpService $ftpService,
-        LogReaderService $logReader,
+        LogReaderInterface $logReader,
         VhostService $vhostService,
         PhpRuntimeDriverInterface $PhpRuntimeDriverInterface
     ) {

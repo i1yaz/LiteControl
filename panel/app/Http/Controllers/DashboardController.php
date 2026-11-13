@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Models\Domain;
 use App\Domains\Database\Models\Database as DbModel;
 use App\Models\Package;
-use App\Services\System\ServerCliService;
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,7 +14,7 @@ use Inertia\Response;
 class DashboardController extends Controller
 {
     public function __construct(
-        protected ServerCliService $serverCli
+        protected ServerDriverInterface $serverDriver
     ) {}
 
     public function index(Request $request): Response
@@ -22,8 +22,8 @@ class DashboardController extends Controller
         $user = $request->user();
         $isAdmin = $user->isAdmin();
 
-        // Get server statistics from typed ServerCliService
-        $statsData = $this->serverCli->getStats();
+        // Get server statistics from typed ServerDriverInterface
+        $statsData = $this->serverDriver->getStats();
         $stats = !empty($statsData) ? $statsData : [
             'cpu_percent' => 0,
             'ram_percent' => 0,

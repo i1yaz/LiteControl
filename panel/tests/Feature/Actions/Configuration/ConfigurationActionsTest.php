@@ -9,7 +9,7 @@ use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
-use App\Services\System\ServerCliService;
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use App\Services\System\TuningCliService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -33,7 +33,7 @@ class ConfigurationActionsTest extends TestCase
 
     public function test_update_settings_action_success(): void
     {
-        $serverMock = Mockery::mock(ServerCliService::class);
+        $serverMock = Mockery::mock(ServerDriverInterface::class);
         $serverMock->shouldReceive('setTimezone')
             ->once()
             ->with('America/New_York')
@@ -65,7 +65,7 @@ class ConfigurationActionsTest extends TestCase
 
     public function test_update_settings_action_throws_on_failure(): void
     {
-        $serverMock = Mockery::mock(ServerCliService::class);
+        $serverMock = Mockery::mock(ServerDriverInterface::class);
         $serverMock->shouldReceive('setTimezone')
             ->once()
             ->with('Invalid/Zone')
