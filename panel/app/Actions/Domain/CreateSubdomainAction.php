@@ -34,10 +34,8 @@ class CreateSubdomainAction
         $owner = $parentDomain->user;
         $phpVersion = $options['php_version'] ?? $parentDomain->php_version ?? '83';
         $publicSubpath = trim($options['public_path'] ?? '', " /\t\n\r\0\x0B");
-        $useParentRoot = filter_var($options['use_parent_root'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        $baseFolder = $useParentRoot ? $parentDomain->domain : $subdomainFqdn;
-        $baseDocRoot = "/home/{$owner->username}/{$baseFolder}/public_html";
+        $baseDocRoot = "/home/{$owner->username}/{$subdomainFqdn}/public_html";
         $docRoot = ! empty($publicSubpath) ? "{$baseDocRoot}/{$publicSubpath}" : $baseDocRoot;
 
         // Create virtual host via VhostService
