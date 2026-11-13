@@ -15,7 +15,10 @@ use App\Services\SslService;
 use App\Services\System\FirewallCliService;
 use App\Services\System\ModuleCliService;
 use Illuminate\Http\Request;
+use App\Services\TotpService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -321,13 +324,72 @@ class SecurityController extends Controller
     /**
      * Two-Factor Authentication View.
      */
-    public function twoFactor(): Response
+    public function twoFactor(Request $request, TotpService $totp): Response
     {
         $user = Auth::user();
+        $enabled = $user->hasTwoFactorEnabled();
 
-        return Inertia::render('Security/TwoFactor', [
-            'enabled' => !empty($user->two_factor_secret) && !empty($user->two_factor_confirmed_at),
+        $props = [
+            'enabled' => $enabled,
+            'recoveryCodes' => $request->session()->get('recoveryCodes'),
+        ];
+
+        if (! $enabled) {
+            $secret = $request->session()->get('two_factor.pending_secret');
+            if (! $secret) {
+                $secret = $totp->generateSecret();
+                $request->session()->put('two_factor.pending_secret', $secret);
+            }
+
+            $props['secret'] = $secret;
+            $props['otpauthUri'] = $totp->getOtpAuthUri(
+                config('app.name', 'LiteControl'),
+                $user->email ?: $user->username,
+                $secret
+            );
+        }
+
+        return Inertia::render('Security/TwoFactor', $props);
+    }
+
+    /**
+     * Confirm and enable Two-Factor Authentication.
+     */
+    public function confirmTwoFactor(Request $request, TotpService $totp)
+    {
+        $request->validate([
+            'code' => ['required', 'string'],
         ]);
+
+        $secret = $request->session()->get('two_factor.pending_secret');
+        if (! $secret || ! $totp->verify($secret, $request->string('code')->toString())) {
+            throw ValidationException::withMessages([
+                'code' => __('The provided verification code is invalid. Please try again.'),
+            ]);
+        }
+
+        $user = Auth::user();
+        $recoveryCodes = $totp->generateRecoveryCodes();
+
+        $user->update([
+            'two_factor_secret' => Crypt::encryptString($secret),
+            'two_factor_recovery_codes' => Crypt::encryptString(json_encode($recoveryCodes)),
+            'two_factor_confirmed_at' => now(),
+        ]);
+
+        $request->session()->forget('two_factor.pending_secret');
+
+        AuditLog::create([
+            'user_id' => $user->id,
+            'action' => 'enable_2fa',
+            'command' => 'auth.2fa.enable',
+            'status' => 'success',
+            'ip_address' => $request->ip(),
+        ]);
+
+        return back()
+            ->with('success', 'Two-factor authentication enabled successfully.')
+            ->with('recoveryCodes', $recoveryCodes);
     }
 
     /**
@@ -340,15 +402,12 @@ class SecurityController extends Controller
         if ($user->two_factor_confirmed_at) {
             $user->update([
                 'two_factor_secret' => null,
+                'two_factor_recovery_codes' => null,
                 'two_factor_confirmed_at' => null,
             ]);
             $msg = 'Two-factor authentication disabled.';
         } else {
-            $user->update([
-                'two_factor_secret' => 'MOCKSECRETBASE32XYZ',
-                'two_factor_confirmed_at' => now(),
-            ]);
-            $msg = 'Two-factor authentication enabled successfully.';
+            return redirect()->route('security.two-factor');
         }
 
         AuditLog::create([
