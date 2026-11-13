@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Actions\Domain\DeleteDomainAction;
-use App\Models\Domain;
+use App\Domains\WebServer\Actions\DeleteDomainAction;
+use App\Domains\WebServer\Models\Domain;
 use App\Models\User;
-use App\Services\DomainService;
+use App\Domains\WebServer\Services\DomainService;
 use App\Support\Cli\LcCliService;
-use App\Services\System\VhostService;
+use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -87,7 +87,7 @@ class DomainHierarchyAndOpenBasedirTest extends TestCase
         $api = $service->createDomain($user, ['domain' => 'api.example.com', 'ssl_enabled' => false])['domain'];
         $v1 = $service->createDomain($user, ['domain' => 'v1.api.example.com', 'ssl_enabled' => false])['domain'];
 
-        $vhostMock = Mockery::mock(VhostService::class);
+        $vhostMock = Mockery::mock(VhostDriverInterface::class);
         $vhostMock->shouldReceive('remove')->andReturnNull();
         $deleteAction = new DeleteDomainAction($vhostMock);
 

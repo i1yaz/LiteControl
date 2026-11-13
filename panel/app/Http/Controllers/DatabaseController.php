@@ -14,7 +14,7 @@ use App\Domains\Database\Models\DatabaseUser;
 use App\Domains\Database\ValueObjects\DatabaseName;
 use App\Domains\Database\ValueObjects\DatabaseUsername;
 use App\Exceptions\System\LcCliException;
-use App\Models\Domain;
+use App\Domains\WebServer\Models\Domain;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

@@ -1,22 +1,22 @@
 <?php
 
-namespace App\Services;
+namespace App\Domains\WebServer\Services;
 
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\Domain;
+use App\Domains\WebServer\Contracts\SslDriverInterface;
+use App\Domains\WebServer\Contracts\VhostDriverInterface;
+use App\Domains\WebServer\Models\Domain;
+use App\Exceptions\System\LcCliException;
 use App\Models\User;
-use App\Support\Cli\LcCliService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class DomainService
 {
-    protected LcCliService $lcCli;
-
-    public function __construct(LcCliService $lcCli)
-    {
-        $this->lcCli = $lcCli;
-    }
+    public function __construct(
+        protected VhostDriverInterface $vhostDriver,
+        protected SslDriverInterface $sslDriver
+    ) {}
 
     /**
      * Centralized domain provisioning.
@@ -47,19 +47,13 @@ class DomainService
         $parentDomainId = $parentDomain?->id;
         $type = $parentDomain ? 'subdomain' : ($data['type'] ?? 'primary');
 
-        // 1. Provision virtual host via lc-cli
-        $cliRes = $this->lcCli->run('vhost', [
-            'add',
-            $domainName,
-            $user->username,
-            $phpVersion,
-            $docRoot,
-        ]);
-
-        if (($cliRes['status'] ?? '') !== 'success') {
-            $msg = $cliRes['message'] ?? 'Failed to create virtual host.';
+        // 1. Provision virtual host via VhostDriverInterface
+        try {
+            $this->vhostDriver->create($domainName, $user->username, $phpVersion, $docRoot);
+        } catch (LcCliException $e) {
+            $msg = $e->getMessage();
             Log::error("DomainService: vhost add failed for {$domainName}: {$msg}");
-            throw new \RuntimeException($msg);
+            throw new \RuntimeException($msg, previous: $e);
         }
 
         // 2. Persist domain record in database
@@ -85,22 +79,16 @@ class DomainService
         // 3. Issue SSL certificate if requested (default ON)
         $requestSsl = filter_var($data['ssl_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN);
         if ($requestSsl) {
-            $sslRes = $this->lcCli->run('ssl', [
-                'issue',
-                $domainName,
-                $docRoot,
-                $user->email,
-            ]);
-
-            if (($sslRes['status'] ?? '') === 'success') {
+            try {
+                $this->sslDriver->issue($domainName, $docRoot, $user->email ?? '');
                 $domain->update([
                     'ssl_enabled' => true,
                     'ssl_expires_at' => now()->addDays(90),
                 ]);
                 $sslIssued = true;
-            } else {
-                $sslWarning = "SSL certificate could not be issued automatically (DNS records may not have propagated yet). You can issue it later from the SSL page once DNS is pointed.";
-                Log::warning("DomainService: SSL auto-issue failed for {$domainName}: " . ($sslRes['message'] ?? 'Unknown error'));
+            } catch (LcCliException $e) {
+                $sslWarning = 'SSL certificate could not be issued automatically (DNS records may not have propagated yet). You can issue it later from the SSL page once DNS is pointed.';
+                Log::warning("DomainService: SSL auto-issue failed for {$domainName}: {$e->getMessage()}");
             }
         }
 
@@ -155,12 +143,12 @@ class DomainService
             $newDocRoot = !empty($newSubpath) ? "{$baseDocRoot}/{$newSubpath}" : $baseDocRoot;
 
             if ($newDocRoot !== $domain->document_root) {
-                $docRes = $this->lcCli->run('vhost', ['docroot', $domain->domain, $newDocRoot]);
-                if (($docRes['status'] ?? '') === 'success') {
+                try {
+                    $this->vhostDriver->setDocRoot($domain->domain, $newDocRoot);
                     $domain->document_root = $newDocRoot;
                     $domain->public_path = $newSubpath ?: null;
-                } else {
-                    throw new \RuntimeException($docRes['message'] ?? 'Failed to update document root.');
+                } catch (LcCliException $e) {
+                    throw new \RuntimeException($e->getMessage(), previous: $e);
                 }
             }
         }
@@ -169,19 +157,13 @@ class DomainService
         if (isset($data['ssl_enabled'])) {
             $wantSsl = filter_var($data['ssl_enabled'], FILTER_VALIDATE_BOOLEAN);
             if ($wantSsl && ! $domain->ssl_enabled) {
-                $sslRes = $this->lcCli->run('ssl', [
-                    'issue',
-                    $domain->domain,
-                    $domain->document_root,
-                    $user->email,
-                ]);
-
-                if (($sslRes['status'] ?? '') === 'success') {
+                try {
+                    $this->sslDriver->issue($domain->domain, $domain->document_root, $user->email ?? '');
                     $domain->ssl_enabled = true;
                     $domain->ssl_expires_at = now()->addDays(90);
                     $sslIssued = true;
-                } else {
-                    $sslWarning = "SSL issuance failed: " . ($sslRes['message'] ?? 'DNS check failed');
+                } catch (LcCliException $e) {
+                    $sslWarning = 'SSL issuance failed: '.$e->getMessage();
                 }
             }
         }
@@ -215,12 +197,12 @@ class DomainService
     {
         $actor = $actor ?? Auth::user() ?? $domain->user;
 
-        $res = $this->lcCli->run('vhost', ['php-switch', $domain->domain, $phpVersion]);
-
-        if (($res['status'] ?? '') !== 'success') {
-            $msg = $res['message'] ?? 'Failed to switch PHP version.';
+        try {
+            $this->vhostDriver->switchPhp($domain->domain, $phpVersion);
+        } catch (LcCliException $e) {
+            $msg = $e->getMessage();
             Log::error("DomainService: PHP switch failed for {$domain->domain} to {$phpVersion}: {$msg}");
-            throw new \RuntimeException($msg);
+            throw new \RuntimeException($msg, previous: $e);
         }
 
         $oldVersion = $domain->php_version;
@@ -253,12 +235,12 @@ class DomainService
     {
         $actor = $actor ?? Auth::user() ?? $domain->user;
 
-        $res = $this->lcCli->run('vhost', ['suspend', $domain->domain]);
-
-        if (($res['status'] ?? '') !== 'success') {
-            $msg = $res['message'] ?? 'Failed to suspend domain virtual host.';
+        try {
+            $this->vhostDriver->suspend($domain->domain);
+        } catch (LcCliException $e) {
+            $msg = $e->getMessage();
             Log::error("DomainService: Suspend failed for {$domain->domain}: {$msg}");
-            throw new \RuntimeException($msg);
+            throw new \RuntimeException($msg, previous: $e);
         }
 
         $domain->update(['status' => 'suspended']);
@@ -286,12 +268,12 @@ class DomainService
     {
         $actor = $actor ?? Auth::user() ?? $domain->user;
 
-        $res = $this->lcCli->run('vhost', ['unsuspend', $domain->domain]);
-
-        if (($res['status'] ?? '') !== 'success') {
-            $msg = $res['message'] ?? 'Failed to unsuspend domain virtual host.';
+        try {
+            $this->vhostDriver->unsuspend($domain->domain);
+        } catch (LcCliException $e) {
+            $msg = $e->getMessage();
             Log::error("DomainService: Unsuspend failed for {$domain->domain}: {$msg}");
-            throw new \RuntimeException($msg);
+            throw new \RuntimeException($msg, previous: $e);
         }
 
         $domain->update(['status' => 'active']);
@@ -325,10 +307,10 @@ class DomainService
             throw new \RuntimeException("Domain '{$aliasFqdn}' is already registered.");
         }
 
-        $res = $this->lcCli->run('vhost', ['alias-add', $parentDomain->domain, $aliasFqdn]);
-
-        if (($res['status'] ?? '') !== 'success') {
-            throw new \RuntimeException($res['message'] ?? 'Failed to add alias virtual host.');
+        try {
+            $this->vhostDriver->addAlias($parentDomain->domain, $aliasFqdn);
+        } catch (LcCliException $e) {
+            throw new \RuntimeException($e->getMessage(), previous: $e);
         }
 
         $aliasDomain = Domain::create([

@@ -2,16 +2,16 @@
 
 namespace Tests\Feature\Actions\Domain;
 
-use App\Actions\Domain\DeleteDomainAction;
-use App\Actions\Domain\CreateSubdomainAction;
-use App\Actions\Domain\FixDomainPermissionsAction;
-use App\Actions\Domain\UpdateVhostConfAction;
+use App\Domains\WebServer\Actions\DeleteDomainAction;
+use App\Domains\WebServer\Actions\CreateSubdomainAction;
+use App\Domains\WebServer\Actions\FixDomainPermissionsAction;
+use App\Domains\WebServer\Actions\UpdateVhostConfAction;
 use App\Exceptions\System\LcCliException;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\Domain;
+use App\Domains\WebServer\Models\Domain;
 use App\Models\Package;
 use App\Models\User;
-use App\Services\System\VhostService;
+use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -54,7 +54,7 @@ class DomainActionsTest extends TestCase
 
     public function test_delete_domain_action_removes_vhost_and_deletes_record(): void
     {
-        $vhostMock = Mockery::mock(VhostService::class);
+        $vhostMock = Mockery::mock(VhostDriverInterface::class);
         $vhostMock->shouldReceive('remove')
             ->once()
             ->with('example.com', true)
@@ -72,7 +72,7 @@ class DomainActionsTest extends TestCase
 
     public function test_update_vhost_conf_action(): void
     {
-        $vhostMock = Mockery::mock(VhostService::class);
+        $vhostMock = Mockery::mock(VhostDriverInterface::class);
         $vhostMock->shouldReceive('setConf')
             ->once()
             ->with('example.com', 'server { listen 80; }')
@@ -90,7 +90,7 @@ class DomainActionsTest extends TestCase
 
     public function test_fix_domain_permissions_action(): void
     {
-        $vhostMock = Mockery::mock(VhostService::class);
+        $vhostMock = Mockery::mock(VhostDriverInterface::class);
         $vhostMock->shouldReceive('fixPermissions')
             ->once()
             ->with('example.com')
@@ -108,7 +108,7 @@ class DomainActionsTest extends TestCase
 
     public function test_create_subdomain_action_success(): void
     {
-        $vhostMock = Mockery::mock(VhostService::class);
+        $vhostMock = Mockery::mock(VhostDriverInterface::class);
         $vhostMock->shouldReceive('create')
             ->once()
             ->with(
@@ -132,7 +132,7 @@ class DomainActionsTest extends TestCase
 
     public function test_create_subdomain_action_throws_on_vhost_failure(): void
     {
-        $vhostMock = Mockery::mock(VhostService::class);
+        $vhostMock = Mockery::mock(VhostDriverInterface::class);
         $vhostMock->shouldReceive('create')
             ->once()
             ->andThrow(new LcCliException('Failed creation', 'vhost', []));

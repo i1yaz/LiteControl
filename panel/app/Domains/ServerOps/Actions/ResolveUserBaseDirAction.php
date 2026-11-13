@@ -2,7 +2,7 @@
 
 namespace App\Domains\ServerOps\Actions;
 
-use App\Models\Domain;
+use App\Domains\WebServer\Models\Domain;
 use App\Models\User;
 use Illuminate\Support\Facades\File;
 

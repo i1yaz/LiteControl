@@ -1,32 +1,18 @@
 <?php
 
-namespace App\Services;
+namespace App\Domains\WebServer\Services;
 
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\Domain;
-use App\Models\FtpAccount;
+use App\Domains\WebServer\Models\Domain;
+use App\Domains\WebServer\Models\FtpAccount;
 use App\Models\User;
-use App\Support\Cli\LcCliService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 
 class FtpService
 {
-    protected LcCliService $lcCli;
-
-    public function __construct(LcCliService $lcCli)
-    {
-        $this->lcCli = $lcCli;
-    }
-
     /**
      * Create an FTP account tied to a domain.
      *
-     * @param Domain $domain
-     * @param array $data ['username' => string, 'password' => string, 'dir' => ?string, 'quota_mb' => ?int]
-     * @param User|null $actor
-     * @return FtpAccount
      * @throws \RuntimeException
      */
     public function createAccount(Domain $domain, array $data, ?User $actor = null): FtpAccount
@@ -34,7 +20,6 @@ class FtpService
         $actor = $actor ?? Auth::user() ?? $domain->user;
         $user = $domain->user;
 
-        // Check package quota if user is not admin
         if (! $actor->isAdmin() && $user->package) {
             $currentFtpCount = FtpAccount::where('user_id', $user->id)->count();
             if ($currentFtpCount >= $user->package->max_ftp_accounts) {
@@ -43,24 +28,21 @@ class FtpService
         }
 
         $rawUsername = strtolower(trim($data['username']));
-        $prefix = $user->username . '_';
-        $finalUsername = str_starts_with($rawUsername, $prefix) ? $rawUsername : $prefix . $rawUsername;
+        $prefix = $user->username.'_';
+        $finalUsername = str_starts_with($rawUsername, $prefix) ? $rawUsername : $prefix.$rawUsername;
 
         if (FtpAccount::where('username', $finalUsername)->exists()) {
             throw new \RuntimeException("FTP user '{$finalUsername}' already exists.");
         }
 
-        // Sanitize subpath directory inside domain root
         $rawSubdir = trim($data['dir'] ?? '', " /\\");
         $domainBase = "/home/{$user->username}/{$domain->domain}";
         $fullFtpDir = empty($rawSubdir) ? "{$domainBase}/public_html" : "{$domainBase}/public_html/{$rawSubdir}";
 
-        // Ensure directory exists via lc-cli run if needed, or create safely
         if (! file_exists($fullFtpDir)) {
             @mkdir($fullFtpDir, 0755, true);
         }
 
-        // Resolve system UID/GID (defaulting to 5001 or linux user uid)
         $uid = 5001;
         $gid = 5001;
         if (function_exists('posix_getpwnam')) {
@@ -71,7 +53,6 @@ class FtpService
             }
         }
 
-        // Pure-FTPd MySQL uses Argon2 / password_hash
         $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
 
         $ftpAccount = FtpAccount::create([
@@ -104,10 +85,6 @@ class FtpService
 
     /**
      * Delete an FTP account.
-     *
-     * @param FtpAccount $ftpAccount
-     * @param User|null $actor
-     * @return bool
      */
     public function deleteAccount(FtpAccount $ftpAccount, ?User $actor = null): bool
     {

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Domain;
+use App\Domains\WebServer\Models\Domain;
 use App\Domains\Database\Models\Database as DbModel;
 use App\Models\Package;
 use App\Domains\ServerOps\Contracts\ServerDriverInterface;

@@ -9,7 +9,7 @@ use App\Domains\Identity\ValueObjects\LinuxUsername;
 use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\Package;
 use App\Models\User;
-use App\Services\DomainService;
+use App\Domains\WebServer\Services\DomainService;
 use Illuminate\Support\Facades\DB;
 
 class CreateUserAction

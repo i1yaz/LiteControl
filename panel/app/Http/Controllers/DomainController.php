@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Domain;
+use App\Domains\WebServer\Models\Domain;
 use App\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\FtpAccount;
-use App\Services\DomainService;
-use App\Services\SslService;
-use App\Services\FtpService;
+use App\Domains\WebServer\Models\FtpAccount;
+use App\Domains\WebServer\Services\DomainService;
+use App\Domains\WebServer\Services\SslService;
+use App\Domains\WebServer\Services\FtpService;
 use App\Domains\ServerOps\Contracts\LogReaderInterface;
-use App\Services\System\VhostService;
+use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
-use App\Actions\Domain\DeleteDomainAction;
-use App\Actions\Domain\UpdateVhostConfAction;
-use App\Actions\Domain\FixDomainPermissionsAction;
-use App\Actions\Domain\CreateSubdomainAction;
+use App\Domains\WebServer\Actions\DeleteDomainAction;
+use App\Domains\WebServer\Actions\UpdateVhostConfAction;
+use App\Domains\WebServer\Actions\FixDomainPermissionsAction;
+use App\Domains\WebServer\Actions\CreateSubdomainAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -29,7 +29,7 @@ class DomainController extends Controller
     protected SslService $sslService;
     protected FtpService $ftpService;
     protected LogReaderInterface $logReader;
-    protected VhostService $vhostService;
+    protected VhostDriverInterface $vhostService;
     protected PhpRuntimeDriverInterface $PhpRuntimeDriverInterface;
 
     public function __construct(
@@ -37,7 +37,7 @@ class DomainController extends Controller
         SslService $sslService,
         FtpService $ftpService,
         LogReaderInterface $logReader,
-        VhostService $vhostService,
+        VhostDriverInterface $vhostService,
         PhpRuntimeDriverInterface $PhpRuntimeDriverInterface
     ) {
         $this->domainService = $domainService;

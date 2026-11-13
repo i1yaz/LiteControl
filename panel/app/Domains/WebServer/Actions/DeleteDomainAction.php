@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Actions\Domain;
+namespace App\Domains\WebServer\Actions;
 
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\Domain;
+use App\Domains\WebServer\Contracts\VhostDriverInterface;
+use App\Domains\WebServer\Models\Domain;
 use App\Models\User;
-use App\Services\System\VhostService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class DeleteDomainAction
 {
     public function __construct(
-        protected VhostService $vhostService
+        protected VhostDriverInterface $vhostDriver
     ) {}
 
     /**
@@ -22,12 +22,10 @@ class DeleteDomainAction
     {
         $domainName = $domain->domain;
 
-        // Call vhost service to remove virtual host
         try {
-            $this->vhostService->remove($domainName, $deleteFiles);
+            $this->vhostDriver->remove($domainName, $deleteFiles);
         } catch (\Throwable $e) {
             Log::warning("Vhost remove warning/error for {$domainName}: {$e->getMessage()}");
-            // Still proceed with cleanup or throw depending on domain requirements
         }
 
         DB::transaction(function () use ($domain, $actor, $domainName, $deleteFiles, $ipAddress) {
@@ -48,7 +46,7 @@ class DeleteDomainAction
             AuditLog::create([
                 'user_id' => $actor->id,
                 'action' => 'domain.delete',
-                'command' => "lc-cli vhost remove {$domainName}" . ($deleteFiles ? ' --delete-files' : ''),
+                'command' => "lc-cli vhost remove {$domainName}".($deleteFiles ? ' --delete-files' : ''),
                 'status' => 'success',
                 'ip_address' => $ipAddress,
                 'details' => ['domain' => $domainName],
@@ -56,3 +54,4 @@ class DeleteDomainAction
         });
     }
 }
+

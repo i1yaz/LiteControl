@@ -8,6 +8,7 @@ use App\Domains\Database\Models\DatabaseUser;
 use App\Domains\Backup\Models\Backup;
 use App\Domains\Backup\Models\BackupSchedule;
 
+use App\Domains\WebServer\Models\Domain;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;

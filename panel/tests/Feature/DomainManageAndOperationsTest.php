@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\Domain;
+use App\Domains\WebServer\Models\Domain;
 use App\Domains\Database\Models\Database;
 use App\Models\User;
 use App\Models\Package;
-use App\Models\FtpAccount;
+use App\Domains\WebServer\Models\FtpAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

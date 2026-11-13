@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Actions\Domain;
+namespace App\Domains\WebServer\Actions;
 
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\Domain;
+use App\Domains\WebServer\Contracts\SslDriverInterface;
+use App\Domains\WebServer\Contracts\VhostDriverInterface;
+use App\Domains\WebServer\Models\Domain;
 use App\Models\User;
-use App\Support\Cli\LcCliService;
-use App\Services\System\VhostService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -16,8 +16,8 @@ class CreateSubdomainAction
     public ?string $lastWarning = null;
 
     public function __construct(
-        protected VhostService $vhostService,
-        protected ?LcCliService $lcCli = null
+        protected VhostDriverInterface $vhostDriver,
+        protected ?SslDriverInterface $sslDriver = null
     ) {}
 
     /**
@@ -38,9 +38,8 @@ class CreateSubdomainAction
         $baseDocRoot = "/home/{$owner->username}/{$subdomainFqdn}/public_html";
         $docRoot = ! empty($publicSubpath) ? "{$baseDocRoot}/{$publicSubpath}" : $baseDocRoot;
 
-        // Create virtual host via VhostService
         try {
-            $this->vhostService->create(
+            $this->vhostDriver->create(
                 domain: $subdomainFqdn,
                 username: $owner->username,
                 phpVersion: $phpVersion,
@@ -78,28 +77,22 @@ class CreateSubdomainAction
             return $domain;
         });
 
-        // Issue SSL certificate if requested
         $requestSsl = filter_var($options['ssl_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
         if ($requestSsl) {
-            $lcCli = $this->lcCli ?? app(LcCliService::class);
-            $sslRes = $lcCli->run('ssl', [
-                'issue',
-                $subdomainFqdn,
-                $docRoot,
-                $owner->email,
-            ]);
-
-            if (($sslRes['status'] ?? '') === 'success') {
+            $sslDriver = $this->sslDriver ?? app(SslDriverInterface::class);
+            try {
+                $sslDriver->issue($subdomainFqdn, $docRoot, $owner->email ?? '');
                 $domain->update([
                     'ssl_enabled' => true,
                     'ssl_expires_at' => now()->addDays(90),
                 ]);
-            } else {
-                $this->lastWarning = "SSL certificate could not be issued automatically (DNS records may not have propagated yet). You can issue it later from the SSL page once DNS is pointed.";
-                Log::warning("CreateSubdomainAction: SSL auto-issue failed for {$subdomainFqdn}: " . ($sslRes['message'] ?? 'Unknown error'));
+            } catch (\Throwable $e) {
+                $this->lastWarning = 'SSL certificate could not be issued automatically (DNS records may not have propagated yet). You can issue it later from the SSL page once DNS is pointed.';
+                Log::warning("CreateSubdomainAction: SSL auto-issue failed for {$subdomainFqdn}: {$e->getMessage()}");
             }
         }
 
         return $domain;
     }
 }
+

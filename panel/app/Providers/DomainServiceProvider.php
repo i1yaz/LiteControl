@@ -11,7 +11,11 @@ use App\Domains\Database\Listeners\CleanupUserDatabasesListener;
 use App\Domains\Identity\Contracts\UserDriverInterface;
 use App\Domains\Identity\Events\UserDeleted;
 use App\Domains\Identity\Infrastructure\CliUserAdapter;
-use App\Models\Domain;
+use App\Domains\WebServer\Contracts\SslDriverInterface;
+use App\Domains\WebServer\Contracts\VhostDriverInterface;
+use App\Domains\WebServer\Infrastructure\CliSslAdapter;
+use App\Domains\WebServer\Infrastructure\CliVhostAdapter;
+use App\Domains\WebServer\Models\Domain;
 use Illuminate\Support\Facades\Event;
 use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use App\Domains\PanelConfig\Infrastructure\CliTuningAdapter;
@@ -46,6 +50,8 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(ServerDriverInterface::class, CliServerAdapter::class);
         $this->app->bind(ModuleDriverInterface::class, CliModuleAdapter::class);
         $this->app->bind(LogReaderInterface::class, LocalLogReaderAdapter::class);
+        $this->app->bind(VhostDriverInterface::class, CliVhostAdapter::class);
+        $this->app->bind(SslDriverInterface::class, CliSslAdapter::class);
     }
 
     /**
