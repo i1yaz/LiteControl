@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { shallowRef, ref, computed, onMounted, useTemplateRef } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import axios from 'axios';

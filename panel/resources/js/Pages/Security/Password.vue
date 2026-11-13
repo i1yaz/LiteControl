@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { Lock, Save } from '@lucide/vue';
 

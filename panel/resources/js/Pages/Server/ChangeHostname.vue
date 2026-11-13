@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { Globe, Save, AlertTriangle } from '@lucide/vue';
 

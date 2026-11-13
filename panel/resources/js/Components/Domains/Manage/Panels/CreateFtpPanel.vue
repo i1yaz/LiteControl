@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import { UserPlus, Check, X } from '@lucide/vue';
 

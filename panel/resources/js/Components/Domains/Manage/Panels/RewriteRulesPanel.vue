@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { shallowRef, onMounted } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { FileEdit, Save, RefreshCw, X } from '@lucide/vue';

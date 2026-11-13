@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { useForm, Head } from '@inertiajs/vue3';
 import { ShieldCheck } from '@lucide/vue';
 import UiButton from '@/Components/ui/UiButton.vue';

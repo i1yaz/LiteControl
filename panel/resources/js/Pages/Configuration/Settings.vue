@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { useTheme } from '@/Composables/useTheme';
 import { Sliders, Save, Server, Globe, Mail, Clock, ShieldCheck, CheckCircle2 } from '@lucide/vue';

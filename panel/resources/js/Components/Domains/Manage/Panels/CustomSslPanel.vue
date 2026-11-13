@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import { KeyRound, ShieldCheck, X } from '@lucide/vue';
 

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { Terminal, Save, AlertTriangle, ShieldCheck } from '@lucide/vue';
 import { confirmDialog } from '@/Composables/useDialog';

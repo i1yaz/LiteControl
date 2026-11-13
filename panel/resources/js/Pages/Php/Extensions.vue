@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { FileCode, CheckCircle2, Circle, AlertCircle, RefreshCw } from '@lucide/vue';

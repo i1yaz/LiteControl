@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { Shield, Download, CheckCircle2, AlertTriangle, ArrowRight } from '@lucide/vue';
 

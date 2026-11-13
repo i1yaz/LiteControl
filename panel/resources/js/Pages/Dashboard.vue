@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { useDashboardMetrics } from '@/Composables/Domain/useDashboardMetrics';
 import UiCard from '@/Components/ui/UiCard.vue';

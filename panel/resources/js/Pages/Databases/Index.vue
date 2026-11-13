@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { shallowRef, computed, watch } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { confirmDialog } from '@/Composables/useDialog';

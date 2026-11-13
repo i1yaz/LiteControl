@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { FileCode, Download, Trash2, CheckCircle2, AlertTriangle, ShieldCheck } from '@lucide/vue';
 import { confirmDialog, alertDialog } from '@/Composables/useDialog';

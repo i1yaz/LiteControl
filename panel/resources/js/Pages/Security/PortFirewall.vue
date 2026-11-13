@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { ShieldCheck, ShieldAlert, Lock, Unlock, Server } from '@lucide/vue';
 import { confirmDialog } from '@/Composables/useDialog';

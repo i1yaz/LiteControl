@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { shallowRef } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { Cpu, Check, X } from '@lucide/vue';

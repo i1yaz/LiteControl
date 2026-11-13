@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { shallowRef, onMounted, watch } from 'vue';
 import { FileText, RefreshCw, ChevronLeft, ChevronRight, X } from '@lucide/vue';
 

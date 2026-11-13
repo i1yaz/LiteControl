@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Globe } from '@lucide/vue';
 </script>
 

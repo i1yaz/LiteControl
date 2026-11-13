@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { Shield, Plus, Trash2, CheckCircle2, AlertCircle } from '@lucide/vue';

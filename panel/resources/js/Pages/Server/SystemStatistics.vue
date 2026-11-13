@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { Activity, RefreshCw, Cpu, HardDrive, Server, Clock, Globe } from '@lucide/vue';
 

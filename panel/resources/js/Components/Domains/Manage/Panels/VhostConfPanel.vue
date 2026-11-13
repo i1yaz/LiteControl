@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { shallowRef, ref, onMounted } from 'vue';
 import { FileCode, RefreshCw, Save, AlertTriangle, CheckCircle2 } from '@lucide/vue';
 import axios from 'axios';

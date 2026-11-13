@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { AlertTriangle, Info, ShieldAlert } from '@lucide/vue';
 import UiModal from '@/Components/ui/UiModal.vue';

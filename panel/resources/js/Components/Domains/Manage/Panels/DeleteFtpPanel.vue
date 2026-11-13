@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { UserMinus, Trash2, X, Folder } from '@lucide/vue';
 import { confirmDialog } from '@/Composables/useDialog';

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { Server, RefreshCw, Play, Square, RotateCw, ShieldCheck, ShieldAlert, ExternalLink, Globe, Lock } from '@lucide/vue';
