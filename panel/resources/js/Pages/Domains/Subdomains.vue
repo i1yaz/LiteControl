@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { shallowRef } from 'vue';
+import { shallowRef, computed } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { confirmDialog } from '@/Composables/useDialog';
 import Modal from '@/Components/Modal.vue';
@@ -8,6 +8,10 @@ import { Globe, Plus, Folder, Trash2, X } from '@lucide/vue';
 const props = defineProps({
     subdomains: Object,
     baseDomains: Array,
+    phpVersions: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const showModal = shallowRef(false);
@@ -15,13 +19,40 @@ const showModal = shallowRef(false);
 const form = useForm({
     subdomain_prefix: '',
     parent_domain_id: props.baseDomains?.[0]?.id || '',
+    public_path: '',
+    php_version: props.baseDomains?.[0]?.php_version || '83',
+    ssl_enabled: true,
+    use_parent_root: false,
+});
+
+const selectedParentDomain = computed(() => {
+    return props.baseDomains?.find((d) => d.id === form.parent_domain_id) || null;
+});
+
+const phpOptions = computed(() => {
+    const versions = props.phpVersions?.length ? props.phpVersions : ['74', '80', '81', '82', '83', '84'];
+    return versions.map((v) => {
+        const str = String(v).replace('.', '');
+        const formatted = str.length === 2 ? `${str[0]}.${str[1]}` : str;
+        return { value: str, label: `PHP ${formatted}` };
+    });
+});
+
+const docRootPreview = computed(() => {
+    const parent = selectedParentDomain.value?.domain || 'example.com';
+    const prefix = form.subdomain_prefix.trim().toLowerCase() || 'sub';
+    const baseFolder = form.use_parent_root ? parent : `${prefix}.${parent}`;
+    const sub = form.public_path.trim().replace(/^\/+|\/+$/g, '');
+    return `/home/<user>/${baseFolder}/public_html${sub ? '/' + sub : ''}`;
 });
 
 const submit = () => {
     form.post('/subdomains', {
         onSuccess: () => {
             showModal.value = false;
-            form.reset('subdomain_prefix');
+            form.reset('subdomain_prefix', 'public_path');
+            form.ssl_enabled = true;
+            form.use_parent_root = false;
         },
     });
 };
@@ -146,6 +177,70 @@ const deleteSubdomain = async (id, domain) => {
                                     {{ d.domain }}
                                 </option>
                             </select>
+                        </div>
+
+                        <!-- Point to Parent Domain Folder -->
+                        <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs text-slate-200 block font-medium">Point to Parent Domain Folder</span>
+                                <span class="text-[11px] text-slate-400">Share the parent domain's public_html directory</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    v-model="form.use_parent_root"
+                                    type="checkbox"
+                                    class="sr-only peer"
+                                />
+                                <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Web Root Subpath (Pointing Target) -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center justify-between">
+                                <span>Web Root Subpath (Pointing Target)</span>
+                                <span class="text-slate-400 font-normal lowercase">e.g. "public" for Laravel</span>
+                            </label>
+                            <input
+                                v-model="form.public_path"
+                                type="text"
+                                placeholder="public (leave empty for standard public_html)"
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+                            />
+                            <p v-if="form.errors.public_path" class="text-xs text-rose-400 mt-1">{{ form.errors.public_path }}</p>
+                            <p class="text-[11px] text-slate-400 mt-1">
+                                Target DocRoot: <span class="text-emerald-400 font-mono">{{ docRootPreview }}</span>
+                            </p>
+                        </div>
+
+                        <!-- PHP Runtime -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">PHP Runtime</label>
+                            <select
+                                v-model="form.php_version"
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
+                            >
+                                <option v-for="opt in phpOptions" :key="opt.value" :value="opt.value">
+                                    {{ opt.label }}
+                                </option>
+                            </select>
+                            <p v-if="form.errors.php_version" class="text-xs text-rose-400 mt-1">{{ form.errors.php_version }}</p>
+                        </div>
+
+                        <!-- Generate Let's Encrypt SSL -->
+                        <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs text-slate-200 block font-medium">Generate Let's Encrypt SSL</span>
+                                <span class="text-[11px] text-slate-400">Default: ON (Requires DNS A-record pointed)</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    v-model="form.ssl_enabled"
+                                    type="checkbox"
+                                    class="sr-only peer"
+                                />
+                                <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
                         </div>
 
                         <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">

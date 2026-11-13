@@ -33,13 +33,20 @@ class DomainService
         $domainName = strtolower(trim($data['domain']));
         $phpVersion = $data['php_version'] ?? '83';
         $publicSubpath = trim($data['public_path'] ?? '', " /\t\n\r\0\x0B");
+        $useParentRoot = filter_var($data['use_parent_root'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        // Base directory is always /home/<username>/<domain>/public_html
-        $baseDocRoot = "/home/{$user->username}/{$domainName}/public_html";
-        $docRoot = !empty($publicSubpath) ? "{$baseDocRoot}/{$publicSubpath}" : $baseDocRoot;
+        $parentDomain = ! empty($data['parent_domain_id'])
+            ? Domain::find($data['parent_domain_id'])
+            : $this->findClosestParentDomain($user->id, $domainName);
 
-        // Auto-assign type: default to primary (or explicit type if provided)
-        $type = $data['type'] ?? 'primary';
+        // Base directory is /home/<username>/<domain_or_parent>/public_html
+        $baseFolder = ($useParentRoot && $parentDomain) ? $parentDomain->domain : $domainName;
+        $baseDocRoot = "/home/{$user->username}/{$baseFolder}/public_html";
+        $docRoot = ! empty($publicSubpath) ? "{$baseDocRoot}/{$publicSubpath}" : $baseDocRoot;
+
+        // Auto-assign type: subdomain if parent exists, otherwise primary (or explicit type)
+        $parentDomainId = $parentDomain?->id;
+        $type = $parentDomain ? 'subdomain' : ($data['type'] ?? 'primary');
 
         // 1. Provision virtual host via lc-cli
         $cliRes = $this->lcCli->run('vhost', [
@@ -59,14 +66,19 @@ class DomainService
         // 2. Persist domain record in database
         $domain = Domain::create([
             'user_id' => $user->id,
+            'parent_domain_id' => $parentDomainId,
             'domain' => $domainName,
             'type' => $type,
             'document_root' => $docRoot,
             'public_path' => $publicSubpath ?: null,
             'php_version' => $phpVersion,
             'ssl_enabled' => false,
+            'open_basedir_enabled' => false,
             'status' => 'active',
         ]);
+
+        // Re-link any existing standalone/higher-level subdomains that belong under this new domain
+        $this->relinkExistingChildren($domain);
 
         $sslIssued = false;
         $sslWarning = null;
@@ -362,6 +374,59 @@ class DomainService
             }
         }
         return $count;
+    }
+
+    /**
+     * Find the closest existing parent domain for a given FQDN (e.g. v1.api.example.com -> api.example.com -> example.com).
+     */
+    public function findClosestParentDomain(int $userId, string $domainName): ?Domain
+    {
+        $parts = explode('.', strtolower(trim($domainName)));
+        if (count($parts) <= 2) {
+            return null;
+        }
+
+        $candidates = [];
+        for ($i = 1; $i <= count($parts) - 2; $i++) {
+            $candidates[] = implode('.', array_slice($parts, $i));
+        }
+
+        $matches = Domain::where('user_id', $userId)
+            ->whereIn('domain', $candidates)
+            ->get()
+            ->keyBy('domain');
+
+        foreach ($candidates as $candidate) {
+            if ($matches->has($candidate)) {
+                return $matches->get($candidate);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Re-link any existing domains owned by the same user that belong under this newly created domain.
+     */
+    public function relinkExistingChildren(Domain $newDomain): void
+    {
+        $suffix = '.' . $newDomain->domain;
+        $children = Domain::with('parentDomain')
+            ->where('user_id', $newDomain->user_id)
+            ->where('id', '!=', $newDomain->id)
+            ->where('type', '!=', 'alias')
+            ->where('domain', 'like', '%' . $suffix)
+            ->get();
+
+        foreach ($children as $child) {
+            $currentParentLen = $child->parentDomain ? strlen($child->parentDomain->domain) : 0;
+            if ($child->parent_domain_id === null || strlen($newDomain->domain) > $currentParentLen) {
+                $child->update([
+                    'type' => 'subdomain',
+                    'parent_domain_id' => $newDomain->id,
+                ]);
+            }
+        }
     }
 }
 
