@@ -2,21 +2,42 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AuditLog;
+use App\Domains\ServerOps\Actions\ChmodFileEntryAction;
+use App\Domains\ServerOps\Actions\CreateFileEntryAction;
+use App\Domains\ServerOps\Actions\DeleteFileEntryAction;
+use App\Domains\ServerOps\Actions\ListDirectoryAction;
+use App\Domains\ServerOps\Actions\ReadFileContentAction;
+use App\Domains\ServerOps\Actions\ResolveUserBaseDirAction;
+use App\Domains\ServerOps\Actions\SaveFileContentAction;
+use App\Domains\ServerOps\Contracts\FileManagerDriverInterface;
+use App\Domains\ServerOps\ValueObjects\SystemPath;
+use App\Models\Domain;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 use Inertia\Response;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use InvalidArgumentException;
+use RuntimeException;
 
 class FileManagerController extends Controller
 {
+    public function __construct(
+        private readonly ResolveUserBaseDirAction $resolveUserBaseDir,
+        private readonly ListDirectoryAction $listDirectory,
+        private readonly ReadFileContentAction $readFileContent,
+        private readonly SaveFileContentAction $saveFileContent,
+        private readonly CreateFileEntryAction $createFileEntry,
+        private readonly DeleteFileEntryAction $deleteFileEntry,
+        private readonly ChmodFileEntryAction $chmodFileEntry,
+        private readonly FileManagerDriverInterface $driver,
+    ) {}
+
     /**
      * Resolve target domain and verify caller has authorization to access it.
      * Only administrators and the domain's owner are authorized.
      */
-    protected function resolveTargetDomain(Request $request): ?\App\Models\Domain
+    protected function resolveTargetDomain(Request $request): ?Domain
     {
         $domainId = $request->input('domain_id');
         if (! $domainId) {
@@ -24,86 +45,14 @@ class FileManagerController extends Controller
         }
 
         $user = Auth::user();
-        $targetDomain = \App\Models\Domain::with('user')->find($domainId);
+        $targetDomain = Domain::with('user')->find($domainId);
 
         if (! $targetDomain) {
             return null;
         }
 
-        // Authorization check: Admin or owner only
         if ($user && ($user->isAdmin() || (int) $targetDomain->user_id === (int) $user->id)) {
             return $targetDomain;
-        }
-
-        return null;
-    }
-
-    /**
-     * Get the resolved, sanitized base directory for the authenticated user.
-     */
-    protected function getUserBaseDir(?\App\Models\Domain $targetDomain = null): string
-    {
-        $user = Auth::user();
-
-        // If target domain specified and user is admin or owner, use domain owner's home
-        if ($targetDomain && ($user->isAdmin() || (int) $targetDomain->user_id === (int) $user->id)) {
-            $owner = $targetDomain->user;
-            $prodPath = "/home/{$owner->username}";
-
-            if (PHP_OS_FAMILY === 'Linux' && file_exists($prodPath)) {
-                return $prodPath;
-            }
-
-            $sandbox = storage_path("app/homes/{$owner->username}");
-            if (! file_exists($sandbox)) {
-                File::makeDirectory($sandbox . '/public_html', 0755, true, true);
-            }
-            return realpath($sandbox) ?: $sandbox;
-        }
-
-        // In production on Ubuntu, user's home is /home/<username>
-        $prodPath = "/home/{$user->username}";
-
-        if (PHP_OS_FAMILY === 'Linux' && file_exists($prodPath)) {
-            return $prodPath;
-        }
-
-        // Development/fallback sandboxed home directory inside storage/app/homes/<username>
-        $sandbox = storage_path("app/homes/{$user->username}");
-        if (! file_exists($sandbox)) {
-            File::makeDirectory($sandbox . '/public_html', 0755, true, true);
-            file_put_contents($sandbox . '/public_html/index.php', "<?php echo 'Welcome to LiteControl!'; ?>");
-        }
-
-        return realpath($sandbox) ?: $sandbox;
-    }
-
-    /**
-     * Resolve and validate a relative path within the user's home jail.
-     * Prevents directory traversal attacks (e.g. ../../../etc/passwd).
-     */
-    protected function resolveJailedPath(?string $subpath = '', ?\App\Models\Domain $targetDomain = null): ?string
-    {
-        $subpath = $subpath ?? '';
-        $baseDir = $this->getUserBaseDir($targetDomain);
-        $trimmed = trim(str_replace(['\\', '..'], ['/', ''], $subpath), '/');
-        $fullPath = empty($trimmed) ? $baseDir : $baseDir . DIRECTORY_SEPARATOR . $trimmed;
-
-        $realBase = realpath($baseDir) ?: $baseDir;
-
-        // If path doesn't exist yet (e.g. creating new file), check parent
-        if (! file_exists($fullPath)) {
-            $parent = dirname($fullPath);
-            $realParent = realpath($parent);
-            if ($realParent && str_starts_with($realParent, $realBase)) {
-                return $fullPath;
-            }
-            return null;
-        }
-
-        $realFull = realpath($fullPath);
-        if ($realFull && str_starts_with($realFull, $realBase)) {
-            return $realFull;
         }
 
         return null;
@@ -117,36 +66,35 @@ class FileManagerController extends Controller
         $domainId = $request->input('domain_id');
         $targetDomain = null;
         $initialPath = '';
+        $user = Auth::user();
 
         if ($domainId) {
             $targetDomain = $this->resolveTargetDomain($request);
             if ($targetDomain) {
-                // If domain has a configured public_path (e.g., 'public'), initialPath targets it
                 $relDocRoot = $targetDomain->public_path
                     ? "{$targetDomain->domain}/public_html/{$targetDomain->public_path}"
                     : "{$targetDomain->domain}/public_html";
 
                 $initialPath = $relDocRoot;
 
-                // Ensure directory exists on disk
-                $resolved = $this->resolveJailedPath($initialPath, $targetDomain);
-                if (! $resolved || ! file_exists($resolved)) {
-                    $baseDir = $this->getUserBaseDir($targetDomain);
-                    $targetDir = $baseDir . DIRECTORY_SEPARATOR . trim($initialPath, '/');
-                    @File::makeDirectory($targetDir, 0755, true);
+                try {
+                    $baseDir = $this->resolveUserBaseDir->handle($user, $targetDomain);
+                    $systemPath = new SystemPath($baseDir, $initialPath);
+                    $this->driver->ensureDirectory($systemPath);
+                } catch (InvalidArgumentException) {
+                    // Ignore invalid initial path
                 }
             }
         }
 
-        $user = Auth::user();
-        $domainsQuery = \App\Models\Domain::query()->select('id', 'domain', 'user_id', 'document_root', 'public_path');
+        $domainsQuery = Domain::query()->select('id', 'domain', 'user_id', 'document_root', 'public_path');
         if (! $user->isAdmin()) {
             $domainsQuery->where('user_id', $user->id);
         }
         $availableDomains = $domainsQuery->orderBy('domain')->get();
 
         return Inertia::render('Files/Index', [
-            'baseDir' => "/home/" . ($targetDomain ? $targetDomain->user->username : Auth::user()->username),
+            'baseDir' => '/home/' . ($targetDomain ? $targetDomain->user->username : $user->username),
             'initialPath' => $initialPath,
             'targetDomain' => $targetDomain,
             'availableDomains' => $availableDomains,
@@ -156,12 +104,11 @@ class FileManagerController extends Controller
     /**
      * Return directory listing as JSON.
      */
-    public function list(Request $request)
+    public function list(Request $request): JsonResponse
     {
         $domainId = $request->input('domain_id');
         $targetDomain = $this->resolveTargetDomain($request);
 
-        // If domain_id was requested by non-admin who does not own it
         if ($domainId && ! $targetDomain) {
             return response()->json([
                 'status' => 'error',
@@ -169,62 +116,19 @@ class FileManagerController extends Controller
             ], 403);
         }
 
-        $path = $request->input('path', '');
-        $fullPath = $this->resolveJailedPath($path, $targetDomain);
+        $path = (string) $request->input('path', '');
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
 
-        // Auto-provision directory if valid path inside domain was requested but not created on disk yet
-        if ((! $fullPath || ! file_exists($fullPath)) && $targetDomain && !empty($path)) {
-            $baseDir = $this->getUserBaseDir($targetDomain);
-            $trimmed = trim(str_replace(['\\', '..'], ['/', ''], $path), '/');
-            $candidate = $baseDir . DIRECTORY_SEPARATOR . $trimmed;
-            $realBase = realpath($baseDir) ?: $baseDir;
-
-            if (str_starts_with($candidate, $realBase)) {
-                @File::makeDirectory($candidate, 0755, true);
-                $fullPath = $this->resolveJailedPath($path, $targetDomain);
-            }
-        }
-
-        if (! $fullPath || ! is_dir($fullPath)) {
+        try {
+            $systemPath = new SystemPath($baseDir, $path);
+            $autoProvision = (bool) ($targetDomain && $path !== '');
+            $items = $this->listDirectory->handle($systemPath, $autoProvision);
+        } catch (InvalidArgumentException|RuntimeException) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Invalid directory or access denied.',
             ], 403);
         }
-
-        $items = [];
-        $files = scandir($fullPath);
-
-        foreach ($files as $file) {
-            if ($file === '.' || $file === '..') {
-                continue;
-            }
-
-            $filePath = $fullPath . DIRECTORY_SEPARATOR . $file;
-            $isDir = is_dir($filePath);
-            $size = $isDir ? 0 : (@filesize($filePath) ?: 0);
-            $perms = substr(sprintf('%o', @fileperms($filePath) ?: 0), -4);
-            $mtime = @filemtime($filePath) ? date('Y-m-d H:i:s', filemtime($filePath)) : '';
-
-            $items[] = [
-                'name' => $file,
-                'path' => trim($path . '/' . $file, '/'),
-                'is_dir' => $isDir,
-                'size' => $size,
-                'size_human' => $this->formatBytes($size),
-                'permissions' => $perms,
-                'modified_at' => $mtime,
-                'extension' => $isDir ? '' : strtolower(pathinfo($file, PATHINFO_EXTENSION)),
-            ];
-        }
-
-        // Sort dirs first, then files
-        usort($items, function ($a, $b) {
-            if ($a['is_dir'] === $b['is_dir']) {
-                return strcasecmp($a['name'], $b['name']);
-            }
-            return $a['is_dir'] ? -1 : 1;
-        });
 
         return response()->json([
             'status' => 'success',
@@ -236,7 +140,7 @@ class FileManagerController extends Controller
     /**
      * Read content of a file for the code editor.
      */
-    public function content(Request $request)
+    public function content(Request $request): JsonResponse
     {
         $domainId = $request->input('domain_id');
         $targetDomain = $this->resolveTargetDomain($request);
@@ -244,31 +148,30 @@ class FileManagerController extends Controller
             return response()->json(['status' => 'error', 'message' => 'File not found or access denied.'], 403);
         }
 
-        $path = $request->input('path');
-        $fullPath = $this->resolveJailedPath($path, $targetDomain);
+        $path = (string) $request->input('path', '');
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
 
-        if (! $fullPath || ! is_file($fullPath)) {
+        try {
+            $systemPath = new SystemPath($baseDir, $path, mustExist: true);
+            $result = $this->readFileContent->handle($systemPath);
+        } catch (InvalidArgumentException) {
             return response()->json(['status' => 'error', 'message' => 'File not found or access denied.'], 404);
+        } catch (RuntimeException $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 422);
         }
-
-        if (filesize($fullPath) > 5 * 1024 * 1024) {
-            return response()->json(['status' => 'error', 'message' => 'File is too large to open in web editor (> 5MB).'], 422);
-        }
-
-        $content = file_get_contents($fullPath);
 
         return response()->json([
             'status' => 'success',
             'path' => $path,
-            'content' => $content,
-            'size' => filesize($fullPath),
+            'content' => $result['content'],
+            'size' => $result['size'],
         ]);
     }
 
     /**
      * Save edited file content.
      */
-    public function save(Request $request)
+    public function save(Request $request): JsonResponse
     {
         $domainId = $request->input('domain_id');
         $targetDomain = $this->resolveTargetDomain($request);
@@ -276,15 +179,18 @@ class FileManagerController extends Controller
             return response()->json(['status' => 'error', 'message' => 'File not found or access denied.'], 403);
         }
 
-        $path = $request->input('path');
-        $content = $request->input('content', '');
-        $fullPath = $this->resolveJailedPath($path, $targetDomain);
+        $path = (string) $request->input('path', '');
+        $content = (string) $request->input('content', '');
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
 
-        if (! $fullPath || ! is_file($fullPath)) {
+        try {
+            $systemPath = new SystemPath($baseDir, $path, mustExist: true);
+            $this->saveFileContent->handle($systemPath, $content);
+        } catch (InvalidArgumentException) {
             return response()->json(['status' => 'error', 'message' => 'File not found or access denied.'], 404);
+        } catch (RuntimeException $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
-
-        file_put_contents($fullPath, $content);
 
         return response()->json(['status' => 'success', 'message' => 'File saved successfully.']);
     }
@@ -292,7 +198,7 @@ class FileManagerController extends Controller
     /**
      * Create a new file or directory.
      */
-    public function create(Request $request)
+    public function create(Request $request): JsonResponse
     {
         $domainId = $request->input('domain_id');
         $targetDomain = $this->resolveTargetDomain($request);
@@ -300,29 +206,27 @@ class FileManagerController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Access denied.'], 403);
         }
 
-        $path = $request->input('path', '');
-        $name = $request->input('name');
-        $type = $request->input('type', 'file'); // 'file' or 'folder'
+        $path = (string) $request->input('path', '');
+        $name = (string) $request->input('name', '');
+        $type = (string) $request->input('type', 'file');
 
         if (! preg_match('/^[a-zA-Z0-9._-]+$/', $name)) {
             return response()->json(['status' => 'error', 'message' => 'Invalid name.'], 422);
         }
 
         $targetSubpath = trim($path . '/' . $name, '/');
-        $fullPath = $this->resolveJailedPath($targetSubpath, $targetDomain);
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
 
-        if (! $fullPath) {
+        try {
+            $systemPath = new SystemPath($baseDir, $targetSubpath);
+            if ($systemPath->exists()) {
+                return response()->json(['status' => 'error', 'message' => 'Item already exists.'], 422);
+            }
+            $this->createFileEntry->handle($systemPath, $type);
+        } catch (InvalidArgumentException) {
             return response()->json(['status' => 'error', 'message' => 'Access denied.'], 403);
-        }
-
-        if (file_exists($fullPath)) {
-            return response()->json(['status' => 'error', 'message' => 'Item already exists.'], 422);
-        }
-
-        if ($type === 'folder') {
-            File::makeDirectory($fullPath, 0755, true);
-        } else {
-            file_put_contents($fullPath, '');
+        } catch (RuntimeException $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
 
         return response()->json(['status' => 'success', 'message' => ucfirst($type) . ' created.']);
@@ -331,7 +235,7 @@ class FileManagerController extends Controller
     /**
      * Delete a file or directory.
      */
-    public function delete(Request $request)
+    public function delete(Request $request): JsonResponse
     {
         $domainId = $request->input('domain_id');
         $targetDomain = $this->resolveTargetDomain($request);
@@ -339,17 +243,16 @@ class FileManagerController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Access denied.'], 403);
         }
 
-        $path = $request->input('path');
-        $fullPath = $this->resolveJailedPath($path, $targetDomain);
+        $path = (string) $request->input('path', '');
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
 
-        if (! $fullPath || ! file_exists($fullPath)) {
+        try {
+            $systemPath = new SystemPath($baseDir, $path, mustExist: true);
+            $this->deleteFileEntry->handle($systemPath);
+        } catch (InvalidArgumentException) {
             return response()->json(['status' => 'error', 'message' => 'Target not found.'], 404);
-        }
-
-        if (is_dir($fullPath)) {
-            File::deleteDirectory($fullPath);
-        } else {
-            @unlink($fullPath);
+        } catch (RuntimeException $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
 
         return response()->json(['status' => 'success', 'message' => 'Item deleted.']);
@@ -358,7 +261,7 @@ class FileManagerController extends Controller
     /**
      * Upload files into current path.
      */
-    public function upload(Request $request)
+    public function upload(Request $request): JsonResponse
     {
         $domainId = $request->input('domain_id');
         $targetDomain = $this->resolveTargetDomain($request);
@@ -368,20 +271,25 @@ class FileManagerController extends Controller
 
         $request->validate([
             'path' => ['nullable', 'string'],
-            'files.*' => ['required', 'file', 'max:102400'], // 100MB max per file
+            'files.*' => ['required', 'file', 'max:102400'],
         ]);
 
-        $path = $request->input('path', '');
-        $destDir = $this->resolveJailedPath($path, $targetDomain);
+        $path = (string) $request->input('path', '');
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
 
-        if (! $destDir || ! is_dir($destDir)) {
+        try {
+            $destDir = new SystemPath($baseDir, $path, mustExist: true);
+            if (! $destDir->isDir()) {
+                return response()->json(['status' => 'error', 'message' => 'Target directory does not exist.'], 422);
+            }
+        } catch (InvalidArgumentException) {
             return response()->json(['status' => 'error', 'message' => 'Target directory does not exist.'], 422);
         }
 
         if ($request->hasFile('files')) {
             foreach ($request->file('files') as $uploadedFile) {
                 $filename = $uploadedFile->getClientOriginalName();
-                $uploadedFile->move($destDir, $filename);
+                $uploadedFile->move($destDir->fullPath, $filename);
             }
         }
 
@@ -391,7 +299,7 @@ class FileManagerController extends Controller
     /**
      * Change permissions of a file or directory (chmod).
      */
-    public function chmod(Request $request)
+    public function chmod(Request $request): JsonResponse
     {
         $domainId = $request->input('domain_id');
         $targetDomain = $this->resolveTargetDomain($request);
@@ -404,38 +312,23 @@ class FileManagerController extends Controller
             'permissions' => ['required', 'string', 'regex:/^[0-7]{3,4}$/'],
         ]);
 
-        $path = $request->input('path');
+        $path = (string) $request->input('path', '');
         $octal = octdec($request->input('permissions'));
-        $fullPath = $this->resolveJailedPath($path, $targetDomain);
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
 
-        if (! $fullPath || ! file_exists($fullPath)) {
+        try {
+            $systemPath = new SystemPath($baseDir, $path, mustExist: true);
+            $newPerms = $this->chmodFileEntry->handle($systemPath, $octal);
+        } catch (InvalidArgumentException) {
             return response()->json(['status' => 'error', 'message' => 'Target file or directory not found.'], 404);
-        }
-
-        if (! @chmod($fullPath, $octal)) {
+        } catch (RuntimeException) {
             return response()->json(['status' => 'error', 'message' => 'Failed to change permissions.'], 500);
         }
-
-        $newPerms = substr(sprintf('%o', @fileperms($fullPath) ?: 0), -4);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Permissions updated successfully.',
             'permissions' => $newPerms,
         ]);
-    }
-
-    /**
-     * Format byte values to human readable string.
-     */
-    protected function formatBytes(int $bytes, int $precision = 1): string
-    {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-        $bytes /= (1 << (10 * $pow));
-
-        return round($bytes, $precision) . ' ' . $units[$pow];
     }
 }

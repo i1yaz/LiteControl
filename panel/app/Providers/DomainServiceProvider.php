@@ -6,6 +6,8 @@ use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\Infrastructure\CliBackupAdapter;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\Infrastructure\CliPhpRuntimeAdapter;
+use App\Domains\ServerOps\Contracts\FileManagerDriverInterface;
+use App\Domains\ServerOps\Infrastructure\LocalFileManagerAdapter;
 use Illuminate\Support\ServiceProvider;
 
 class DomainServiceProvider extends ServiceProvider
@@ -17,6 +19,7 @@ class DomainServiceProvider extends ServiceProvider
     {
         $this->app->bind(BackupDriverInterface::class, CliBackupAdapter::class);
         $this->app->bind(PhpRuntimeDriverInterface::class, CliPhpRuntimeAdapter::class);
+        $this->app->bind(FileManagerDriverInterface::class, LocalFileManagerAdapter::class);
     }
 
     /**
