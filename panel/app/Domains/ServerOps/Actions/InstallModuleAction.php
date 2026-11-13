@@ -4,7 +4,7 @@ namespace App\Domains\ServerOps\Actions;
 
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use App\Exceptions\System\LcCliException;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\User;
 
 class InstallModuleAction

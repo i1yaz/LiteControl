@@ -4,7 +4,7 @@ namespace App\Domains\Security\Actions;
 
 use App\Domains\Security\Contracts\FirewallDriverInterface;
 use App\Domains\Security\ValueObjects\Port;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\User;
 
 class UpdateSshPortAction

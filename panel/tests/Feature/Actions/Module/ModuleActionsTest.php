@@ -5,7 +5,7 @@ namespace Tests\Feature\Actions\Module;
 use App\Domains\ServerOps\Actions\InstallModuleAction;
 use App\Domains\ServerOps\Actions\RemoveModuleAction;
 use App\Exceptions\System\LcCliException;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\User;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;

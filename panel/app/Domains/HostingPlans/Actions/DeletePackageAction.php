@@ -2,7 +2,7 @@
 
 namespace App\Domains\HostingPlans\Actions;
 
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\Package;
 use DomainException;
 

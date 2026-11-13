@@ -11,7 +11,7 @@ use App\Domains\Security\Contracts\FirewallDriverInterface;
 use App\Domains\Security\Models\FirewallRule;
 use App\Domains\Security\ValueObjects\Port;
 use App\Exceptions\System\LcCliException;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\Domain;
 use App\Services\SslService;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;

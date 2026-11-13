@@ -2,7 +2,7 @@
 
 namespace App\Domains\Security\Actions;
 
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\User;
 use App\Services\System\PanelSslCliService;
 

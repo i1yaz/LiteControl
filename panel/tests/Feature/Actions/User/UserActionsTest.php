@@ -8,7 +8,7 @@ use App\Actions\User\SuspendUserAction;
 use App\Actions\User\UnsuspendUserAction;
 use App\Actions\User\UpdateUserAction;
 use App\Exceptions\System\LcCliException;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\Domain;
 use App\Models\Package;
 use App\Models\User;

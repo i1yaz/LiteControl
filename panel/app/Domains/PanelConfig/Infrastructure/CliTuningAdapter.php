@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Services\System;
+namespace App\Domains\PanelConfig\Infrastructure;
 
+use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use App\Exceptions\System\LcCliException;
 use App\Support\Cli\LcCliService;
 
-class TuningCliService
+class CliTuningAdapter implements TuningDriverInterface
 {
     public function __construct(
         protected LcCliService $lcCli
@@ -14,7 +15,7 @@ class TuningCliService
     /**
      * Retrieve OpenLiteSpeed tuning configuration.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function getTuning(): array
     {
@@ -30,8 +31,9 @@ class TuningCliService
     /**
      * Update OpenLiteSpeed tuning parameters.
      *
-     * @param array<string, mixed> $settings Key-value pairs of tuning directives
-     * @return array
+     * @param  array<string, mixed>  $settings  Key-value pairs of tuning directives
+     * @return array<string, mixed>
+     *
      * @throws LcCliException
      */
     public function updateTuning(array $settings): array

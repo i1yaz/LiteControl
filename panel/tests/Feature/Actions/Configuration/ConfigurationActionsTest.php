@@ -2,15 +2,15 @@
 
 namespace Tests\Feature\Actions\Configuration;
 
-use App\Actions\Configuration\UpdatePhpLimitsAction;
-use App\Actions\Configuration\UpdateSettingsAction;
-use App\Actions\Configuration\UpdateTuningAction;
+use App\Domains\PanelConfig\Actions\UpdatePhpLimitsAction;
+use App\Domains\PanelConfig\Actions\UpdateSettingsAction;
+use App\Domains\PanelConfig\Actions\UpdateTuningAction;
 use App\Exceptions\System\LcCliException;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\User;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\ServerOps\Contracts\ServerDriverInterface;
-use App\Services\System\TuningCliService;
+use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -86,7 +86,7 @@ class ConfigurationActionsTest extends TestCase
 
     public function test_update_tuning_action_success(): void
     {
-        $tuningMock = Mockery::mock(TuningCliService::class);
+        $tuningMock = Mockery::mock(TuningDriverInterface::class);
         $params = [
             'maxConnections' => 20000,
             'maxSSLConnections' => 15000,
@@ -118,7 +118,7 @@ class ConfigurationActionsTest extends TestCase
 
     public function test_update_tuning_action_throws_on_failure(): void
     {
-        $tuningMock = Mockery::mock(TuningCliService::class);
+        $tuningMock = Mockery::mock(TuningDriverInterface::class);
         $tuningMock->shouldReceive('updateTuning')
             ->once()
             ->andThrow(new LcCliException('Tuning error', 'tuning', ['set']));

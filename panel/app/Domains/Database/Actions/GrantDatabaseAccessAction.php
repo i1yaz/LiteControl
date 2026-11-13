@@ -7,7 +7,7 @@ use App\Domains\Database\Models\Database;
 use App\Domains\Database\Models\DatabaseUser;
 use App\Domains\Database\ValueObjects\DatabaseName;
 use App\Domains\Database\ValueObjects\DatabaseUsername;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 

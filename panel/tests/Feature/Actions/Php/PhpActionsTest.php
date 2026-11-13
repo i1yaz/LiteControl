@@ -7,7 +7,7 @@ use App\Domains\PhpRuntime\Actions\RemovePhpVersionAction;
 use App\Domains\PhpRuntime\Actions\TogglePhpExtensionAction;
 use App\Domains\PhpRuntime\Actions\UpdatePhpIniAction;
 use App\Exceptions\System\LcCliException;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\User;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;

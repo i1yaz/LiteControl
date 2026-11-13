@@ -6,7 +6,7 @@ namespace App\Domains\Backup\Actions;
 
 use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\ValueObjects\BackupPath;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\User;
 
 class RestoreBackupAction

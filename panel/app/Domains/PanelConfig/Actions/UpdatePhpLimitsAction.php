@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Actions\Configuration;
+namespace App\Domains\PanelConfig\Actions;
 
-use App\Exceptions\System\LcCliException;
-use App\Models\AuditLog;
-use App\Models\User;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
+use App\Exceptions\System\LcCliException;
+use App\Models\User;
 
 class UpdatePhpLimitsAction
 {
@@ -17,11 +17,8 @@ class UpdatePhpLimitsAction
     /**
      * Update PHP resource limits for a specific version.
      *
-     * @param string $version
-     * @param array<string, mixed> $directives Key-value pairs of PHP INI directives
-     * @param User|null $actor
-     * @param string|null $ipAddress
-     * @return void
+     * @param  array<string, mixed>  $directives  Key-value pairs of PHP INI directives
+     *
      * @throws LcCliException
      */
     public function handle(string $version, array $directives, ?User $actor = null, ?string $ipAddress = null): void

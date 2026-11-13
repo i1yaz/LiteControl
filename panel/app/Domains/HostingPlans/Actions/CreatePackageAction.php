@@ -4,7 +4,7 @@ namespace App\Domains\HostingPlans\Actions;
 
 use App\Domains\HostingPlans\ValueObjects\PackageName;
 use App\Domains\HostingPlans\ValueObjects\ResourceQuotas;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\Package;
 
 class CreatePackageAction

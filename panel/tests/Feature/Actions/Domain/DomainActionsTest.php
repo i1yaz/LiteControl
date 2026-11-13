@@ -7,7 +7,7 @@ use App\Actions\Domain\CreateSubdomainAction;
 use App\Actions\Domain\FixDomainPermissionsAction;
 use App\Actions\Domain\UpdateVhostConfAction;
 use App\Exceptions\System\LcCliException;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\Domain;
 use App\Models\Package;
 use App\Models\User;

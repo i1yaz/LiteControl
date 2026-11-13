@@ -2,7 +2,7 @@
 
 namespace App\Actions\User;
 
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\Package;
 use App\Models\User;
 use App\Services\System\UserCliService;

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\User;
 use App\Support\Cli\LcCliService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

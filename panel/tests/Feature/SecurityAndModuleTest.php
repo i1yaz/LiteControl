@@ -6,7 +6,7 @@ use Tests\TestCase;
 use App\Models\User;
 use App\Models\Domain;
 use App\Domains\Security\Models\FirewallRule;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;

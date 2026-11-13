@@ -8,7 +8,7 @@ use App\Domains\ServerOps\Actions\ToggleWebAdminAction;
 use App\Domains\ServerOps\Actions\UpdateHostnameAction;
 use App\Domains\ServerOps\Actions\UpdateTimezoneAction;
 use App\Exceptions\System\LcCliException;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\User;
 use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;

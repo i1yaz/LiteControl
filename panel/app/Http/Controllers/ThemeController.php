@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\ThemeManager;
+use App\Domains\PanelConfig\Services\ThemeManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;

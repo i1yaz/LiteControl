@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Domains\PanelConfig\Services;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -21,7 +21,7 @@ class ThemeManager
 
         foreach (File::glob($pattern) as $path) {
             $manifest = json_decode(File::get($path), true);
-            if (is_array($manifest) && !empty($manifest['id'])) {
+            if (is_array($manifest) && ! empty($manifest['id'])) {
                 $themes[$manifest['id']] = $manifest;
             }
         }
@@ -32,7 +32,6 @@ class ThemeManager
     /**
      * Resolve the active theme manifest for the current request.
      *
-     * @param  \Illuminate\Http\Request|null  $request
      * @return array<string, mixed>
      */
     public function resolve(?Request $request = null): array
@@ -63,3 +62,4 @@ class ThemeManager
         ];
     }
 }
+

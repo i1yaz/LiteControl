@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Configuration\UpdatePhpLimitsAction;
-use App\Actions\Configuration\UpdateSettingsAction;
-use App\Actions\Configuration\UpdateTuningAction;
-use App\Exceptions\System\LcCliException;
+use App\Domains\PanelConfig\Actions\UpdatePhpLimitsAction;
+use App\Domains\PanelConfig\Actions\UpdateSettingsAction;
+use App\Domains\PanelConfig\Actions\UpdateTuningAction;
+use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\ServerOps\Contracts\ServerDriverInterface;
-use App\Services\System\TuningCliService;
+use App\Exceptions\System\LcCliException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +19,7 @@ class ConfigurationController extends Controller
 {
     public function __construct(
         protected ServerDriverInterface $serverCli,
-        protected TuningCliService $tuningCli,
+        protected TuningDriverInterface $tuningCli,
         protected PhpRuntimeDriverInterface $phpCli
     ) {}
 

@@ -1,5 +1,5 @@
 @php
-    $activeTheme = app(\App\Services\ThemeManager::class)->resolve(request());
+    $activeTheme = app(\App\Domains\PanelConfig\Services\ThemeManager::class)->resolve(request());
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full" data-theme="{{ $activeTheme['id'] }}">

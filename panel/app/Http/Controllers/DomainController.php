@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Domain;
 use App\Models\User;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\FtpAccount;
 use App\Services\DomainService;
 use App\Services\SslService;

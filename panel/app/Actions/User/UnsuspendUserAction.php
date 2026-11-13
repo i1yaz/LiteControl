@@ -3,7 +3,7 @@
 namespace App\Actions\User;
 
 use App\Exceptions\System\LcCliException;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\User;
 use App\Services\System\UserCliService;
 use Illuminate\Support\Facades\DB;

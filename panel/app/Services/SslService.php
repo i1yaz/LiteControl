@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\Domain;
 use App\Models\User;
 use App\Support\Cli\LcCliService;

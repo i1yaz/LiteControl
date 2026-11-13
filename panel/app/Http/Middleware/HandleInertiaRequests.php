@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Services\ThemeManager;
+use App\Domains\PanelConfig\Services\ThemeManager;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 

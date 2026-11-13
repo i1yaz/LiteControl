@@ -8,7 +8,7 @@ use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\Models\BackupSchedule;
 use App\Domains\Backup\ValueObjects\BackupFrequency;
 use App\Domains\Backup\ValueObjects\RetentionCount;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 

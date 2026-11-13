@@ -1,25 +1,24 @@
 <?php
 
-namespace App\Actions\Configuration;
+namespace App\Domains\PanelConfig\Actions;
 
+use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Exceptions\System\LcCliException;
-use App\Models\AuditLog;
 use App\Models\User;
-use App\Services\System\TuningCliService;
 
 class UpdateTuningAction
 {
     public function __construct(
-        protected TuningCliService $tuningCli
+        protected TuningDriverInterface $tuningCli
     ) {}
 
     /**
      * Update OpenLiteSpeed tuning parameters.
      *
-     * @param array<string, mixed> $validated
-     * @param User|null $actor
-     * @param string|null $ipAddress
-     * @return array
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     *
      * @throws LcCliException
      */
     public function handle(array $validated, ?User $actor = null, ?string $ipAddress = null): array

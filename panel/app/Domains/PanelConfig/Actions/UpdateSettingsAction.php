@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Actions\Configuration;
+namespace App\Domains\PanelConfig\Actions;
 
-use App\Exceptions\System\LcCliException;
-use App\Models\AuditLog;
-use App\Models\User;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\ServerOps\Contracts\ServerDriverInterface;
+use App\Exceptions\System\LcCliException;
+use App\Models\User;
 
 class UpdateSettingsAction
 {
@@ -16,15 +16,13 @@ class UpdateSettingsAction
     /**
      * Update general panel/server settings.
      *
-     * @param array<string, mixed> $validated
-     * @param User|null $actor
-     * @param string|null $ipAddress
-     * @return void
+     * @param  array<string, mixed>  $validated
+     *
      * @throws LcCliException
      */
     public function handle(array $validated, ?User $actor = null, ?string $ipAddress = null): void
     {
-        if (!empty($validated['default_theme'])) {
+        if (! empty($validated['default_theme'])) {
             session(['theme' => $validated['default_theme']]);
             if ($actor) {
                 $actor->update(['theme' => $validated['default_theme']]);

@@ -6,6 +6,8 @@ use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\Infrastructure\CliBackupAdapter;
 use App\Domains\Database\Contracts\DatabaseDriverInterface;
 use App\Domains\Database\Infrastructure\CliDatabaseAdapter;
+use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
+use App\Domains\PanelConfig\Infrastructure\CliTuningAdapter;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\Infrastructure\CliPhpRuntimeAdapter;
 use App\Domains\Security\Contracts\FirewallDriverInterface;
@@ -29,6 +31,7 @@ class DomainServiceProvider extends ServiceProvider
     {
         $this->app->bind(BackupDriverInterface::class, CliBackupAdapter::class);
         $this->app->bind(DatabaseDriverInterface::class, CliDatabaseAdapter::class);
+        $this->app->bind(TuningDriverInterface::class, CliTuningAdapter::class);
         $this->app->bind(PhpRuntimeDriverInterface::class, CliPhpRuntimeAdapter::class);
         $this->app->bind(FirewallDriverInterface::class, CliFirewallAdapter::class);
         $this->app->bind(FileManagerDriverInterface::class, LocalFileManagerAdapter::class);

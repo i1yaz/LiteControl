@@ -6,7 +6,7 @@ namespace App\Domains\Backup\Actions;
 
 use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\Models\BackupSchedule;
-use App\Models\AuditLog;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
