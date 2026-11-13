@@ -11,12 +11,23 @@ export function useNavigation() {
 
     const isRouteActive = (routeUrl) => {
         if (!routeUrl) return false;
-        if (routeUrl === '/dashboard') {
-            return currentUrl.value === '/dashboard' || currentUrl.value === '/';
-        }
-        // Remove query parameters for matching
         const cleanCurrent = currentUrl.value.split('?')[0];
-        return cleanCurrent === routeUrl || cleanCurrent.startsWith(`${routeUrl}/`);
+        if (routeUrl === '/dashboard') {
+            return cleanCurrent === '/dashboard' || cleanCurrent === '/';
+        }
+        if (cleanCurrent === routeUrl) {
+            return true;
+        }
+        if (!cleanCurrent.startsWith(`${routeUrl}/`)) {
+            return false;
+        }
+        // Only match as a prefix if no more-specific nav route matches cleanCurrent
+        return !allNavRoutes.value.some(
+            other =>
+                other !== routeUrl &&
+                other.length > routeUrl.length &&
+                (cleanCurrent === other || cleanCurrent.startsWith(`${other}/`))
+        );
     };
 
     const isItemActive = (item) => {
@@ -42,6 +53,19 @@ export function useNavigation() {
                 };
             })
             .filter(item => !item.children || item.children.length > 0);
+    });
+
+    const allNavRoutes = computed(() => {
+        const routes = [];
+        for (const item of filteredNavigation.value) {
+            if (item.route) routes.push(item.route);
+            if (item.children) {
+                for (const child of item.children) {
+                    if (child.route) routes.push(child.route);
+                }
+            }
+        }
+        return routes;
     });
 
     // Reactive accordion state
