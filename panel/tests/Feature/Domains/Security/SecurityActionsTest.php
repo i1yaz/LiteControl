@@ -1,17 +1,17 @@
 <?php
 
-namespace Tests\Feature\Actions\Security;
+namespace Tests\Feature\Domains\Security;
 
-use App\Actions\Security\AddFirewallRuleAction;
-use App\Actions\Security\DeleteFirewallRuleAction;
-use App\Actions\Security\UpdatePanelPortAction;
-use App\Actions\Security\UpdatePanelSslAction;
-use App\Actions\Security\UpdateSshPortAction;
+use App\Domains\Security\Actions\AddFirewallRuleAction;
+use App\Domains\Security\Actions\DeleteFirewallRuleAction;
+use App\Domains\Security\Actions\UpdatePanelPortAction;
+use App\Domains\Security\Actions\UpdatePanelSslAction;
+use App\Domains\Security\Actions\UpdateSshPortAction;
+use App\Domains\Security\Contracts\FirewallDriverInterface;
+use App\Domains\Security\Models\FirewallRule;
+use App\Domains\Security\ValueObjects\Port;
 use App\Exceptions\System\LcCliException;
-use App\Models\AuditLog;
-use App\Models\FirewallRule;
 use App\Models\User;
-use App\Services\System\FirewallCliService;
 use App\Services\System\PanelSslCliService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -35,7 +35,7 @@ class SecurityActionsTest extends TestCase
 
     public function test_add_firewall_rule_action_success(): void
     {
-        $firewallMock = Mockery::mock(FirewallCliService::class);
+        $firewallMock = Mockery::mock(FirewallDriverInterface::class);
         $firewallMock->shouldReceive('addRule')
             ->once()
             ->with('allow', '3000', 'tcp', '192.168.1.50')
@@ -70,7 +70,7 @@ class SecurityActionsTest extends TestCase
 
     public function test_add_firewall_rule_action_throws_on_failure(): void
     {
-        $firewallMock = Mockery::mock(FirewallCliService::class);
+        $firewallMock = Mockery::mock(FirewallDriverInterface::class);
         $firewallMock->shouldReceive('addRule')
             ->once()
             ->andThrow(new LcCliException('Failed to apply rule', 'security', ['ufw-allow', '9999']));
@@ -101,7 +101,7 @@ class SecurityActionsTest extends TestCase
             'source_ip' => 'Anywhere',
         ]);
 
-        $firewallMock = Mockery::mock(FirewallCliService::class);
+        $firewallMock = Mockery::mock(FirewallDriverInterface::class);
         $firewallMock->shouldReceive('deleteRule')
             ->once()
             ->with((string) $rule->id)
@@ -123,14 +123,14 @@ class SecurityActionsTest extends TestCase
 
     public function test_update_panel_port_action_success(): void
     {
-        $firewallMock = Mockery::mock(FirewallCliService::class);
+        $firewallMock = Mockery::mock(FirewallDriverInterface::class);
         $firewallMock->shouldReceive('updatePanelPort')
             ->once()
-            ->with(8443)
+            ->with(Mockery::on(fn (Port $p) => $p->value === 8443))
             ->andReturn(['old_port' => 8090, 'new_port' => 8443]);
 
         $action = new UpdatePanelPortAction($firewallMock);
-        $result = $action->handle(8443, $this->admin, '10.0.0.3');
+        $result = $action->handle(Port::fromInt(8443), $this->admin, '10.0.0.3');
 
         $this->assertEquals(8443, $result['new_port']);
         $this->assertDatabaseHas('audit_logs', [
@@ -144,14 +144,14 @@ class SecurityActionsTest extends TestCase
 
     public function test_update_ssh_port_action_success(): void
     {
-        $firewallMock = Mockery::mock(FirewallCliService::class);
+        $firewallMock = Mockery::mock(FirewallDriverInterface::class);
         $firewallMock->shouldReceive('updateSshPort')
             ->once()
-            ->with(2222)
+            ->with(Mockery::on(fn (Port $p) => $p->value === 2222))
             ->andReturn(['old_port' => 22, 'new_port' => 2222]);
 
         $action = new UpdateSshPortAction($firewallMock);
-        $result = $action->handle(2222, $this->admin, '10.0.0.4');
+        $result = $action->handle(Port::fromInt(2222), $this->admin, '10.0.0.4');
 
         $this->assertEquals(2222, $result['new_port']);
         $this->assertDatabaseHas('audit_logs', [

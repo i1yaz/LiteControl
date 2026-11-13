@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Security\AddFirewallRuleAction;
-use App\Actions\Security\DeleteFirewallRuleAction;
-use App\Actions\Security\UpdatePanelPortAction;
-use App\Actions\Security\UpdatePanelSslAction;
-use App\Actions\Security\UpdateSshPortAction;
+use App\Domains\Security\Actions\AddFirewallRuleAction;
+use App\Domains\Security\Actions\DeleteFirewallRuleAction;
+use App\Domains\Security\Actions\UpdatePanelPortAction;
+use App\Domains\Security\Actions\UpdatePanelSslAction;
+use App\Domains\Security\Actions\UpdateSshPortAction;
+use App\Domains\Security\Contracts\FirewallDriverInterface;
+use App\Domains\Security\Models\FirewallRule;
+use App\Domains\Security\ValueObjects\Port;
 use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
 use App\Models\Domain;
-use App\Models\FirewallRule;
 use App\Services\SslService;
-use App\Services\System\FirewallCliService;
 use App\Services\System\ModuleCliService;
 use Illuminate\Http\Request;
 use App\Services\TotpService;
@@ -28,7 +29,7 @@ class SecurityController extends Controller
 {
     public function __construct(
         protected SslService $sslService,
-        protected FirewallCliService $firewallCli,
+        protected FirewallDriverInterface $firewallDriver,
         protected ModuleCliService $moduleCli
     ) {}
 
@@ -127,7 +128,7 @@ class SecurityController extends Controller
      */
     public function ufw(): Response
     {
-        $ufwData = $this->firewallCli->getUfwStatus();
+        $ufwData = $this->firewallDriver->getUfwStatus();
         $rules = $ufwData['rules'] ?? [];
         $active = $ufwData['active'] ?? true;
 
@@ -179,7 +180,7 @@ class SecurityController extends Controller
      */
     public function portFirewall(): Response
     {
-        $ufwData = $this->firewallCli->getUfwStatus();
+        $ufwData = $this->firewallDriver->getUfwStatus();
         $rules = $ufwData['rules'] ?? [];
 
         $standardPorts = [
@@ -221,7 +222,7 @@ class SecurityController extends Controller
         ]);
 
         try {
-            $action->handle((int) $validated['port'], Auth::user(), $request->ip());
+            $action->handle(Port::fromInt((int) $validated['port']), Auth::user(), $request->ip());
             return redirect()->back()->with('success', "Panel listening port changed to {$validated['port']}.");
         } catch (LcCliException $e) {
             return redirect()->back()->with('error', $e->getMessage() ?: 'Failed to change panel port.');
@@ -248,7 +249,7 @@ class SecurityController extends Controller
         ]);
 
         try {
-            $action->handle((int) $validated['port'], Auth::user(), $request->ip());
+            $action->handle(Port::fromInt((int) $validated['port']), Auth::user(), $request->ip());
             return redirect()->back()->with('success', "SSH service port changed to {$validated['port']}.");
         } catch (LcCliException $e) {
             return redirect()->back()->with('error', $e->getMessage() ?: 'Failed to change SSH port.');

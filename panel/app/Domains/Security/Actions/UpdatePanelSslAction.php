@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Security;
+namespace App\Domains\Security\Actions;
 
 use App\Models\AuditLog;
 use App\Models\User;
@@ -15,10 +15,7 @@ class UpdatePanelSslAction
     /**
      * Configure LiteControl panel SSL (Let's Encrypt or custom).
      *
-     * @param array $data ['type' => 'letsencrypt|custom', 'domain' => ?, 'certificate' => ?, 'private_key' => ?]
-     * @param User|null $actor
-     * @param string|null $ipAddress
-     * @return array
+     * @param  array  $data  ['type' => 'letsencrypt|custom', 'domain' => ?, 'certificate' => ?, 'private_key' => ?]
      */
     public function handle(array $data, ?User $actor = null, ?string $ipAddress = null): array
     {

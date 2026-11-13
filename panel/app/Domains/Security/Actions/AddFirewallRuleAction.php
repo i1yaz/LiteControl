@@ -1,34 +1,31 @@
 <?php
 
-namespace App\Actions\Security;
+namespace App\Domains\Security\Actions;
 
+use App\Domains\Security\Contracts\FirewallDriverInterface;
+use App\Domains\Security\Models\FirewallRule;
 use App\Models\AuditLog;
-use App\Models\FirewallRule;
 use App\Models\User;
-use App\Services\System\FirewallCliService;
 use Illuminate\Support\Facades\DB;
 
 class AddFirewallRuleAction
 {
     public function __construct(
-        protected FirewallCliService $firewallCli
+        protected FirewallDriverInterface $firewallDriver
     ) {}
 
     /**
      * Add firewall rule via CLI, insert database record, and write audit log.
      *
-     * @param array $data ['name', 'port', 'protocol', 'action', 'source_ip']
-     * @param User|null $actor
-     * @param string|null $ipAddress
-     * @return FirewallRule
+     * @param  array  $data  ['name', 'port', 'protocol', 'action', 'source_ip']
      */
     public function handle(array $data, ?User $actor = null, ?string $ipAddress = null): FirewallRule
     {
-        $this->firewallCli->addRule(
+        $this->firewallDriver->addRule(
             action: $data['action'],
             port: (string) $data['port'],
             protocol: $data['protocol'] ?? 'tcp',
-            sourceIp: !empty($data['source_ip']) ? $data['source_ip'] : null
+            sourceIp: ! empty($data['source_ip']) ? $data['source_ip'] : null
         );
 
         return DB::transaction(function () use ($data, $actor, $ipAddress) {
