@@ -218,8 +218,10 @@ cmd_vhost_remove() {
     fi
 
     local doc_root=""
+    local user=""
     if [[ -f "${VHOSTS_META_DIR}/${domain}.conf" ]]; then
         doc_root=$(awk -F= '/^DOC_ROOT=/{print $2}' "${VHOSTS_META_DIR}/${domain}.conf")
+        user=$(awk -F= '/^USER=/{print $2}' "${VHOSTS_META_DIR}/${domain}.conf")
     fi
 
     ols_backup_config
@@ -241,8 +243,13 @@ cmd_vhost_remove() {
         emit_error "Failed to reload OpenLiteSpeed after removing '${domain}'; rolled back."
     fi
 
-    if [[ "${flag}" == "--delete-files" && -n "${doc_root}" && -d "${doc_root}" ]]; then
-        rm -rf "${doc_root}"
+    if [[ "${flag}" == "--delete-files" ]]; then
+        if [[ -n "${doc_root}" && -d "${doc_root}" ]]; then
+            rm -rf "${doc_root}"
+        fi
+        if [[ -n "${user}" && -d "${LC_HOME_ROOT}/${user}/${domain}" ]]; then
+            rm -rf "${LC_HOME_ROOT}/${user}/${domain}"
+        fi
     fi
 
     rm -f "${VHOSTS_META_DIR}/${domain}.conf"
