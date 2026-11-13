@@ -3,7 +3,7 @@
 namespace App\Services\System;
 
 use App\Exceptions\System\LcCliException;
-use App\Services\LcCliService;
+use App\Support\Cli\LcCliService;
 
 class BackupCliService
 {

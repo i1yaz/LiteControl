@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
-use App\Services\LcCliService;
+use App\Support\Cli\LcCliService;
 use Illuminate\Support\Facades\Process;
 
 class LcCliServiceTest extends TestCase

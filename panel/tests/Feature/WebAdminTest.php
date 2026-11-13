@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AuditLog;
 use App\Models\User;
-use App\Services\LcCliService;
+use App\Support\Cli\LcCliService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

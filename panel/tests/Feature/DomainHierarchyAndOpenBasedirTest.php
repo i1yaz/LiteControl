@@ -6,7 +6,7 @@ use App\Actions\Domain\DeleteDomainAction;
 use App\Models\Domain;
 use App\Models\User;
 use App\Services\DomainService;
-use App\Services\LcCliService;
+use App\Support\Cli\LcCliService;
 use App\Services\System\VhostService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;

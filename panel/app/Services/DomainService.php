@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AuditLog;
 use App\Models\Domain;
 use App\Models\User;
+use App\Support\Cli\LcCliService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
