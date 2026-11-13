@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Backup\AddBackupScheduleAction;
-use App\Actions\Backup\CreateBackupAction;
-use App\Actions\Backup\RemoveBackupScheduleAction;
-use App\Actions\Backup\RestoreBackupAction;
+use App\Domains\Backup\Actions\AddBackupScheduleAction;
+use App\Domains\Backup\Actions\CreateBackupAction;
+use App\Domains\Backup\Actions\RemoveBackupScheduleAction;
+use App\Domains\Backup\Actions\RestoreBackupAction;
+use App\Domains\Backup\Contracts\BackupDriverInterface;
+use App\Domains\Backup\Models\Backup;
+use App\Domains\Backup\Models\BackupSchedule;
+use App\Domains\Backup\ValueObjects\BackupFrequency;
+use App\Domains\Backup\ValueObjects\BackupPath;
+use App\Domains\Backup\ValueObjects\RetentionCount;
 use App\Exceptions\System\LcCliException;
-use App\Models\Backup;
-use App\Models\BackupSchedule;
 use App\Models\User;
-use App\Services\System\BackupCliService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -19,7 +22,7 @@ use Inertia\Response;
 class BackupController extends Controller
 {
     public function __construct(
-        protected BackupCliService $backupCli
+        protected BackupDriverInterface $backupDriver
     ) {}
 
     /**
@@ -41,7 +44,7 @@ class BackupController extends Controller
         $schedules = $scheduleQuery->latest()->get();
 
         // Also fetch filesystem backups reported by lc-cli
-        $cliBackups = $this->backupCli->listBackups($user->isAdmin() ? null : $user->username);
+        $cliBackups = $this->backupDriver->listBackups($user->isAdmin() ? null : $user->username);
 
         return Inertia::render('Backups/Index', [
             'backups' => $backups,
@@ -86,7 +89,7 @@ class BackupController extends Controller
         ]);
 
         try {
-            $restoreBackupAction->handle($validated['backup_path'], $user, $request->ip());
+            $restoreBackupAction->handle(new BackupPath($validated['backup_path']), $user, $request->ip());
 
             return back()->with('success', 'Backup restored successfully.');
         } catch (LcCliException $e) {
@@ -133,8 +136,8 @@ class BackupController extends Controller
         try {
             $addBackupScheduleAction->handle(
                 $user,
-                $validated['frequency'],
-                (int) $validated['retention_count'],
+                new BackupFrequency($validated['frequency']),
+                new RetentionCount((int) $validated['retention_count']),
                 $validated['destination'],
                 $user,
                 $request->ip()

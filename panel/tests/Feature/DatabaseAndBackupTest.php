@@ -7,8 +7,8 @@ use App\Models\User;
 use App\Models\Package;
 use App\Models\Database as DbModel;
 use App\Models\DatabaseUser;
-use App\Models\Backup;
-use App\Models\BackupSchedule;
+use App\Domains\Backup\Models\Backup;
+use App\Domains\Backup\Models\BackupSchedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 

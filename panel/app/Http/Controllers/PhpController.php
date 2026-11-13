@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Php\InstallPhpVersionAction;
-use App\Actions\Php\RemovePhpVersionAction;
-use App\Actions\Php\TogglePhpExtensionAction;
-use App\Actions\Php\UpdatePhpIniAction;
+use App\Domains\PhpRuntime\Actions\InstallPhpVersionAction;
+use App\Domains\PhpRuntime\Actions\RemovePhpVersionAction;
+use App\Domains\PhpRuntime\Actions\TogglePhpExtensionAction;
+use App\Domains\PhpRuntime\Actions\UpdatePhpIniAction;
+use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
+use App\Domains\PhpRuntime\ValueObjects\PhpExtensionName;
+use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
 use App\Exceptions\System\LcCliException;
 use App\Models\Domain;
 use App\Services\DomainService;
-use App\Services\System\PhpCliService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -19,7 +21,7 @@ use Inertia\Response;
 class PhpController extends Controller
 {
     public function __construct(
-        protected PhpCliService $phpCli,
+        protected PhpRuntimeDriverInterface $phpCli,
         protected DomainService $domainService
     ) {}
 
@@ -31,7 +33,7 @@ class PhpController extends Controller
         $version = $request->input('version', '83');
 
         try {
-            $iniData = $this->phpCli->getIni($version);
+            $iniData = $this->phpCli->getIni(new PhpVersion($version));
         } catch (LcCliException $e) {
             $iniData = [];
         }
@@ -71,7 +73,7 @@ class PhpController extends Controller
         $ver = $validated['version'];
 
         try {
-            $updatePhpIniAction->handle($ver, $validated['directives'], Auth::user(), $request->ip());
+            $updatePhpIniAction->handle(new PhpVersion($ver), $validated['directives'], Auth::user(), $request->ip());
 
             return back()->with('success', "PHP {$ver} configuration directives updated successfully.");
         } catch (LcCliException $e) {
@@ -144,7 +146,7 @@ class PhpController extends Controller
         $version = $request->input('version', '83');
 
         try {
-            $extensionsData = $this->phpCli->listExtensions($version);
+            $extensionsData = $this->phpCli->listExtensions(new PhpVersion($version));
         } catch (LcCliException $e) {
             $extensionsData = [
                 'installed' => [],
@@ -186,8 +188,8 @@ class PhpController extends Controller
 
         try {
             $togglePhpExtensionAction->handle(
-                $validated['version'],
-                $validated['extension'],
+                new PhpVersion($validated['version']),
+                new PhpExtensionName($validated['extension']),
                 $validated['action'],
                 Auth::user(),
                 $request->ip()
@@ -233,7 +235,7 @@ class PhpController extends Controller
         ]);
 
         try {
-            $installPhpVersionAction->handle($validated['version'], Auth::user(), $request->ip());
+            $installPhpVersionAction->handle(new PhpVersion($validated['version']), Auth::user(), $request->ip());
 
             return back()->with('success', "PHP {$validated['version']} installed successfully.");
         } catch (LcCliException $e) {
@@ -259,7 +261,7 @@ class PhpController extends Controller
         }
 
         try {
-            $removePhpVersionAction->handle($validated['version'], Auth::user(), $request->ip());
+            $removePhpVersionAction->handle(new PhpVersion($validated['version']), Auth::user(), $request->ip());
 
             return back()->with('success', "PHP {$validated['version']} removed successfully.");
         } catch (LcCliException $e) {
@@ -275,7 +277,7 @@ class PhpController extends Controller
         $version = $request->input('version', '83');
 
         try {
-            $modules = $this->phpCli->listLoadedModules($version);
+            $modules = $this->phpCli->listLoadedModules(new PhpVersion($version));
         } catch (LcCliException $e) {
             $modules = [];
         }

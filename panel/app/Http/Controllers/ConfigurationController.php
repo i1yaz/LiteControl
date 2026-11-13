@@ -6,7 +6,7 @@ use App\Actions\Configuration\UpdatePhpLimitsAction;
 use App\Actions\Configuration\UpdateSettingsAction;
 use App\Actions\Configuration\UpdateTuningAction;
 use App\Exceptions\System\LcCliException;
-use App\Services\System\PhpCliService;
+use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Services\System\ServerCliService;
 use App\Services\System\TuningCliService;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +20,7 @@ class ConfigurationController extends Controller
     public function __construct(
         protected ServerCliService $serverCli,
         protected TuningCliService $tuningCli,
-        protected PhpCliService $phpCli
+        protected PhpRuntimeDriverInterface $phpCli
     ) {}
 
     /**

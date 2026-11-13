@@ -8,7 +8,7 @@ use App\Actions\Configuration\UpdateTuningAction;
 use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
 use App\Models\User;
-use App\Services\System\PhpCliService;
+use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Services\System\ServerCliService;
 use App\Services\System\TuningCliService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -132,7 +132,7 @@ class ConfigurationActionsTest extends TestCase
 
     public function test_update_php_limits_action_success(): void
     {
-        $phpMock = Mockery::mock(PhpCliService::class);
+        $phpMock = Mockery::mock(PhpRuntimeDriverInterface::class);
         $phpMock->shouldReceive('setIni')
             ->once()
             ->with('83', 'memory_limit', '512M')
@@ -161,7 +161,7 @@ class ConfigurationActionsTest extends TestCase
 
     public function test_update_php_limits_action_throws_on_failure(): void
     {
-        $phpMock = Mockery::mock(PhpCliService::class);
+        $phpMock = Mockery::mock(PhpRuntimeDriverInterface::class);
         $phpMock->shouldReceive('setIni')
             ->once()
             ->with('83', 'memory_limit', '99999M')

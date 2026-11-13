@@ -11,7 +11,7 @@ use App\Services\SslService;
 use App\Services\FtpService;
 use App\Services\LogReaderService;
 use App\Services\System\VhostService;
-use App\Services\System\PhpCliService;
+use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Actions\Domain\DeleteDomainAction;
 use App\Actions\Domain\UpdateVhostConfAction;
 use App\Actions\Domain\FixDomainPermissionsAction;
@@ -30,7 +30,7 @@ class DomainController extends Controller
     protected FtpService $ftpService;
     protected LogReaderService $logReader;
     protected VhostService $vhostService;
-    protected PhpCliService $phpCliService;
+    protected PhpRuntimeDriverInterface $PhpRuntimeDriverInterface;
 
     public function __construct(
         DomainService $domainService,
@@ -38,14 +38,14 @@ class DomainController extends Controller
         FtpService $ftpService,
         LogReaderService $logReader,
         VhostService $vhostService,
-        PhpCliService $phpCliService
+        PhpRuntimeDriverInterface $PhpRuntimeDriverInterface
     ) {
         $this->domainService = $domainService;
         $this->sslService = $sslService;
         $this->ftpService = $ftpService;
         $this->logReader = $logReader;
         $this->vhostService = $vhostService;
-        $this->phpCliService = $phpCliService;
+        $this->PhpRuntimeDriverInterface = $PhpRuntimeDriverInterface;
     }
 
     /**
@@ -64,9 +64,9 @@ class DomainController extends Controller
 
         $domains = $query->latest()->paginate(20)->withQueryString();
 
-        // Get supported PHP versions from PhpCliService
+        // Get supported PHP versions from PhpRuntimeDriverInterface
         try {
-            $phpVersions = $this->phpCliService->listVersions();
+            $phpVersions = $this->PhpRuntimeDriverInterface->listVersions();
         } catch (\Throwable $e) {
             $phpVersions = [];
         }
@@ -270,7 +270,7 @@ class DomainController extends Controller
 
         // PHP installed versions
         try {
-            $phpVersions = $this->phpCliService->listVersions();
+            $phpVersions = $this->PhpRuntimeDriverInterface->listVersions();
         } catch (\Throwable $e) {
             $phpVersions = [];
         }
@@ -603,7 +603,7 @@ class DomainController extends Controller
         }
 
         try {
-            $phpVersions = $this->phpCliService->listVersions();
+            $phpVersions = $this->PhpRuntimeDriverInterface->listVersions();
         } catch (\Throwable $e) {
             $phpVersions = [];
         }

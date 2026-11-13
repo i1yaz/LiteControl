@@ -2,16 +2,16 @@
 
 namespace Tests\Feature\Actions\Backup;
 
-use App\Actions\Backup\AddBackupScheduleAction;
-use App\Actions\Backup\CreateBackupAction;
-use App\Actions\Backup\RemoveBackupScheduleAction;
-use App\Actions\Backup\RestoreBackupAction;
+use App\Domains\Backup\Actions\AddBackupScheduleAction;
+use App\Domains\Backup\Actions\CreateBackupAction;
+use App\Domains\Backup\Actions\RemoveBackupScheduleAction;
+use App\Domains\Backup\Actions\RestoreBackupAction;
 use App\Exceptions\System\LcCliException;
-use App\Models\Backup;
-use App\Models\BackupSchedule;
+use App\Domains\Backup\Models\Backup;
+use App\Domains\Backup\Models\BackupSchedule;
 use App\Models\Package;
 use App\Models\User;
-use App\Services\System\BackupCliService;
+use App\Domains\Backup\Contracts\BackupDriverInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -44,7 +44,7 @@ class BackupActionsTest extends TestCase
 
     public function test_create_backup_action(): void
     {
-        $cliMock = Mockery::mock(BackupCliService::class);
+        $cliMock = Mockery::mock(BackupDriverInterface::class);
         $cliMock->shouldReceive('createBackup')
             ->once()
             ->with('backupuser')
@@ -73,7 +73,7 @@ class BackupActionsTest extends TestCase
 
     public function test_create_backup_action_handles_cli_failure(): void
     {
-        $cliMock = Mockery::mock(BackupCliService::class);
+        $cliMock = Mockery::mock(BackupDriverInterface::class);
         $cliMock->shouldReceive('createBackup')
             ->once()
             ->with('backupuser')
@@ -90,14 +90,16 @@ class BackupActionsTest extends TestCase
 
     public function test_restore_backup_action(): void
     {
-        $cliMock = Mockery::mock(BackupCliService::class);
+        $path = new \App\Domains\Backup\ValueObjects\BackupPath('/home/backupuser/backups/backup.tar.gz');
+
+        $cliMock = Mockery::mock(BackupDriverInterface::class);
         $cliMock->shouldReceive('restoreBackup')
             ->once()
-            ->with('/home/backupuser/backups/backup.tar.gz')
+            ->with(Mockery::on(fn ($arg) => $arg instanceof \App\Domains\Backup\ValueObjects\BackupPath && $arg->value === $path->value))
             ->andReturn(['status' => 'success']);
 
         $action = new RestoreBackupAction($cliMock);
-        $res = $action->handle('/home/backupuser/backups/backup.tar.gz', $this->user, '127.0.0.1');
+        $res = $action->handle($path, $this->user, '127.0.0.1');
 
         $this->assertEquals(['status' => 'success'], $res);
         $this->assertDatabaseHas('audit_logs', [
@@ -109,14 +111,21 @@ class BackupActionsTest extends TestCase
 
     public function test_add_backup_schedule_action(): void
     {
-        $cliMock = Mockery::mock(BackupCliService::class);
+        $frequency = new \App\Domains\Backup\ValueObjects\BackupFrequency('daily');
+        $retention = new \App\Domains\Backup\ValueObjects\RetentionCount(7);
+
+        $cliMock = Mockery::mock(BackupDriverInterface::class);
         $cliMock->shouldReceive('addSchedule')
             ->once()
-            ->with('backupuser', 'daily', 7)
+            ->with(
+                'backupuser',
+                Mockery::on(fn ($arg) => $arg instanceof \App\Domains\Backup\ValueObjects\BackupFrequency && $arg->value === 'daily'),
+                Mockery::on(fn ($arg) => $arg instanceof \App\Domains\Backup\ValueObjects\RetentionCount && $arg->value === 7)
+            )
             ->andReturn(['status' => 'success']);
 
         $action = new AddBackupScheduleAction($cliMock);
-        $schedule = $action->handle($this->user, 'daily', 7, 'local', $this->user, '127.0.0.1');
+        $schedule = $action->handle($this->user, $frequency, $retention, 'local', $this->user, '127.0.0.1');
 
         $this->assertInstanceOf(BackupSchedule::class, $schedule);
         $this->assertDatabaseHas('backup_schedules', [
@@ -142,7 +151,7 @@ class BackupActionsTest extends TestCase
             'is_active' => true,
         ]);
 
-        $cliMock = Mockery::mock(BackupCliService::class);
+        $cliMock = Mockery::mock(BackupDriverInterface::class);
         $cliMock->shouldReceive('removeSchedule')
             ->once()
             ->with('backupuser')

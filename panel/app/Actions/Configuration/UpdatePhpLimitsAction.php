@@ -5,12 +5,13 @@ namespace App\Actions\Configuration;
 use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
 use App\Models\User;
-use App\Services\System\PhpCliService;
+use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
+use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
 
 class UpdatePhpLimitsAction
 {
     public function __construct(
-        protected PhpCliService $phpCli
+        protected PhpRuntimeDriverInterface $phpCli
     ) {}
 
     /**
@@ -26,7 +27,7 @@ class UpdatePhpLimitsAction
     public function handle(string $version, array $directives, ?User $actor = null, ?string $ipAddress = null): void
     {
         foreach ($directives as $key => $val) {
-            $this->phpCli->setIni($version, $key, (string) $val);
+            $this->phpCli->setIni(new PhpVersion($version), $key, (string) $val);
         }
 
         AuditLog::create([
