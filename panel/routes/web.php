@@ -25,6 +25,8 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [AuthController::class, 'store'])->name('login.store');
+    Route::get('/two-factor-challenge', [AuthController::class, 'twoFactorChallenge'])->name('two-factor.login');
+    Route::post('/two-factor-challenge', [AuthController::class, 'verifyTwoFactorChallenge'])->name('two-factor.login.store');
 });
 
 Route::middleware('auth')->group(function () {
@@ -99,6 +101,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/security/password', [SecurityController::class, 'password'])->name('security.password');
     Route::post('/security/password', [SecurityController::class, 'updatePassword'])->name('security.password.update');
     Route::get('/security/two-factor', [SecurityController::class, 'twoFactor'])->name('security.two-factor');
+    Route::post('/security/two-factor/confirm', [SecurityController::class, 'confirmTwoFactor'])->name('security.two-factor.confirm');
     Route::post('/security/two-factor/toggle', [SecurityController::class, 'toggleTwoFactor'])->name('security.two-factor.toggle');
 
     // Admin Only Routes

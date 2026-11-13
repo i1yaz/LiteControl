@@ -217,8 +217,14 @@ class SecurityAndModuleTest extends TestCase
     {
         $client = User::where('username', 'client1')->first();
 
-        // Enable 2FA
-        $res1 = $this->actingAs($client)->post('/security/two-factor/toggle');
+        // Enable 2FA via TOTP confirmation
+        $this->actingAs($client)->get('/security/two-factor')->assertOk();
+        $secret = session('two_factor.pending_secret');
+        $code = app(\App\Services\TotpService::class)->getCode($secret);
+
+        $res1 = $this->actingAs($client)->post('/security/two-factor/confirm', [
+            'code' => $code,
+        ]);
         $res1->assertRedirect();
 
         $client->refresh();
