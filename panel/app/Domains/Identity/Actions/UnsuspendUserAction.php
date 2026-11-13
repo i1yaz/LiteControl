@@ -1,31 +1,31 @@
 <?php
 
-namespace App\Actions\User;
+declare(strict_types=1);
 
-use App\Exceptions\System\LcCliException;
+namespace App\Domains\Identity\Actions;
+
+use App\Domains\Identity\Contracts\UserDriverInterface;
+use App\Domains\Identity\ValueObjects\LinuxUsername;
 use App\Domains\PanelConfig\Models\AuditLog;
+use App\Exceptions\System\LcCliException;
 use App\Models\User;
-use App\Services\System\UserCliService;
 use Illuminate\Support\Facades\DB;
 
 class UnsuspendUserAction
 {
     public function __construct(
-        protected UserCliService $userCli
+        protected UserDriverInterface $userDriver
     ) {}
 
     /**
      * Unsuspend a hosting user.
      *
-     * @param User $user
-     * @param User|null $actor
-     * @param string|null $ipAddress
-     * @return User
      * @throws LcCliException
      */
     public function handle(User $user, ?User $actor = null, ?string $ipAddress = null): User
     {
-        $this->userCli->unsuspendUser($user->username);
+        $username = new LinuxUsername($user->username);
+        $this->userDriver->unsuspendUser($username);
 
         DB::transaction(function () use ($user, $actor, $ipAddress) {
             $user->update(['status' => 'active']);

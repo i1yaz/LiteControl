@@ -1,36 +1,38 @@
 <?php
 
-namespace App\Actions\User;
+declare(strict_types=1);
 
-use App\Exceptions\System\LcCliException;
+namespace App\Domains\Identity\Actions;
+
+use App\Domains\Identity\Contracts\UserDriverInterface;
+use App\Domains\Identity\Events\UserSuspended;
+use App\Domains\Identity\ValueObjects\LinuxUsername;
 use App\Domains\PanelConfig\Models\AuditLog;
+use App\Exceptions\System\LcCliException;
 use App\Models\User;
-use App\Services\System\UserCliService;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class SuspendUserAction
 {
     public function __construct(
-        protected UserCliService $userCli
+        protected UserDriverInterface $userDriver
     ) {}
 
     /**
-     * Suspend a hosting user.
+     * Suspend a hosting user and dispatch UserSuspended.
      *
-     * @param User $user
-     * @param User|null $actor
-     * @param string|null $ipAddress
-     * @return User
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws LcCliException
      */
     public function handle(User $user, ?User $actor = null, ?string $ipAddress = null): User
     {
         if ($user->isAdmin()) {
-            throw new \InvalidArgumentException('Administrator accounts cannot be suspended.');
+            throw new InvalidArgumentException('Administrator accounts cannot be suspended.');
         }
 
-        $this->userCli->suspendUser($user->username);
+        $username = new LinuxUsername($user->username);
+        $this->userDriver->suspendUser($username);
 
         DB::transaction(function () use ($user, $actor, $ipAddress) {
             $user->update(['status' => 'suspended']);
@@ -46,6 +48,8 @@ class SuspendUserAction
                 ]);
             }
         });
+
+        UserSuspended::dispatch($user->id, $user->username);
 
         return $user;
     }

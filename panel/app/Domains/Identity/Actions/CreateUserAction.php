@@ -1,55 +1,57 @@
 <?php
 
-namespace App\Actions\User;
+declare(strict_types=1);
 
+namespace App\Domains\Identity\Actions;
+
+use App\Domains\Identity\Contracts\UserDriverInterface;
+use App\Domains\Identity\ValueObjects\LinuxUsername;
 use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\Package;
 use App\Models\User;
 use App\Services\DomainService;
-use App\Services\System\UserCliService;
 use Illuminate\Support\Facades\DB;
 
 class CreateUserAction
 {
     public function __construct(
-        protected UserCliService $userCli,
+        protected UserDriverInterface $userDriver,
         protected DomainService $domainService
     ) {}
 
     /**
      * Create a new hosting user, provision Linux user & quota, and optional primary domain.
      *
-     * @param array $data
-     * @param User|null $actor
-     * @param string|null $ipAddress
-     * @return array ['user' => User, 'domainCreated' => bool, 'warning' => ?string]
+     * @param  array<string, mixed>  $data
+     * @return array{user: User, domainCreated: bool, warning: ?string}
      */
     public function handle(array $data, ?User $actor = null, ?string $ipAddress = null): array
     {
+        $username = new LinuxUsername($data['username']);
         $package = Package::findOrFail($data['package_id']);
 
-        // 1. Create Linux user via UserCliService (throws LcCliException on failure)
-        $this->userCli->createUser($data['username'], $data['password'], (int) $package->disk_quota_mb);
+        // 1. Create Linux user via UserDriverInterface (throws LcCliException on failure)
+        $this->userDriver->createUser($username, $data['password'], (int) $package->disk_quota_mb);
 
         // 2. Set SSH public key if provided
-        if (!empty($data['ssh_public_key'])) {
+        if (! empty($data['ssh_public_key'])) {
             try {
-                $this->userCli->updateSshKey($data['username'], $data['ssh_public_key']);
-            } catch (\Throwable $e) {
-                // Non-fatal, or logged
+                $this->userDriver->updateSshKey($username, $data['ssh_public_key']);
+            } catch (\Throwable) {
+                // Non-fatal
             }
         }
 
         // 3. Create database user record
-        $user = DB::transaction(function () use ($data, $package) {
+        $user = DB::transaction(function () use ($data, $username, $package) {
             return User::create([
-                'username' => $data['username'],
+                'username' => $username->value,
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'password' => $data['password'],
                 'role' => 'user',
                 'package_id' => $package->id,
-                'home_directory' => "/home/{$data['username']}",
+                'home_directory' => "/home/{$username->value}",
                 'status' => 'active',
                 'ssh_public_key' => $data['ssh_public_key'] ?? null,
             ]);
@@ -59,7 +61,7 @@ class CreateUserAction
         $domainCreated = false;
 
         // 4. Optionally create primary domain if provided
-        if (!empty($data['domain'])) {
+        if (! empty($data['domain'])) {
             try {
                 $domainRes = $this->domainService->createDomain($user, [
                     'domain' => $data['domain'],
@@ -72,7 +74,7 @@ class CreateUserAction
                 $domainCreated = true;
                 $warning = $domainRes['warning'] ?? null;
             } catch (\Throwable $e) {
-                $warning = "User created, but domain provisioning encountered an error: " . $e->getMessage();
+                $warning = 'User created, but domain provisioning encountered an error: '.$e->getMessage();
             }
         }
 

@@ -2,19 +2,23 @@
 
 namespace Tests\Feature\Actions\User;
 
-use App\Actions\User\CreateUserAction;
-use App\Actions\User\DeleteUserAction;
-use App\Actions\User\SuspendUserAction;
-use App\Actions\User\UnsuspendUserAction;
-use App\Actions\User\UpdateUserAction;
+use App\Domains\Identity\Actions\CreateUserAction;
+use App\Domains\Identity\Actions\DeleteUserAction;
+use App\Domains\Identity\Actions\SuspendUserAction;
+use App\Domains\Identity\Actions\UnsuspendUserAction;
+use App\Domains\Identity\Actions\UpdateUserAction;
+use App\Domains\Identity\Contracts\UserDriverInterface;
+use App\Domains\Identity\Events\UserDeleted;
+use App\Domains\Identity\Events\UserSuspended;
+use App\Domains\Identity\ValueObjects\LinuxUsername;
 use App\Exceptions\System\LcCliException;
 use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\Domain;
 use App\Models\Package;
 use App\Models\User;
 use App\Services\DomainService;
-use App\Services\System\UserCliService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Mockery;
 use Tests\TestCase;
 
@@ -58,7 +62,7 @@ class UserActionsTest extends TestCase
 
     public function test_create_user_action_without_domain(): void
     {
-        $cliMock = Mockery::mock(UserCliService::class);
+        $cliMock = Mockery::mock(UserDriverInterface::class);
         $cliMock->shouldReceive('createUser')
             ->once()
             ->with('newclient', 'secret12345', 2000)
@@ -102,7 +106,7 @@ class UserActionsTest extends TestCase
 
     public function test_create_user_action_with_primary_domain(): void
     {
-        $cliMock = Mockery::mock(UserCliService::class);
+        $cliMock = Mockery::mock(UserDriverInterface::class);
         $cliMock->shouldReceive('createUser')
             ->once()
             ->with('clientwithdom', 'secret12345', 2000)
@@ -139,7 +143,7 @@ class UserActionsTest extends TestCase
 
     public function test_create_user_action_throws_on_cli_failure(): void
     {
-        $cliMock = Mockery::mock(UserCliService::class);
+        $cliMock = Mockery::mock(UserDriverInterface::class);
         $cliMock->shouldReceive('createUser')
             ->once()
             ->with('failuser', 'secret12345', 2000)
@@ -173,7 +177,7 @@ class UserActionsTest extends TestCase
             'ssh_public_key' => 'old-key',
         ]);
 
-        $cliMock = Mockery::mock(UserCliService::class);
+        $cliMock = Mockery::mock(UserDriverInterface::class);
         $cliMock->shouldReceive('updateQuota')
             ->once()
             ->with('edituser', 10000)
@@ -214,7 +218,7 @@ class UserActionsTest extends TestCase
             'role' => 'user',
         ]);
 
-        $cliMock = Mockery::mock(UserCliService::class);
+        $cliMock = Mockery::mock(UserDriverInterface::class);
         $cliMock->shouldReceive('suspendUser')
             ->once()
             ->with('suspendee')
@@ -241,7 +245,7 @@ class UserActionsTest extends TestCase
             'role' => 'user',
         ]);
 
-        $cliMock = Mockery::mock(UserCliService::class);
+        $cliMock = Mockery::mock(UserDriverInterface::class);
         $cliMock->shouldReceive('unsuspendUser')
             ->once()
             ->with('suspendeduser')
@@ -276,7 +280,7 @@ class UserActionsTest extends TestCase
             'status' => 'active',
         ]);
 
-        $cliMock = Mockery::mock(UserCliService::class);
+        $cliMock = Mockery::mock(UserDriverInterface::class);
         $cliMock->shouldReceive('deleteUser')
             ->once()
             ->with('deleteme', true)

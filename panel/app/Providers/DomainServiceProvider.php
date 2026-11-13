@@ -4,8 +4,15 @@ namespace App\Providers;
 
 use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\Infrastructure\CliBackupAdapter;
+use App\Domains\Backup\Listeners\CleanupUserBackupsListener;
 use App\Domains\Database\Contracts\DatabaseDriverInterface;
 use App\Domains\Database\Infrastructure\CliDatabaseAdapter;
+use App\Domains\Database\Listeners\CleanupUserDatabasesListener;
+use App\Domains\Identity\Contracts\UserDriverInterface;
+use App\Domains\Identity\Events\UserDeleted;
+use App\Domains\Identity\Infrastructure\CliUserAdapter;
+use App\Models\Domain;
+use Illuminate\Support\Facades\Event;
 use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use App\Domains\PanelConfig\Infrastructure\CliTuningAdapter;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
@@ -31,6 +38,7 @@ class DomainServiceProvider extends ServiceProvider
     {
         $this->app->bind(BackupDriverInterface::class, CliBackupAdapter::class);
         $this->app->bind(DatabaseDriverInterface::class, CliDatabaseAdapter::class);
+        $this->app->bind(UserDriverInterface::class, CliUserAdapter::class);
         $this->app->bind(TuningDriverInterface::class, CliTuningAdapter::class);
         $this->app->bind(PhpRuntimeDriverInterface::class, CliPhpRuntimeAdapter::class);
         $this->app->bind(FirewallDriverInterface::class, CliFirewallAdapter::class);
@@ -45,7 +53,11 @@ class DomainServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Event::listen(UserDeleted::class, CleanupUserDatabasesListener::class);
+        Event::listen(UserDeleted::class, CleanupUserBackupsListener::class);
+        Event::listen(UserDeleted::class, function (UserDeleted $event): void {
+            Domain::where('user_id', $event->userId)->delete();
+        });
     }
 }
 

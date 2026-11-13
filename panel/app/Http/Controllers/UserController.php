@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\User\CreateUserAction;
-use App\Actions\User\DeleteUserAction;
-use App\Actions\User\SuspendUserAction;
-use App\Actions\User\UnsuspendUserAction;
-use App\Actions\User\UpdateUserAction;
+use App\Domains\Identity\Actions\CreateUserAction;
+use App\Domains\Identity\Actions\DeleteUserAction;
+use App\Domains\Identity\Actions\SuspendUserAction;
+use App\Domains\Identity\Actions\UnsuspendUserAction;
+use App\Domains\Identity\Actions\UpdateUserAction;
+use App\Domains\Identity\Contracts\UserDriverInterface;
 use App\Exceptions\System\LcCliException;
 use App\Domains\PanelConfig\Models\AuditLog;
 use App\Models\Package;
 use App\Models\User;
-use App\Services\System\UserCliService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -21,7 +21,7 @@ use Inertia\Response;
 class UserController extends Controller
 {
     public function __construct(
-        protected UserCliService $userCli
+        protected UserDriverInterface $userDriver
     ) {}
 
     /**
@@ -45,8 +45,8 @@ class UserController extends Controller
 
         $users = $usersQuery->latest()->paginate(15)->withQueryString();
 
-        // Fetch real-time disk usage via UserCliService
-        $cliUsers = $this->userCli->listUsers();
+        // Fetch real-time disk usage via UserDriverInterface
+        $cliUsers = $this->userDriver->listUsers();
         $diskUsageMap = [];
         foreach ($cliUsers as $item) {
             $diskUsageMap[$item['username'] ?? ''] = [
