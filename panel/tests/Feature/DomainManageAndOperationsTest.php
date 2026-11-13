@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Domain;
-use App\Models\Database;
+use App\Domains\Database\Models\Database;
 use App\Models\User;
 use App\Models\Package;
 use App\Models\FtpAccount;

@@ -1,28 +1,20 @@
 <?php
 
-namespace App\Actions\Database;
+namespace App\Domains\Database\Actions;
 
+use App\Domains\Database\Contracts\DatabaseDriverInterface;
+use App\Domains\Database\Models\Database;
+use App\Domains\Database\ValueObjects\DatabaseName;
 use App\Exceptions\System\LcCliException;
 use App\Models\AuditLog;
-use App\Models\Database;
 use App\Models\User;
-use App\Services\System\DatabaseCliService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class DeleteDatabaseAction
 {
-    protected array $protectedDatabases = [
-        'mysql',
-        'information_schema',
-        'performance_schema',
-        'sys',
-        'litecontrol',
-        'pdns',
-    ];
-
     public function __construct(
-        protected DatabaseCliService $databaseCli
+        protected DatabaseDriverInterface $databaseDriver
     ) {}
 
     /**
@@ -33,13 +25,13 @@ class DeleteDatabaseAction
      */
     public function handle(Database $database, User $actor, ?string $ipAddress = null): void
     {
-        $dbName = $database->db_name;
+        $dbName = DatabaseName::fromString($database->db_name);
 
-        if (in_array(strtolower($dbName), $this->protectedDatabases, true)) {
-            throw new InvalidArgumentException("Database '{$dbName}' is a protected system database.");
+        if ($dbName->isProtected()) {
+            throw new InvalidArgumentException("Database '{$dbName->value}' is a protected system database.");
         }
 
-        $this->databaseCli->deleteDatabase($dbName);
+        $this->databaseDriver->deleteDatabase($dbName);
 
         DB::transaction(function () use ($database, $actor, $dbName, $ipAddress) {
             $database->delete();
@@ -47,10 +39,10 @@ class DeleteDatabaseAction
             AuditLog::create([
                 'user_id' => $actor->id,
                 'action' => 'db.delete',
-                'command' => "lc-cli db delete-db {$dbName}",
+                'command' => "lc-cli db delete-db {$dbName->value}",
                 'status' => 'success',
                 'ip_address' => $ipAddress,
-                'details' => ['db_name' => $dbName],
+                'details' => ['db_name' => $dbName->value],
             ]);
         });
     }

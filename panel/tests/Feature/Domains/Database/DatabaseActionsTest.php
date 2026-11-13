@@ -1,19 +1,20 @@
 <?php
 
-namespace Tests\Feature\Actions\Database;
+namespace Tests\Feature\Domains\Database;
 
-use App\Actions\Database\ChangeDatabaseUserPasswordAction;
-use App\Actions\Database\CreateDatabaseAction;
-use App\Actions\Database\CreateDatabaseUserAction;
-use App\Actions\Database\DeleteDatabaseAction;
-use App\Actions\Database\DeleteDatabaseUserAction;
-use App\Actions\Database\GrantDatabaseAccessAction;
-use App\Exceptions\System\LcCliException;
-use App\Models\Database;
-use App\Models\DatabaseUser;
+use App\Domains\Database\Actions\ChangeDatabaseUserPasswordAction;
+use App\Domains\Database\Actions\CreateDatabaseAction;
+use App\Domains\Database\Actions\CreateDatabaseUserAction;
+use App\Domains\Database\Actions\DeleteDatabaseAction;
+use App\Domains\Database\Actions\DeleteDatabaseUserAction;
+use App\Domains\Database\Actions\GrantDatabaseAccessAction;
+use App\Domains\Database\Contracts\DatabaseDriverInterface;
+use App\Domains\Database\Models\Database;
+use App\Domains\Database\Models\DatabaseUser;
+use App\Domains\Database\ValueObjects\DatabaseName;
+use App\Domains\Database\ValueObjects\DatabaseUsername;
 use App\Models\Package;
 use App\Models\User;
-use App\Services\System\DatabaseCliService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use Mockery;
@@ -62,14 +63,14 @@ class DatabaseActionsTest extends TestCase
 
     public function test_create_database_action(): void
     {
-        $cliMock = Mockery::mock(DatabaseCliService::class);
-        $cliMock->shouldReceive('createDatabase')
+        $driverMock = Mockery::mock(DatabaseDriverInterface::class);
+        $driverMock->shouldReceive('createDatabase')
             ->once()
-            ->with('testuser_newdb')
+            ->with(Mockery::on(fn (DatabaseName $n) => $n->value === 'testuser_newdb'))
             ->andReturn(['status' => 'success']);
 
-        $action = new CreateDatabaseAction($cliMock);
-        $created = $action->handle('testuser_newdb', $this->user, $this->user);
+        $action = new CreateDatabaseAction($driverMock);
+        $created = $action->handle(DatabaseName::fromString('testuser_newdb'), $this->user, $this->user);
 
         $this->assertInstanceOf(Database::class, $created);
         $this->assertDatabaseHas('databases', ['db_name' => 'testuser_newdb', 'user_id' => $this->user->id]);
@@ -81,13 +82,13 @@ class DatabaseActionsTest extends TestCase
 
     public function test_delete_database_action(): void
     {
-        $cliMock = Mockery::mock(DatabaseCliService::class);
-        $cliMock->shouldReceive('deleteDatabase')
+        $driverMock = Mockery::mock(DatabaseDriverInterface::class);
+        $driverMock->shouldReceive('deleteDatabase')
             ->once()
-            ->with('testuser_app')
+            ->with(Mockery::on(fn (DatabaseName $n) => $n->value === 'testuser_app'))
             ->andReturn([]);
 
-        $action = new DeleteDatabaseAction($cliMock);
+        $action = new DeleteDatabaseAction($driverMock);
         $action->handle($this->database, $this->user);
 
         $this->assertDatabaseMissing('databases', ['id' => $this->database->id]);
@@ -105,10 +106,10 @@ class DatabaseActionsTest extends TestCase
             'size_bytes' => 0,
         ]);
 
-        $cliMock = Mockery::mock(DatabaseCliService::class);
-        $cliMock->shouldNotReceive('deleteDatabase');
+        $driverMock = Mockery::mock(DatabaseDriverInterface::class);
+        $driverMock->shouldNotReceive('deleteDatabase');
 
-        $action = new DeleteDatabaseAction($cliMock);
+        $action = new DeleteDatabaseAction($driverMock);
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Database 'mysql' is a protected system database.");
@@ -118,19 +119,22 @@ class DatabaseActionsTest extends TestCase
 
     public function test_create_database_user_action_with_grant(): void
     {
-        $cliMock = Mockery::mock(DatabaseCliService::class);
-        $cliMock->shouldReceive('createUser')
+        $driverMock = Mockery::mock(DatabaseDriverInterface::class);
+        $driverMock->shouldReceive('createUser')
             ->once()
-            ->with('testuser_alice', 'secret1234')
+            ->with(Mockery::on(fn (DatabaseUsername $u) => $u->value === 'testuser_alice'), 'secret1234')
             ->andReturn([]);
-        $cliMock->shouldReceive('grantUser')
+        $driverMock->shouldReceive('grantUser')
             ->once()
-            ->with('testuser_alice', 'testuser_app')
+            ->with(
+                Mockery::on(fn (DatabaseUsername $u) => $u->value === 'testuser_alice'),
+                Mockery::on(fn (DatabaseName $n) => $n->value === 'testuser_app')
+            )
             ->andReturn([]);
 
-        $action = new CreateDatabaseUserAction($cliMock);
+        $action = new CreateDatabaseUserAction($driverMock);
         $created = $action->handle(
-            'testuser_alice',
+            DatabaseUsername::fromString('testuser_alice'),
             'secret1234',
             $this->user,
             $this->user,
@@ -150,13 +154,13 @@ class DatabaseActionsTest extends TestCase
 
     public function test_delete_database_user_action(): void
     {
-        $cliMock = Mockery::mock(DatabaseCliService::class);
-        $cliMock->shouldReceive('deleteUser')
+        $driverMock = Mockery::mock(DatabaseDriverInterface::class);
+        $driverMock->shouldReceive('deleteUser')
             ->once()
-            ->with('testuser_dbuser')
+            ->with(Mockery::on(fn (DatabaseUsername $u) => $u->value === 'testuser_dbuser'))
             ->andReturn([]);
 
-        $action = new DeleteDatabaseUserAction($cliMock);
+        $action = new DeleteDatabaseUserAction($driverMock);
         $action->handle($this->databaseUser, $this->user);
 
         $this->assertDatabaseMissing('database_users', ['id' => $this->databaseUser->id]);
@@ -168,14 +172,17 @@ class DatabaseActionsTest extends TestCase
 
     public function test_grant_database_access_action(): void
     {
-        $cliMock = Mockery::mock(DatabaseCliService::class);
-        $cliMock->shouldReceive('grantUser')
+        $driverMock = Mockery::mock(DatabaseDriverInterface::class);
+        $driverMock->shouldReceive('grantUser')
             ->once()
-            ->with('testuser_dbuser', 'testuser_app')
+            ->with(
+                Mockery::on(fn (DatabaseUsername $u) => $u->value === 'testuser_dbuser'),
+                Mockery::on(fn (DatabaseName $n) => $n->value === 'testuser_app')
+            )
             ->andReturn([]);
 
-        $action = new GrantDatabaseAccessAction($cliMock);
-        $action->handle('testuser_dbuser', $this->database, $this->user);
+        $action = new GrantDatabaseAccessAction($driverMock);
+        $action->handle(DatabaseUsername::fromString('testuser_dbuser'), $this->database, $this->user);
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $this->user->id,
@@ -185,13 +192,13 @@ class DatabaseActionsTest extends TestCase
 
     public function test_change_database_user_password_action(): void
     {
-        $cliMock = Mockery::mock(DatabaseCliService::class);
-        $cliMock->shouldReceive('changePassword')
+        $driverMock = Mockery::mock(DatabaseDriverInterface::class);
+        $driverMock->shouldReceive('changePassword')
             ->once()
-            ->with('testuser_dbuser', 'newpassword123')
+            ->with(Mockery::on(fn (DatabaseUsername $u) => $u->value === 'testuser_dbuser'), 'newpassword123')
             ->andReturn([]);
 
-        $action = new ChangeDatabaseUserPasswordAction($cliMock);
+        $action = new ChangeDatabaseUserPasswordAction($driverMock);
         $action->handle($this->databaseUser, 'newpassword123', $this->user);
 
         $this->assertDatabaseHas('audit_logs', [

@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Domains\Database\Models\Database;
+use App\Domains\Database\Models\DatabaseUser;
+
 use App\Domains\Backup\Models\Backup;
 use App\Domains\Backup\Models\BackupSchedule;
 

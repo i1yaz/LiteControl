@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\Package;
 use App\Models\User;
 use App\Models\Domain;
-use App\Models\Database as DbModel;
+use App\Domains\Database\Models\Database as DbModel;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 

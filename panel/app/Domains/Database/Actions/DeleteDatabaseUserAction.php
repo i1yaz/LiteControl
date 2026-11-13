@@ -1,17 +1,18 @@
 <?php
 
-namespace App\Actions\Database;
+namespace App\Domains\Database\Actions;
 
+use App\Domains\Database\Contracts\DatabaseDriverInterface;
+use App\Domains\Database\Models\DatabaseUser;
+use App\Domains\Database\ValueObjects\DatabaseUsername;
 use App\Models\AuditLog;
-use App\Models\DatabaseUser;
 use App\Models\User;
-use App\Services\System\DatabaseCliService;
 use Illuminate\Support\Facades\DB;
 
 class DeleteDatabaseUserAction
 {
     public function __construct(
-        protected DatabaseCliService $databaseCli
+        protected DatabaseDriverInterface $databaseDriver
     ) {}
 
     /**
@@ -19,9 +20,9 @@ class DeleteDatabaseUserAction
      */
     public function handle(DatabaseUser $dbUser, User $actor, ?string $ipAddress = null): void
     {
-        $username = $dbUser->db_username;
+        $username = DatabaseUsername::fromString($dbUser->db_username);
 
-        $this->databaseCli->deleteUser($username);
+        $this->databaseDriver->deleteUser($username);
 
         DB::transaction(function () use ($dbUser, $actor, $username, $ipAddress) {
             $dbUser->delete();
@@ -29,10 +30,10 @@ class DeleteDatabaseUserAction
             AuditLog::create([
                 'user_id' => $actor->id,
                 'action' => 'db_user.delete',
-                'command' => "lc-cli db delete-user {$username}",
+                'command' => "lc-cli db delete-user {$username->value}",
                 'status' => 'success',
                 'ip_address' => $ipAddress,
-                'details' => ['db_username' => $username],
+                'details' => ['db_username' => $username->value],
             ]);
         });
     }

@@ -258,7 +258,7 @@ class DomainController extends Controller
 
         // Fetch associated databases count (where database belongs to this domain or subdomains)
         $associatedDomainIds = array_merge([$domain->id], $domain->subdomains->pluck('id')->toArray());
-        $databasesCount = \App\Models\Database::whereIn('domain_id', $associatedDomainIds)->count();
+        $databasesCount = \App\Domains\Database\Models\Database::whereIn('domain_id', $associatedDomainIds)->count();
 
         // Calculate total size via VhostService
         try {

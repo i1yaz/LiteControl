@@ -2,18 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Database\ChangeDatabaseUserPasswordAction;
-use App\Actions\Database\CreateDatabaseAction;
-use App\Actions\Database\CreateDatabaseUserAction;
-use App\Actions\Database\DeleteDatabaseAction;
-use App\Actions\Database\DeleteDatabaseUserAction;
-use App\Actions\Database\GrantDatabaseAccessAction;
+use App\Domains\Database\Actions\ChangeDatabaseUserPasswordAction;
+use App\Domains\Database\Actions\CreateDatabaseAction;
+use App\Domains\Database\Actions\CreateDatabaseUserAction;
+use App\Domains\Database\Actions\DeleteDatabaseAction;
+use App\Domains\Database\Actions\DeleteDatabaseUserAction;
+use App\Domains\Database\Actions\GrantDatabaseAccessAction;
+use App\Domains\Database\Contracts\DatabaseDriverInterface;
+use App\Domains\Database\Models\Database;
+use App\Domains\Database\Models\DatabaseUser;
+use App\Domains\Database\ValueObjects\DatabaseName;
+use App\Domains\Database\ValueObjects\DatabaseUsername;
 use App\Exceptions\System\LcCliException;
-use App\Models\Database;
-use App\Models\DatabaseUser;
 use App\Models\Domain;
 use App\Models\User;
-use App\Services\System\DatabaseCliService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -23,7 +25,7 @@ use InvalidArgumentException;
 class DatabaseController extends Controller
 {
     public function __construct(
-        protected DatabaseCliService $databaseCli
+        protected DatabaseDriverInterface $databaseDriver
     ) {}
 
     /**
@@ -44,10 +46,10 @@ class DatabaseController extends Controller
         $databases = $dbQuery->latest()->get();
         $dbUsers = $dbUsersQuery->latest()->get();
 
-        // Fetch real-time sizes from DatabaseCliService
+        // Fetch real-time sizes from DatabaseDriverInterface
         $liveDbMap = [];
         try {
-            $cliData = $this->databaseCli->listDatabases();
+            $cliData = $this->databaseDriver->listDatabases();
             foreach ($cliData as $dbItem) {
                 $liveDbMap[$dbItem['name'] ?? ''] = [
                     'size_bytes' => $dbItem['size_bytes'] ?? 0,
@@ -128,13 +130,13 @@ class DatabaseController extends Controller
 
         try {
             $createDatabaseAction->handle(
-                dbName: $finalDbName,
+                dbName: DatabaseName::fromString($finalDbName),
                 targetUser: $targetUser,
                 actor: $user,
                 domainId: $validated['domain_id'] ?? null,
                 ipAddress: $request->ip()
             );
-        } catch (LcCliException $e) {
+        } catch (InvalidArgumentException|LcCliException $e) {
             return back()->withErrors(['db_name' => 'Failed to create database: ' . $e->getMessage()]);
         }
 
@@ -199,14 +201,14 @@ class DatabaseController extends Controller
 
         try {
             $createDatabaseUserAction->handle(
-                username: $finalDbUser,
+                username: DatabaseUsername::fromString($finalDbUser),
                 password: $validated['password'],
                 targetUser: $targetUser,
                 actor: $user,
                 databaseId: !empty($validated['database_id']) ? (int) $validated['database_id'] : null,
                 ipAddress: $request->ip()
             );
-        } catch (LcCliException $e) {
+        } catch (InvalidArgumentException|LcCliException $e) {
             return back()->withErrors(['username' => 'Failed to create DB user: ' . $e->getMessage()]);
         }
 
@@ -232,8 +234,13 @@ class DatabaseController extends Controller
         }
 
         try {
-            $grantDatabaseAccessAction->handle($validated['db_username'], $database, $user, $request->ip());
-        } catch (LcCliException $e) {
+            $grantDatabaseAccessAction->handle(
+                DatabaseUsername::fromString($validated['db_username']),
+                $database,
+                $user,
+                $request->ip()
+            );
+        } catch (InvalidArgumentException|LcCliException $e) {
             return back()->with('error', 'Failed to grant privileges: ' . $e->getMessage());
         }
 

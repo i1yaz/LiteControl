@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Domain;
-use App\Models\Database as DbModel;
+use App\Domains\Database\Models\Database as DbModel;
 use App\Models\Package;
 use App\Services\System\ServerCliService;
 use Illuminate\Http\Request;
