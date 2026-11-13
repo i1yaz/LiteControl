@@ -32,7 +32,8 @@ const selectedParentDomain = computed(() => {
 const phpOptions = computed(() => {
     const versions = props.phpVersions?.length ? props.phpVersions : ['74', '80', '81', '82', '83', '84'];
     return versions.map((v) => {
-        const str = String(v).replace('.', '');
+        const raw = typeof v === 'object' && v !== null ? v.version : v;
+        const str = String(raw).replace('.', '');
         const formatted = str.length === 2 ? `${str[0]}.${str[1]}` : str;
         return { value: str, label: `PHP ${formatted}` };
     });
