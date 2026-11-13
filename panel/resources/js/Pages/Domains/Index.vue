@@ -2,6 +2,7 @@
 import { shallowRef, computed } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { confirmDialog } from '@/Composables/useDialog';
+import { usePhpVersions } from '@/Composables/usePhpVersions';
 import UiPageHeader from '@/Components/ui/UiPageHeader.vue';
 import UiButton from '@/Components/ui/UiButton.vue';
 import UiModal from '@/Components/ui/UiModal.vue';
@@ -15,6 +16,8 @@ const props = defineProps({
     phpVersions: Array,
     users: Array,
 });
+
+const { phpOptions } = usePhpVersions(() => props.phpVersions);
 
 const page = usePage();
 const isAdmin = page.props.auth?.user?.role === 'admin';
@@ -45,14 +48,6 @@ const userOptions = computed(() => {
         label: `${u.username} (${u.name})`,
     }));
 });
-
-const phpOptions = [
-    { value: '83', label: 'PHP 8.3 (Default OLS)' },
-    { value: '82', label: 'PHP 8.2' },
-    { value: '81', label: 'PHP 8.1' },
-    { value: '80', label: 'PHP 8.0' },
-    { value: '74', label: 'PHP 7.4' },
-];
 
 const tableHeaders = computed(() => {
     const headers = [
@@ -286,13 +281,9 @@ const copySshCommand = (username) => {
                         @change="changePhp(dom.id, $event.target.value)"
                         class="px-2 py-1 bg-theme-bg-surface border border-theme-border text-theme-text-secondary rounded text-xs focus:outline-none focus:border-theme-accent"
                     >
-                        <option value="74">PHP 7.4</option>
-                        <option value="80">PHP 8.0</option>
-                        <option value="81">PHP 8.1</option>
-                        <option value="82">PHP 8.2</option>
-                        <option value="83">PHP 8.3 (Default)</option>
-                        <option value="84">PHP 8.4</option>
-                        <option value="85">PHP 8.5</option>
+                        <option v-for="opt in phpOptions" :key="opt.value" :value="opt.value">
+                            {{ opt.label }}
+                        </option>
                     </select>
                 </td>
                 <td class="py-3.5 px-4 text-theme-text-muted truncate max-w-xs" :title="dom.document_root">

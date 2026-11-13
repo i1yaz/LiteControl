@@ -4,6 +4,7 @@ import { Head, useForm, router } from '@inertiajs/vue3';
 import { confirmDialog } from '@/Composables/useDialog';
 import Modal from '@/Components/Modal.vue';
 import { Globe, Plus, Folder, Trash2, X } from '@lucide/vue';
+import { usePhpVersions } from '@/Composables/usePhpVersions';
 
 const props = defineProps({
     subdomains: Object,
@@ -28,15 +29,7 @@ const selectedParentDomain = computed(() => {
     return props.baseDomains?.find((d) => d.id === form.parent_domain_id) || null;
 });
 
-const phpOptions = computed(() => {
-    const versions = props.phpVersions?.length ? props.phpVersions : ['74', '80', '81', '82', '83', '84'];
-    return versions.map((v) => {
-        const raw = typeof v === 'object' && v !== null ? v.version : v;
-        const str = String(raw).replace('.', '');
-        const formatted = str.length === 2 ? `${str[0]}.${str[1]}` : str;
-        return { value: str, label: `PHP ${formatted}` };
-    });
-});
+const { phpOptions } = usePhpVersions(() => props.phpVersions);
 
 const docRootPreview = computed(() => {
     const username = selectedParentDomain.value?.user?.username || 'user';
