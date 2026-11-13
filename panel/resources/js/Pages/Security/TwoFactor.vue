@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { ShieldCheck, ShieldAlert, KeyRound, Copy, Check } from '@lucide/vue';
+import { generateQrSvgData } from '@/Utils/qrcode';
 
 const props = defineProps({
     enabled: Boolean,
@@ -20,6 +21,15 @@ const props = defineProps({
 });
 
 const copied = ref(false);
+
+const qrCode = computed(() => {
+    if (!props.otpauthUri) return null;
+    try {
+        return generateQrSvgData(props.otpauthUri);
+    } catch {
+        return null;
+    }
+});
 
 const confirmForm = useForm({
     code: '',
@@ -102,11 +112,22 @@ const copySecret = async () => {
 
             <!-- Setup Flow when Disabled -->
             <div v-if="!enabled && secret" class="pt-6 border-t border-slate-800 space-y-5">
-                <div class="space-y-2">
+                <div class="space-y-3">
                     <h3 class="text-sm font-semibold text-white">1. Add to Authenticator App</h3>
                     <p class="text-xs text-slate-400">
-                        Enter this setup key manually in Google Authenticator, Authy, or 1Password:
+                        Scan this QR code with Google Authenticator, Authy, or 1Password, or enter the setup key manually:
                     </p>
+                    <div v-if="qrCode" class="inline-block p-3 bg-white rounded-xl border border-slate-700">
+                        <svg
+                            :viewBox="qrCode.viewBox"
+                            class="w-40 h-40 block"
+                            shape-rendering="crispEdges"
+                            role="img"
+                            aria-label="Two-Factor Authentication QR Code"
+                        >
+                            <path :d="qrCode.path" fill="#000000" />
+                        </svg>
+                    </div>
                     <div class="flex items-center gap-2">
                         <code class="flex-1 px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-emerald-400 font-mono text-sm tracking-wider select-all">
                             {{ secret }}
