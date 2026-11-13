@@ -18,95 +18,66 @@ class CliPhpRuntimeAdapter implements PhpRuntimeDriverInterface
 
     public function listVersions(): array
     {
-        $res = $this->lcCli->run('php', ['list']);
-
-        if (($res['status'] ?? '') !== 'success') {
-            throw new LcCliException($res['message'] ?? 'Failed to list PHP versions.', 'php', ['list'], $res);
-        }
-
-        return (array) ($res['data'] ?? []);
+        return $this->runPhp(['list'], 'Failed to list PHP versions.');
     }
 
     public function getIni(PhpVersion $version): array
     {
-        $res = $this->lcCli->run('php', ['ini-get', $version->value]);
-
-        if (($res['status'] ?? '') !== 'success') {
-            throw new LcCliException($res['message'] ?? "Failed to get PHP INI for version {$version->value}.", 'php', ['ini-get', $version->value], $res);
-        }
-
-        return (array) ($res['data'] ?? []);
+        return $this->runPhp(['ini-get', $version->value], "Failed to get PHP INI for version {$version->value}.");
     }
 
     public function setIni(PhpVersion $version, string $key, string $value): array
     {
-        $arg = "{$key}={$value}";
-        $res = $this->lcCli->run('php', ['ini-set', $version->value, $arg]);
-
-        if (($res['status'] ?? '') !== 'success') {
-            throw new LcCliException($res['message'] ?? "Failed to set PHP INI {$key} for version {$version->value}.", 'php', ['ini-set', $version->value, $arg], $res);
-        }
-
-        return (array) ($res['data'] ?? []);
+        return $this->runPhp(['ini-set', $version->value, "{$key}={$value}"], "Failed to set PHP INI {$key} for version {$version->value}.");
     }
 
     public function listExtensions(PhpVersion $version): array
     {
-        $res = $this->lcCli->run('php', ['ext-list', $version->value]);
+        $data = $this->runPhp(['ext-list', $version->value], "Failed to list PHP extensions for version {$version->value}.");
 
-        if (($res['status'] ?? '') !== 'success') {
-            throw new LcCliException($res['message'] ?? "Failed to list PHP extensions for version {$version->value}.", 'php', ['ext-list', $version->value], $res);
-        }
-
-        return (array) ($res['data'] ?? [
+        return $data ?: [
             'installed' => [],
             'available' => [],
-        ]);
+        ];
     }
 
     public function toggleExtension(PhpVersion $version, PhpExtensionName $extension, string $action): array
     {
-        $sub = $action === 'enable' ? 'ext-enable' : 'ext-disable';
-        $res = $this->lcCli->run('php', [$sub, $version->value, $extension->value]);
-
-        if (($res['status'] ?? '') !== 'success') {
-            throw new LcCliException($res['message'] ?? "Failed to {$action} extension {$extension->value} for PHP {$version->value}.", 'php', [$sub, $version->value, $extension->value], $res);
+        if (! in_array($action, ['enable', 'disable'], true)) {
+            throw new \InvalidArgumentException("Invalid extension action: {$action}");
         }
 
-        return (array) ($res['data'] ?? []);
+        $sub = $action === 'enable' ? 'ext-enable' : 'ext-disable';
+
+        return $this->runPhp([$sub, $version->value, $extension->value], "Failed to {$action} extension {$extension->value} for PHP {$version->value}.");
     }
 
     public function installVersion(PhpVersion $version): array
     {
-        $res = $this->lcCli->run('php', ['install', $version->value]);
-
-        if (($res['status'] ?? '') !== 'success') {
-            throw new LcCliException($res['message'] ?? "Failed to install PHP {$version->value}.", 'php', ['install', $version->value], $res);
-        }
-
-        return (array) ($res['data'] ?? []);
+        return $this->runPhp(['install', $version->value], "Failed to install PHP {$version->value}.");
     }
 
     public function removeVersion(PhpVersion $version): array
     {
-        $res = $this->lcCli->run('php', ['remove', $version->value]);
-
-        if (($res['status'] ?? '') !== 'success') {
-            throw new LcCliException($res['message'] ?? "Failed to remove PHP {$version->value}.", 'php', ['remove', $version->value], $res);
-        }
-
-        return (array) ($res['data'] ?? []);
+        return $this->runPhp(['remove', $version->value], "Failed to remove PHP {$version->value}.");
     }
 
     public function listLoadedModules(PhpVersion $version): array
     {
-        $res = $this->lcCli->run('php', ['modules', $version->value]);
+        return $this->runPhp(['modules', $version->value], "Failed to list loaded PHP modules for version {$version->value}.");
+    }
+
+    /**
+     * @throws LcCliException
+     */
+    protected function runPhp(array $args, string $defaultError): array
+    {
+        $res = $this->lcCli->run('php', $args);
 
         if (($res['status'] ?? '') !== 'success') {
-            throw new LcCliException($res['message'] ?? "Failed to list loaded PHP modules for version {$version->value}.", 'php', ['modules', $version->value], $res);
+            throw new LcCliException($res['message'] ?? $defaultError, 'php', $args, $res);
         }
 
         return (array) ($res['data'] ?? []);
     }
 }
-

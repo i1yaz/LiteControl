@@ -35,46 +35,35 @@ class CliFirewallAdapter implements FirewallDriverInterface
             $cliArgs[] = $src;
         }
 
-        $res = $this->lcCli->run('security', $cliArgs);
-
-        if (($res['status'] ?? '') === 'error') {
-            throw new LcCliException($res['message'] ?? 'Failed to apply firewall rule.', 'security', $cliArgs);
-        }
-
-        return $res['data'] ?? [];
+        return $this->runSecurity($cliArgs, 'Failed to apply firewall rule.');
     }
 
     public function deleteRule(string $rule): array
     {
-        $res = $this->lcCli->run('security', ['ufw-delete', $rule]);
-
-        if (($res['status'] ?? '') === 'error') {
-            throw new LcCliException($res['message'] ?? 'Failed to delete firewall rule.', 'security', ['ufw-delete', $rule]);
-        }
-
-        return $res['data'] ?? [];
+        return $this->runSecurity(['ufw-delete', $rule], 'Failed to delete firewall rule.');
     }
 
     public function updatePanelPort(Port $port): array
     {
-        $res = $this->lcCli->run('security', ['panel-port', (string) $port->value]);
-
-        if (($res['status'] ?? '') === 'error') {
-            throw new LcCliException($res['message'] ?? 'Failed to change panel port.', 'security', ['panel-port', (string) $port->value]);
-        }
-
-        return $res['data'] ?? [];
+        return $this->runSecurity(['panel-port', (string) $port->value], 'Failed to change panel port.');
     }
 
     public function updateSshPort(Port $port): array
     {
-        $res = $this->lcCli->run('security', ['ssh-port', (string) $port->value]);
+        return $this->runSecurity(['ssh-port', (string) $port->value], 'Failed to change SSH port.');
+    }
 
-        if (($res['status'] ?? '') === 'error') {
-            throw new LcCliException($res['message'] ?? 'Failed to change SSH port.', 'security', ['ssh-port', (string) $port->value]);
+    /**
+     * @throws LcCliException
+     */
+    protected function runSecurity(array $args, string $defaultError): array
+    {
+        $res = $this->lcCli->run('security', $args);
+
+        if (($res['status'] ?? '') !== 'success') {
+            throw new LcCliException($res['message'] ?? $defaultError, 'security', $args, $res);
         }
 
         return $res['data'] ?? [];
     }
 }
-

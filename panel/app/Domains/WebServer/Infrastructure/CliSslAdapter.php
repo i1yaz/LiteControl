@@ -46,4 +46,3 @@ class CliSslAdapter implements SslDriverInterface
         return $res['data'] ?? [];
     }
 }
-
