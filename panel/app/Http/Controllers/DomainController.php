@@ -610,7 +610,7 @@ class DomainController extends Controller
 
         return Inertia::render('Domains/Subdomains', [
             'subdomains' => $subdomains,
-            'baseDomains' => $baseDomains->get(['id', 'domain', 'user_id', 'php_version']),
+            'baseDomains' => $baseDomains->with('user:id,username')->get(['id', 'domain', 'user_id', 'php_version']),
             'phpVersions' => $phpVersions,
         ]);
     }
@@ -628,7 +628,6 @@ class DomainController extends Controller
             'php_version' => ['nullable', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
             'public_path' => ['nullable', 'string', 'max:255', 'not_regex:/\.\./'],
             'ssl_enabled' => ['nullable', 'boolean'],
-            'use_parent_root' => ['nullable', 'boolean'],
         ]);
 
         $parentDomain = Domain::with('user.package')->findOrFail($validated['parent_domain_id']);
@@ -656,7 +655,6 @@ class DomainController extends Controller
                 'php_version' => $validated['php_version'] ?? null,
                 'public_path' => $validated['public_path'] ?? null,
                 'ssl_enabled' => $validated['ssl_enabled'] ?? false,
-                'use_parent_root' => $validated['use_parent_root'] ?? false,
             ]);
         } catch (\Throwable $e) {
             return back()->withErrors(['subdomain_prefix' => $e->getMessage()]);

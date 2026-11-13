@@ -33,15 +33,13 @@ class DomainService
         $domainName = strtolower(trim($data['domain']));
         $phpVersion = $data['php_version'] ?? '83';
         $publicSubpath = trim($data['public_path'] ?? '', " /\t\n\r\0\x0B");
-        $useParentRoot = filter_var($data['use_parent_root'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $parentDomain = ! empty($data['parent_domain_id'])
             ? Domain::find($data['parent_domain_id'])
             : $this->findClosestParentDomain($user->id, $domainName);
 
-        // Base directory is /home/<username>/<domain_or_parent>/public_html
-        $baseFolder = ($useParentRoot && $parentDomain) ? $parentDomain->domain : $domainName;
-        $baseDocRoot = "/home/{$user->username}/{$baseFolder}/public_html";
+        // Base directory is /home/<username>/<domain>/public_html
+        $baseDocRoot = "/home/{$user->username}/{$domainName}/public_html";
         $docRoot = ! empty($publicSubpath) ? "{$baseDocRoot}/{$publicSubpath}" : $baseDocRoot;
 
         // Auto-assign type: subdomain if parent exists, otherwise primary (or explicit type)

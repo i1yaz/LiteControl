@@ -22,7 +22,6 @@ const form = useForm({
     public_path: '',
     php_version: props.baseDomains?.[0]?.php_version || '83',
     ssl_enabled: true,
-    use_parent_root: false,
 });
 
 const selectedParentDomain = computed(() => {
@@ -39,11 +38,11 @@ const phpOptions = computed(() => {
 });
 
 const docRootPreview = computed(() => {
+    const username = selectedParentDomain.value?.user?.username || 'user';
     const parent = selectedParentDomain.value?.domain || 'example.com';
     const prefix = form.subdomain_prefix.trim().toLowerCase() || 'sub';
-    const baseFolder = form.use_parent_root ? parent : `${prefix}.${parent}`;
     const sub = form.public_path.trim().replace(/^\/+|\/+$/g, '');
-    return `/home/<user>/${baseFolder}/public_html${sub ? '/' + sub : ''}`;
+    return `/home/${username}/${prefix}.${parent}/public_html${sub ? '/' + sub : ''}`;
 });
 
 const submit = () => {
@@ -52,7 +51,6 @@ const submit = () => {
             showModal.value = false;
             form.reset('subdomain_prefix', 'public_path');
             form.ssl_enabled = true;
-            form.use_parent_root = false;
         },
     });
 };
@@ -177,22 +175,6 @@ const deleteSubdomain = async (id, domain) => {
                                     {{ d.domain }}
                                 </option>
                             </select>
-                        </div>
-
-                        <!-- Point to Parent Domain Folder -->
-                        <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
-                            <div>
-                                <span class="text-xs text-slate-200 block font-medium">Point to Parent Domain Folder</span>
-                                <span class="text-[11px] text-slate-400">Share the parent domain's public_html directory</span>
-                            </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    v-model="form.use_parent_root"
-                                    type="checkbox"
-                                    class="sr-only peer"
-                                />
-                                <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
-                            </label>
                         </div>
 
                         <!-- Web Root Subpath (Pointing Target) -->
