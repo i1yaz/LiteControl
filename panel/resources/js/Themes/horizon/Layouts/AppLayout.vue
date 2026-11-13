@@ -124,6 +124,21 @@ const logout = () => {
 
             <!-- Right Controls: Status, Theme Selector & User Profile -->
             <div class="flex items-center gap-3">
+                <!-- 2FA Status Quick Link -->
+                <Link
+                    href="/security/two-factor"
+                    :title="$page.props.auth?.user?.two_factor_confirmed_at ? 'Two-Factor Authentication is enabled' : 'Click to enable Two-Factor Authentication'"
+                    class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700/60 hover:border-slate-600 text-xs transition-colors"
+                >
+                    <span class="text-slate-400 font-medium text-[11px]">2FA:</span>
+                    <span
+                        class="font-semibold text-[11px]"
+                        :class="$page.props.auth?.user?.two_factor_confirmed_at ? 'text-emerald-400' : 'text-amber-400'"
+                    >
+                        {{ $page.props.auth?.user?.two_factor_confirmed_at ? 'ON' : 'Enable' }}
+                    </span>
+                </Link>
+
                 <!-- Daemon Heartbeat & Interactive Status Checker -->
                 <button
                     v-if="isAdmin"
