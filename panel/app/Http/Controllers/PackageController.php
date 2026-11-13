@@ -2,8 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Domains\HostingPlans\Actions\CreatePackageAction;
+use App\Domains\HostingPlans\Actions\DeletePackageAction;
+use App\Domains\HostingPlans\Actions\UpdatePackageAction;
+use App\Domains\HostingPlans\ValueObjects\PackageName;
+use App\Domains\HostingPlans\ValueObjects\ResourceQuotas;
 use App\Models\Package;
-use App\Models\AuditLog;
+use DomainException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -11,6 +17,12 @@ use Inertia\Response;
 
 class PackageController extends Controller
 {
+    public function __construct(
+        private readonly CreatePackageAction $createPackage,
+        private readonly UpdatePackageAction $updatePackage,
+        private readonly DeletePackageAction $deletePackage,
+    ) {}
+
     /**
      * Display a listing of hosting packages.
      */
@@ -26,7 +38,7 @@ class PackageController extends Controller
     /**
      * Store a newly created hosting package.
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:50', 'unique:packages,name'],
@@ -39,16 +51,12 @@ class PackageController extends Controller
             'max_email_accounts' => ['required', 'integer', 'min:0', 'max:1000'],
         ]);
 
-        $package = Package::create($validated);
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'package.create',
-            'command' => "package add {$package->name}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => $validated,
-        ]);
+        $package = $this->createPackage->handle(
+            new PackageName($validated['name']),
+            ResourceQuotas::fromArray($validated),
+            Auth::id(),
+            $request->ip(),
+        );
 
         return redirect()->route('packages.index')->with('success', "Package '{$package->name}' created.");
     }
@@ -56,7 +64,7 @@ class PackageController extends Controller
     /**
      * Update the specified hosting package.
      */
-    public function update(Request $request, Package $package)
+    public function update(Request $request, Package $package): RedirectResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:50', 'unique:packages,name,' . $package->id],
@@ -69,16 +77,13 @@ class PackageController extends Controller
             'max_email_accounts' => ['required', 'integer', 'min:0', 'max:1000'],
         ]);
 
-        $package->update($validated);
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'package.update',
-            'command' => "package update {$package->name}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => $validated,
-        ]);
+        $this->updatePackage->handle(
+            $package,
+            new PackageName($validated['name']),
+            ResourceQuotas::fromArray($validated),
+            Auth::id(),
+            $request->ip(),
+        );
 
         return redirect()->route('packages.index')->with('success', "Package '{$package->name}' updated.");
     }
@@ -86,25 +91,14 @@ class PackageController extends Controller
     /**
      * Remove the specified package from storage.
      */
-    public function destroy(Request $request, Package $package)
+    public function destroy(Request $request, Package $package): RedirectResponse
     {
-        if ($package->users()->count() > 0) {
-            return back()->with('error', "Cannot delete package '{$package->name}' because it has active users assigned.");
+        try {
+            $name = $this->deletePackage->handle($package, Auth::id(), $request->ip());
+        } catch (DomainException $e) {
+            return back()->with('error', $e->getMessage());
         }
-
-        $name = $package->name;
-        $package->delete();
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'package.delete',
-            'command' => "package delete {$name}",
-            'status' => 'success',
-            'ip_address' => $request->ip(),
-            'details' => ['name' => $name],
-        ]);
 
         return redirect()->route('packages.index')->with('success', "Package '{$name}' deleted.");
     }
 }
-
