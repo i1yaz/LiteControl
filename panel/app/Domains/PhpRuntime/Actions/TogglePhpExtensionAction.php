@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace App\Domains\PhpRuntime\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\ValueObjects\PhpExtensionName;
 use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 
 class TogglePhpExtensionAction
 {
     public function __construct(
-        protected PhpRuntimeDriverInterface $phpRuntime
+        protected PhpRuntimeDriverInterface $phpRuntime,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     public function handle(
@@ -27,7 +28,7 @@ class TogglePhpExtensionAction
 
         $sub = $action === 'enable' ? 'ext-enable' : 'ext-disable';
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,
             'action' => "php.extension_{$action}",
             'command' => "lc-cli php {$sub} {$version->value} {$extension->value}",

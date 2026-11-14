@@ -7,14 +7,15 @@ namespace App\Domains\Identity\Actions;
 use App\Domains\Identity\Contracts\UserDriverInterface;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\ValueObjects\LinuxUsername;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Exceptions\System\LcCliException;
 use Illuminate\Support\Facades\DB;
 
 class UnsuspendUserAction
 {
     public function __construct(
-        protected UserDriverInterface $userDriver
+        protected UserDriverInterface $userDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -31,7 +32,7 @@ class UnsuspendUserAction
             $user->update(['status' => 'active']);
 
             if ($actor) {
-                AuditLog::create([
+                ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                     'user_id' => $actor->id,
                     'action' => 'user.unsuspend',
                     'command' => "lc-cli user unsuspend {$user->username}",

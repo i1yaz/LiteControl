@@ -4,13 +4,14 @@ namespace App\Domains\PanelConfig\Actions;
 
 use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Exceptions\System\LcCliException;
 
 class UpdateTuningAction
 {
     public function __construct(
-        protected TuningDriverInterface $tuningCli
+        protected TuningDriverInterface $tuningCli,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -25,7 +26,7 @@ class UpdateTuningAction
     {
         $result = $this->tuningCli->updateTuning($validated);
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor?->id,
             'action' => 'update_tuning',
             'command' => 'lc-cli tuning set',

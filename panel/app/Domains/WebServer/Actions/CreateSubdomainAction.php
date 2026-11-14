@@ -3,7 +3,7 @@
 namespace App\Domains\WebServer\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Domains\WebServer\Contracts\SslDriverInterface;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use App\Domains\WebServer\Models\Domain;
@@ -17,7 +17,8 @@ class CreateSubdomainAction
 
     public function __construct(
         protected VhostDriverInterface $vhostDriver,
-        protected ?SslDriverInterface $sslDriver = null
+        protected ?SslDriverInterface $sslDriver = null,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -62,7 +63,7 @@ class CreateSubdomainAction
                 'status' => 'active',
             ]);
 
-            AuditLog::create([
+            ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                 'user_id' => $actor->id,
                 'action' => 'subdomain.create',
                 'command' => "lc-cli vhost add {$subdomainFqdn} {$owner->username} {$phpVersion} {$docRoot}",

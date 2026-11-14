@@ -3,14 +3,15 @@
 namespace App\Domains\ServerOps\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\ServerOps\Contracts\ServerDriverInterface;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Exceptions\System\LcCliException;
 
 class KillProcessAction
 {
     public function __construct(
-        protected ServerDriverInterface $serverDriver
+        protected ServerDriverInterface $serverDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -22,7 +23,7 @@ class KillProcessAction
     {
         $result = $this->serverDriver->killProcess($pid);
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor?->id,
             'action' => 'kill_process',
             'command' => "lc-cli server kill-process {$pid}",

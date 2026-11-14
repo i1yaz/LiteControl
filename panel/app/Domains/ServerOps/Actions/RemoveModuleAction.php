@@ -3,14 +3,15 @@
 namespace App\Domains\ServerOps\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Exceptions\System\LcCliException;
 
 class RemoveModuleAction
 {
     public function __construct(
-        protected ModuleDriverInterface $moduleDriver
+        protected ModuleDriverInterface $moduleDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -22,7 +23,7 @@ class RemoveModuleAction
     {
         $result = $this->moduleDriver->removeModule($module);
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,
             'action' => 'remove_module',
             'command' => "lc-cli module remove {$module}",

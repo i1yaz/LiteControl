@@ -3,14 +3,15 @@
 namespace App\Domains\ServerOps\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\ServerOps\Contracts\ServerDriverInterface;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Exceptions\System\LcCliException;
 
 class UpdateTimezoneAction
 {
     public function __construct(
-        protected ServerDriverInterface $serverDriver
+        protected ServerDriverInterface $serverDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -22,7 +23,7 @@ class UpdateTimezoneAction
     {
         $result = $this->serverDriver->setTimezone($timezone);
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor?->id,
             'action' => 'update_timezone',
             'command' => "lc-cli server timezone set {$timezone}",

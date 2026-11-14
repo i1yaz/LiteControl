@@ -3,11 +3,15 @@
 namespace App\Domains\HostingPlans\Actions;
 
 use App\Domains\HostingPlans\Models\Package;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use DomainException;
 
 class DeletePackageAction
 {
+    public function __construct(
+        protected ?AuditLoggerInterface $auditLogger = null
+    ) {}
+
     public function handle(
         Package $package,
         ?int $actorId,
@@ -20,7 +24,7 @@ class DeletePackageAction
         $name = $package->name;
         $package->delete();
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actorId,
             'action' => 'package.delete',
             'command' => "package delete {$name}",

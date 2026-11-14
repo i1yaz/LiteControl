@@ -14,6 +14,7 @@ use App\Domains\Identity\Events\UserDeleted;
 use App\Domains\Identity\Infrastructure\CliUserAdapter;
 use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use App\Domains\PanelConfig\Infrastructure\CliTuningAdapter;
+use App\Domains\PanelConfig\Infrastructure\EloquentAuditLogger;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\Infrastructure\CliPhpRuntimeAdapter;
 use App\Domains\Security\Contracts\FirewallDriverInterface;
@@ -28,6 +29,7 @@ use App\Domains\ServerOps\Infrastructure\CliModuleAdapter;
 use App\Domains\ServerOps\Infrastructure\CliServerAdapter;
 use App\Domains\ServerOps\Infrastructure\LocalFileManagerAdapter;
 use App\Domains\ServerOps\Infrastructure\LocalLogReaderAdapter;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Domains\WebServer\Contracts\SslDriverInterface;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use App\Domains\WebServer\Infrastructure\CliSslAdapter;
@@ -44,6 +46,7 @@ class DomainServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(AuditLoggerInterface::class, EloquentAuditLogger::class);
         $this->app->bind(BackupDriverInterface::class, CliBackupAdapter::class);
         $this->app->bind(DatabaseDriverInterface::class, CliDatabaseAdapter::class);
         $this->app->bind(UserDriverInterface::class, CliUserAdapter::class);

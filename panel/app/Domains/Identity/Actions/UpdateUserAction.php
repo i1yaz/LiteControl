@@ -8,13 +8,14 @@ use App\Domains\HostingPlans\Models\Package;
 use App\Domains\Identity\Contracts\UserDriverInterface;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\ValueObjects\LinuxUsername;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use Illuminate\Support\Facades\DB;
 
 class UpdateUserAction
 {
     public function __construct(
-        protected UserDriverInterface $userDriver
+        protected UserDriverInterface $userDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -60,7 +61,7 @@ class UpdateUserAction
         });
 
         if ($actor) {
-            AuditLog::create([
+            ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                 'user_id' => $actor->id,
                 'action' => 'user.update',
                 'command' => "lc-cli user update {$user->username}",

@@ -3,14 +3,15 @@
 namespace App\Domains\ServerOps\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Exceptions\System\LcCliException;
 
 class InstallModuleAction
 {
     public function __construct(
-        protected ModuleDriverInterface $moduleDriver
+        protected ModuleDriverInterface $moduleDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -22,7 +23,7 @@ class InstallModuleAction
     {
         $result = $this->moduleDriver->installModule($module);
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,
             'action' => 'install_module',
             'command' => "lc-cli module install {$module}",

@@ -7,13 +7,14 @@ namespace App\Domains\Backup\Actions;
 use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\Models\BackupSchedule;
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use Illuminate\Support\Facades\DB;
 
 class RemoveBackupScheduleAction
 {
     public function __construct(
-        protected BackupDriverInterface $backupDriver
+        protected BackupDriverInterface $backupDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     public function handle(BackupSchedule $schedule, User $actor, ?string $ipAddress = null): void
@@ -23,7 +24,7 @@ class RemoveBackupScheduleAction
         $this->backupDriver->removeSchedule($targetUsername);
 
         DB::transaction(function () use ($schedule, $actor, $targetUsername, $ipAddress) {
-            AuditLog::create([
+            ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                 'user_id' => $actor->id,
                 'action' => 'backup.schedule.remove',
                 'command' => "lc-cli backup schedule remove {$targetUsername}",

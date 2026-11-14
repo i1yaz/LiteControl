@@ -46,4 +46,3 @@ class CliPanelSslAdapter implements PanelSslDriverInterface
         }
     }
 }
-

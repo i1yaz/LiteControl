@@ -3,14 +3,15 @@
 namespace App\Domains\WebServer\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use App\Domains\WebServer\Models\Domain;
 
 class UpdateVhostConfAction
 {
     public function __construct(
-        protected VhostDriverInterface $vhostDriver
+        protected VhostDriverInterface $vhostDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -20,7 +21,7 @@ class UpdateVhostConfAction
     {
         $res = $this->vhostDriver->setConf($domain->domain, $conf);
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,
             'action' => 'domain.vhost_conf_update',
             'command' => "update vhconf for {$domain->domain}",

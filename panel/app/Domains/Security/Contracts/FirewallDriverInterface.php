@@ -2,7 +2,7 @@
 
 namespace App\Domains\Security\Contracts;
 
-use App\Domains\Security\ValueObjects\Port;
+use App\Domains\Shared\ValueObjects\Port;
 use App\Exceptions\System\LcCliException;
 
 interface FirewallDriverInterface

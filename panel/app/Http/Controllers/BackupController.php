@@ -10,9 +10,9 @@ use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\Models\Backup;
 use App\Domains\Backup\Models\BackupSchedule;
 use App\Domains\Backup\ValueObjects\BackupFrequency;
-use App\Domains\Backup\ValueObjects\BackupPath;
 use App\Domains\Backup\ValueObjects\RetentionCount;
 use App\Domains\Identity\Models\User;
+use App\Domains\Shared\ValueObjects\SystemPath;
 use App\Exceptions\System\LcCliException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -89,7 +89,7 @@ class BackupController extends Controller
         ]);
 
         try {
-            $restoreBackupAction->handle(new BackupPath($validated['backup_path']), $user, $request->ip());
+            $restoreBackupAction->handle(new SystemPath($validated['backup_path']), $user, $request->ip());
 
             return back()->with('success', 'Backup restored successfully.');
         } catch (LcCliException $e) {

@@ -6,13 +6,14 @@ use App\Domains\Database\Contracts\DatabaseDriverInterface;
 use App\Domains\Database\Models\DatabaseUser;
 use App\Domains\Database\ValueObjects\DatabaseUsername;
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use Illuminate\Support\Facades\DB;
 
 class DeleteDatabaseUserAction
 {
     public function __construct(
-        protected DatabaseDriverInterface $databaseDriver
+        protected DatabaseDriverInterface $databaseDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -27,7 +28,7 @@ class DeleteDatabaseUserAction
         DB::transaction(function () use ($dbUser, $actor, $username, $ipAddress) {
             $dbUser->delete();
 
-            AuditLog::create([
+            ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                 'user_id' => $actor->id,
                 'action' => 'db_user.delete',
                 'command' => "lc-cli db delete-user {$username->value}",

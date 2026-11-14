@@ -10,10 +10,10 @@ use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\Models\Backup;
 use App\Domains\Backup\Models\BackupSchedule;
 use App\Domains\Backup\ValueObjects\BackupFrequency;
-use App\Domains\Backup\ValueObjects\BackupPath;
 use App\Domains\Backup\ValueObjects\RetentionCount;
 use App\Domains\HostingPlans\Models\Package;
 use App\Domains\Identity\Models\User;
+use App\Domains\Shared\ValueObjects\SystemPath;
 use App\Exceptions\System\LcCliException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -93,12 +93,12 @@ class BackupActionsTest extends TestCase
 
     public function test_restore_backup_action(): void
     {
-        $path = new BackupPath('/home/backupuser/backups/backup.tar.gz');
+        $path = new SystemPath('/home/backupuser/backups/backup.tar.gz');
 
         $cliMock = Mockery::mock(BackupDriverInterface::class);
         $cliMock->shouldReceive('restoreBackup')
             ->once()
-            ->with(Mockery::on(fn ($arg) => $arg instanceof BackupPath && $arg->value === $path->value))
+            ->with(Mockery::on(fn ($arg) => $arg instanceof SystemPath && $arg->fullPath === $path->fullPath))
             ->andReturn(['status' => 'success']);
 
         $action = new RestoreBackupAction($cliMock);
@@ -108,7 +108,7 @@ class BackupActionsTest extends TestCase
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $this->user->id,
             'action' => 'backup.restore',
-            'command' => 'lc-cli backup restore /home/backupuser/backups/backup.tar.gz',
+            'command' => "lc-cli backup restore {$path->fullPath}",
         ]);
     }
 

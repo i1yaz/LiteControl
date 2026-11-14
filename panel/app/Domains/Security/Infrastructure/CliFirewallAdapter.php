@@ -3,7 +3,7 @@
 namespace App\Domains\Security\Infrastructure;
 
 use App\Domains\Security\Contracts\FirewallDriverInterface;
-use App\Domains\Security\ValueObjects\Port;
+use App\Domains\Shared\ValueObjects\Port;
 use App\Exceptions\System\LcCliException;
 use App\Support\Cli\LcCliService;
 

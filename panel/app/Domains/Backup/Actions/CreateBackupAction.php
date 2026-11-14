@@ -7,13 +7,14 @@ namespace App\Domains\Backup\Actions;
 use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\Models\Backup;
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use Illuminate\Support\Facades\DB;
 
 class CreateBackupAction
 {
     public function __construct(
-        protected BackupDriverInterface $backupDriver
+        protected BackupDriverInterface $backupDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     public function handle(User $targetUser, User $actor, ?string $ipAddress = null): Backup
@@ -34,7 +35,7 @@ class CreateBackupAction
                 'status' => 'completed',
             ]);
 
-            AuditLog::create([
+            ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                 'user_id' => $actor->id,
                 'action' => 'backup.create',
                 'command' => "lc-cli backup create {$targetUser->username}",

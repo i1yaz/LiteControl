@@ -3,13 +3,14 @@
 namespace App\Domains\Security\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\Security\Contracts\PanelSslDriverInterface;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 
 class UpdatePanelSslAction
 {
     public function __construct(
-        protected PanelSslDriverInterface $panelSslDriver
+        protected PanelSslDriverInterface $panelSslDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -25,7 +26,7 @@ class UpdatePanelSslAction
             $result = $this->panelSslDriver->installCustomPanelSsl($data['certificate'], $data['private_key']);
         }
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor?->id,
             'action' => 'update_panel_ssl',
             'command' => 'lc-cli ssl panel-ssl',

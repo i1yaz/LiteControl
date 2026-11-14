@@ -3,15 +3,16 @@
 namespace App\Domains\Security\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\Security\Contracts\FirewallDriverInterface;
 use App\Domains\Security\Models\FirewallRule;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use Illuminate\Support\Facades\DB;
 
 class AddFirewallRuleAction
 {
     public function __construct(
-        protected FirewallDriverInterface $firewallDriver
+        protected FirewallDriverInterface $firewallDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -39,7 +40,7 @@ class AddFirewallRuleAction
 
             $sub = $data['action'] === 'allow' ? 'ufw-allow' : 'ufw-deny';
 
-            AuditLog::create([
+            ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                 'user_id' => $actor?->id,
                 'action' => 'create_firewall_rule',
                 'command' => "lc-cli security {$sub} {$data['port']}",

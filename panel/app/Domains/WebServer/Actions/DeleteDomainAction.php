@@ -3,7 +3,7 @@
 namespace App\Domains\WebServer\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use App\Domains\WebServer\Models\Domain;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Log;
 class DeleteDomainAction
 {
     public function __construct(
-        protected VhostDriverInterface $vhostDriver
+        protected VhostDriverInterface $vhostDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -43,7 +44,7 @@ class DeleteDomainAction
 
             $domain->delete();
 
-            AuditLog::create([
+            ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                 'user_id' => $actor->id,
                 'action' => 'domain.delete',
                 'command' => "lc-cli vhost remove {$domainName}".($deleteFiles ? ' --delete-files' : ''),

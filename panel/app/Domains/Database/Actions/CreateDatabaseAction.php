@@ -6,13 +6,14 @@ use App\Domains\Database\Contracts\DatabaseDriverInterface;
 use App\Domains\Database\Models\Database;
 use App\Domains\Database\ValueObjects\DatabaseName;
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use Illuminate\Support\Facades\DB;
 
 class CreateDatabaseAction
 {
     public function __construct(
-        protected DatabaseDriverInterface $databaseDriver
+        protected DatabaseDriverInterface $databaseDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -30,7 +31,7 @@ class CreateDatabaseAction
                 'size_bytes' => 0,
             ]);
 
-            AuditLog::create([
+            ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                 'user_id' => $actor->id,
                 'action' => 'db.create',
                 'command' => "lc-cli db create-db {$dbName->value}",

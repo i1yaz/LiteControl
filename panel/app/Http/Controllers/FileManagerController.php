@@ -10,7 +10,7 @@ use App\Domains\ServerOps\Actions\ReadFileContentAction;
 use App\Domains\ServerOps\Actions\ResolveUserBaseDirAction;
 use App\Domains\ServerOps\Actions\SaveFileContentAction;
 use App\Domains\ServerOps\Contracts\FileManagerDriverInterface;
-use App\Domains\ServerOps\ValueObjects\SystemPath;
+use App\Domains\Shared\ValueObjects\SystemPath;
 use App\Domains\WebServer\Models\Domain;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

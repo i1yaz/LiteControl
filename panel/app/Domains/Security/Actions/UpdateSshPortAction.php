@@ -3,14 +3,15 @@
 namespace App\Domains\Security\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\Security\Contracts\FirewallDriverInterface;
-use App\Domains\Security\ValueObjects\Port;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
+use App\Domains\Shared\ValueObjects\Port;
 
 class UpdateSshPortAction
 {
     public function __construct(
-        protected FirewallDriverInterface $firewallDriver
+        protected FirewallDriverInterface $firewallDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -20,7 +21,7 @@ class UpdateSshPortAction
     {
         $result = $this->firewallDriver->updateSshPort($port);
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor?->id,
             'action' => 'change_ssh_port',
             'command' => "lc-cli security ssh-port {$port->value}",

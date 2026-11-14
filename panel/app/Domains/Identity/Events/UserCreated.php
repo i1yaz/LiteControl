@@ -25,4 +25,3 @@ class UserCreated
         public readonly ?User $actor = null,
     ) {}
 }
-

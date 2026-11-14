@@ -9,13 +9,14 @@ use App\Domains\Backup\Models\BackupSchedule;
 use App\Domains\Backup\ValueObjects\BackupFrequency;
 use App\Domains\Backup\ValueObjects\RetentionCount;
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use Illuminate\Support\Facades\DB;
 
 class AddBackupScheduleAction
 {
     public function __construct(
-        protected BackupDriverInterface $backupDriver
+        protected BackupDriverInterface $backupDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     public function handle(
@@ -39,7 +40,7 @@ class AddBackupScheduleAction
 
             $this->backupDriver->addSchedule($targetUser->username, $frequency, $retentionCount);
 
-            AuditLog::create([
+            ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                 'user_id' => $actor->id,
                 'action' => 'backup.schedule.add',
                 'command' => "lc-cli backup schedule add {$targetUser->username} {$frequency->value} {$retentionCount->value}",

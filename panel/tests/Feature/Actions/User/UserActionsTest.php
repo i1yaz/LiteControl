@@ -73,7 +73,7 @@ class UserActionsTest extends TestCase
         $domainServiceMock = Mockery::mock(DomainService::class);
         $domainServiceMock->shouldNotReceive('createDomain');
 
-        $action = new CreateUserAction($cliMock, $domainServiceMock);
+        $action = new CreateUserAction($cliMock);
 
         $result = $action->handle([
             'username' => 'newclient',
@@ -122,7 +122,7 @@ class UserActionsTest extends TestCase
             )
             ->andReturn(['warning' => null]);
 
-        $action = new CreateUserAction($cliMock, $domainServiceMock);
+        $action = new CreateUserAction($cliMock);
 
         $result = $action->handle([
             'username' => 'clientwithdom',
@@ -149,7 +149,7 @@ class UserActionsTest extends TestCase
 
         $domainServiceMock = Mockery::mock(DomainService::class);
 
-        $action = new CreateUserAction($cliMock, $domainServiceMock);
+        $action = new CreateUserAction($cliMock);
 
         $this->expectException(LcCliException::class);
         $this->expectExceptionMessage('System user already exists');

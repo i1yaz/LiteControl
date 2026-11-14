@@ -5,10 +5,14 @@ namespace App\Domains\HostingPlans\Actions;
 use App\Domains\HostingPlans\Models\Package;
 use App\Domains\HostingPlans\ValueObjects\PackageName;
 use App\Domains\HostingPlans\ValueObjects\ResourceQuotas;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 
 class CreatePackageAction
 {
+    public function __construct(
+        protected ?AuditLoggerInterface $auditLogger = null
+    ) {}
+
     public function handle(
         PackageName $name,
         ResourceQuotas $quotas,
@@ -19,7 +23,7 @@ class CreatePackageAction
 
         $package = Package::create($attributes);
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actorId,
             'action' => 'package.create',
             'command' => "package add {$package->name}",

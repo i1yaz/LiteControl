@@ -9,13 +9,14 @@ use App\Domains\Identity\Contracts\UserDriverInterface;
 use App\Domains\Identity\Events\UserCreated;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\ValueObjects\LinuxUsername;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use Illuminate\Support\Facades\DB;
 
 class CreateUserAction
 {
     public function __construct(
-        protected UserDriverInterface $userDriver
+        protected UserDriverInterface $userDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -63,7 +64,7 @@ class CreateUserAction
         $warning = $event->warning;
 
         if ($actor) {
-            AuditLog::create([
+            ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                 'user_id' => $actor->id,
                 'action' => 'user.create',
                 'command' => "lc-cli user add {$user->username}",

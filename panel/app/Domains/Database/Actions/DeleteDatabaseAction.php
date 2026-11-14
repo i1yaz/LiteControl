@@ -6,7 +6,7 @@ use App\Domains\Database\Contracts\DatabaseDriverInterface;
 use App\Domains\Database\Models\Database;
 use App\Domains\Database\ValueObjects\DatabaseName;
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Exceptions\System\LcCliException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -14,7 +14,8 @@ use InvalidArgumentException;
 class DeleteDatabaseAction
 {
     public function __construct(
-        protected DatabaseDriverInterface $databaseDriver
+        protected DatabaseDriverInterface $databaseDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -36,7 +37,7 @@ class DeleteDatabaseAction
         DB::transaction(function () use ($database, $actor, $dbName, $ipAddress) {
             $database->delete();
 
-            AuditLog::create([
+            ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                 'user_id' => $actor->id,
                 'action' => 'db.delete',
                 'command' => "lc-cli db delete-db {$dbName->value}",

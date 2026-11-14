@@ -11,7 +11,7 @@ use App\Domains\Security\Actions\UpdateSshPortAction;
 use App\Domains\Security\Contracts\FirewallDriverInterface;
 use App\Domains\Security\Contracts\PanelSslDriverInterface;
 use App\Domains\Security\Models\FirewallRule;
-use App\Domains\Security\ValueObjects\Port;
+use App\Domains\Shared\ValueObjects\Port;
 use App\Exceptions\System\LcCliException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;

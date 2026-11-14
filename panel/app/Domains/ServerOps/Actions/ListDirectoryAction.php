@@ -3,7 +3,7 @@
 namespace App\Domains\ServerOps\Actions;
 
 use App\Domains\ServerOps\Contracts\FileManagerDriverInterface;
-use App\Domains\ServerOps\ValueObjects\SystemPath;
+use App\Domains\Shared\ValueObjects\SystemPath;
 
 class ListDirectoryAction
 {

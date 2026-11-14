@@ -5,21 +5,22 @@ declare(strict_types=1);
 namespace App\Domains\PhpRuntime\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 
 class RemovePhpVersionAction
 {
     public function __construct(
-        protected PhpRuntimeDriverInterface $phpRuntime
+        protected PhpRuntimeDriverInterface $phpRuntime,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     public function handle(PhpVersion $version, User $actor, ?string $ipAddress = null): array
     {
         $result = $this->phpRuntime->removeVersion($version);
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,
             'action' => 'php.remove',
             'command' => "lc-cli php remove {$version->value}",

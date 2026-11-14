@@ -3,15 +3,16 @@
 namespace App\Domains\PanelConfig\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Exceptions\System\LcCliException;
 
 class UpdatePhpLimitsAction
 {
     public function __construct(
-        protected PhpRuntimeDriverInterface $phpCli
+        protected PhpRuntimeDriverInterface $phpCli,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -27,7 +28,7 @@ class UpdatePhpLimitsAction
             $this->phpCli->setIni(new PhpVersion($version), $key, (string) $val);
         }
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor?->id,
             'action' => 'update_php_limits',
             'command' => "lc-cli php ini-set {$version}",

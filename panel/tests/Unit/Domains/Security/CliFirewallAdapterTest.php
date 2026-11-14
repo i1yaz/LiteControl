@@ -3,7 +3,7 @@
 namespace Tests\Unit\Domains\Security;
 
 use App\Domains\Security\Infrastructure\CliFirewallAdapter;
-use App\Domains\Security\ValueObjects\Port;
+use App\Domains\Shared\ValueObjects\Port;
 use App\Exceptions\System\LcCliException;
 use App\Support\Cli\LcCliService;
 use Illuminate\Support\Facades\Process;

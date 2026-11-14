@@ -2,7 +2,7 @@
 
 namespace App\Domains\ServerOps\Contracts;
 
-use App\Domains\ServerOps\ValueObjects\SystemPath;
+use App\Domains\Shared\ValueObjects\SystemPath;
 
 interface FileManagerDriverInterface
 {

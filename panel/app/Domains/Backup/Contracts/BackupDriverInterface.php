@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Domains\Backup\Contracts;
 
 use App\Domains\Backup\ValueObjects\BackupFrequency;
-use App\Domains\Backup\ValueObjects\BackupPath;
 use App\Domains\Backup\ValueObjects\RetentionCount;
+use App\Domains\Shared\ValueObjects\SystemPath;
 use App\Exceptions\System\LcCliException;
 
 interface BackupDriverInterface
@@ -21,7 +21,7 @@ interface BackupDriverInterface
     /**
      * @throws LcCliException
      */
-    public function restoreBackup(BackupPath $backupPath): array;
+    public function restoreBackup(SystemPath $SystemPath): array;
 
     /**
      * @throws LcCliException

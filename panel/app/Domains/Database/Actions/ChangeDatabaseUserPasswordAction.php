@@ -6,12 +6,13 @@ use App\Domains\Database\Contracts\DatabaseDriverInterface;
 use App\Domains\Database\Models\DatabaseUser;
 use App\Domains\Database\ValueObjects\DatabaseUsername;
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 
 class ChangeDatabaseUserPasswordAction
 {
     public function __construct(
-        protected DatabaseDriverInterface $databaseDriver
+        protected DatabaseDriverInterface $databaseDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -23,7 +24,7 @@ class ChangeDatabaseUserPasswordAction
 
         $this->databaseDriver->changePassword($username, $newPassword);
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,
             'action' => 'db_user.password',
             'command' => "lc-cli db password {$username->value} [REDACTED]",

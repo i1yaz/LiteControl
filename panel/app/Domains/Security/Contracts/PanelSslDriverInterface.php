@@ -16,4 +16,3 @@ interface PanelSslDriverInterface
      */
     public function installCustomPanelSsl(string $certificate, string $privateKey): array;
 }
-

@@ -3,14 +3,15 @@
 namespace App\Domains\ServerOps\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\ServerOps\Contracts\ServerDriverInterface;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Exceptions\System\LcCliException;
 
 class ToggleWebAdminAction
 {
     public function __construct(
-        protected ServerDriverInterface $serverDriver
+        protected ServerDriverInterface $serverDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -23,7 +24,7 @@ class ToggleWebAdminAction
         $ips = trim($allowedIps ?? '');
         $result = $this->serverDriver->enableWebAdmin($ips);
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor?->id,
             'action' => 'webadmin_enabled',
             'command' => 'lc-cli server webadmin-enable'.($ips !== '' ? " {$ips}" : ''),
@@ -44,7 +45,7 @@ class ToggleWebAdminAction
     {
         $result = $this->serverDriver->disableWebAdmin();
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor?->id,
             'action' => 'webadmin_disabled',
             'command' => 'lc-cli server webadmin-disable',

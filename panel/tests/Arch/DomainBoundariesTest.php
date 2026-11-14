@@ -44,7 +44,6 @@ foreach ($domains as $domain) {
         ->expect("App\\Domains\\{$domain}")
         ->not->toUse($forbiddenTargets)
         ->ignoring([
-            'App\Domains\PanelConfig\Models\AuditLog',
             'App\Domains\Identity\Models\User',
             'App\Domains\HostingPlans\Models\Package',
         ]);

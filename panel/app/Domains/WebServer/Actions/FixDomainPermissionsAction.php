@@ -3,14 +3,15 @@
 namespace App\Domains\WebServer\Actions;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use App\Domains\WebServer\Models\Domain;
 
 class FixDomainPermissionsAction
 {
     public function __construct(
-        protected VhostDriverInterface $vhostDriver
+        protected VhostDriverInterface $vhostDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -20,7 +21,7 @@ class FixDomainPermissionsAction
     {
         $res = $this->vhostDriver->fixPermissions($domain->domain);
 
-        AuditLog::create([
+        ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,
             'action' => 'domain.fix_permissions',
             'command' => "lc-cli vhost fix-permissions {$domain->domain}",

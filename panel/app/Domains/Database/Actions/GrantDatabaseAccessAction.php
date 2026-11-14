@@ -8,13 +8,14 @@ use App\Domains\Database\Models\DatabaseUser;
 use App\Domains\Database\ValueObjects\DatabaseName;
 use App\Domains\Database\ValueObjects\DatabaseUsername;
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use Illuminate\Support\Facades\DB;
 
 class GrantDatabaseAccessAction
 {
     public function __construct(
-        protected DatabaseDriverInterface $databaseDriver
+        protected DatabaseDriverInterface $databaseDriver,
+        protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     /**
@@ -29,7 +30,7 @@ class GrantDatabaseAccessAction
         DB::transaction(function () use ($username, $database, $actor, $ipAddress) {
             DatabaseUser::where('db_username', $username->value)->update(['database_id' => $database->id]);
 
-            AuditLog::create([
+            ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                 'user_id' => $actor->id,
                 'action' => 'db_user.grant',
                 'command' => "lc-cli db grant {$username->value} {$database->db_name}",
