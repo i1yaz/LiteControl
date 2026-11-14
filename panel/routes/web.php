@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Backup\BackupController;
 use App\Http\Controllers\Database\DatabaseController;
 use App\Http\Controllers\FileManager\FileManagerController;
 use App\Http\Controllers\HostingPlans\PackageController;
+use App\Http\Controllers\Identity\AuthController;
 use App\Http\Controllers\Identity\UserController;
 use App\Http\Controllers\PanelConfig\ConfigurationController;
 use App\Http\Controllers\PanelConfig\ThemeController;

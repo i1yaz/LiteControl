@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\Identity;
 
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Services\TotpService;
@@ -21,7 +21,7 @@ class AuthController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('Auth/Login');
+        return Inertia::render('Identity/Auth/Login');
     }
 
     /**
@@ -84,7 +84,7 @@ class AuthController extends Controller
             return redirect()->route('login');
         }
 
-        return Inertia::render('Auth/TwoFactorChallenge');
+        return Inertia::render('Identity/Auth/TwoFactorChallenge');
     }
 
     /**

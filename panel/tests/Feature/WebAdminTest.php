@@ -45,7 +45,7 @@ class WebAdminTest extends TestCase
         $response = $this->actingAs($this->adminUser)->get(route('server.services'));
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
-            ->component('Server/Services')
+            ->component('ServerOps/Services')
             ->has('services')
             ->has('webAdmin')
             ->where('webAdmin.port', 7080)

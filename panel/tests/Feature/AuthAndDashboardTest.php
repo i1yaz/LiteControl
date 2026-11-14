@@ -34,7 +34,7 @@ class AuthAndDashboardTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertStatus(200);
-        $response->assertInertia(fn (Assert $page) => $page->component('Auth/Login'));
+        $response->assertInertia(fn (Assert $page) => $page->component('Identity/Auth/Login'));
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
@@ -82,7 +82,7 @@ class AuthAndDashboardTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Dashboard')
+            ->component('ServerOps/Dashboard')
             ->where('isAdmin', true)
             ->has('stats.cpu_percent')
             ->has('stats.ram_percent')
@@ -101,7 +101,7 @@ class AuthAndDashboardTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Dashboard')
+            ->component('ServerOps/Dashboard')
             ->where('isAdmin', false)
             ->has('userQuotas.disk_limit_mb')
             ->has('userQuotas.bandwidth_limit_mb')

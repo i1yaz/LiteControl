@@ -165,7 +165,7 @@ class ConfigurationAndServerTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Server/Services')
+            ->component('ServerOps/Services')
             ->has('services')
         );
     }
@@ -192,7 +192,7 @@ class ConfigurationAndServerTest extends TestCase
         $response = $this->actingAs($admin)->get('/server/processes');
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Server/ProcessManager')
+            ->component('ServerOps/ProcessManager')
             ->has('processes')
         );
 
@@ -253,7 +253,7 @@ class ConfigurationAndServerTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Server/SystemStatistics')
+            ->component('ServerOps/SystemStatistics')
             ->has('stats.cpu_percent')
             ->has('stats.ram_percent')
         );

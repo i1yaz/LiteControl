@@ -56,7 +56,7 @@ class UserController extends Controller
             ];
         }
 
-        return Inertia::render('Users/Index', [
+        return Inertia::render('Identity/Users/Index', [
             'users' => $users,
             'diskUsageMap' => $diskUsageMap,
             'filters' => [
@@ -71,7 +71,7 @@ class UserController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('Users/Create', [
+        return Inertia::render('Identity/Users/Create', [
             'packages' => Package::all(),
         ]);
     }

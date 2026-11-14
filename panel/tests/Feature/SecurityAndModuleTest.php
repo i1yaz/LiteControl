@@ -263,7 +263,7 @@ class SecurityAndModuleTest extends TestCase
         $getRes = $this->actingAs($admin)->get('/modules');
         $getRes->assertStatus(200);
         $getRes->assertInertia(fn (Assert $page) => $page
-            ->component('Modules/Index')
+            ->component('ServerOps/Modules')
             ->has('modules')
         );
 

@@ -25,7 +25,7 @@ class ModuleController extends Controller
     {
         $modules = $this->moduleCli->listModules();
 
-        return Inertia::render('Modules/Index', [
+        return Inertia::render('ServerOps/Modules', [
             'modules' => $modules,
         ]);
     }

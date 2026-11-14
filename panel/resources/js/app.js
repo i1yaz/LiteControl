@@ -33,7 +33,7 @@ createInertiaApp({
 
         const page = pageModule.default || pageModule;
         if (page.layout === undefined) {
-            const isAuth = name.startsWith('Auth/');
+            const isAuth = name.startsWith('Identity/Auth/');
             page.layout = (h, pageVNode) => h(ThemePersistentLayout, { isAuth }, () => pageVNode);
         }
 

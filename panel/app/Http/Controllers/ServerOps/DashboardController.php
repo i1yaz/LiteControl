@@ -46,7 +46,7 @@ class DashboardController extends Controller
                 'total_packages' => Package::count(),
             ];
 
-            return Inertia::render('Dashboard', [
+            return Inertia::render('ServerOps/Dashboard', [
                 'isAdmin' => true,
                 'stats' => $stats,
                 'counters' => $counters,
@@ -70,7 +70,7 @@ class DashboardController extends Controller
             'databases_limit' => $user->package?->max_databases ?? 5,
         ];
 
-        return Inertia::render('Dashboard', [
+        return Inertia::render('ServerOps/Dashboard', [
             'isAdmin' => false,
             'stats' => $stats,
             'userQuotas' => $userQuotas,

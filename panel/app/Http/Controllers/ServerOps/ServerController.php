@@ -28,7 +28,7 @@ class ServerController extends Controller
         $services = $this->serverCli->getServices();
         $webAdmin = $this->serverCli->getWebAdminStatus();
 
-        return Inertia::render('Server/Services', [
+        return Inertia::render('ServerOps/Services', [
             'services' => $services,
             'webAdmin' => $webAdmin,
         ]);
@@ -91,7 +91,7 @@ class ServerController extends Controller
     {
         $processes = $this->serverCli->getProcesses();
 
-        return Inertia::render('Server/ProcessManager', [
+        return Inertia::render('ServerOps/ProcessManager', [
             'processes' => $processes,
         ]);
     }
@@ -128,7 +128,7 @@ class ServerController extends Controller
             'Australia/Sydney', 'Pacific/Auckland',
         ];
 
-        return Inertia::render('Server/TimeZone', [
+        return Inertia::render('ServerOps/TimeZone', [
             'currentTimezone' => $currentTz,
             'popularZones' => $popularZones,
         ]);
@@ -159,7 +159,7 @@ class ServerController extends Controller
     {
         $currentHostname = $this->serverCli->getHostname();
 
-        return Inertia::render('Server/ChangeHostname', [
+        return Inertia::render('ServerOps/ChangeHostname', [
             'currentHostname' => $currentHostname,
         ]);
     }
@@ -189,7 +189,7 @@ class ServerController extends Controller
     {
         $stats = $this->serverCli->getStats();
 
-        return Inertia::render('Server/Restart', [
+        return Inertia::render('ServerOps/Restart', [
             'stats' => $stats,
         ]);
     }
@@ -228,7 +228,7 @@ class ServerController extends Controller
     {
         $stats = $this->serverCli->getStats();
 
-        return Inertia::render('Server/SystemStatistics', [
+        return Inertia::render('ServerOps/SystemStatistics', [
             'stats' => $stats,
         ]);
     }

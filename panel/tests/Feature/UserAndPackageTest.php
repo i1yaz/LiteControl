@@ -29,7 +29,7 @@ class UserAndPackageTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Users/Index')
+            ->component('Identity/Users/Index')
             ->has('users.data')
             ->has('packages')
         );
