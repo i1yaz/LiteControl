@@ -302,8 +302,8 @@
         </div>
 
         <div class="actions">
-            <a href="https://__SERVER_IP__:__PANEL_PORT__/" class="btn-telemetry" id="panelLink">
-                <span>Open LiteControl Panel</span>
+            <a href="https://__SERVER_IP__:__PANEL_PORT__/server/services" target="_blank" rel="noopener noreferrer" class="btn-telemetry" id="panelLink">
+                <span>Activate From LiteControl Dashboard</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M5 12h14" />
                     <path d="m12 5 7 7-7 7" />
@@ -333,7 +333,7 @@
             if (link && currentHost) {
                 var currentHref = link.getAttribute('href');
                 if (currentHref.indexOf('__SERVER_IP__') !== -1) {
-                    link.setAttribute('href', 'https://' + currentHost + ':8090/');
+                    link.setAttribute('href', 'https://' + currentHost + ':8090/server/services');
                 }
             }
         })();

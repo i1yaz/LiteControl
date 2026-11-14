@@ -130,7 +130,7 @@ cp -f "${REPO_ROOT}/templates/ols/webadmin_notice.html.tpl" "${LC_BASE_DIR}/temp
 
 echo "1. Testing Custom WebAdmin Notice Template & Installation..."
 assert_file_exists "${REPO_ROOT}/templates/ols/webadmin_notice.html.tpl" "Custom notice template exists in repository"
-assert_contains "$(cat "${REPO_ROOT}/templates/ols/webadmin_notice.html.tpl")" "Open LiteControl Panel" "Notice template provides direct link to LiteControl panel"
+assert_contains "$(cat "${REPO_ROOT}/templates/ols/webadmin_notice.html.tpl")" "Activate From LiteControl Dashboard" "Notice template provides direct link to LiteControl dashboard activation page"
 assert_contains "$(cat "${REPO_ROOT}/templates/ols/webadmin_notice.html.tpl")" "lc-cli server webadmin-enable" "Notice template documents CLI commands"
 
 # Simulate notice file compilation as done in 04-openlitespeed.sh
