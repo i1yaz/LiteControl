@@ -1,5 +1,4 @@
 import './theme.css';
-import { defineAsyncComponent } from 'vue';
 import AppLayout from './Layouts/AppLayout.vue';
 import AuthLayout from './Layouts/AuthLayout.vue';
 import {
@@ -24,17 +23,7 @@ export default {
         'server': 'Server & System',
         'security': 'Security',
     },
-    components: {
-        Button: defineAsyncComponent(() => import('./Components/Button.vue')),
-        Card: defineAsyncComponent(() => import('./Components/Card.vue')),
-        DataTable: defineAsyncComponent(() => import('./Components/DataTable.vue')),
-        Input: defineAsyncComponent(() => import('./Components/Input.vue')),
-        Select: defineAsyncComponent(() => import('./Components/Select.vue')),
-        Badge: defineAsyncComponent(() => import('./Components/Badge.vue')),
-        Modal: defineAsyncComponent(() => import('./Components/Modal.vue')),
-        PageHeader: defineAsyncComponent(() => import('./Components/PageHeader.vue')),
-        Alert: defineAsyncComponent(() => import('./Components/Alert.vue')),
-    },
+    components: {},
     icons: {
         dashboard: LayoutDashboard,
         users: Users,
