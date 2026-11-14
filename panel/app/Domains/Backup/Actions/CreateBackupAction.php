@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Backup\Actions;
 
 use App\Domains\Backup\Contracts\BackupDriverInterface;
+use App\Domains\Backup\Jobs\CreateBackupJob;
 use App\Domains\Backup\Models\Backup;
 use App\Domains\Identity\Models\User;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
@@ -13,26 +14,23 @@ use Illuminate\Support\Facades\DB;
 class CreateBackupAction
 {
     public function __construct(
-        protected BackupDriverInterface $backupDriver,
+        protected ?BackupDriverInterface $backupDriver = null,
         protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     public function handle(User $targetUser, User $actor, ?string $ipAddress = null): Backup
     {
-        $data = $this->backupDriver->createBackup($targetUser->username);
+        $filename = 'backup-'.$targetUser->username.'-'.now()->format('Ymd_His').'.tar.gz';
+        $path = "/home/{$targetUser->username}/backups/{$filename}";
 
-        $filename = $data['filename'] ?? ('backup-'.$targetUser->username.'-'.now()->format('Ymd_His').'.tar.gz');
-        $path = $data['path'] ?? ("/home/{$targetUser->username}/backups/{$filename}");
-        $size = $data['size_bytes'] ?? 0;
-
-        return DB::transaction(function () use ($targetUser, $actor, $filename, $path, $size, $ipAddress) {
+        $backup = DB::transaction(function () use ($targetUser, $actor, $filename, $path, $ipAddress) {
             $backup = Backup::create([
                 'user_id' => $targetUser->id,
                 'filename' => $filename,
                 'path' => $path,
-                'size_bytes' => $size,
+                'size_bytes' => 0,
                 'type' => 'manual',
-                'status' => 'completed',
+                'status' => 'pending',
             ]);
 
             ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
@@ -44,7 +42,11 @@ class CreateBackupAction
                 'details' => ['filename' => $filename, 'target_user' => $targetUser->username],
             ]);
 
+            CreateBackupJob::dispatch($backup, $targetUser);
+
             return $backup;
         });
+
+        return $backup->fresh() ?? $backup;
     }
 }

@@ -5,15 +5,23 @@ namespace App\Providers;
 use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\Infrastructure\CliBackupAdapter;
 use App\Domains\Backup\Listeners\CleanupUserBackupsListener;
+use App\Domains\Backup\Models\Backup;
+use App\Domains\Backup\Policies\BackupPolicy;
 use App\Domains\Database\Contracts\DatabaseDriverInterface;
 use App\Domains\Database\Infrastructure\CliDatabaseAdapter;
 use App\Domains\Database\Listeners\CleanupUserDatabasesListener;
+use App\Domains\Database\Models\Database;
+use App\Domains\Database\Policies\DatabasePolicy;
 use App\Domains\FileManager\Contracts\FileManagerDriverInterface;
 use App\Domains\FileManager\Infrastructure\CliFileManagerAdapter;
+use App\Domains\HostingPlans\Models\Package;
+use App\Domains\HostingPlans\Policies\PackagePolicy;
 use App\Domains\Identity\Contracts\UserDriverInterface;
 use App\Domains\Identity\Events\UserCreated;
 use App\Domains\Identity\Events\UserDeleted;
 use App\Domains\Identity\Infrastructure\CliUserAdapter;
+use App\Domains\Identity\Models\User;
+use App\Domains\Identity\Policies\UserPolicy;
 use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use App\Domains\PanelConfig\Infrastructure\CliTuningAdapter;
 use App\Domains\PanelConfig\Infrastructure\EloquentAuditLogger;
@@ -30,13 +38,17 @@ use App\Domains\ServerOps\Infrastructure\CliLogReaderAdapter;
 use App\Domains\ServerOps\Infrastructure\CliModuleAdapter;
 use App\Domains\ServerOps\Infrastructure\CliServerAdapter;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
+use App\Domains\WebServer\Contracts\FtpDriverInterface;
 use App\Domains\WebServer\Contracts\SslDriverInterface;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
+use App\Domains\WebServer\Infrastructure\CliFtpAdapter;
 use App\Domains\WebServer\Infrastructure\CliSslAdapter;
 use App\Domains\WebServer\Infrastructure\CliVhostAdapter;
 use App\Domains\WebServer\Listeners\ProvisionDefaultDomainListener;
 use App\Domains\WebServer\Models\Domain;
+use App\Domains\WebServer\Policies\DomainPolicy;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class DomainServiceProvider extends ServiceProvider
@@ -60,6 +72,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(LogReaderInterface::class, CliLogReaderAdapter::class);
         $this->app->bind(VhostDriverInterface::class, CliVhostAdapter::class);
         $this->app->bind(SslDriverInterface::class, CliSslAdapter::class);
+        $this->app->bind(FtpDriverInterface::class, CliFtpAdapter::class);
     }
 
     /**
@@ -73,5 +86,11 @@ class DomainServiceProvider extends ServiceProvider
         Event::listen(UserDeleted::class, function (UserDeleted $event): void {
             Domain::where('user_id', $event->userId)->delete();
         });
+
+        Gate::policy(Domain::class, DomainPolicy::class);
+        Gate::policy(Database::class, DatabasePolicy::class);
+        Gate::policy(Backup::class, BackupPolicy::class);
+        Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(Package::class, PackagePolicy::class);
     }
 }

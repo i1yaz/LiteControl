@@ -128,10 +128,11 @@ class PhpActionsTest extends TestCase
             ->with(Mockery::on(fn ($v) => $v instanceof PhpVersion && $v->value === '84'))
             ->andReturn(['version' => '84', 'installed' => true]);
 
+        $this->app->instance(PhpRuntimeDriverInterface::class, $phpMock);
         $action = new InstallPhpVersionAction($phpMock);
         $result = $action->handle(new PhpVersion('84'), $this->admin, '10.0.0.4');
 
-        $this->assertEquals(['version' => '84', 'installed' => true], $result);
+        $this->assertEquals(['status' => 'queued', 'version' => '84'], $result);
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $this->admin->id,

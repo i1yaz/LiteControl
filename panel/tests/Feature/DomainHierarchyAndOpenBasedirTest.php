@@ -3,10 +3,10 @@
 namespace Tests\Feature;
 
 use App\Domains\Identity\Models\User;
+use App\Domains\WebServer\Actions\CreateDomainAction;
 use App\Domains\WebServer\Actions\DeleteDomainAction;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use App\Domains\WebServer\Models\Domain;
-use App\Domains\WebServer\Services\DomainService;
 use App\Support\Cli\LcCliService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -28,11 +28,11 @@ class DomainHierarchyAndOpenBasedirTest extends TestCase
     public function test_it_auto_detects_multi_level_parent_domains(): void
     {
         $user = User::factory()->create(['username' => 'testuser']);
-        $service = app(DomainService::class);
+        $service = app(CreateDomainAction::class);
 
-        $root = $service->createDomain($user, ['domain' => 'example.com', 'ssl_enabled' => false])['domain'];
-        $api = $service->createDomain($user, ['domain' => 'api.example.com', 'ssl_enabled' => false])['domain'];
-        $v1 = $service->createDomain($user, ['domain' => 'v1.api.example.com', 'ssl_enabled' => false])['domain'];
+        $root = $service->handle($user, ['domain' => 'example.com', 'ssl_enabled' => false])['domain'];
+        $api = $service->handle($user, ['domain' => 'api.example.com', 'ssl_enabled' => false])['domain'];
+        $v1 = $service->handle($user, ['domain' => 'v1.api.example.com', 'ssl_enabled' => false])['domain'];
 
         $this->assertEquals('primary', $root->type);
         $this->assertNull($root->parent_domain_id);
@@ -47,9 +47,9 @@ class DomainHierarchyAndOpenBasedirTest extends TestCase
     public function test_it_treats_subdomain_as_standalone_when_parent_does_not_exist(): void
     {
         $user = User::factory()->create(['username' => 'testuser']);
-        $service = app(DomainService::class);
+        $service = app(CreateDomainAction::class);
 
-        $standalone = $service->createDomain($user, ['domain' => 'app.client.com', 'ssl_enabled' => false])['domain'];
+        $standalone = $service->handle($user, ['domain' => 'app.client.com', 'ssl_enabled' => false])['domain'];
 
         $this->assertEquals('primary', $standalone->type);
         $this->assertNull($standalone->parent_domain_id);
@@ -59,20 +59,20 @@ class DomainHierarchyAndOpenBasedirTest extends TestCase
     public function test_it_relinks_existing_subdomains_when_parent_domain_is_added_later(): void
     {
         $user = User::factory()->create(['username' => 'testuser']);
-        $service = app(DomainService::class);
+        $service = app(CreateDomainAction::class);
 
         // Add v1.api.example.com first (standalone)
-        $v1 = $service->createDomain($user, ['domain' => 'v1.api.example.com', 'ssl_enabled' => false])['domain'];
+        $v1 = $service->handle($user, ['domain' => 'v1.api.example.com', 'ssl_enabled' => false])['domain'];
         $this->assertNull($v1->parent_domain_id);
 
         // Add example.com later -> v1.api.example.com should link under example.com
-        $root = $service->createDomain($user, ['domain' => 'example.com', 'ssl_enabled' => false])['domain'];
+        $root = $service->handle($user, ['domain' => 'example.com', 'ssl_enabled' => false])['domain'];
         $v1->refresh();
         $this->assertEquals('subdomain', $v1->type);
         $this->assertEquals($root->id, $v1->parent_domain_id);
 
         // Add api.example.com even later -> api links under example.com, and v1 re-links under api.example.com
-        $api = $service->createDomain($user, ['domain' => 'api.example.com', 'ssl_enabled' => false])['domain'];
+        $api = $service->handle($user, ['domain' => 'api.example.com', 'ssl_enabled' => false])['domain'];
         $v1->refresh();
         $this->assertEquals($root->id, $api->parent_domain_id);
         $this->assertEquals($api->id, $v1->parent_domain_id);
@@ -81,11 +81,11 @@ class DomainHierarchyAndOpenBasedirTest extends TestCase
     public function test_deleting_parent_domain_promotes_children_cleanly(): void
     {
         $user = User::factory()->create(['username' => 'testuser']);
-        $service = app(DomainService::class);
+        $service = app(CreateDomainAction::class);
 
-        $root = $service->createDomain($user, ['domain' => 'example.com', 'ssl_enabled' => false])['domain'];
-        $api = $service->createDomain($user, ['domain' => 'api.example.com', 'ssl_enabled' => false])['domain'];
-        $v1 = $service->createDomain($user, ['domain' => 'v1.api.example.com', 'ssl_enabled' => false])['domain'];
+        $root = $service->handle($user, ['domain' => 'example.com', 'ssl_enabled' => false])['domain'];
+        $api = $service->handle($user, ['domain' => 'api.example.com', 'ssl_enabled' => false])['domain'];
+        $v1 = $service->handle($user, ['domain' => 'v1.api.example.com', 'ssl_enabled' => false])['domain'];
 
         $vhostMock = Mockery::mock(VhostDriverInterface::class);
         $vhostMock->shouldReceive('remove')->andReturnNull();

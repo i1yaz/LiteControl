@@ -7,9 +7,12 @@ namespace App\Domains\Database\Listeners;
 use App\Domains\Database\Models\Database;
 use App\Domains\Database\Models\DatabaseUser;
 use App\Domains\Identity\Events\UserDeleted;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class CleanupUserDatabasesListener
+class CleanupUserDatabasesListener implements ShouldQueue
 {
+    public bool $afterCommit = true;
+
     public function handle(UserDeleted $event): void
     {
         Database::where('user_id', $event->userId)->delete();

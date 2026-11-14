@@ -193,7 +193,7 @@ class DatabaseAndBackupTest extends TestCase
         $this->assertDatabaseHas('backups', [
             'user_id' => $client->id,
             'type' => 'manual',
-            'status' => 'completed',
+            'status' => 'active',
         ]);
 
         $backup = Backup::where('user_id', $client->id)->first();

@@ -6,19 +6,21 @@ namespace App\Domains\PhpRuntime\Actions;
 
 use App\Domains\Identity\Models\User;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
+use App\Domains\PhpRuntime\Jobs\InstallPhpVersionJob;
 use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
+use Illuminate\Support\Facades\Cache;
 
 class InstallPhpVersionAction
 {
     public function __construct(
-        protected PhpRuntimeDriverInterface $phpRuntime,
+        protected ?PhpRuntimeDriverInterface $phpRuntime = null,
         protected ?AuditLoggerInterface $auditLogger = null
     ) {}
 
     public function handle(PhpVersion $version, User $actor, ?string $ipAddress = null): array
     {
-        $result = $this->phpRuntime->installVersion($version);
+        Cache::put("php_install_{$version->value}", 'pending', now()->addMinutes(30));
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,
@@ -29,6 +31,8 @@ class InstallPhpVersionAction
             'details' => ['version' => $version->value],
         ]);
 
-        return $result;
+        InstallPhpVersionJob::dispatch($version);
+
+        return ['status' => 'queued', 'version' => $version->value];
     }
 }

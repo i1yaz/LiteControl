@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Services\ThemeManager;
+use App\Domains\PanelConfig\Queries\ThemeManager;
 use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

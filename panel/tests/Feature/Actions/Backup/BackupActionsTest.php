@@ -57,6 +57,7 @@ class BackupActionsTest extends TestCase
                 'size_bytes' => 1048576,
             ]);
 
+        $this->app->instance(BackupDriverInterface::class, $cliMock);
         $action = new CreateBackupAction($cliMock);
         $backup = $action->handle($this->user, $this->user, '127.0.0.1');
 
@@ -84,10 +85,14 @@ class BackupActionsTest extends TestCase
 
         $this->expectException(LcCliException::class);
 
+        $this->app->instance(BackupDriverInterface::class, $cliMock);
         $action = new CreateBackupAction($cliMock);
         $action->handle($this->user, $this->user);
 
-        $this->assertDatabaseCount('backups', 0);
+        $this->assertDatabaseHas('backups', [
+            'user_id' => $user->id,
+            'status' => 'failed',
+        ]);
         $this->assertDatabaseCount('audit_logs', 0);
     }
 
@@ -101,10 +106,11 @@ class BackupActionsTest extends TestCase
             ->with(Mockery::on(fn ($arg) => $arg instanceof SystemPath && $arg->fullPath === $path->fullPath))
             ->andReturn(['status' => 'success']);
 
+        $this->app->instance(BackupDriverInterface::class, $cliMock);
         $action = new RestoreBackupAction($cliMock);
         $res = $action->handle($path, $this->user, '127.0.0.1');
 
-        $this->assertEquals(['status' => 'success'], $res);
+        $this->assertEquals(['status' => 'queued', 'path' => $path->fullPath], $res);
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $this->user->id,
             'action' => 'backup.restore',

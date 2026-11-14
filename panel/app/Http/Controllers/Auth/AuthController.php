@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Domains\Identity\Models\User;
+use App\Domains\Identity\Services\TotpService;
 use App\Http\Controllers\Controller;
-use App\Services\TotpService;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

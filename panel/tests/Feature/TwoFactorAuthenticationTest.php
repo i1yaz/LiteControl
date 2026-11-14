@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domains\Identity\Models\User;
-use App\Services\TotpService;
+use App\Domains\Identity\Services\TotpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
 use Tests\TestCase;

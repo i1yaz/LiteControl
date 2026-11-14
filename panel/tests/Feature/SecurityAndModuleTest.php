@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Domains\Identity\Models\User;
+use App\Domains\Identity\Services\TotpService;
 use App\Domains\Security\Models\FirewallRule;
 use App\Domains\WebServer\Models\Domain;
-use App\Services\TotpService;
 use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;

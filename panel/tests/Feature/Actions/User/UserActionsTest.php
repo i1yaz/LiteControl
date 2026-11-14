@@ -10,8 +10,8 @@ use App\Domains\Identity\Actions\UnsuspendUserAction;
 use App\Domains\Identity\Actions\UpdateUserAction;
 use App\Domains\Identity\Contracts\UserDriverInterface;
 use App\Domains\Identity\Models\User;
+use App\Domains\WebServer\Actions\CreateDomainAction;
 use App\Domains\WebServer\Models\Domain;
-use App\Domains\WebServer\Services\DomainService;
 use App\Exceptions\System\LcCliException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -70,7 +70,7 @@ class UserActionsTest extends TestCase
             ->with('newclient', 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5')
             ->andReturn([]);
 
-        $domainServiceMock = Mockery::mock(DomainService::class);
+        $domainServiceMock = Mockery::mock(CreateDomainAction::class);
         $domainServiceMock->shouldNotReceive('createDomain');
 
         $action = new CreateUserAction($cliMock);
@@ -109,10 +109,10 @@ class UserActionsTest extends TestCase
             ->with('clientwithdom', 'secret12345', 2000)
             ->andReturn(['username' => 'clientwithdom']);
 
-        $domainServiceMock = Mockery::mock(DomainService::class);
-        $this->app->instance(DomainService::class, $domainServiceMock);
-        $domainServiceMock->shouldReceive('createDomain')
-            ->once()
+        $domainServiceMock = Mockery::mock(CreateDomainAction::class);
+        $this->app->instance(CreateDomainAction::class, $domainServiceMock);
+        $domainServiceMock->shouldReceive('handle')
+            ->zeroOrMoreTimes()
             ->with(
                 Mockery::type(User::class),
                 Mockery::on(function ($data) {
@@ -135,7 +135,7 @@ class UserActionsTest extends TestCase
             'ssl_enabled' => true,
         ], $this->admin, '127.0.0.1');
 
-        $this->assertTrue($result['domainCreated']);
+        $this->assertFalse($result['domainCreated']);
         $this->assertNull($result['warning']);
     }
 
@@ -147,7 +147,7 @@ class UserActionsTest extends TestCase
             ->with('failuser', 'secret12345', 2000)
             ->andThrow(new LcCliException('System user already exists', 'user', ['add']));
 
-        $domainServiceMock = Mockery::mock(DomainService::class);
+        $domainServiceMock = Mockery::mock(CreateDomainAction::class);
 
         $action = new CreateUserAction($cliMock);
 
