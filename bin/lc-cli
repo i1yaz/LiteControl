@@ -195,7 +195,7 @@ case "${COMMAND}" in
             exit 1
         fi
         ;;
-    user|vhost|php|tuning|server|db|ssl|security|backup|module)
+    user|vhost|php|tuning|server|db|ssl|security|backup|module|filemanager)
         dispatch_subcommand "${COMMAND}" "$@"
         ;;
     help|--help|-h)
