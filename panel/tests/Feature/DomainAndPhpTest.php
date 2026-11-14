@@ -29,7 +29,7 @@ class DomainAndPhpTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Domains/Index')
+            ->component('WebServer/Index')
             ->has('domains.data')
             ->has('phpVersions')
         );
@@ -166,7 +166,7 @@ class DomainAndPhpTest extends TestCase
         $viewRes = $this->actingAs($admin)->get('/php/ini?version=83');
         $viewRes->assertStatus(200);
         $viewRes->assertInertia(fn (Assert $page) => $page
-            ->component('Php/IniEditor')
+            ->component('PhpRuntime/IniEditor')
             ->where('currentVersion', '83')
             ->has('iniData.directives')
         );

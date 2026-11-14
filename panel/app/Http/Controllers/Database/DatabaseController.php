@@ -67,7 +67,7 @@ class DatabaseController extends Controller
             $domainsQuery->where('user_id', $user->id);
         }
 
-        return Inertia::render('Databases/Index', [
+        return Inertia::render('Database/Index', [
             'databases' => $databases,
             'dbUsers' => $dbUsers,
             'liveDbMap' => $liveDbMap,

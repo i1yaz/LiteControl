@@ -49,7 +49,7 @@ class PhpController extends Controller
             $installedVersions = [];
         }
 
-        return Inertia::render('Php/IniEditor', [
+        return Inertia::render('PhpRuntime/IniEditor', [
             'currentVersion' => $version,
             'iniData' => $iniData,
             'installedVersions' => array_values($installedVersions),
@@ -106,7 +106,7 @@ class PhpController extends Controller
             $installedVersions = [];
         }
 
-        return Inertia::render('Php/MultiPhpManager', [
+        return Inertia::render('PhpRuntime/MultiPhpManager', [
             'domains' => $domains,
             'installedVersions' => array_values($installedVersions),
         ]);
@@ -165,7 +165,7 @@ class PhpController extends Controller
             $installedVersions = [];
         }
 
-        return Inertia::render('Php/Extensions', [
+        return Inertia::render('PhpRuntime/Extensions', [
             'currentVersion' => $version,
             'extensionsData' => $extensionsData,
             'installedVersions' => array_values($installedVersions),
@@ -217,7 +217,7 @@ class PhpController extends Controller
             $allVersions = [];
         }
 
-        return Inertia::render('Php/Versions', [
+        return Inertia::render('PhpRuntime/Versions', [
             'phpVersions' => $allVersions,
         ]);
     }
@@ -293,7 +293,7 @@ class PhpController extends Controller
             $installedVersions = [];
         }
 
-        return Inertia::render('Php/Modules', [
+        return Inertia::render('PhpRuntime/Modules', [
             'currentVersion' => $version,
             'modules' => $modules,
             'installedVersions' => array_values($installedVersions),

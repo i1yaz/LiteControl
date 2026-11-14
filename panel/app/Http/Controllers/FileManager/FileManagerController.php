@@ -94,7 +94,7 @@ class FileManagerController extends Controller
         }
         $availableDomains = $domainsQuery->orderBy('domain')->get();
 
-        return Inertia::render('Files/Index', [
+        return Inertia::render('FileManager/Index', [
             'baseDir' => '/home/'.($targetDomain ? $targetDomain->user->username : $user->username),
             'initialPath' => $initialPath,
             'targetDomain' => $targetDomain,

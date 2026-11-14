@@ -27,7 +27,7 @@ class ConfigurationAndServerTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Configuration/Settings')
+            ->component('PanelConfig/Settings')
             ->has('settings.panel_name')
             ->has('settings.server_ip')
         );
@@ -70,7 +70,7 @@ class ConfigurationAndServerTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Configuration/LiteSpeedTuning')
+            ->component('PanelConfig/LiteSpeedTuning')
             ->has('tuning.maxConnections')
         );
     }
@@ -126,7 +126,7 @@ class ConfigurationAndServerTest extends TestCase
         $response = $this->actingAs($admin)->get('/configuration/php-limit?version=83');
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Configuration/PhpLimit')
+            ->component('PanelConfig/PhpLimit')
             ->has('limits.memory_limit')
         );
 
@@ -151,7 +151,7 @@ class ConfigurationAndServerTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Configuration/ErrorLogs')
+            ->component('PanelConfig/ErrorLogs')
             ->where('logType', 'ols-error')
             ->has('content')
         );

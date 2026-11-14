@@ -71,7 +71,7 @@ class DomainController extends Controller
             $phpVersions = [];
         }
 
-        return Inertia::render('Domains/Index', [
+        return Inertia::render('WebServer/Index', [
             'domains' => $domains,
             'phpVersions' => $phpVersions,
             'users' => $user->isAdmin() ? User::where('role', 'user')->get(['id', 'username', 'name']) : [],
@@ -282,7 +282,7 @@ class DomainController extends Controller
             fn ($v) => ! empty($v['installed'])
         );
 
-        return Inertia::render('Domains/Manage', [
+        return Inertia::render('WebServer/Manage', [
             'domain' => $domain,
             'databasesCount' => $databasesCount,
             'totalSizeBytes' => $sizeBytes,
@@ -614,7 +614,7 @@ class DomainController extends Controller
             $phpVersions = [];
         }
 
-        return Inertia::render('Domains/Subdomains', [
+        return Inertia::render('WebServer/Subdomains', [
             'subdomains' => $subdomains,
             'baseDomains' => $baseDomains->with('user:id,username')->get(['id', 'domain', 'user_id', 'php_version']),
             'phpVersions' => $phpVersions,

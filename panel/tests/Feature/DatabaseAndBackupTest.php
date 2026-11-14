@@ -31,7 +31,7 @@ class DatabaseAndBackupTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(fn (Assert $page) => $page
-            ->component('Databases/Index')
+            ->component('Database/Index')
             ->has('databases')
             ->has('dbUsers')
         );
@@ -185,7 +185,7 @@ class DatabaseAndBackupTest extends TestCase
         // View Backups
         $viewRes = $this->actingAs($client)->get('/backups');
         $viewRes->assertStatus(200);
-        $viewRes->assertInertia(fn (Assert $page) => $page->component('Backups/Index'));
+        $viewRes->assertInertia(fn (Assert $page) => $page->component('Backup/Index'));
 
         // Trigger Backup
         $createRes = $this->actingAs($client)->post('/backups/create');

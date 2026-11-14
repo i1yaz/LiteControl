@@ -47,7 +47,7 @@ class BackupController extends Controller
         // Also fetch filesystem backups reported by lc-cli
         $cliBackups = $this->backupDriver->listBackups($user->isAdmin() ? null : $user->username);
 
-        return Inertia::render('Backups/Index', [
+        return Inertia::render('Backup/Index', [
             'backups' => $backups,
             'cliBackups' => $cliBackups,
             'schedules' => $schedules,

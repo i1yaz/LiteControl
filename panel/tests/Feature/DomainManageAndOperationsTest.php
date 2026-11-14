@@ -69,7 +69,7 @@ class DomainManageAndOperationsTest extends TestCase
     {
         $response = $this->actingAs($this->client)->get("/domains/{$this->domain->id}/manage");
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) => $page->component('Domains/Manage')
+        $response->assertInertia(fn ($page) => $page->component('WebServer/Manage')
             ->has('domain')
             ->where('domain.domain', 'mycoolsite.com')
         );

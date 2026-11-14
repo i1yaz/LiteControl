@@ -31,7 +31,7 @@ class PackageController extends Controller
     {
         $packages = Package::withCount('users')->latest()->get();
 
-        return Inertia::render('Packages/Index', [
+        return Inertia::render('HostingPlans/Index', [
             'packages' => $packages,
         ]);
     }

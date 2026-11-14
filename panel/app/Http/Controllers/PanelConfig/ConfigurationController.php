@@ -44,7 +44,7 @@ class ConfigurationController extends Controller
             'force_ssl' => true,
         ];
 
-        return Inertia::render('Configuration/Settings', [
+        return Inertia::render('PanelConfig/Settings', [
             'settings' => $settings,
             'stats' => $stats,
         ]);
@@ -79,7 +79,7 @@ class ConfigurationController extends Controller
     {
         $tuning = $this->tuningCli->getTuning();
 
-        return Inertia::render('Configuration/LiteSpeedTuning', [
+        return Inertia::render('PanelConfig/LiteSpeedTuning', [
             'tuning' => $tuning,
         ]);
     }
@@ -136,7 +136,7 @@ class ConfigurationController extends Controller
             // Fallback for list failure
         }
 
-        return Inertia::render('Configuration/PhpLimit', [
+        return Inertia::render('PanelConfig/PhpLimit', [
             'currentVersion' => $version,
             'installedVersions' => array_values($installedVersions),
             'limits' => [
@@ -189,7 +189,7 @@ class ConfigurationController extends Controller
 
         $data = $this->serverCli->getLogs($type, $lines);
 
-        return Inertia::render('Configuration/ErrorLogs', [
+        return Inertia::render('PanelConfig/ErrorLogs', [
             'logType' => $type,
             'lines' => $lines,
             'logFile' => $data['file'] ?? '',
