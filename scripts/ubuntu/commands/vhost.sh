@@ -84,8 +84,13 @@ cmd_vhost_add() {
     fi
 
     local home_dir="${LC_HOME_ROOT}/${user}"
-    local doc_root="${custom_docroot:-${home_dir}/${domain}/public_html}"
-    local log_dir="${home_dir}/${domain}/logs"
+    local domain_dir="${home_dir}/${domain}"
+    local domain_dir_existed=false
+    if [[ -d "${domain_dir}" ]]; then
+        domain_dir_existed=true
+    fi
+    local doc_root="${custom_docroot:-${domain_dir}/public_html}"
+    local log_dir="${domain_dir}/logs"
     local vh_dir="${OLS_VHOSTS_DIR}/${domain}"
     local vh_conf="${vh_dir}/vhconf.conf"
     local vh_safe_name="${domain//[^a-zA-Z0-9_]/_}"
@@ -184,6 +189,9 @@ EOF
 
     if ! ols_safe_reload; then
         rm -rf "${vh_dir}"
+        if [[ "${domain_dir_existed}" == false ]]; then
+            rm -rf "${domain_dir}"
+        fi
         emit_error "Failed to reload OpenLiteSpeed after adding '${domain}'; configuration rolled back."
     fi
 
