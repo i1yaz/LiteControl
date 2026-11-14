@@ -88,7 +88,7 @@ class DomainHierarchyAndOpenBasedirTest extends TestCase
         $v1 = $service->handle($user, ['domain' => 'v1.api.example.com', 'ssl_enabled' => false])['domain'];
 
         $vhostMock = Mockery::mock(VhostDriverInterface::class);
-        $vhostMock->shouldReceive('remove')->andReturnNull();
+        $vhostMock->shouldReceive('remove')->andReturn(['success' => true]);
         $deleteAction = new DeleteDomainAction($vhostMock);
 
         // Delete middle parent (api.example.com) -> v1.api.example.com promotes to example.com
