@@ -173,13 +173,26 @@ const targetDomainParam = computed(() => {
 const loadFiles = async (path = '') => {
     loading.value = true;
     try {
-        const res = await fetch(`/files/list?path=${encodeURIComponent(path)}${targetDomainParam.value}`);
-        const json = await res.json();
-        if (json.status === 'success') {
+        const res = await fetch(`/files/list?path=${encodeURIComponent(path)}${targetDomainParam.value}`, {
+            headers: {
+                'Accept': 'application/json',
+            },
+        });
+        let json = null;
+        try {
+            json = await res.json();
+        } catch {
+            // Non-JSON response (e.g. HTML error page or redirect)
+        }
+        if (res.ok && json?.status === 'success') {
             currentPath.value = json.current_path;
             items.value = json.items || [];
         } else {
-            await alertDialog({ title: 'Error', message: json.message || 'Error listing directory.', variant: 'danger' });
+            await alertDialog({
+                title: 'Error',
+                message: json?.message || `Error listing directory (HTTP ${res.status}).`,
+                variant: 'danger',
+            });
         }
     } catch (e) {
         await alertDialog({ title: 'Network Error', message: 'Network error loading files.', variant: 'danger' });
