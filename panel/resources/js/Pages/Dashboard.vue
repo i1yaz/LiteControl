@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { useDashboardMetrics } from '@/Composables/Domain/useDashboardMetrics';
-import UiCard from '@/Components/ui/UiCard.vue';
-import UiPageHeader from '@/Components/ui/UiPageHeader.vue';
+import { useDashboardMetrics } from '@domains/ServerOps/Composables/useDashboardMetrics';
+import UiCard from '@shared/Ui/UiCard.vue';
+import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
 import {
     Cpu, HardDrive, Globe, Database, Package,
     Clock, Zap, ArrowUpRight, Users, Server

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { confirmDialog, alertDialog } from '@/Composables/useDialog';
-import Modal from '@/Components/Modal.vue';
-import { Package, Plus, Edit2, Trash2, Users, HardDrive, Activity, Globe, Database, Mail, X } from '@lucide/vue';
+import { confirmDialog, alertDialog } from '@shared/Composables/useDialog';
+import UiModal from '@shared/Ui/UiModal.vue';
+import { Package, Plus, Edit2, Trash2, Users, HardDrive, Activity, Globe, Database, Mail } from '@lucide/vue';
 
 const props = defineProps({
     packages: Array,
@@ -181,108 +181,97 @@ const deletePackage = async (id, name, usersCount) => {
             </div>
 
             <!-- Create / Edit Modal -->
-            <Modal :show="showModal" max-width="lg" @close="showModal = false">
-                <div class="p-6 space-y-4">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                        <h3 class="text-base font-bold text-white">
-                            {{ isEditing ? 'Edit Package' : 'Create Hosting Package' }}
-                        </h3>
-                        <button @click="showModal = false" class="text-slate-400 hover:text-white">
-                            <X class="w-5 h-5" />
-                        </button>
+            <UiModal :show="showModal" :title="isEditing ? 'Edit Package' : 'Create Hosting Package'" max-width="lg" @close="showModal = false">
+                <form @submit.prevent="submit" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Package Name</label>
+                        <input
+                            v-model="form.name"
+                            type="text"
+                            placeholder="e.g. Standard 5GB"
+                            required
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                        />
+                        <p v-if="form.errors.name" class="text-xs text-rose-400 mt-1">{{ form.errors.name }}</p>
                     </div>
 
-                    <form @submit.prevent="submit" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Package Name</label>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Disk Quota (MB)</label>
                             <input
-                                v-model="form.name"
-                                type="text"
-                                placeholder="e.g. Standard 5GB"
+                                v-model="form.disk_quota_mb"
+                                type="number"
+                                min="100"
                                 required
                                 class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
                             />
-                            <p v-if="form.errors.name" class="text-xs text-rose-400 mt-1">{{ form.errors.name }}</p>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Disk Quota (MB)</label>
-                                <input
-                                    v-model="form.disk_quota_mb"
-                                    type="number"
-                                    min="100"
-                                    required
-                                    class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                                />
-                            </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Bandwidth (MB)</label>
+                            <input
+                                v-model="form.bandwidth_mb"
+                                type="number"
+                                min="100"
+                                required
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                            />
+                        </div>
+                    </div>
 
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Bandwidth (MB)</label>
-                                <input
-                                    v-model="form.bandwidth_mb"
-                                    type="number"
-                                    min="100"
-                                    required
-                                    class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                                />
-                            </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Max Domains</label>
+                            <input
+                                v-model="form.max_domains"
+                                type="number"
+                                min="1"
+                                required
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                            />
                         </div>
 
-                        <div class="grid grid-cols-3 gap-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Max Domains</label>
-                                <input
-                                    v-model="form.max_domains"
-                                    type="number"
-                                    min="1"
-                                    required
-                                    class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Subdomains</label>
-                                <input
-                                    v-model="form.max_subdomains"
-                                    type="number"
-                                    min="0"
-                                    required
-                                    class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Databases</label>
-                                <input
-                                    v-model="form.max_databases"
-                                    type="number"
-                                    min="0"
-                                    required
-                                    class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                                />
-                            </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Subdomains</label>
+                            <input
+                                v-model="form.max_subdomains"
+                                type="number"
+                                min="0"
+                                required
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                            />
                         </div>
 
-                        <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
-                            <button
-                                type="button"
-                                @click="showModal = false"
-                                class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-medium text-slate-300"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                :disabled="form.processing"
-                                class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-sm font-medium text-white shadow-sm"
-                            >
-                                {{ isEditing ? 'Save Changes' : 'Create Package' }}
-                            </button>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Databases</label>
+                            <input
+                                v-model="form.max_databases"
+                                type="number"
+                                min="0"
+                                required
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                            />
                         </div>
-                    </form>
-                </div>
-            </Modal>
+                    </div>
+
+                    <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
+                        <button
+                            type="button"
+                            @click="showModal = false"
+                            class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-medium text-slate-300"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="form.processing"
+                            class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-sm font-medium text-white shadow-sm"
+                        >
+                            {{ isEditing ? 'Save Changes' : 'Create Package' }}
+                        </button>
+                    </div>
+                </form>
+            </UiModal>
         </div>
 </template>
 

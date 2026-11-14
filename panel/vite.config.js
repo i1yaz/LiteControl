@@ -23,6 +23,8 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': path.resolve(import.meta.dirname, './resources/js'),
+            '@domains': path.resolve(import.meta.dirname, './resources/js/Domains'),
+            '@shared': path.resolve(import.meta.dirname, './resources/js/Shared'),
         },
     },
     server: {

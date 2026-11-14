@@ -1,6 +1,6 @@
 import { computed, reactive } from 'vue';
 import { usePage } from '@inertiajs/vue3';
-import { PANEL_NAVIGATION } from '@/Navigation/panelNavigation';
+import { PANEL_NAVIGATION } from '@shared/Navigation/panelNavigation';
 
 export function useNavigation() {
     const page = usePage();

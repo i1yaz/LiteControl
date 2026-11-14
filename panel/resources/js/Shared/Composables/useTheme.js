@@ -2,7 +2,7 @@ import { ref, shallowRef, computed } from 'vue';
 import { usePage, router } from '@inertiajs/vue3';
 
 // Vite lazy glob of all themes
-const themeModules = import.meta.glob('../Themes/*/index.js');
+const themeModules = import.meta.glob('../../Themes/*/index.js');
 
 // Global singleton cache across component instances
 const activeThemeId = ref('avionics');
@@ -19,8 +19,8 @@ export async function loadThemeModule(themeId = 'avionics') {
         return activeThemeModule.value;
     }
 
-    const key = `../Themes/${themeId}/index.js`;
-    const fallbackKey = `../Themes/avionics/index.js`;
+    const key = `../../Themes/${themeId}/index.js`;
+    const fallbackKey = `../../Themes/avionics/index.js`;
 
     const loader = themeModules[key] || themeModules[fallbackKey];
     if (!loader) {

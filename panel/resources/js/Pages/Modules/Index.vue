@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { Layers, Download, Trash2, CheckCircle2, AlertCircle, ArrowUpRight } from '@lucide/vue';
-import { confirmDialog } from '@/Composables/useDialog';
+import { confirmDialog } from '@shared/Composables/useDialog';
 
 const props = defineProps({
     modules: Array,

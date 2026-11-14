@@ -2,7 +2,7 @@
 import { shallowRef, computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import { Cpu, RefreshCw, XCircle, Search, AlertCircle } from '@lucide/vue';
-import { confirmDialog } from '@/Composables/useDialog';
+import { confirmDialog } from '@shared/Composables/useDialog';
 
 const props = defineProps({
     processes: Array,

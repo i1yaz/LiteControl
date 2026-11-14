@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useTheme } from '@/Composables/useTheme';
-import UiConfirmDialog from '@/Components/ui/UiConfirmDialog.vue';
+import { useTheme } from '@shared/Composables/useTheme';
+import UiConfirmDialog from '@shared/Ui/UiConfirmDialog.vue';
 
 const props = defineProps({
     isAuth: {

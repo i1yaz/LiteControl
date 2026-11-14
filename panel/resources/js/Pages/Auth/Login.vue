@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useForm, Head } from '@inertiajs/vue3';
 import { ShieldCheck } from '@lucide/vue';
-import UiButton from '@/Components/ui/UiButton.vue';
-import UiInput from '@/Components/ui/UiInput.vue';
-import UiAlert from '@/Components/ui/UiAlert.vue';
+import UiButton from '@shared/Ui/UiButton.vue';
+import UiInput from '@shared/Ui/UiInput.vue';
+import UiAlert from '@shared/Ui/UiAlert.vue';
 
 defineProps({
     errors: Object,

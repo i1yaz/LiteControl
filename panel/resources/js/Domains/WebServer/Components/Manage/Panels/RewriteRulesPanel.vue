@@ -2,7 +2,7 @@
 import { shallowRef, onMounted } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { FileEdit, Save, RefreshCw, X } from '@lucide/vue';
-import { REWRITE_TEMPLATES } from '@/Config/websiteManageConfig';
+import { REWRITE_TEMPLATES } from '@domains/WebServer/Config/websiteManageConfig';
 
 const props = defineProps({
     domain: {

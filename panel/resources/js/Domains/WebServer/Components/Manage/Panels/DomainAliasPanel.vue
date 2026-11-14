@@ -2,7 +2,7 @@
 import { shallowRef } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { Globe, Plus, Trash2, X } from '@lucide/vue';
-import { confirmDialog } from '@/Composables/useDialog';
+import { confirmDialog } from '@shared/Composables/useDialog';
 
 const props = defineProps({
     domain: {

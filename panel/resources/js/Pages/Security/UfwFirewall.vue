@@ -2,7 +2,7 @@
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { Shield, Plus, Trash2, CheckCircle2, AlertCircle } from '@lucide/vue';
-import { confirmDialog } from '@/Composables/useDialog';
+import { confirmDialog } from '@shared/Composables/useDialog';
 
 const props = defineProps({
     active: Boolean,

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { AlertTriangle, Info, ShieldAlert } from '@lucide/vue';
-import UiModal from '@/Components/ui/UiModal.vue';
-import UiButton from '@/Components/ui/UiButton.vue';
-import { useDialog } from '@/Composables/useDialog';
+import UiModal from '@shared/Ui/UiModal.vue';
+import UiButton from '@shared/Ui/UiButton.vue';
+import { useDialog } from '@shared/Composables/useDialog';
 
 const { dialogState, resolveDialog } = useDialog();
 

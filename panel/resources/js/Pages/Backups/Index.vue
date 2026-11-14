@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { shallowRef } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
-import { confirmDialog } from '@/Composables/useDialog';
-import Modal from '@/Components/Modal.vue';
+import { confirmDialog } from '@shared/Composables/useDialog';
+import UiModal from '@shared/Ui/UiModal.vue';
 import {
     FolderTree,
     Plus,
@@ -10,7 +10,6 @@ import {
     Trash2,
     Calendar,
     HardDrive,
-    X,
     Clock,
     CheckCircle2
 } from '@lucide/vue';
@@ -253,72 +252,63 @@ const deleteSchedule = async (id) => {
             </div>
 
             <!-- Schedule Modal -->
-            <Modal :show="showScheduleModal" max-width="md" @close="showScheduleModal = false">
-                <div class="p-6 space-y-4">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                        <h3 class="text-base font-bold text-white">Configure Automated Backups</h3>
-                        <button @click="showScheduleModal = false" class="text-slate-400 hover:text-white">
-                            <X class="w-5 h-5" />
-                        </button>
+            <UiModal :show="showScheduleModal" title="Configure Automated Backups" max-width="md" @close="showScheduleModal = false">
+                <form @submit.prevent="submitSchedule" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Frequency</label>
+                        <select
+                            v-model="scheduleForm.frequency"
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
+                        >
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
                     </div>
 
-                    <form @submit.prevent="submitSchedule" class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Frequency</label>
-                            <select
-                                v-model="scheduleForm.frequency"
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
-                            >
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                            </select>
-                        </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Retention Count</label>
+                        <input
+                            v-model="scheduleForm.retention_count"
+                            type="number"
+                            min="1"
+                            max="30"
+                            required
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
+                        />
+                        <p class="text-[11px] text-slate-500 mt-1">Older archives beyond this limit are automatically pruned.</p>
+                    </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Retention Count</label>
-                            <input
-                                v-model="scheduleForm.retention_count"
-                                type="number"
-                                min="1"
-                                max="30"
-                                required
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
-                            />
-                            <p class="text-[11px] text-slate-500 mt-1">Older archives beyond this limit are automatically pruned.</p>
-                        </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Storage Destination</label>
+                        <select
+                            v-model="scheduleForm.destination"
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
+                        >
+                            <option value="local">Local (/home/user/backups)</option>
+                            <option value="sftp">Remote SFTP</option>
+                            <option value="s3">Amazon S3 / S3-Compatible</option>
+                        </select>
+                    </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Storage Destination</label>
-                            <select
-                                v-model="scheduleForm.destination"
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
-                            >
-                                <option value="local">Local (/home/user/backups)</option>
-                                <option value="sftp">Remote SFTP</option>
-                                <option value="s3">Amazon S3 / S3-Compatible</option>
-                            </select>
-                        </div>
-
-                        <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
-                            <button
-                                type="button"
-                                @click="showScheduleModal = false"
-                                class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-medium text-slate-300"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                :disabled="scheduleForm.processing"
-                                class="px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-sm font-medium text-white shadow-sm"
-                            >
-                                Save Schedule
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </Modal>
+                    <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
+                        <button
+                            type="button"
+                            @click="showScheduleModal = false"
+                            class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-medium text-slate-300"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="scheduleForm.processing"
+                            class="px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-sm font-medium text-white shadow-sm"
+                        >
+                            Save Schedule
+                        </button>
+                    </div>
+                </form>
+            </UiModal>
         </div>
 </template>
 

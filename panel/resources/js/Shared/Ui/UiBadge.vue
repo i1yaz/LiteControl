@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useTheme } from '@/Composables/useTheme';
+import { useTheme } from '@shared/Composables/useTheme';
 
 const { resolveComponent } = useTheme();
-const concrete = computed(() => resolveComponent('DataTable'));
+const concrete = computed(() => resolveComponent('Badge'));
 </script>
 
 <template>
@@ -12,9 +12,7 @@ const concrete = computed(() => resolveComponent('DataTable'));
             <slot :name="slot" v-bind="slotProps" />
         </template>
     </component>
-    <div v-else class="overflow-x-auto" v-bind="$attrs">
-        <table class="w-full">
-            <slot />
-        </table>
-    </div>
+    <span v-else class="px-2 py-0.5 rounded text-xs bg-slate-800 text-slate-200" v-bind="$attrs">
+        <slot />
+    </span>
 </template>

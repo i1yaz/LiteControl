@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { ShieldCheck, ShieldAlert, KeyRound, Copy, Check } from '@lucide/vue';
-import { generateQrSvgData } from '@/Utils/qrcode';
+import { generateQrSvgData } from '@shared/Utils/qrcode';
 
 const props = defineProps({
     enabled: Boolean,

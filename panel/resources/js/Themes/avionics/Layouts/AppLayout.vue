@@ -2,9 +2,9 @@
 import { shallowRef, ref, computed, onMounted, useTemplateRef } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import axios from 'axios';
-import { useClickOutside } from '@/Composables/useClickOutside';
-import { useNavigation } from '@/Composables/useNavigation';
-import { useTheme } from '@/Composables/useTheme';
+import { useClickOutside } from '@shared/Composables/useClickOutside';
+import { useNavigation } from '@shared/Composables/useNavigation';
+import { useTheme } from '@shared/Composables/useTheme';
 import {
     LayoutDashboard, Users, Globe, Database, FolderTree,
     FileCode, Sliders, Server, Shield, Mail, Layers,

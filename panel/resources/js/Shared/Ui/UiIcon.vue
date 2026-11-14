@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useTheme } from '@/Composables/useTheme';
+import { useTheme } from '@shared/Composables/useTheme';
 import { HelpCircle } from '@lucide/vue';
 
 const props = defineProps({

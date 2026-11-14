@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { shallowRef, computed, onMounted } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import { confirmDialog } from '@/Composables/useDialog';
+import { confirmDialog } from '@shared/Composables/useDialog';
 import {
     Globe,
     Folder,
@@ -14,21 +14,21 @@ import {
     ChevronLeft
 } from '@lucide/vue';
 
-import ManageTabNav from '@/Components/Domains/Manage/ManageTabNav.vue';
-import ManageActionGrid from '@/Components/Domains/Manage/ManageActionGrid.vue';
-import OverviewSection from '@/Components/Domains/Manage/OverviewSection.vue';
+import ManageTabNav from '@domains/WebServer/Components/Manage/ManageTabNav.vue';
+import ManageActionGrid from '@domains/WebServer/Components/Manage/ManageActionGrid.vue';
+import OverviewSection from '@domains/WebServer/Components/Manage/OverviewSection.vue';
 
-import DomainAliasPanel from '@/Components/Domains/Manage/Panels/DomainAliasPanel.vue';
-import LogViewerPanel from '@/Components/Domains/Manage/Panels/LogViewerPanel.vue';
-import VhostConfPanel from '@/Components/Domains/Manage/Panels/VhostConfPanel.vue';
-import RewriteRulesPanel from '@/Components/Domains/Manage/Panels/RewriteRulesPanel.vue';
-import ChangePhpPanel from '@/Components/Domains/Manage/Panels/ChangePhpPanel.vue';
-import IssueSslPanel from '@/Components/Domains/Manage/Panels/IssueSslPanel.vue';
-import CustomSslPanel from '@/Components/Domains/Manage/Panels/CustomSslPanel.vue';
-import CreateFtpPanel from '@/Components/Domains/Manage/Panels/CreateFtpPanel.vue';
-import DeleteFtpPanel from '@/Components/Domains/Manage/Panels/DeleteFtpPanel.vue';
+import DomainAliasPanel from '@domains/WebServer/Components/Manage/Panels/DomainAliasPanel.vue';
+import LogViewerPanel from '@domains/WebServer/Components/Manage/Panels/LogViewerPanel.vue';
+import VhostConfPanel from '@domains/WebServer/Components/Manage/Panels/VhostConfPanel.vue';
+import RewriteRulesPanel from '@domains/WebServer/Components/Manage/Panels/RewriteRulesPanel.vue';
+import ChangePhpPanel from '@domains/WebServer/Components/Manage/Panels/ChangePhpPanel.vue';
+import IssueSslPanel from '@domains/WebServer/Components/Manage/Panels/IssueSslPanel.vue';
+import CustomSslPanel from '@domains/WebServer/Components/Manage/Panels/CustomSslPanel.vue';
+import CreateFtpPanel from '@domains/WebServer/Components/Manage/Panels/CreateFtpPanel.vue';
+import DeleteFtpPanel from '@domains/WebServer/Components/Manage/Panels/DeleteFtpPanel.vue';
 
-import { WEBSITE_MANAGE_TABS, WEBSITE_MANAGE_ACTIONS } from '@/Config/websiteManageConfig';
+import { WEBSITE_MANAGE_TABS, WEBSITE_MANAGE_ACTIONS } from '@domains/WebServer/Config/websiteManageConfig';
 
 const props = defineProps({
     domain: {

@@ -3,8 +3,8 @@ import '../css/app.css';
 
 import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
-import ThemePersistentLayout from './Layouts/ThemePersistentLayout.vue';
-import { loadThemeModule } from './Composables/useTheme';
+import ThemePersistentLayout from '@shared/Layouts/ThemePersistentLayout.vue';
+import { loadThemeModule } from '@shared/Composables/useTheme';
 
 const appName = window.document.getElementsByTagName('title')[0]?.innerText || 'LiteControl';
 

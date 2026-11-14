@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { shallowRef, computed, onMounted } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import { confirmDialog, alertDialog } from '@/Composables/useDialog';
-import Modal from '@/Components/Modal.vue';
+import { confirmDialog, alertDialog } from '@shared/Composables/useDialog';
+import UiModal from '@shared/Ui/UiModal.vue';
 import {
     FolderTree,
     Folder,
@@ -15,7 +15,6 @@ import {
     Edit3,
     ArrowUp,
     RefreshCw,
-    X,
     Save,
     HardDrive,
     KeyRound,
@@ -541,107 +540,88 @@ onMounted(() => {
             </div>
 
             <!-- Create New File / Folder Modal -->
-            <Modal :show="showCreateModal" max-width="sm" @close="showCreateModal = false">
-                <div class="p-5 space-y-4">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                        <h3 class="text-base font-bold text-white">Create New Item</h3>
-                        <button @click="showCreateModal = false" class="text-slate-400 hover:text-white">
-                            <X class="w-5 h-5" />
+            <UiModal :show="showCreateModal" title="Create New Item" max-width="sm" @close="showCreateModal = false">
+                <div class="space-y-3">
+                    <div class="flex gap-2">
+                        <button
+                            @click="newItemType = 'file'"
+                            :class="['flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors', newItemType === 'file' ? 'bg-cyan-600 text-white border-cyan-500' : 'bg-slate-800 text-slate-400 border-slate-700']"
+                        >
+                            File
+                        </button>
+                        <button
+                            @click="newItemType = 'folder'"
+                            :class="['flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors', newItemType === 'folder' ? 'bg-cyan-600 text-white border-cyan-500' : 'bg-slate-800 text-slate-400 border-slate-700']"
+                        >
+                            Folder
                         </button>
                     </div>
 
-                    <div class="space-y-3">
-                        <div class="flex gap-2">
-                            <button
-                                @click="newItemType = 'file'"
-                                :class="['flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors', newItemType === 'file' ? 'bg-cyan-600 text-white border-cyan-500' : 'bg-slate-800 text-slate-400 border-slate-700']"
-                            >
-                                File
-                            </button>
-                            <button
-                                @click="newItemType = 'folder'"
-                                :class="['flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors', newItemType === 'folder' ? 'bg-cyan-600 text-white border-cyan-500' : 'bg-slate-800 text-slate-400 border-slate-700']"
-                            >
-                                Folder
-                            </button>
-                        </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Name</label>
+                        <input
+                            v-model="newItemName"
+                            type="text"
+                            placeholder="e.g. index.php or assets"
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
+                        />
+                    </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Name</label>
-                            <input
-                                v-model="newItemName"
-                                type="text"
-                                placeholder="e.g. index.php or assets"
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
-                            />
-                        </div>
-
-                        <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-800">
-                            <button
-                                @click="showCreateModal = false"
-                                class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                @click="createItem"
-                                class="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-xs font-semibold text-white shadow-sm"
-                            >
-                                Create
-                            </button>
-                        </div>
+                    <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-800">
+                        <button
+                            @click="showCreateModal = false"
+                            class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            @click="createItem"
+                            class="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-xs font-semibold text-white shadow-sm"
+                        >
+                            Create
+                        </button>
                     </div>
                 </div>
-            </Modal>
+            </UiModal>
 
             <!-- Code Editor Modal -->
-            <Modal :show="showEditorModal" max-width="4xl" @close="showEditorModal = false">
-                <div class="h-[80vh] flex flex-col overflow-hidden">
-                    <!-- Editor Header -->
-                    <div class="px-5 py-3 border-b border-slate-800 flex items-center justify-between bg-slate-950">
-                        <div class="flex items-center gap-2 text-xs font-mono text-cyan-400">
-                            <FileCode class="w-4 h-4" />
-                            <span>{{ editingPath }}</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <button
-                                @click="saveEditorContent"
-                                :disabled="editorLoading"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-xs font-semibold text-white shadow-sm"
-                            >
-                                <Save class="w-3.5 h-3.5" />
-                                <span>Save</span>
-                            </button>
-                            <button @click="showEditorModal = false" class="text-slate-400 hover:text-white">
-                                <X class="w-5 h-5" />
-                            </button>
-                        </div>
+            <UiModal :show="showEditorModal" max-width="4xl" @close="showEditorModal = false">
+                <template #header>
+                    <div class="flex items-center gap-2 text-xs font-mono text-cyan-400">
+                        <FileCode class="w-4 h-4" />
+                        <span>{{ editingPath }}</span>
                     </div>
+                </template>
 
-                    <!-- Editor Body -->
-                    <div class="flex-1 p-4 bg-slate-950 overflow-hidden flex flex-col">
-                        <textarea
-                            v-model="editorContent"
-                            class="w-full flex-1 p-3 bg-slate-900 border border-slate-800 rounded-lg font-mono text-xs text-slate-100 focus:outline-none focus:border-cyan-500 resize-none leading-relaxed"
-                            spellcheck="false"
-                        ></textarea>
-                    </div>
+                <div class="h-[70vh] flex flex-col overflow-hidden">
+                    <textarea
+                        v-model="editorContent"
+                        class="w-full flex-1 p-3 bg-slate-950 border border-slate-800 rounded-lg font-mono text-xs text-slate-100 focus:outline-none focus:border-cyan-500 resize-none leading-relaxed"
+                        spellcheck="false"
+                    ></textarea>
                 </div>
-            </Modal>
+
+                <template #footer>
+                    <button
+                        @click="showEditorModal = false"
+                        class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        @click="saveEditorContent"
+                        :disabled="editorLoading"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-xs font-semibold text-white shadow-sm"
+                    >
+                        <Save class="w-3.5 h-3.5" />
+                        <span>Save</span>
+                    </button>
+                </template>
+            </UiModal>
 
             <!-- cPanel-Style Change Permissions Modal -->
-            <Modal :show="showChmodModal" max-width="md" @close="showChmodModal = false">
-                <div class="p-5 space-y-4">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                        <div class="flex items-center gap-2">
-                            <KeyRound class="w-4 h-4 text-amber-400" />
-                            <h3 class="text-sm font-bold text-white">Change Permissions</h3>
-                        </div>
-                        <button @click="showChmodModal = false" class="text-slate-400 hover:text-white">
-                            <X class="w-5 h-5" />
-                        </button>
-                    </div>
-
+            <UiModal :show="showChmodModal" title="Change Permissions" max-width="md" @close="showChmodModal = false">
+                <div class="space-y-4">
                     <div v-if="chmodTarget" class="text-xs text-slate-400 break-all font-mono">
                         {{ chmodTarget.name }} ({{ chmodTarget.is_dir ? 'Directory' : 'File' }})
                     </div>
@@ -721,7 +701,7 @@ onMounted(() => {
                         </button>
                     </div>
                 </div>
-            </Modal>
+            </UiModal>
         </div>
 </template>
 

@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { shallowRef, computed } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
-import { confirmDialog } from '@/Composables/useDialog';
-import { usePhpVersions } from '@/Composables/usePhpVersions';
-import UiPageHeader from '@/Components/ui/UiPageHeader.vue';
-import UiButton from '@/Components/ui/UiButton.vue';
-import UiModal from '@/Components/ui/UiModal.vue';
-import UiInput from '@/Components/ui/UiInput.vue';
-import UiSelect from '@/Components/ui/UiSelect.vue';
-import UiDataTable from '@/Components/ui/UiDataTable.vue';
+import { confirmDialog } from '@shared/Composables/useDialog';
+import { usePhpVersions } from '@shared/Composables/usePhpVersions';
+import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
+import UiButton from '@shared/Ui/UiButton.vue';
+import UiModal from '@shared/Ui/UiModal.vue';
+import UiInput from '@shared/Ui/UiInput.vue';
+import UiSelect from '@shared/Ui/UiSelect.vue';
+import UiDataTable from '@shared/Ui/UiDataTable.vue';
 import { Globe, Plus, ShieldCheck, ShieldAlert, Folder, Trash2, Pencil, Terminal, Check, LayoutGrid, FolderOpen, PauseCircle, PlayCircle, Download } from '@lucide/vue';
 
 const props = defineProps({

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { useDashboardMetrics } from '@/Composables/Domain/useDashboardMetrics';
+import { useDashboardMetrics } from '@domains/ServerOps/Composables/useDashboardMetrics';
 import {
     Cpu, HardDrive, Globe, Database, Package,
     Clock, Zap, Terminal, ArrowUpRight, Users

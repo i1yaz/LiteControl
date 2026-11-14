@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useTheme } from '@/Composables/useTheme';
+import { useTheme } from '@shared/Composables/useTheme';
 
 const { resolveComponent } = useTheme();
-const concrete = computed(() => resolveComponent('Input'));
+const concrete = computed(() => resolveComponent('Button'));
 </script>
 
 <template>
@@ -12,5 +12,7 @@ const concrete = computed(() => resolveComponent('Input'));
             <slot :name="slot" v-bind="slotProps" />
         </template>
     </component>
-    <input v-else v-bind="$attrs" class="px-3 py-2 border rounded bg-slate-800 text-white" />
+    <button v-else v-bind="$attrs" class="px-4 py-2 rounded bg-indigo-600 text-white">
+        <slot />
+    </button>
 </template>

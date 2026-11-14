@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { Sliders, Save, AlertTriangle, ShieldCheck } from '@lucide/vue';
-import { confirmDialog } from '@/Composables/useDialog';
+import { confirmDialog } from '@shared/Composables/useDialog';
 
 const props = defineProps({
     currentPort: Number,

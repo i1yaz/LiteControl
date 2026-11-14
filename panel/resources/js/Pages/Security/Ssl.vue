@@ -2,7 +2,7 @@
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { ShieldCheck, ShieldAlert, Lock, RefreshCw, Key, Plus, CheckCircle2 } from '@lucide/vue';
-import { confirmDialog } from '@/Composables/useDialog';
+import { confirmDialog } from '@shared/Composables/useDialog';
 
 const props = defineProps({
     domains: Array,

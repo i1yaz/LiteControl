@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { shallowRef, computed } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { confirmDialog } from '@/Composables/useDialog';
-import Modal from '@/Components/Modal.vue';
-import { Globe, Plus, Folder, Trash2, X } from '@lucide/vue';
-import { usePhpVersions } from '@/Composables/usePhpVersions';
+import { confirmDialog } from '@shared/Composables/useDialog';
+import UiModal from '@shared/Ui/UiModal.vue';
+import { Globe, Plus, Folder, Trash2 } from '@lucide/vue';
+import { usePhpVersions } from '@shared/Composables/usePhpVersions';
 
 const props = defineProps({
     subdomains: Object,
@@ -136,108 +136,99 @@ const deleteSubdomain = async (id, domain) => {
             </div>
 
             <!-- Modal -->
-            <Modal :show="showModal" max-width="md" @close="showModal = false">
-                <div class="p-6 space-y-4">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                        <h3 class="text-base font-bold text-white">Create Subdomain</h3>
-                        <button @click="showModal = false" class="text-slate-400 hover:text-white">
-                            <X class="w-5 h-5" />
-                        </button>
+            <UiModal :show="showModal" title="Create Subdomain" max-width="md" @close="showModal = false">
+                <form @submit.prevent="submit" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Subdomain Prefix</label>
+                        <input
+                            v-model="form.subdomain_prefix"
+                            type="text"
+                            placeholder="blog, app, api"
+                            required
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
+                        />
+                        <p v-if="form.errors.subdomain_prefix" class="text-xs text-rose-400 mt-1">{{ form.errors.subdomain_prefix }}</p>
                     </div>
 
-                    <form @submit.prevent="submit" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Parent Domain</label>
+                        <select
+                            v-model="form.parent_domain_id"
+                            required
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
+                        >
+                            <option v-for="d in baseDomains" :key="d.id" :value="d.id">
+                                {{ d.domain }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Web Root Subpath (Pointing Target) -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center justify-between">
+                            <span>Web Root Subpath (Pointing Target)</span>
+                            <span class="text-slate-400 font-normal lowercase">e.g. "public" for Laravel</span>
+                        </label>
+                        <input
+                            v-model="form.public_path"
+                            type="text"
+                            placeholder="public (leave empty for standard public_html)"
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+                        />
+                        <p v-if="form.errors.public_path" class="text-xs text-rose-400 mt-1">{{ form.errors.public_path }}</p>
+                        <p class="text-[11px] text-slate-400 mt-1">
+                            Target DocRoot: <span class="text-emerald-400 font-mono">{{ docRootPreview }}</span>
+                        </p>
+                    </div>
+
+                    <!-- PHP Runtime -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">PHP Runtime</label>
+                        <select
+                            v-model="form.php_version"
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
+                        >
+                            <option v-for="opt in phpOptions" :key="opt.value" :value="opt.value">
+                                {{ opt.label }}
+                            </option>
+                        </select>
+                        <p v-if="form.errors.php_version" class="text-xs text-rose-400 mt-1">{{ form.errors.php_version }}</p>
+                    </div>
+
+                    <!-- Generate Let's Encrypt SSL -->
+                    <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Subdomain Prefix</label>
+                            <span class="text-xs text-slate-200 block font-medium">Generate Let's Encrypt SSL</span>
+                            <span class="text-[11px] text-slate-400">Default: ON (Requires DNS A-record pointed)</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
                             <input
-                                v-model="form.subdomain_prefix"
-                                type="text"
-                                placeholder="blog, app, api"
-                                required
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
+                                v-model="form.ssl_enabled"
+                                type="checkbox"
+                                class="sr-only peer"
                             />
-                            <p v-if="form.errors.subdomain_prefix" class="text-xs text-rose-400 mt-1">{{ form.errors.subdomain_prefix }}</p>
-                        </div>
+                            <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Parent Domain</label>
-                            <select
-                                v-model="form.parent_domain_id"
-                                required
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
-                            >
-                                <option v-for="d in baseDomains" :key="d.id" :value="d.id">
-                                    {{ d.domain }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <!-- Web Root Subpath (Pointing Target) -->
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center justify-between">
-                                <span>Web Root Subpath (Pointing Target)</span>
-                                <span class="text-slate-400 font-normal lowercase">e.g. "public" for Laravel</span>
-                            </label>
-                            <input
-                                v-model="form.public_path"
-                                type="text"
-                                placeholder="public (leave empty for standard public_html)"
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
-                            />
-                            <p v-if="form.errors.public_path" class="text-xs text-rose-400 mt-1">{{ form.errors.public_path }}</p>
-                            <p class="text-[11px] text-slate-400 mt-1">
-                                Target DocRoot: <span class="text-emerald-400 font-mono">{{ docRootPreview }}</span>
-                            </p>
-                        </div>
-
-                        <!-- PHP Runtime -->
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">PHP Runtime</label>
-                            <select
-                                v-model="form.php_version"
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
-                            >
-                                <option v-for="opt in phpOptions" :key="opt.value" :value="opt.value">
-                                    {{ opt.label }}
-                                </option>
-                            </select>
-                            <p v-if="form.errors.php_version" class="text-xs text-rose-400 mt-1">{{ form.errors.php_version }}</p>
-                        </div>
-
-                        <!-- Generate Let's Encrypt SSL -->
-                        <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
-                            <div>
-                                <span class="text-xs text-slate-200 block font-medium">Generate Let's Encrypt SSL</span>
-                                <span class="text-[11px] text-slate-400">Default: ON (Requires DNS A-record pointed)</span>
-                            </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    v-model="form.ssl_enabled"
-                                    type="checkbox"
-                                    class="sr-only peer"
-                                />
-                                <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
-                            </label>
-                        </div>
-
-                        <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
-                            <button
-                                type="button"
-                                @click="showModal = false"
-                                class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-medium text-slate-300"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                :disabled="form.processing"
-                                class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-sm font-medium text-white shadow-sm"
-                            >
-                                {{ form.processing ? 'Creating...' : 'Create Subdomain' }}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </Modal>
+                    <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
+                        <button
+                            type="button"
+                            @click="showModal = false"
+                            class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-medium text-slate-300"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="form.processing"
+                            class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-sm font-medium text-white shadow-sm"
+                        >
+                            {{ form.processing ? 'Creating...' : 'Create Subdomain' }}
+                        </button>
+                    </div>
+                </form>
+            </UiModal>
         </div>
 </template>
 
