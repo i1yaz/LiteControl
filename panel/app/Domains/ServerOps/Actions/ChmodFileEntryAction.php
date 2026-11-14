@@ -16,4 +16,3 @@ class ChmodFileEntryAction
         return $this->driver->chmodEntry($path, $octalMode);
     }
 }
-

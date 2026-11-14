@@ -43,4 +43,3 @@ final readonly class LinuxUsername
         return $this->value;
     }
 }
-

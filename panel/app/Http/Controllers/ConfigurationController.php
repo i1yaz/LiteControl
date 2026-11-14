@@ -129,7 +129,7 @@ class ConfigurationController extends Controller
             $listRes = $this->phpCli->listVersions();
             $installedVersions = array_filter(
                 $listRes,
-                fn($v) => !empty($v['installed'])
+                fn ($v) => ! empty($v['installed'])
             );
         } catch (\Throwable) {
             // Fallback for list failure
@@ -182,7 +182,7 @@ class ConfigurationController extends Controller
         $type = $request->input('type', 'ols-error');
         $lines = (int) $request->input('lines', 100);
 
-        if (!in_array($type, ['ols-error', 'ols-access', 'panel-error'])) {
+        if (! in_array($type, ['ols-error', 'ols-access', 'panel-error'])) {
             $type = 'ols-error';
         }
 

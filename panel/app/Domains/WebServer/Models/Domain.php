@@ -3,7 +3,7 @@
 namespace App\Domains\WebServer\Models;
 
 use App\Domains\Database\Models\Database;
-use App\Models\User;
+use App\Domains\Identity\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -66,4 +66,3 @@ class Domain extends Model
         return $this->hasMany(Domain::class, 'parent_domain_id')->where('type', 'alias');
     }
 }
-

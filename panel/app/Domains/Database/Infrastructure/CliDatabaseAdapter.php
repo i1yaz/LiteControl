@@ -97,4 +97,3 @@ class CliDatabaseAdapter implements DatabaseDriverInterface
         return $res['data'] ?? [];
     }
 }
-

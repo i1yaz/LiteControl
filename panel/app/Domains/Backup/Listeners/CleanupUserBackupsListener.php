@@ -14,4 +14,3 @@ class CleanupUserBackupsListener
         Backup::where('user_id', $event->userId)->delete();
     }
 }
-

@@ -30,4 +30,3 @@ final readonly class DatabaseUsername implements Stringable
         return $this->value;
     }
 }
-

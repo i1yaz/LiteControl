@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Domains\HostingPlans\Models\Package;
 use App\Domains\Identity\Actions\CreateUserAction;
 use App\Domains\Identity\Actions\DeleteUserAction;
 use App\Domains\Identity\Actions\SuspendUserAction;
 use App\Domains\Identity\Actions\UnsuspendUserAction;
 use App\Domains\Identity\Actions\UpdateUserAction;
 use App\Domains\Identity\Contracts\UserDriverInterface;
+use App\Domains\Identity\Models\User;
 use App\Exceptions\System\LcCliException;
-use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\Package;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -38,8 +37,8 @@ class UserController extends Controller
         if ($search) {
             $usersQuery->where(function ($q) use ($search) {
                 $q->where('username', 'like', "%{$search}%")
-                  ->orWhere('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -113,7 +112,7 @@ class UserController extends Controller
             $result = $createUser->handle($validated, Auth::user(), $request->ip());
         } catch (LcCliException $e) {
             return back()->withErrors([
-                'username' => 'System user creation failed: ' . $e->getMessage(),
+                'username' => 'System user creation failed: '.$e->getMessage(),
             ]);
         }
 
@@ -149,7 +148,7 @@ class UserController extends Controller
         try {
             $updateUser->handle($user, $validated, Auth::user(), $request->ip());
         } catch (LcCliException $e) {
-            return back()->with('error', 'Failed to update system user: ' . $e->getMessage());
+            return back()->with('error', 'Failed to update system user: '.$e->getMessage());
         }
 
         return back()->with('success', "User '{$user->username}' updated successfully.");
@@ -162,11 +161,12 @@ class UserController extends Controller
     {
         try {
             $suspendUser->handle($user, Auth::user(), $request->ip());
+
             return back()->with('success', "User '{$user->username}' suspended.");
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         } catch (LcCliException $e) {
-            return back()->with('error', 'Failed to suspend user: ' . $e->getMessage());
+            return back()->with('error', 'Failed to suspend user: '.$e->getMessage());
         }
     }
 
@@ -177,9 +177,10 @@ class UserController extends Controller
     {
         try {
             $unsuspendUser->handle($user, Auth::user(), $request->ip());
+
             return back()->with('success', "User '{$user->username}' unsuspended.");
         } catch (LcCliException $e) {
-            return back()->with('error', 'Failed to unsuspend user: ' . $e->getMessage());
+            return back()->with('error', 'Failed to unsuspend user: '.$e->getMessage());
         }
     }
 
@@ -191,11 +192,12 @@ class UserController extends Controller
         try {
             $username = $user->username;
             $deleteUser->handle($user, Auth::user(), $request->ip());
+
             return redirect()->route('users.index')->with('success', "User '{$username}' deleted successfully.");
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         } catch (LcCliException $e) {
-            return back()->with('error', 'Failed to delete user: ' . $e->getMessage());
+            return back()->with('error', 'Failed to delete user: '.$e->getMessage());
         }
     }
 

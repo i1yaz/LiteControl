@@ -2,10 +2,10 @@
 
 namespace App\Domains\Security\Actions;
 
+use App\Domains\Identity\Models\User;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\Security\Contracts\FirewallDriverInterface;
 use App\Domains\Security\Models\FirewallRule;
-use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class AddFirewallRuleAction
@@ -52,4 +52,3 @@ class AddFirewallRuleAction
         });
     }
 }
-

@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\WebServer\Actions\DeleteDomainAction;
+use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use App\Domains\WebServer\Models\Domain;
-use App\Models\User;
 use App\Domains\WebServer\Services\DomainService;
 use App\Support\Cli\LcCliService;
-use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;

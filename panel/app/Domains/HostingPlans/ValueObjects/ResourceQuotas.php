@@ -25,7 +25,7 @@ final readonly class ResourceQuotas
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
@@ -63,4 +63,3 @@ final readonly class ResourceQuotas
         }
     }
 }
-

@@ -7,8 +7,8 @@ use App\Domains\Database\Models\Database;
 use App\Domains\Database\Models\DatabaseUser;
 use App\Domains\Database\ValueObjects\DatabaseName;
 use App\Domains\Database\ValueObjects\DatabaseUsername;
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class GrantDatabaseAccessAction
@@ -40,4 +40,3 @@ class GrantDatabaseAccessAction
         });
     }
 }
-

@@ -2,10 +2,10 @@
 
 namespace App\Domains\HostingPlans\Actions;
 
+use App\Domains\HostingPlans\Models\Package;
 use App\Domains\HostingPlans\ValueObjects\PackageName;
 use App\Domains\HostingPlans\ValueObjects\ResourceQuotas;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\Package;
 
 class CreatePackageAction
 {
@@ -31,4 +31,3 @@ class CreatePackageAction
         return $package;
     }
 }
-

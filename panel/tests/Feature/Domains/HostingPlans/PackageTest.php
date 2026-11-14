@@ -7,7 +7,7 @@ use App\Domains\HostingPlans\Actions\DeletePackageAction;
 use App\Domains\HostingPlans\Actions\UpdatePackageAction;
 use App\Domains\HostingPlans\ValueObjects\PackageName;
 use App\Domains\HostingPlans\ValueObjects\ResourceQuotas;
-use App\Models\User;
+use App\Domains\Identity\Models\User;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
@@ -56,9 +56,9 @@ class PackageTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin', 'username' => 'adminuser']);
 
-        $createAction = new CreatePackageAction();
-        $updateAction = new UpdatePackageAction();
-        $deleteAction = new DeletePackageAction();
+        $createAction = new CreatePackageAction;
+        $updateAction = new UpdatePackageAction;
+        $deleteAction = new DeletePackageAction;
 
         $quotas = ResourceQuotas::fromArray([
             'disk_quota_mb' => 2048,
@@ -97,8 +97,8 @@ class PackageTest extends TestCase
     public function test_delete_package_action_throws_when_package_has_assigned_users(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'username' => 'adminuser2']);
-        $createAction = new CreatePackageAction();
-        $deleteAction = new DeletePackageAction();
+        $createAction = new CreatePackageAction;
+        $deleteAction = new DeletePackageAction;
 
         $quotas = ResourceQuotas::fromArray([
             'disk_quota_mb' => 1024,

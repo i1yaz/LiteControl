@@ -16,4 +16,3 @@ class UserDeleted
         public readonly string $username,
     ) {}
 }
-

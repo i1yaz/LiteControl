@@ -2,8 +2,8 @@
 
 namespace App\Domains\HostingPlans\Actions;
 
+use App\Domains\HostingPlans\Models\Package;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\Package;
 use DomainException;
 
 class DeletePackageAction
@@ -32,4 +32,3 @@ class DeletePackageAction
         return $name;
     }
 }
-

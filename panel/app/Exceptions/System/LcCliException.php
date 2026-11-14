@@ -7,7 +7,9 @@ use Exception;
 class LcCliException extends Exception
 {
     protected string $command;
+
     protected array $args;
+
     protected ?array $response;
 
     public function __construct(string $message, string $command = '', array $args = [], ?array $response = null, int $code = 0, ?\Throwable $previous = null)
@@ -17,8 +19,8 @@ class LcCliException extends Exception
         $this->response = $response;
 
         $formattedMessage = $message;
-        if (!empty($command)) {
-            $formattedMessage = "[lc-cli {$command}] " . $message;
+        if (! empty($command)) {
+            $formattedMessage = "[lc-cli {$command}] ".$message;
         }
 
         parent::__construct($formattedMessage, $code, $previous);
@@ -39,4 +41,3 @@ class LcCliException extends Exception
         return $this->response;
     }
 }
-

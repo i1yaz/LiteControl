@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
+use App\Domains\Identity\Models\User;
 use App\Services\TotpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
@@ -14,7 +14,7 @@ class TwoFactorAuthenticationTest extends TestCase
 
     public function test_user_with_two_factor_enabled_is_redirected_to_challenge_on_login(): void
     {
-        $totp = new TotpService();
+        $totp = new TotpService;
         $secret = $totp->generateSecret();
 
         $user = User::factory()->create([
@@ -35,7 +35,7 @@ class TwoFactorAuthenticationTest extends TestCase
 
     public function test_user_can_complete_two_factor_challenge_with_valid_totp_code(): void
     {
-        $totp = new TotpService();
+        $totp = new TotpService;
         $secret = $totp->generateSecret();
 
         $user = User::factory()->create([
@@ -62,7 +62,7 @@ class TwoFactorAuthenticationTest extends TestCase
 
     public function test_two_factor_challenge_rejects_invalid_code(): void
     {
-        $totp = new TotpService();
+        $totp = new TotpService;
         $secret = $totp->generateSecret();
 
         $user = User::factory()->create([
@@ -87,7 +87,7 @@ class TwoFactorAuthenticationTest extends TestCase
 
     public function test_user_can_complete_two_factor_challenge_with_recovery_code_once(): void
     {
-        $totp = new TotpService();
+        $totp = new TotpService;
         $secret = $totp->generateSecret();
         $recoveryCodes = ['AAAA-BBBB', 'CCCC-DDDD'];
 
@@ -138,7 +138,7 @@ class TwoFactorAuthenticationTest extends TestCase
         $pendingSecret = session('two_factor.pending_secret');
         $this->assertNotEmpty($pendingSecret);
 
-        $totp = new TotpService();
+        $totp = new TotpService;
         $code = $totp->getCode($pendingSecret);
 
         $confirmResponse = $this->post('/security/two-factor/confirm', [

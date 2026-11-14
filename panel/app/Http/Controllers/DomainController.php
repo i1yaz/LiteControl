@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Domains\WebServer\Models\Domain;
-use App\Models\User;
+use App\Domains\Database\Models\Database;
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
+use App\Domains\ServerOps\Contracts\LogReaderInterface;
+use App\Domains\WebServer\Actions\CreateSubdomainAction;
+use App\Domains\WebServer\Actions\DeleteDomainAction;
+use App\Domains\WebServer\Actions\FixDomainPermissionsAction;
+use App\Domains\WebServer\Actions\UpdateVhostConfAction;
+use App\Domains\WebServer\Contracts\VhostDriverInterface;
+use App\Domains\WebServer\Models\Domain;
 use App\Domains\WebServer\Models\FtpAccount;
 use App\Domains\WebServer\Services\DomainService;
-use App\Domains\WebServer\Services\SslService;
 use App\Domains\WebServer\Services\FtpService;
-use App\Domains\ServerOps\Contracts\LogReaderInterface;
-use App\Domains\WebServer\Contracts\VhostDriverInterface;
-use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
-use App\Domains\WebServer\Actions\DeleteDomainAction;
-use App\Domains\WebServer\Actions\UpdateVhostConfAction;
-use App\Domains\WebServer\Actions\FixDomainPermissionsAction;
-use App\Domains\WebServer\Actions\CreateSubdomainAction;
+use App\Domains\WebServer\Services\SslService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -26,10 +27,15 @@ use Inertia\Response;
 class DomainController extends Controller
 {
     protected DomainService $domainService;
+
     protected SslService $sslService;
+
     protected FtpService $ftpService;
+
     protected LogReaderInterface $logReader;
+
     protected VhostDriverInterface $vhostService;
+
     protected PhpRuntimeDriverInterface $PhpRuntimeDriverInterface;
 
     public function __construct(
@@ -58,7 +64,7 @@ class DomainController extends Controller
 
         if (! $user->isAdmin()) {
             $query->where('user_id', $user->id);
-        } else if ($request->filled('user_id')) {
+        } elseif ($request->filled('user_id')) {
             $query->where('user_id', $request->input('user_id'));
         }
 
@@ -104,7 +110,7 @@ class DomainController extends Controller
 
         $validated = $request->validate($rules);
 
-        $targetUser = $user->isAdmin() && !empty($validated['user_id'])
+        $targetUser = $user->isAdmin() && ! empty($validated['user_id'])
             ? User::with('package')->findOrFail($validated['user_id'])
             : $user->load('package');
 
@@ -125,12 +131,12 @@ class DomainController extends Controller
             $res = $this->domainService->createDomain($targetUser, $validated, $user);
         } catch (\Throwable $e) {
             return back()->withErrors([
-                'domain' => 'VirtualHost creation failed: ' . $e->getMessage(),
+                'domain' => 'VirtualHost creation failed: '.$e->getMessage(),
             ]);
         }
 
         $redirect = redirect()->route('domains.index')->with('success', "Domain '{$validated['domain']}' added successfully.");
-        if (!empty($res['warning'])) {
+        if (! empty($res['warning'])) {
             $redirect->with('warning', $res['warning']);
         }
 
@@ -157,11 +163,11 @@ class DomainController extends Controller
         try {
             $res = $this->domainService->updateDomain($domain, $validated, $user);
         } catch (\Throwable $e) {
-            return back()->with('error', 'Failed to update domain: ' . $e->getMessage());
+            return back()->with('error', 'Failed to update domain: '.$e->getMessage());
         }
 
         $redirect = back()->with('success', "Domain '{$domain->domain}' updated successfully.");
-        if (!empty($res['warning'])) {
+        if (! empty($res['warning'])) {
             $redirect->with('warning', $res['warning']);
         }
 
@@ -202,9 +208,10 @@ class DomainController extends Controller
 
         try {
             $this->domainService->switchPhpVersion($domain, $validated['php_version'], $user);
+
             return back()->with('success', "Domain '{$domain->domain}' switched to PHP {$validated['php_version']}.");
         } catch (\Throwable $e) {
-            return back()->with('error', 'Failed to switch PHP version: ' . $e->getMessage());
+            return back()->with('error', 'Failed to switch PHP version: '.$e->getMessage());
         }
     }
 
@@ -220,9 +227,10 @@ class DomainController extends Controller
 
         try {
             $this->domainService->suspendDomain($domain, $user);
+
             return back()->with('success', "Domain '{$domain->domain}' has been suspended.");
         } catch (\Throwable $e) {
-            return back()->with('error', 'Failed to suspend domain: ' . $e->getMessage());
+            return back()->with('error', 'Failed to suspend domain: '.$e->getMessage());
         }
     }
 
@@ -238,9 +246,10 @@ class DomainController extends Controller
 
         try {
             $this->domainService->unsuspendDomain($domain, $user);
+
             return back()->with('success', "Domain '{$domain->domain}' has been activated.");
         } catch (\Throwable $e) {
-            return back()->with('error', 'Failed to unsuspend domain: ' . $e->getMessage());
+            return back()->with('error', 'Failed to unsuspend domain: '.$e->getMessage());
         }
     }
 
@@ -258,7 +267,7 @@ class DomainController extends Controller
 
         // Fetch associated databases count (where database belongs to this domain or subdomains)
         $associatedDomainIds = array_merge([$domain->id], $domain->subdomains->pluck('id')->toArray());
-        $databasesCount = \App\Domains\Database\Models\Database::whereIn('domain_id', $associatedDomainIds)->count();
+        $databasesCount = Database::whereIn('domain_id', $associatedDomainIds)->count();
 
         // Calculate total size via VhostService
         try {
@@ -276,7 +285,7 @@ class DomainController extends Controller
         }
         $installedVersions = array_filter(
             $phpVersions,
-            fn($v) => !empty($v['installed'])
+            fn ($v) => ! empty($v['installed'])
         );
 
         return Inertia::render('Domains/Manage', [
@@ -310,9 +319,10 @@ class DomainController extends Controller
 
         try {
             $this->domainService->addAlias($domain, $validated['alias'], $user);
+
             return back()->with('success', "Domain alias '{$validated['alias']}' added successfully.");
         } catch (\Throwable $e) {
-            return back()->with('error', 'Failed to add domain alias: ' . $e->getMessage());
+            return back()->with('error', 'Failed to add domain alias: '.$e->getMessage());
         }
     }
 
@@ -370,12 +380,12 @@ class DomainController extends Controller
             $logPath = "{$sandboxLogDir}/{$type}.log";
             if (! file_exists($logPath)) {
                 $sampleLogs = [
-                    "[" . now()->subMinutes(12)->toIso8601String() . "] [NOTICE] Worker thread started for {$domain->domain}",
-                    "[" . now()->subMinutes(8)->toIso8601String() . "] [INFO] 127.0.0.1 GET / 200 - Mozilla/5.0",
-                    "[" . now()->subMinutes(3)->toIso8601String() . "] [INFO] 127.0.0.1 GET /assets/app.css 200",
-                    "[" . now()->subMinute()->toIso8601String() . "] [NOTICE] HTTP/2 connection negotiated successfully.",
+                    '['.now()->subMinutes(12)->toIso8601String()."] [NOTICE] Worker thread started for {$domain->domain}",
+                    '['.now()->subMinutes(8)->toIso8601String().'] [INFO] 127.0.0.1 GET / 200 - Mozilla/5.0',
+                    '['.now()->subMinutes(3)->toIso8601String().'] [INFO] 127.0.0.1 GET /assets/app.css 200',
+                    '['.now()->subMinute()->toIso8601String().'] [NOTICE] HTTP/2 connection negotiated successfully.',
                 ];
-                file_put_contents($logPath, implode("\n", $sampleLogs) . "\n");
+                file_put_contents($logPath, implode("\n", $sampleLogs)."\n");
             }
         }
 
@@ -521,9 +531,10 @@ class DomainController extends Controller
 
         try {
             $this->ftpService->createAccount($domain, $validated, $user);
+
             return back()->with('success', "FTP account created successfully for {$domain->domain}.");
         } catch (\Throwable $e) {
-            return back()->with('error', 'Failed to create FTP account: ' . $e->getMessage());
+            return back()->with('error', 'Failed to create FTP account: '.$e->getMessage());
         }
     }
 
@@ -542,6 +553,7 @@ class DomainController extends Controller
         }
 
         $this->ftpService->deleteAccount($ftpAccount, $user);
+
         return back()->with('success', "FTP account '{$ftpAccount->username}' deleted.");
     }
 
@@ -579,7 +591,7 @@ class DomainController extends Controller
         $pow = min($pow, count($units) - 1);
         $bytes /= (1 << (10 * $pow));
 
-        return round($bytes, $precision) . ' ' . $units[$pow];
+        return round($bytes, $precision).' '.$units[$pow];
     }
 
     /**
@@ -636,7 +648,7 @@ class DomainController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $subdomainFqdn = strtolower($validated['subdomain_prefix']) . '.' . $parentDomain->domain;
+        $subdomainFqdn = strtolower($validated['subdomain_prefix']).'.'.$parentDomain->domain;
 
         if (Domain::where('domain', $subdomainFqdn)->exists()) {
             return back()->withErrors(['subdomain_prefix' => "Subdomain '{$subdomainFqdn}' already exists."]);
@@ -697,7 +709,7 @@ class DomainController extends Controller
         $domain->update(['open_basedir_enabled' => $enabled]);
 
         $state = $enabled ? 'enabled' : 'disabled';
+
         return back()->with('success', "open_basedir protection {$state} for '{$domain->domain}'.");
     }
 }
-

@@ -2,12 +2,13 @@
 
 namespace App\Support\Cli;
 
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 
 class LcCliService
 {
     protected string $cliPath;
+
     protected bool $mockMode;
 
     public function __construct(?string $cliPath = null, ?bool $mockMode = null)
@@ -17,7 +18,7 @@ class LcCliService
         $this->mockMode = $mockMode ?? (
             (bool) env('LC_DEV_MOCK', false) ||
             PHP_OS_FAMILY === 'Windows' ||
-            !file_exists($this->cliPath)
+            ! file_exists($this->cliPath)
         );
     }
 
@@ -29,8 +30,8 @@ class LcCliService
     /**
      * Execute an lc-cli command with arguments and return decoded JSON response.
      *
-     * @param string $command E.g. 'server', 'user', 'vhost', 'php', 'tuning', 'db', 'security', 'backup', 'module'
-     * @param array $args Arguments passed to the command
+     * @param  string  $command  E.g. 'server', 'user', 'vhost', 'php', 'tuning', 'db', 'security', 'backup', 'module'
+     * @param  array  $args  Arguments passed to the command
      * @return array Standardized array: ['status' => 'success|error', 'message' => string, 'data' => mixed]
      */
     public function run(string $command, array $args = []): array
@@ -53,21 +54,21 @@ class LcCliService
             // Fallback for non-JSON or command execution error
             return [
                 'status' => $result->successful() ? 'success' : 'error',
-                'message' => $result->successful() ? 'Command executed successfully.' : ($result->errorOutput() ?: 'Command failed with exit code ' . $result->exitCode()),
+                'message' => $result->successful() ? 'Command executed successfully.' : ($result->errorOutput() ?: 'Command failed with exit code '.$result->exitCode()),
                 'data' => [
                     'raw_output' => $output,
                     'exit_code' => $result->exitCode(),
                 ],
             ];
         } catch (\Throwable $e) {
-            Log::error('LcCliService execution exception: ' . $e->getMessage(), [
+            Log::error('LcCliService execution exception: '.$e->getMessage(), [
                 'command' => $command,
                 'args' => $args,
             ]);
 
             return [
                 'status' => 'error',
-                'message' => 'Exception executing lc-cli: ' . $e->getMessage(),
+                'message' => 'Exception executing lc-cli: '.$e->getMessage(),
                 'data' => null,
             ];
         }
@@ -147,12 +148,14 @@ class LcCliService
                     $mode = $args[1] ?? 'get';
                     if ($mode === 'set') {
                         $tz = $args[2] ?? 'UTC';
+
                         return [
                             'status' => 'success',
                             'message' => "Timezone updated to '$tz'.",
                             'data' => ['timezone' => $tz],
                         ];
                     }
+
                     return [
                         'status' => 'success',
                         'message' => 'Current timezone.',
@@ -164,12 +167,14 @@ class LcCliService
                     $mode = $args[1] ?? 'get';
                     if ($mode === 'set') {
                         $h = $args[2] ?? 'panel.local';
+
                         return [
                             'status' => 'success',
                             'message' => "Hostname updated to '$h'.",
                             'data' => ['hostname' => $h],
                         ];
                     }
+
                     return [
                         'status' => 'success',
                         'message' => 'Current hostname.',
@@ -179,6 +184,7 @@ class LcCliService
 
                 if ($sub === 'kill-process') {
                     $pid = (int) ($args[1] ?? 0);
+
                     return [
                         'status' => 'success',
                         'message' => "Process $pid terminated.",
@@ -189,6 +195,7 @@ class LcCliService
                 if ($sub === 'service-action') {
                     $svc = $args[1] ?? 'openlitespeed';
                     $act = $args[2] ?? 'restart';
+
                     return [
                         'status' => 'success',
                         'message' => "Executed '$act' on service '$svc'.",
@@ -199,6 +206,7 @@ class LcCliService
                 if ($sub === 'logs') {
                     $logType = $args[1] ?? 'ols-error';
                     $lines = (int) ($args[2] ?? 100);
+
                     return [
                         'status' => 'success',
                         'message' => 'Log entries retrieved.',
@@ -212,9 +220,10 @@ class LcCliService
                 }
 
                 if ($sub === 'webadmin-status') {
-                    $mockFile = sys_get_temp_dir() . '/mock_enable_webadmin';
+                    $mockFile = sys_get_temp_dir().'/mock_enable_webadmin';
                     $enabled = file_exists($mockFile);
                     $ips = $enabled ? trim((string) @file_get_contents($mockFile)) : '';
+
                     return [
                         'status' => 'success',
                         'message' => 'WebAdmin status retrieved.',
@@ -229,8 +238,9 @@ class LcCliService
 
                 if ($sub === 'webadmin-enable') {
                     $ips = $args[1] ?? '';
-                    $mockFile = sys_get_temp_dir() . '/mock_enable_webadmin';
+                    $mockFile = sys_get_temp_dir().'/mock_enable_webadmin';
                     @file_put_contents($mockFile, $ips);
+
                     return [
                         'status' => 'success',
                         'message' => 'OpenLiteSpeed WebAdmin console enabled on port 7080.',
@@ -243,8 +253,9 @@ class LcCliService
                 }
 
                 if ($sub === 'webadmin-disable') {
-                    $mockFile = sys_get_temp_dir() . '/mock_enable_webadmin';
+                    $mockFile = sys_get_temp_dir().'/mock_enable_webadmin';
                     @unlink($mockFile);
+
                     return [
                         'status' => 'success',
                         'message' => 'OpenLiteSpeed WebAdmin console disabled.',
@@ -269,6 +280,7 @@ class LcCliService
                         ],
                     ];
                 }
+
                 return ['status' => 'success', 'message' => "User operation '$sub' completed", 'data' => []];
 
             case 'vhost':
@@ -284,6 +296,7 @@ class LcCliService
                 }
                 if ($sub === 'suspend') {
                     $dom = $args[1] ?? 'example.com';
+
                     return [
                         'status' => 'success',
                         'message' => "VirtualHost '{$dom}' suspended.",
@@ -292,6 +305,7 @@ class LcCliService
                 }
                 if ($sub === 'unsuspend') {
                     $dom = $args[1] ?? 'example.com';
+
                     return [
                         'status' => 'success',
                         'message' => "VirtualHost '{$dom}' unsuspended.",
@@ -301,6 +315,7 @@ class LcCliService
                 if ($sub === 'alias-add') {
                     $dom = $args[1] ?? 'example.com';
                     $alias = $args[2] ?? 'alias.example.com';
+
                     return [
                         'status' => 'success',
                         'message' => "Domain alias '{$alias}' registered for '{$dom}'.",
@@ -309,6 +324,7 @@ class LcCliService
                 }
                 if ($sub === 'conf-get') {
                     $dom = $args[1] ?? 'example.com';
+
                     return [
                         'status' => 'success',
                         'message' => "Configuration retrieved for '{$dom}'.",
@@ -320,6 +336,7 @@ class LcCliService
                 }
                 if ($sub === 'conf-set') {
                     $dom = $args[1] ?? 'example.com';
+
                     return [
                         'status' => 'success',
                         'message' => "VirtualHost configuration for '{$dom}' validated and applied.",
@@ -331,12 +348,14 @@ class LcCliService
                 }
                 if ($sub === 'size') {
                     $dom = $args[1] ?? 'example.com';
+
                     return [
                         'status' => 'success',
                         'message' => "Size calculated for '{$dom}'.",
                         'data' => ['domain' => $dom, 'size_bytes' => 5242880], // 5 MB
                     ];
                 }
+
                 return ['status' => 'success', 'message' => "Virtual host operation '$sub' completed", 'data' => []];
 
             case 'php':
@@ -357,6 +376,7 @@ class LcCliService
                 }
                 if ($sub === 'ini-get') {
                     $ver = $args[1] ?? '83';
+
                     return [
                         'status' => 'success',
                         'message' => "PHP $ver ini configuration retrieved",
@@ -379,6 +399,7 @@ class LcCliService
 
                 if ($sub === 'ext-list') {
                     $ver = $args[1] ?? '83';
+
                     return [
                         'status' => 'success',
                         'message' => "PHP $ver extensions list retrieved",
@@ -391,6 +412,7 @@ class LcCliService
 
                 if ($sub === 'modules') {
                     $ver = $args[1] ?? '83';
+
                     return [
                         'status' => 'success',
                         'message' => "PHP $ver loaded modules",
@@ -398,7 +420,7 @@ class LcCliService
                             'Core', 'date', 'libxml', 'openssl', 'pcre', 'zlib', 'filter', 'hash', 'json', 'pcntl', 'readline',
                             'Reflection', 'SPL', 'standard', 'bcmath', 'ctype', 'curl', 'dom', 'fileinfo', 'ftp', 'gd',
                             'iconv', 'intl', 'mbstring', 'mysqli', 'PDO', 'pdo_mysql', 'Phar', 'posix', 'redis', 'SimpleXML',
-                            'soap', 'sockets', 'sodium', 'tokenizer', 'xml', 'xmlreader', 'xmlwriter', 'zip', 'Zend OPcache'
+                            'soap', 'sockets', 'sodium', 'tokenizer', 'xml', 'xmlreader', 'xmlwriter', 'zip', 'Zend OPcache',
                         ],
                     ];
                 }
@@ -416,6 +438,7 @@ class LcCliService
                         ],
                     ];
                 }
+
                 return ['status' => 'success', 'message' => "Database operation '$sub' completed", 'data' => ['db' => $args[1] ?? '']];
 
             case 'backup':
@@ -432,12 +455,14 @@ class LcCliService
                     $ts = now()->format('Ymd_His');
                     $user = $args[1] ?? 'client1';
                     $fn = "backup-{$user}-{$ts}.tar.gz";
+
                     return [
                         'status' => 'success',
                         'message' => "Backup archive created: $fn",
                         'data' => ['filename' => $fn, 'path' => "/home/{$user}/backups/{$fn}", 'size_bytes' => 52428800],
                     ];
                 }
+
                 return ['status' => 'success', 'message' => "Backup operation '$sub' completed", 'data' => []];
 
             case 'tuning':
@@ -448,6 +473,7 @@ class LcCliService
                         'data' => [],
                     ];
                 }
+
                 return [
                     'status' => 'success',
                     'message' => 'Tuning configuration retrieved',
@@ -467,6 +493,7 @@ class LcCliService
             case 'module':
                 if ($sub === 'install') {
                     $mod = $args[1] ?? '';
+
                     return [
                         'status' => 'success',
                         'message' => "Module '$mod' installed successfully.",
@@ -475,6 +502,7 @@ class LcCliService
                 }
                 if ($sub === 'remove') {
                     $mod = $args[1] ?? '';
+
                     return [
                         'status' => 'success',
                         'message' => "Module '$mod' removed successfully.",
@@ -483,12 +511,14 @@ class LcCliService
                 }
                 if ($sub === 'status') {
                     $mod = $args[1] ?? '';
+
                     return [
                         'status' => 'success',
                         'message' => "Module status for '$mod'.",
                         'data' => ['module' => $mod, 'state' => 'active', 'installed' => true],
                     ];
                 }
+
                 return [
                     'status' => 'success',
                     'message' => 'Module list retrieved',
@@ -523,6 +553,7 @@ class LcCliService
                     $port = $args[1] ?? '80';
                     $proto = $args[2] ?? 'tcp';
                     $src = $args[3] ?? 'Anywhere';
+
                     return [
                         'status' => 'success',
                         'message' => "Firewall rule added: ALLOW $port/$proto.",
@@ -533,6 +564,7 @@ class LcCliService
                     $port = $args[1] ?? '80';
                     $proto = $args[2] ?? 'tcp';
                     $src = $args[3] ?? 'Anywhere';
+
                     return [
                         'status' => 'success',
                         'message' => "Firewall rule added: DENY $port/$proto.",
@@ -541,6 +573,7 @@ class LcCliService
                 }
                 if ($sub === 'ufw-delete') {
                     $spec = $args[1] ?? '';
+
                     return [
                         'status' => 'success',
                         'message' => "Firewall rule '$spec' deleted successfully.",
@@ -549,6 +582,7 @@ class LcCliService
                 }
                 if ($sub === 'panel-port') {
                     $newPort = (int) ($args[1] ?? 8090);
+
                     return [
                         'status' => 'success',
                         'message' => "Panel port changed successfully from 8090 to $newPort.",
@@ -557,17 +591,20 @@ class LcCliService
                 }
                 if ($sub === 'ssh-port') {
                     $newPort = (int) ($args[1] ?? 22);
+
                     return [
                         'status' => 'success',
                         'message' => "SSH port changed successfully from 22 to $newPort.",
                         'data' => ['old_port' => 22, 'new_port' => $newPort],
                     ];
                 }
+
                 return ['status' => 'success', 'message' => "Security operation '$sub' completed", 'data' => []];
 
             case 'ssl':
                 if ($sub === 'issue') {
                     $dom = $args[1] ?? 'example.com';
+
                     return [
                         'status' => 'success',
                         'message' => "SSL certificate issued for $dom.",
@@ -576,6 +613,7 @@ class LcCliService
                 }
                 if ($sub === 'custom') {
                     $dom = $args[1] ?? 'example.com';
+
                     return [
                         'status' => 'success',
                         'message' => "Custom SSL certificate installed for $dom.",
@@ -584,6 +622,7 @@ class LcCliService
                 }
                 if ($sub === 'renew') {
                     $dom = $args[1] ?? 'example.com';
+
                     return [
                         'status' => 'success',
                         'message' => "SSL certificate renewed for $dom.",
@@ -597,6 +636,7 @@ class LcCliService
                         'data' => ['panel_ssl' => true],
                     ];
                 }
+
                 return ['status' => 'success', 'message' => "SSL operation '$sub' completed", 'data' => []];
 
             default:
@@ -608,4 +648,3 @@ class LcCliService
         }
     }
 }
-

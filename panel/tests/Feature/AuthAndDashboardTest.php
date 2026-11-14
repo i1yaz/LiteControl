@@ -2,13 +2,11 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Package;
-use App\Domains\WebServer\Models\Domain;
-use App\Domains\Database\Models\Database as DbModel;
+use App\Domains\Identity\Models\User;
+use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 class AuthAndDashboardTest extends TestCase
 {
@@ -19,7 +17,7 @@ class AuthAndDashboardTest extends TestCase
         parent::setUp();
 
         $this->seed();
-        $this->seed(\Database\Seeders\DemoDataSeeder::class);
+        $this->seed(DemoDataSeeder::class);
     }
 
     public function test_guest_is_redirected_to_login(): void
@@ -121,4 +119,3 @@ class AuthAndDashboardTest extends TestCase
         $response->assertRedirect('/login');
     }
 }
-

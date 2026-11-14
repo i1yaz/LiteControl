@@ -9,20 +9,17 @@ use App\Domains\Database\Contracts\DatabaseDriverInterface;
 use App\Domains\Database\Infrastructure\CliDatabaseAdapter;
 use App\Domains\Database\Listeners\CleanupUserDatabasesListener;
 use App\Domains\Identity\Contracts\UserDriverInterface;
+use App\Domains\Identity\Events\UserCreated;
 use App\Domains\Identity\Events\UserDeleted;
 use App\Domains\Identity\Infrastructure\CliUserAdapter;
-use App\Domains\WebServer\Contracts\SslDriverInterface;
-use App\Domains\WebServer\Contracts\VhostDriverInterface;
-use App\Domains\WebServer\Infrastructure\CliSslAdapter;
-use App\Domains\WebServer\Infrastructure\CliVhostAdapter;
-use App\Domains\WebServer\Models\Domain;
-use Illuminate\Support\Facades\Event;
 use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use App\Domains\PanelConfig\Infrastructure\CliTuningAdapter;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\Infrastructure\CliPhpRuntimeAdapter;
 use App\Domains\Security\Contracts\FirewallDriverInterface;
+use App\Domains\Security\Contracts\PanelSslDriverInterface;
 use App\Domains\Security\Infrastructure\CliFirewallAdapter;
+use App\Domains\Security\Infrastructure\CliPanelSslAdapter;
 use App\Domains\ServerOps\Contracts\FileManagerDriverInterface;
 use App\Domains\ServerOps\Contracts\LogReaderInterface;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
@@ -31,6 +28,13 @@ use App\Domains\ServerOps\Infrastructure\CliModuleAdapter;
 use App\Domains\ServerOps\Infrastructure\CliServerAdapter;
 use App\Domains\ServerOps\Infrastructure\LocalFileManagerAdapter;
 use App\Domains\ServerOps\Infrastructure\LocalLogReaderAdapter;
+use App\Domains\WebServer\Contracts\SslDriverInterface;
+use App\Domains\WebServer\Contracts\VhostDriverInterface;
+use App\Domains\WebServer\Infrastructure\CliSslAdapter;
+use App\Domains\WebServer\Infrastructure\CliVhostAdapter;
+use App\Domains\WebServer\Listeners\ProvisionDefaultDomainListener;
+use App\Domains\WebServer\Models\Domain;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class DomainServiceProvider extends ServiceProvider
@@ -46,6 +50,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(TuningDriverInterface::class, CliTuningAdapter::class);
         $this->app->bind(PhpRuntimeDriverInterface::class, CliPhpRuntimeAdapter::class);
         $this->app->bind(FirewallDriverInterface::class, CliFirewallAdapter::class);
+        $this->app->bind(PanelSslDriverInterface::class, CliPanelSslAdapter::class);
         $this->app->bind(FileManagerDriverInterface::class, LocalFileManagerAdapter::class);
         $this->app->bind(ServerDriverInterface::class, CliServerAdapter::class);
         $this->app->bind(ModuleDriverInterface::class, CliModuleAdapter::class);
@@ -59,6 +64,7 @@ class DomainServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Event::listen(UserCreated::class, ProvisionDefaultDomainListener::class);
         Event::listen(UserDeleted::class, CleanupUserDatabasesListener::class);
         Event::listen(UserDeleted::class, CleanupUserBackupsListener::class);
         Event::listen(UserDeleted::class, function (UserDeleted $event): void {
@@ -66,4 +72,3 @@ class DomainServiceProvider extends ServiceProvider
         });
     }
 }
-

@@ -2,10 +2,10 @@
 
 namespace App\Domains\PanelConfig\Actions;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use App\Domains\PanelConfig\Models\AuditLog;
 use App\Exceptions\System\LcCliException;
-use App\Models\User;
 
 class UpdateTuningAction
 {
@@ -37,4 +37,3 @@ class UpdateTuningAction
         return $result;
     }
 }
-

@@ -6,8 +6,8 @@ namespace App\Domains\Backup\Actions;
 
 use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\Models\BackupSchedule;
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class RemoveBackupScheduleAction
@@ -39,4 +39,3 @@ class RemoveBackupScheduleAction
         });
     }
 }
-

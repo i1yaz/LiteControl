@@ -20,4 +20,3 @@ interface ModuleDriverInterface
      */
     public function removeModule(string $module): array;
 }
-

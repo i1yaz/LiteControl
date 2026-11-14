@@ -23,4 +23,3 @@ interface SslDriverInterface
 
     public function isMockMode(): bool;
 }
-

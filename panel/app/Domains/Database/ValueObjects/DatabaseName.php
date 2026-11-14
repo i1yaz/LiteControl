@@ -44,4 +44,3 @@ final readonly class DatabaseName implements Stringable
         return $this->value;
     }
 }
-

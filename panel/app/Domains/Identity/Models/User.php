@@ -1,23 +1,28 @@
 <?php
 
-namespace App\Models;
-
-use App\Domains\Database\Models\Database;
-use App\Domains\Database\Models\DatabaseUser;
+namespace App\Domains\Identity\Models;
 
 use App\Domains\Backup\Models\Backup;
 use App\Domains\Backup\Models\BackupSchedule;
-
+use App\Domains\Database\Models\Database;
+use App\Domains\Database\Models\DatabaseUser;
+use App\Domains\HostingPlans\Models\Package;
 use App\Domains\WebServer\Models\Domain;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
+
+    protected static function newFactory(): UserFactory
+    {
+        return UserFactory::new();
+    }
 
     protected $fillable = [
         'name',
@@ -60,7 +65,7 @@ class User extends Authenticatable
 
     public function hasTwoFactorEnabled(): bool
     {
-        return !empty($this->two_factor_secret) && !is_null($this->two_factor_confirmed_at);
+        return ! empty($this->two_factor_secret) && ! is_null($this->two_factor_confirmed_at);
     }
 
     public function package(): BelongsTo

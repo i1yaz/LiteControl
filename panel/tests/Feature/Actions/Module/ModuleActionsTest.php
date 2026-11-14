@@ -2,12 +2,11 @@
 
 namespace Tests\Feature\Actions\Module;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\ServerOps\Actions\InstallModuleAction;
 use App\Domains\ServerOps\Actions\RemoveModuleAction;
-use App\Exceptions\System\LcCliException;
-use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
+use App\Exceptions\System\LcCliException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -104,4 +103,3 @@ class ModuleActionsTest extends TestCase
         $action->handle('ftp', $this->admin);
     }
 }
-

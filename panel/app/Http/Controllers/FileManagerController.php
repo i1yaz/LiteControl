@@ -78,7 +78,7 @@ class FileManagerController extends Controller
                 $initialPath = $relDocRoot;
 
                 try {
-                    $baseDir = $this->resolveUserBaseDir->handle($user, $targetDomain);
+                    $baseDir = $this->resolveUserBaseDir->handle($user, $targetDomain?->user);
                     $systemPath = new SystemPath($baseDir, $initialPath);
                     $this->driver->ensureDirectory($systemPath);
                 } catch (InvalidArgumentException) {
@@ -94,7 +94,7 @@ class FileManagerController extends Controller
         $availableDomains = $domainsQuery->orderBy('domain')->get();
 
         return Inertia::render('Files/Index', [
-            'baseDir' => '/home/' . ($targetDomain ? $targetDomain->user->username : $user->username),
+            'baseDir' => '/home/'.($targetDomain ? $targetDomain->user->username : $user->username),
             'initialPath' => $initialPath,
             'targetDomain' => $targetDomain,
             'availableDomains' => $availableDomains,
@@ -117,7 +117,7 @@ class FileManagerController extends Controller
         }
 
         $path = (string) $request->input('path', '');
-        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain?->user);
 
         try {
             $systemPath = new SystemPath($baseDir, $path);
@@ -149,7 +149,7 @@ class FileManagerController extends Controller
         }
 
         $path = (string) $request->input('path', '');
-        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain?->user);
 
         try {
             $systemPath = new SystemPath($baseDir, $path, mustExist: true);
@@ -181,7 +181,7 @@ class FileManagerController extends Controller
 
         $path = (string) $request->input('path', '');
         $content = (string) $request->input('content', '');
-        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain?->user);
 
         try {
             $systemPath = new SystemPath($baseDir, $path, mustExist: true);
@@ -214,8 +214,8 @@ class FileManagerController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Invalid name.'], 422);
         }
 
-        $targetSubpath = trim($path . '/' . $name, '/');
-        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
+        $targetSubpath = trim($path.'/'.$name, '/');
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain?->user);
 
         try {
             $systemPath = new SystemPath($baseDir, $targetSubpath);
@@ -229,7 +229,7 @@ class FileManagerController extends Controller
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
 
-        return response()->json(['status' => 'success', 'message' => ucfirst($type) . ' created.']);
+        return response()->json(['status' => 'success', 'message' => ucfirst($type).' created.']);
     }
 
     /**
@@ -244,7 +244,7 @@ class FileManagerController extends Controller
         }
 
         $path = (string) $request->input('path', '');
-        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain?->user);
 
         try {
             $systemPath = new SystemPath($baseDir, $path, mustExist: true);
@@ -275,7 +275,7 @@ class FileManagerController extends Controller
         ]);
 
         $path = (string) $request->input('path', '');
-        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain?->user);
 
         try {
             $destDir = new SystemPath($baseDir, $path, mustExist: true);
@@ -314,7 +314,7 @@ class FileManagerController extends Controller
 
         $path = (string) $request->input('path', '');
         $octal = octdec($request->input('permissions'));
-        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain);
+        $baseDir = $this->resolveUserBaseDir->handle(Auth::user(), $targetDomain?->user);
 
         try {
             $systemPath = new SystemPath($baseDir, $path, mustExist: true);

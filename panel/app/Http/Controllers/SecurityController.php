@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\Security\Actions\AddFirewallRuleAction;
 use App\Domains\Security\Actions\DeleteFirewallRuleAction;
 use App\Domains\Security\Actions\UpdatePanelPortAction;
@@ -10,18 +11,17 @@ use App\Domains\Security\Actions\UpdateSshPortAction;
 use App\Domains\Security\Contracts\FirewallDriverInterface;
 use App\Domains\Security\Models\FirewallRule;
 use App\Domains\Security\ValueObjects\Port;
-use App\Exceptions\System\LcCliException;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use App\Domains\WebServer\Models\Domain;
 use App\Domains\WebServer\Services\SslService;
-use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
-use Illuminate\Http\Request;
+use App\Exceptions\System\LcCliException;
 use App\Services\TotpService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -101,7 +101,7 @@ class SecurityController extends Controller
             return redirect()->back()->with('error', $res['message'] ?? 'Failed to install custom SSL certificate.');
         }
 
-        return redirect()->back()->with('success', $res['message'] ?? "Custom SSL certificate installed.");
+        return redirect()->back()->with('success', $res['message'] ?? 'Custom SSL certificate installed.');
     }
 
     /**
@@ -120,7 +120,7 @@ class SecurityController extends Controller
             return redirect()->back()->with('error', $res['message'] ?? 'Failed to renew SSL certificate.');
         }
 
-        return redirect()->back()->with('success', $res['message'] ?? "SSL certificate renewed.");
+        return redirect()->back()->with('success', $res['message'] ?? 'SSL certificate renewed.');
     }
 
     /**
@@ -156,6 +156,7 @@ class SecurityController extends Controller
 
         try {
             $action->handle($validated, Auth::user(), $request->ip());
+
             return redirect()->back()->with('success', "Firewall rule created and applied: {$validated['action']} port {$validated['port']}.");
         } catch (LcCliException $e) {
             return redirect()->back()->with('error', $e->getMessage() ?: 'Failed to apply firewall rule.');
@@ -169,7 +170,8 @@ class SecurityController extends Controller
     {
         try {
             $action->handle($rule, Auth::user(), $request->ip());
-            return redirect()->back()->with('success', "Firewall rule removed successfully.");
+
+            return redirect()->back()->with('success', 'Firewall rule removed successfully.');
         } catch (LcCliException $e) {
             return redirect()->back()->with('error', $e->getMessage() ?: 'Failed to remove firewall rule.');
         }
@@ -223,6 +225,7 @@ class SecurityController extends Controller
 
         try {
             $action->handle(Port::fromInt((int) $validated['port']), Auth::user(), $request->ip());
+
             return redirect()->back()->with('success', "Panel listening port changed to {$validated['port']}.");
         } catch (LcCliException $e) {
             return redirect()->back()->with('error', $e->getMessage() ?: 'Failed to change panel port.');
@@ -250,6 +253,7 @@ class SecurityController extends Controller
 
         try {
             $action->handle(Port::fromInt((int) $validated['port']), Auth::user(), $request->ip());
+
             return redirect()->back()->with('success', "SSH service port changed to {$validated['port']}.");
         } catch (LcCliException $e) {
             return redirect()->back()->with('error', $e->getMessage() ?: 'Failed to change SSH port.');
@@ -281,6 +285,7 @@ class SecurityController extends Controller
 
         try {
             $action->handle($validated, Auth::user(), $request->ip());
+
             return redirect()->back()->with('success', 'LiteControl panel SSL certificate updated successfully.');
         } catch (LcCliException $e) {
             return redirect()->back()->with('error', $e->getMessage() ?: 'Failed to apply panel SSL certificate.');
@@ -430,7 +435,7 @@ class SecurityController extends Controller
         $data = $this->moduleCli->getModuleStatus('csf');
 
         return Inertia::render('Security/CsfFirewall', [
-            'installed' => !empty($data['installed']),
+            'installed' => ! empty($data['installed']),
             'status' => $data['state'] ?? 'not_installed',
         ]);
     }
@@ -443,7 +448,7 @@ class SecurityController extends Controller
         $data = $this->moduleCli->getModuleStatus('modsecurity');
 
         return Inertia::render('Security/ModSecurity', [
-            'installed' => !empty($data['installed']),
+            'installed' => ! empty($data['installed']),
             'status' => $data['state'] ?? 'not_installed',
         ]);
     }
@@ -456,7 +461,7 @@ class SecurityController extends Controller
         $data = $this->moduleCli->getModuleStatus('imunifyav');
 
         return Inertia::render('Security/ImunifyAv', [
-            'installed' => !empty($data['installed']),
+            'installed' => ! empty($data['installed']),
             'status' => $data['state'] ?? 'not_installed',
         ]);
     }

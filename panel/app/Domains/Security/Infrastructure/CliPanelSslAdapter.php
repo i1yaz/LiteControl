@@ -1,23 +1,19 @@
 <?php
 
-namespace App\Services\System;
+declare(strict_types=1);
 
+namespace App\Domains\Security\Infrastructure;
+
+use App\Domains\Security\Contracts\PanelSslDriverInterface;
 use App\Exceptions\System\LcCliException;
 use App\Support\Cli\LcCliService;
 
-class PanelSslCliService
+class CliPanelSslAdapter implements PanelSslDriverInterface
 {
     public function __construct(
         protected LcCliService $lcCli
     ) {}
 
-    /**
-     * Issue Let's Encrypt SSL certificate for LiteControl panel host.
-     *
-     * @param string $domain
-     * @return array
-     * @throws LcCliException
-     */
     public function issuePanelSsl(string $domain): array
     {
         $res = $this->lcCli->run('ssl', ['panel-ssl', 'issue', $domain]);
@@ -29,14 +25,6 @@ class PanelSslCliService
         return $res['data'] ?? [];
     }
 
-    /**
-     * Install custom SSL certificate & private key for LiteControl panel.
-     *
-     * @param string $certificate
-     * @param string $privateKey
-     * @return array
-     * @throws LcCliException
-     */
     public function installCustomPanelSsl(string $certificate, string $privateKey): array
     {
         $tempCert = tempnam(sys_get_temp_dir(), 'panel_cert_');

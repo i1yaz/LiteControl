@@ -2,8 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Services\ThemeManager;
+use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,7 +16,7 @@ class ThemeSystemTest extends TestCase
     {
         parent::setUp();
         $this->seed();
-        $this->seed(\Database\Seeders\DemoDataSeeder::class);
+        $this->seed(DemoDataSeeder::class);
     }
 
     public function test_theme_manager_discovers_available_themes(): void

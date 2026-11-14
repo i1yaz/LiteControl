@@ -33,4 +33,3 @@ interface BackupDriverInterface
      */
     public function removeSchedule(string $username): array;
 }
-

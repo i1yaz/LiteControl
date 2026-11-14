@@ -16,4 +16,3 @@ class CreateFileEntryAction
         $this->driver->createEntry($path, $type);
     }
 }
-

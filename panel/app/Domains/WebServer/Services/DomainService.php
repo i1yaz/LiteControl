@@ -2,12 +2,12 @@
 
 namespace App\Domains\WebServer\Services;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\WebServer\Contracts\SslDriverInterface;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use App\Domains\WebServer\Models\Domain;
 use App\Exceptions\System\LcCliException;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -21,10 +21,11 @@ class DomainService
     /**
      * Centralized domain provisioning.
      *
-     * @param User $user The owner of the domain
-     * @param array $data Input data: domain, php_version, public_path, ssl_enabled, type
-     * @param User|null $actor The user triggering the creation (for audit logs)
+     * @param  User  $user  The owner of the domain
+     * @param  array  $data  Input data: domain, php_version, public_path, ssl_enabled, type
+     * @param  User|null  $actor  The user triggering the creation (for audit logs)
      * @return array ['domain' => Domain, 'ssl_issued' => bool, 'warning' => ?string]
+     *
      * @throws \RuntimeException If virtual host creation fails
      */
     public function createDomain(User $user, array $data, ?User $actor = null): array
@@ -118,9 +119,7 @@ class DomainService
     /**
      * Update an existing domain configuration.
      *
-     * @param Domain $domain
-     * @param array $data Input: php_version, public_path, ssl_enabled
-     * @param User|null $actor
+     * @param  array  $data  Input: php_version, public_path, ssl_enabled
      * @return array ['domain' => Domain, 'ssl_issued' => bool, 'warning' => ?string]
      */
     public function updateDomain(Domain $domain, array $data, ?User $actor = null): array
@@ -132,7 +131,7 @@ class DomainService
         $sslWarning = null;
 
         // 1. PHP Version switch
-        if (!empty($data['php_version']) && $data['php_version'] !== $domain->php_version) {
+        if (! empty($data['php_version']) && $data['php_version'] !== $domain->php_version) {
             $this->switchPhpVersion($domain, $data['php_version'], $actor);
         }
 
@@ -140,7 +139,7 @@ class DomainService
         if (array_key_exists('public_path', $data)) {
             $newSubpath = trim($data['public_path'] ?? '', " /\t\n\r\0\x0B");
             $baseDocRoot = "/home/{$user->username}/{$domain->domain}/public_html";
-            $newDocRoot = !empty($newSubpath) ? "{$baseDocRoot}/{$newSubpath}" : $baseDocRoot;
+            $newDocRoot = ! empty($newSubpath) ? "{$baseDocRoot}/{$newSubpath}" : $baseDocRoot;
 
             if ($newDocRoot !== $domain->document_root) {
                 try {
@@ -354,6 +353,7 @@ class DomainService
                 Log::warning("Batch PHP switch skipped for {$domain->domain}: {$e->getMessage()}");
             }
         }
+
         return $count;
     }
 
@@ -391,12 +391,12 @@ class DomainService
      */
     public function relinkExistingChildren(Domain $newDomain): void
     {
-        $suffix = '.' . $newDomain->domain;
+        $suffix = '.'.$newDomain->domain;
         $children = Domain::with('parentDomain')
             ->where('user_id', $newDomain->user_id)
             ->where('id', '!=', $newDomain->id)
             ->where('type', '!=', 'alias')
-            ->where('domain', 'like', '%' . $suffix)
+            ->where('domain', 'like', '%'.$suffix)
             ->get();
 
         foreach ($children as $child) {
@@ -410,4 +410,3 @@ class DomainService
         }
     }
 }
-

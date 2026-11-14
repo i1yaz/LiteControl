@@ -21,8 +21,8 @@ class FileManagerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->tempBase = storage_path('app/test_homes/' . uniqid('fm_', true));
-        File::makeDirectory($this->tempBase . '/public_html', 0755, true);
+        $this->tempBase = storage_path('app/test_homes/'.uniqid('fm_', true));
+        File::makeDirectory($this->tempBase.'/public_html', 0755, true);
     }
 
     protected function tearDown(): void
@@ -39,7 +39,7 @@ class FileManagerTest extends TestCase
 
         $this->assertTrue($path->isDir());
         $this->assertSame('public_html', $path->subpath);
-        $this->assertSame(realpath($this->tempBase . '/public_html'), $path->fullPath);
+        $this->assertSame(realpath($this->tempBase.'/public_html'), $path->fullPath);
     }
 
     public function test_system_path_rejects_directory_traversal_attempts(): void

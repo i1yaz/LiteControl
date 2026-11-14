@@ -40,4 +40,3 @@ interface FirewallDriverInterface
      */
     public function updateSshPort(Port $port): array;
 }
-

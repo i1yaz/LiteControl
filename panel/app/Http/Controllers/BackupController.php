@@ -12,8 +12,8 @@ use App\Domains\Backup\Models\BackupSchedule;
 use App\Domains\Backup\ValueObjects\BackupFrequency;
 use App\Domains\Backup\ValueObjects\BackupPath;
 use App\Domains\Backup\ValueObjects\RetentionCount;
+use App\Domains\Identity\Models\User;
 use App\Exceptions\System\LcCliException;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -71,9 +71,9 @@ class BackupController extends Controller
 
             return back()->with('success', "Backup '{$backup->filename}' created successfully.");
         } catch (LcCliException $e) {
-            return back()->with('error', 'Backup creation failed: ' . $e->getMessage());
+            return back()->with('error', 'Backup creation failed: '.$e->getMessage());
         } catch (\Throwable $e) {
-            return back()->with('error', 'Backup creation failed: ' . $e->getMessage());
+            return back()->with('error', 'Backup creation failed: '.$e->getMessage());
         }
     }
 
@@ -93,9 +93,9 @@ class BackupController extends Controller
 
             return back()->with('success', 'Backup restored successfully.');
         } catch (LcCliException $e) {
-            return back()->with('error', 'Restore failed: ' . $e->getMessage());
+            return back()->with('error', 'Restore failed: '.$e->getMessage());
         } catch (\Throwable $e) {
-            return back()->with('error', 'Restore failed: ' . $e->getMessage());
+            return back()->with('error', 'Restore failed: '.$e->getMessage());
         }
     }
 
@@ -145,9 +145,9 @@ class BackupController extends Controller
 
             return back()->with('success', 'Automated backup schedule configured.');
         } catch (LcCliException $e) {
-            return back()->with('error', 'Failed to configure schedule: ' . $e->getMessage());
+            return back()->with('error', 'Failed to configure schedule: '.$e->getMessage());
         } catch (\Throwable $e) {
-            return back()->with('error', 'Failed to configure schedule: ' . $e->getMessage());
+            return back()->with('error', 'Failed to configure schedule: '.$e->getMessage());
         }
     }
 
@@ -170,9 +170,9 @@ class BackupController extends Controller
 
             return back()->with('success', 'Backup schedule removed.');
         } catch (LcCliException $e) {
-            return back()->with('error', 'Failed to remove schedule: ' . $e->getMessage());
+            return back()->with('error', 'Failed to remove schedule: '.$e->getMessage());
         } catch (\Throwable $e) {
-            return back()->with('error', 'Failed to remove schedule: ' . $e->getMessage());
+            return back()->with('error', 'Failed to remove schedule: '.$e->getMessage());
         }
     }
 }

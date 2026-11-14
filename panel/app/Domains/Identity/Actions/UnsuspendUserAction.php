@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Domains\Identity\Actions;
 
 use App\Domains\Identity\Contracts\UserDriverInterface;
+use App\Domains\Identity\Models\User;
 use App\Domains\Identity\ValueObjects\LinuxUsername;
 use App\Domains\PanelConfig\Models\AuditLog;
 use App\Exceptions\System\LcCliException;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class UnsuspendUserAction
@@ -45,4 +45,3 @@ class UnsuspendUserAction
         return $user;
     }
 }
-

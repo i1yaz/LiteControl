@@ -2,14 +2,15 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Domains\WebServer\Models\Domain;
+use App\Domains\Identity\Models\User;
 use App\Domains\Security\Models\FirewallRule;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\WebServer\Models\Domain;
+use App\Services\TotpService;
+use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 class SecurityAndModuleTest extends TestCase
 {
@@ -19,7 +20,7 @@ class SecurityAndModuleTest extends TestCase
     {
         parent::setUp();
         $this->seed();
-        $this->seed(\Database\Seeders\DemoDataSeeder::class);
+        $this->seed(DemoDataSeeder::class);
     }
 
     public function test_user_and_admin_can_view_ssl_page(): void
@@ -220,7 +221,7 @@ class SecurityAndModuleTest extends TestCase
         // Enable 2FA via TOTP confirmation
         $this->actingAs($client)->get('/security/two-factor')->assertOk();
         $secret = session('two_factor.pending_secret');
-        $code = app(\App\Services\TotpService::class)->getCode($secret);
+        $code = app(TotpService::class)->getCode($secret);
 
         $res1 = $this->actingAs($client)->post('/security/two-factor/confirm', [
             'code' => $code,

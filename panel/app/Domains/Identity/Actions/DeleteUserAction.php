@@ -6,10 +6,10 @@ namespace App\Domains\Identity\Actions;
 
 use App\Domains\Identity\Contracts\UserDriverInterface;
 use App\Domains\Identity\Events\UserDeleted;
+use App\Domains\Identity\Models\User;
 use App\Domains\Identity\ValueObjects\LinuxUsername;
 use App\Domains\PanelConfig\Models\AuditLog;
 use App\Exceptions\System\LcCliException;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -56,4 +56,3 @@ class DeleteUserAction
         UserDeleted::dispatch($userId, $username->value);
     }
 }
-

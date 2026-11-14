@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Package;
+use App\Domains\HostingPlans\Models\Package;
+use App\Domains\Identity\Models\User;
 use App\Domains\WebServer\Models\Domain;
+use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 class DomainAndPhpTest extends TestCase
 {
@@ -17,7 +18,7 @@ class DomainAndPhpTest extends TestCase
     {
         parent::setUp();
         $this->seed();
-        $this->seed(\Database\Seeders\DemoDataSeeder::class);
+        $this->seed(DemoDataSeeder::class);
     }
 
     public function test_user_can_view_domains_list(): void
@@ -150,7 +151,7 @@ class DomainAndPhpTest extends TestCase
         ]);
 
         $response->assertRedirect('/subdomains');
-        $expectedFqdn = 'api.' . $parent->domain;
+        $expectedFqdn = 'api.'.$parent->domain;
         $this->assertDatabaseHas('domains', [
             'domain' => $expectedFqdn,
             'type' => 'subdomain',

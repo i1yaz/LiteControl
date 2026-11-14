@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Package;
+use App\Domains\HostingPlans\Models\Package;
+use App\Domains\Identity\Models\User;
 use App\Domains\WebServer\Models\Domain;
-use App\Domains\Database\Models\Database as DbModel;
+use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 class UserAndPackageTest extends TestCase
 {
@@ -18,7 +18,7 @@ class UserAndPackageTest extends TestCase
     {
         parent::setUp();
         $this->seed();
-        $this->seed(\Database\Seeders\DemoDataSeeder::class);
+        $this->seed(DemoDataSeeder::class);
     }
 
     public function test_admin_can_view_users_list(): void

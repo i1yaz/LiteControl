@@ -70,7 +70,7 @@ class ServerController extends Controller
      */
     public function serviceAction(Request $request, string $service, string $action, ManageServiceAction $manageServiceAction)
     {
-        if (!in_array($action, ['start', 'stop', 'restart', 'reload'])) {
+        if (! in_array($action, ['start', 'stop', 'restart', 'reload'])) {
             return redirect()->back()->with('error', "Invalid action '{$action}'.");
         }
 
@@ -253,6 +253,7 @@ class ServerController extends Controller
             $name = $service['name'] ?? $service['service'] ?? '';
             if (in_array($name, ['openlitespeed', 'lshttpd', 'lsws'], true)) {
                 $isActive = ($service['status'] ?? '') === 'active';
+
                 return response()->json([
                     'status' => $isActive ? 'online' : 'offline',
                     'service' => 'openlitespeed',

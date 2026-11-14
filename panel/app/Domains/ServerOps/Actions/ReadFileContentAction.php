@@ -19,4 +19,3 @@ class ReadFileContentAction
         return $this->driver->readFile($path);
     }
 }
-

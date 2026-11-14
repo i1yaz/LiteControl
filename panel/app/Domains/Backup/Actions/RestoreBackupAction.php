@@ -6,8 +6,8 @@ namespace App\Domains\Backup\Actions;
 
 use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\ValueObjects\BackupPath;
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
 
 class RestoreBackupAction
 {
@@ -31,4 +31,3 @@ class RestoreBackupAction
         return $res;
     }
 }
-

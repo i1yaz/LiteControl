@@ -6,12 +6,15 @@ use App\Domains\Backup\Actions\AddBackupScheduleAction;
 use App\Domains\Backup\Actions\CreateBackupAction;
 use App\Domains\Backup\Actions\RemoveBackupScheduleAction;
 use App\Domains\Backup\Actions\RestoreBackupAction;
-use App\Exceptions\System\LcCliException;
+use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\Models\Backup;
 use App\Domains\Backup\Models\BackupSchedule;
-use App\Models\Package;
-use App\Models\User;
-use App\Domains\Backup\Contracts\BackupDriverInterface;
+use App\Domains\Backup\ValueObjects\BackupFrequency;
+use App\Domains\Backup\ValueObjects\BackupPath;
+use App\Domains\Backup\ValueObjects\RetentionCount;
+use App\Domains\HostingPlans\Models\Package;
+use App\Domains\Identity\Models\User;
+use App\Exceptions\System\LcCliException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -90,12 +93,12 @@ class BackupActionsTest extends TestCase
 
     public function test_restore_backup_action(): void
     {
-        $path = new \App\Domains\Backup\ValueObjects\BackupPath('/home/backupuser/backups/backup.tar.gz');
+        $path = new BackupPath('/home/backupuser/backups/backup.tar.gz');
 
         $cliMock = Mockery::mock(BackupDriverInterface::class);
         $cliMock->shouldReceive('restoreBackup')
             ->once()
-            ->with(Mockery::on(fn ($arg) => $arg instanceof \App\Domains\Backup\ValueObjects\BackupPath && $arg->value === $path->value))
+            ->with(Mockery::on(fn ($arg) => $arg instanceof BackupPath && $arg->value === $path->value))
             ->andReturn(['status' => 'success']);
 
         $action = new RestoreBackupAction($cliMock);
@@ -111,16 +114,16 @@ class BackupActionsTest extends TestCase
 
     public function test_add_backup_schedule_action(): void
     {
-        $frequency = new \App\Domains\Backup\ValueObjects\BackupFrequency('daily');
-        $retention = new \App\Domains\Backup\ValueObjects\RetentionCount(7);
+        $frequency = new BackupFrequency('daily');
+        $retention = new RetentionCount(7);
 
         $cliMock = Mockery::mock(BackupDriverInterface::class);
         $cliMock->shouldReceive('addSchedule')
             ->once()
             ->with(
                 'backupuser',
-                Mockery::on(fn ($arg) => $arg instanceof \App\Domains\Backup\ValueObjects\BackupFrequency && $arg->value === 'daily'),
-                Mockery::on(fn ($arg) => $arg instanceof \App\Domains\Backup\ValueObjects\RetentionCount && $arg->value === 7)
+                Mockery::on(fn ($arg) => $arg instanceof BackupFrequency && $arg->value === 'daily'),
+                Mockery::on(fn ($arg) => $arg instanceof RetentionCount && $arg->value === 7)
             )
             ->andReturn(['status' => 'success']);
 
@@ -167,4 +170,3 @@ class BackupActionsTest extends TestCase
         ]);
     }
 }
-

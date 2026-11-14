@@ -167,4 +167,3 @@ class CliServerAdapter implements ServerDriverInterface
         return [];
     }
 }
-

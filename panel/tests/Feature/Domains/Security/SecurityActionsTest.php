@@ -2,17 +2,17 @@
 
 namespace Tests\Feature\Domains\Security;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\Security\Actions\AddFirewallRuleAction;
 use App\Domains\Security\Actions\DeleteFirewallRuleAction;
 use App\Domains\Security\Actions\UpdatePanelPortAction;
 use App\Domains\Security\Actions\UpdatePanelSslAction;
 use App\Domains\Security\Actions\UpdateSshPortAction;
 use App\Domains\Security\Contracts\FirewallDriverInterface;
+use App\Domains\Security\Contracts\PanelSslDriverInterface;
 use App\Domains\Security\Models\FirewallRule;
 use App\Domains\Security\ValueObjects\Port;
 use App\Exceptions\System\LcCliException;
-use App\Models\User;
-use App\Services\System\PanelSslCliService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -165,7 +165,7 @@ class SecurityActionsTest extends TestCase
 
     public function test_update_panel_ssl_action_letsencrypt(): void
     {
-        $sslMock = Mockery::mock(PanelSslCliService::class);
+        $sslMock = Mockery::mock(PanelSslDriverInterface::class);
         $sslMock->shouldReceive('issuePanelSsl')
             ->once()
             ->with('panel.mydomain.com')
@@ -189,7 +189,7 @@ class SecurityActionsTest extends TestCase
 
     public function test_update_panel_ssl_action_custom(): void
     {
-        $sslMock = Mockery::mock(PanelSslCliService::class);
+        $sslMock = Mockery::mock(PanelSslDriverInterface::class);
         $sslMock->shouldReceive('installCustomPanelSsl')
             ->once()
             ->with('MOCKCERT', 'MOCKKEY')
@@ -212,4 +212,3 @@ class SecurityActionsTest extends TestCase
         ]);
     }
 }
-

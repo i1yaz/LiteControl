@@ -24,4 +24,3 @@ final readonly class DomainName
         return $this->value;
     }
 }
-

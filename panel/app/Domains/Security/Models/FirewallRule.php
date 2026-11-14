@@ -17,4 +17,3 @@ class FirewallRule extends Model
         'action',
     ];
 }
-

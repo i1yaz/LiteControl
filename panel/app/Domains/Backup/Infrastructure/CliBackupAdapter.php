@@ -78,4 +78,3 @@ class CliBackupAdapter implements BackupDriverInterface
         return $res['data'] ?? [];
     }
 }
-

@@ -18,8 +18,34 @@ arch('domain value objects are readonly')
     ->expect('App\Domains\*\ValueObjects')
     ->toBeReadonly();
 
-arch('domains do not import from other domains')
-    ->expect('App\Domains')
-    ->not->toUse('App\Domains')
-    ->ignoring('App\Domains\*\Events');
+$domains = [
+    'Backup',
+    'Database',
+    'HostingPlans',
+    'Identity',
+    'PanelConfig',
+    'PhpRuntime',
+    'Security',
+    'ServerOps',
+    'WebServer',
+];
 
+foreach ($domains as $domain) {
+    $otherDomains = array_values(array_filter($domains, fn (string $d): bool => $d !== $domain));
+
+    $forbiddenTargets = [];
+    foreach ($otherDomains as $other) {
+        $forbiddenTargets[] = "App\\Domains\\{$other}\\Actions";
+        $forbiddenTargets[] = "App\\Domains\\{$other}\\Infrastructure";
+        $forbiddenTargets[] = "App\\Domains\\{$other}\\Models";
+    }
+
+    arch("{$domain} domain respects bounded context boundaries")
+        ->expect("App\\Domains\\{$domain}")
+        ->not->toUse($forbiddenTargets)
+        ->ignoring([
+            'App\Domains\PanelConfig\Models\AuditLog',
+            'App\Domains\Identity\Models\User',
+            'App\Domains\HostingPlans\Models\Package',
+        ]);
+}

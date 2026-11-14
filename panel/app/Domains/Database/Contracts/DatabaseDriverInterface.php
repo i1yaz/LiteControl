@@ -57,4 +57,3 @@ interface DatabaseDriverInterface
      */
     public function changePassword(DatabaseUsername $username, string $password): array;
 }
-

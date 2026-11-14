@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Domains\HostingPlans\Actions\CreatePackageAction;
 use App\Domains\HostingPlans\Actions\DeletePackageAction;
 use App\Domains\HostingPlans\Actions\UpdatePackageAction;
+use App\Domains\HostingPlans\Models\Package;
 use App\Domains\HostingPlans\ValueObjects\PackageName;
 use App\Domains\HostingPlans\ValueObjects\ResourceQuotas;
-use App\Models\Package;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -67,7 +67,7 @@ class PackageController extends Controller
     public function update(Request $request, Package $package): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:50', 'unique:packages,name,' . $package->id],
+            'name' => ['required', 'string', 'max:50', 'unique:packages,name,'.$package->id],
             'disk_quota_mb' => ['required', 'integer', 'min:100', 'max:1048576'],
             'bandwidth_mb' => ['required', 'integer', 'min:100', 'max:10485760'],
             'max_domains' => ['required', 'integer', 'min:1', 'max:1000'],

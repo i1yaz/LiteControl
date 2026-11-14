@@ -13,8 +13,8 @@ use App\Domains\Database\Models\Database;
 use App\Domains\Database\Models\DatabaseUser;
 use App\Domains\Database\ValueObjects\DatabaseName;
 use App\Domains\Database\ValueObjects\DatabaseUsername;
-use App\Models\Package;
-use App\Models\User;
+use App\Domains\HostingPlans\Models\Package;
+use App\Domains\Identity\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use Mockery;
@@ -25,7 +25,9 @@ class DatabaseActionsTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Database $database;
+
     protected DatabaseUser $databaseUser;
 
     protected function setUp(): void
@@ -207,4 +209,3 @@ class DatabaseActionsTest extends TestCase
         ]);
     }
 }
-

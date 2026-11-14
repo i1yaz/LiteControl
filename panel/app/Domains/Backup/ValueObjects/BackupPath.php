@@ -30,4 +30,3 @@ final readonly class BackupPath
         return $this->value;
     }
 }
-

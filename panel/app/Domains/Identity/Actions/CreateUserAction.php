@@ -4,19 +4,18 @@ declare(strict_types=1);
 
 namespace App\Domains\Identity\Actions;
 
+use App\Domains\HostingPlans\Models\Package;
 use App\Domains\Identity\Contracts\UserDriverInterface;
+use App\Domains\Identity\Events\UserCreated;
+use App\Domains\Identity\Models\User;
 use App\Domains\Identity\ValueObjects\LinuxUsername;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\Package;
-use App\Models\User;
-use App\Domains\WebServer\Services\DomainService;
 use Illuminate\Support\Facades\DB;
 
 class CreateUserAction
 {
     public function __construct(
-        protected UserDriverInterface $userDriver,
-        protected DomainService $domainService
+        protected UserDriverInterface $userDriver
     ) {}
 
     /**
@@ -57,26 +56,11 @@ class CreateUserAction
             ]);
         });
 
-        $warning = null;
-        $domainCreated = false;
+        $event = new UserCreated($user, $data, $actor);
+        event($event);
 
-        // 4. Optionally create primary domain if provided
-        if (! empty($data['domain'])) {
-            try {
-                $domainRes = $this->domainService->createDomain($user, [
-                    'domain' => $data['domain'],
-                    'php_version' => $data['php_version'] ?? '83',
-                    'public_path' => $data['public_path'] ?? null,
-                    'ssl_enabled' => $data['ssl_enabled'] ?? true,
-                    'type' => 'primary',
-                ], $actor);
-
-                $domainCreated = true;
-                $warning = $domainRes['warning'] ?? null;
-            } catch (\Throwable $e) {
-                $warning = 'User created, but domain provisioning encountered an error: '.$e->getMessage();
-            }
-        }
+        $domainCreated = $event->domainCreated;
+        $warning = $event->warning;
 
         if ($actor) {
             AuditLog::create([
@@ -100,4 +84,3 @@ class CreateUserAction
         ];
     }
 }
-

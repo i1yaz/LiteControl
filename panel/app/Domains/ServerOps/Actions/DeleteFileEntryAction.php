@@ -16,4 +16,3 @@ class DeleteFileEntryAction
         $this->driver->deleteEntry($path);
     }
 }
-

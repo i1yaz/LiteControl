@@ -2,14 +2,14 @@
 
 namespace App\Domains\Security\Actions;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
-use App\Services\System\PanelSslCliService;
+use App\Domains\Security\Contracts\PanelSslDriverInterface;
 
 class UpdatePanelSslAction
 {
     public function __construct(
-        protected PanelSslCliService $panelSslCli
+        protected PanelSslDriverInterface $panelSslDriver
     ) {}
 
     /**
@@ -20,9 +20,9 @@ class UpdatePanelSslAction
     public function handle(array $data, ?User $actor = null, ?string $ipAddress = null): array
     {
         if ($data['type'] === 'letsencrypt') {
-            $result = $this->panelSslCli->issuePanelSsl($data['domain']);
+            $result = $this->panelSslDriver->issuePanelSsl($data['domain']);
         } else {
-            $result = $this->panelSslCli->installCustomPanelSsl($data['certificate'], $data['private_key']);
+            $result = $this->panelSslDriver->installCustomPanelSsl($data['certificate'], $data['private_key']);
         }
 
         AuditLog::create([
@@ -37,4 +37,3 @@ class UpdatePanelSslAction
         return $result;
     }
 }
-

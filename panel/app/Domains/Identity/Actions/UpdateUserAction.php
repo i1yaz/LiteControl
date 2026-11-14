@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domains\Identity\Actions;
 
+use App\Domains\HostingPlans\Models\Package;
 use App\Domains\Identity\Contracts\UserDriverInterface;
+use App\Domains\Identity\Models\User;
 use App\Domains\Identity\ValueObjects\LinuxUsername;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\Package;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class UpdateUserAction
@@ -73,4 +73,3 @@ class UpdateUserAction
         return $user;
     }
 }
-

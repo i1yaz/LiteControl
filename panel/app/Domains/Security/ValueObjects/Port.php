@@ -28,4 +28,3 @@ final readonly class Port implements Stringable
         return (string) $this->value;
     }
 }
-

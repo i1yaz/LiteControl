@@ -11,4 +11,3 @@ interface LogReaderInterface
      */
     public function readLogPage(string $filePath, int $page = 1, int $perPage = 50): array;
 }
-

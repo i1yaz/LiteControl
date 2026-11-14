@@ -5,8 +5,8 @@ namespace App\Domains\Database\Actions;
 use App\Domains\Database\Contracts\DatabaseDriverInterface;
 use App\Domains\Database\Models\DatabaseUser;
 use App\Domains\Database\ValueObjects\DatabaseUsername;
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
 
 class ChangeDatabaseUserPasswordAction
 {
@@ -33,4 +33,3 @@ class ChangeDatabaseUserPasswordAction
         ]);
     }
 }
-

@@ -9,9 +9,9 @@ use App\Domains\PhpRuntime\Actions\UpdatePhpIniAction;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\ValueObjects\PhpExtensionName;
 use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
-use App\Exceptions\System\LcCliException;
 use App\Domains\WebServer\Models\Domain;
 use App\Domains\WebServer\Services\DomainService;
+use App\Exceptions\System\LcCliException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -42,7 +42,7 @@ class PhpController extends Controller
             $versions = $this->phpCli->listVersions();
             $installedVersions = array_filter(
                 $versions,
-                fn($v) => !empty($v['installed'])
+                fn ($v) => ! empty($v['installed'])
             );
         } catch (LcCliException $e) {
             $installedVersions = [];
@@ -77,7 +77,7 @@ class PhpController extends Controller
 
             return back()->with('success', "PHP {$ver} configuration directives updated successfully.");
         } catch (LcCliException $e) {
-            return back()->with('error', 'Failed updating PHP configuration: ' . $e->getMessage());
+            return back()->with('error', 'Failed updating PHP configuration: '.$e->getMessage());
         }
     }
 
@@ -99,7 +99,7 @@ class PhpController extends Controller
             $versions = $this->phpCli->listVersions();
             $installedVersions = array_filter(
                 $versions,
-                fn($v) => !empty($v['installed'])
+                fn ($v) => ! empty($v['installed'])
             );
         } catch (LcCliException $e) {
             $installedVersions = [];
@@ -158,7 +158,7 @@ class PhpController extends Controller
             $versions = $this->phpCli->listVersions();
             $installedVersions = array_filter(
                 $versions,
-                fn($v) => !empty($v['installed'])
+                fn ($v) => ! empty($v['installed'])
             );
         } catch (LcCliException $e) {
             $installedVersions = [];
@@ -197,7 +197,7 @@ class PhpController extends Controller
 
             return back()->with('success', "Extension '{$validated['extension']}' for PHP {$validated['version']} has been {$validated['action']}d.");
         } catch (LcCliException $e) {
-            return back()->with('error', 'Extension operation failed: ' . $e->getMessage());
+            return back()->with('error', 'Extension operation failed: '.$e->getMessage());
         }
     }
 
@@ -239,7 +239,7 @@ class PhpController extends Controller
 
             return back()->with('success', "PHP {$validated['version']} installed successfully.");
         } catch (LcCliException $e) {
-            return back()->with('error', 'Installation failed: ' . $e->getMessage());
+            return back()->with('error', 'Installation failed: '.$e->getMessage());
         }
     }
 
@@ -265,7 +265,7 @@ class PhpController extends Controller
 
             return back()->with('success', "PHP {$validated['version']} removed successfully.");
         } catch (LcCliException $e) {
-            return back()->with('error', 'Removal failed: ' . $e->getMessage());
+            return back()->with('error', 'Removal failed: '.$e->getMessage());
         }
     }
 
@@ -286,7 +286,7 @@ class PhpController extends Controller
             $versions = $this->phpCli->listVersions();
             $installedVersions = array_filter(
                 $versions,
-                fn($v) => !empty($v['installed'])
+                fn ($v) => ! empty($v['installed'])
             );
         } catch (LcCliException $e) {
             $installedVersions = [];

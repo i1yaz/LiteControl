@@ -58,4 +58,3 @@ interface UserDriverInterface
      */
     public function deleteUser(LinuxUsername $username, bool $removeHome = true): array;
 }
-

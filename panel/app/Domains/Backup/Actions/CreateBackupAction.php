@@ -6,8 +6,8 @@ namespace App\Domains\Backup\Actions;
 
 use App\Domains\Backup\Contracts\BackupDriverInterface;
 use App\Domains\Backup\Models\Backup;
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class CreateBackupAction
@@ -20,7 +20,7 @@ class CreateBackupAction
     {
         $data = $this->backupDriver->createBackup($targetUser->username);
 
-        $filename = $data['filename'] ?? ('backup-' . $targetUser->username . '-' . now()->format('Ymd_His') . '.tar.gz');
+        $filename = $data['filename'] ?? ('backup-'.$targetUser->username.'-'.now()->format('Ymd_His').'.tar.gz');
         $path = $data['path'] ?? ("/home/{$targetUser->username}/backups/{$filename}");
         $size = $data['size_bytes'] ?? 0;
 
@@ -47,4 +47,3 @@ class CreateBackupAction
         });
     }
 }
-

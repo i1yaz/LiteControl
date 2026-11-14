@@ -2,10 +2,10 @@
 
 namespace App\Domains\WebServer\Actions;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use App\Domains\WebServer\Models\Domain;
-use App\Models\User;
 
 class FixDomainPermissionsAction
 {
@@ -34,4 +34,3 @@ class FixDomainPermissionsAction
         return $res;
     }
 }
-

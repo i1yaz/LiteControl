@@ -2,11 +2,11 @@
 
 namespace App\Domains\WebServer\Services;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\WebServer\Contracts\SslDriverInterface;
 use App\Domains\WebServer\Models\Domain;
 use App\Exceptions\System\LcCliException;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -137,4 +137,3 @@ class SslService
         ];
     }
 }
-

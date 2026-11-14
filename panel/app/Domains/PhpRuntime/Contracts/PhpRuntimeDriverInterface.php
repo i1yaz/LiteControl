@@ -50,4 +50,3 @@ interface PhpRuntimeDriverInterface
      */
     public function listLoadedModules(PhpVersion $version): array;
 }
-

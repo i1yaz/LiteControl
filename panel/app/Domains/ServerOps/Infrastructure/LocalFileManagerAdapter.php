@@ -29,7 +29,7 @@ class LocalFileManagerAdapter implements FileManagerDriverInterface
                 continue;
             }
 
-            $filePath = $path->fullPath . DIRECTORY_SEPARATOR . $file;
+            $filePath = $path->fullPath.DIRECTORY_SEPARATOR.$file;
             $isDir = is_dir($filePath);
             $size = $isDir ? 0 : (@filesize($filePath) ?: 0);
             $perms = substr(sprintf('%o', @fileperms($filePath) ?: 0), -4);
@@ -37,7 +37,7 @@ class LocalFileManagerAdapter implements FileManagerDriverInterface
 
             $items[] = [
                 'name' => $file,
-                'path' => trim($baseSubpath . '/' . $file, '/'),
+                'path' => trim($baseSubpath.'/'.$file, '/'),
                 'is_dir' => $isDir,
                 'size' => $size,
                 'size_human' => $this->formatBytes($size),
@@ -103,6 +103,7 @@ class LocalFileManagerAdapter implements FileManagerDriverInterface
 
         if ($type === 'folder') {
             File::makeDirectory($path->fullPath, 0755, true);
+
             return;
         }
 
@@ -119,6 +120,7 @@ class LocalFileManagerAdapter implements FileManagerDriverInterface
 
         if ($path->isDir()) {
             File::deleteDirectory($path->fullPath);
+
             return;
         }
 
@@ -155,7 +157,6 @@ class LocalFileManagerAdapter implements FileManagerDriverInterface
         $pow = min($pow, count($units) - 1);
         $bytes /= (1 << (10 * $pow));
 
-        return round($bytes, $precision) . ' ' . $units[$pow];
+        return round($bytes, $precision).' '.$units[$pow];
     }
 }
-

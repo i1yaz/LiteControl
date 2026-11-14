@@ -5,9 +5,9 @@ namespace App\Domains\Database\Actions;
 use App\Domains\Database\Contracts\DatabaseDriverInterface;
 use App\Domains\Database\Models\Database;
 use App\Domains\Database\ValueObjects\DatabaseName;
-use App\Exceptions\System\LcCliException;
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
+use App\Exceptions\System\LcCliException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -47,4 +47,3 @@ class DeleteDatabaseAction
         });
     }
 }
-

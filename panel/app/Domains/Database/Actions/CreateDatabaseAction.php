@@ -5,8 +5,8 @@ namespace App\Domains\Database\Actions;
 use App\Domains\Database\Contracts\DatabaseDriverInterface;
 use App\Domains\Database\Models\Database;
 use App\Domains\Database\ValueObjects\DatabaseName;
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class CreateDatabaseAction
@@ -43,4 +43,3 @@ class CreateDatabaseAction
         });
     }
 }
-

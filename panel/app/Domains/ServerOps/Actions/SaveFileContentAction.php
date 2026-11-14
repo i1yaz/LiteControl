@@ -16,4 +16,3 @@ class SaveFileContentAction
         $this->driver->writeFile($path, $content);
     }
 }
-

@@ -2,10 +2,10 @@
 
 namespace App\Domains\Security\Actions;
 
+use App\Domains\Identity\Models\User;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\Security\Contracts\FirewallDriverInterface;
 use App\Domains\Security\ValueObjects\Port;
-use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
 
 class UpdatePanelPortAction
 {
@@ -32,4 +32,3 @@ class UpdatePanelPortAction
         return $result;
     }
 }
-

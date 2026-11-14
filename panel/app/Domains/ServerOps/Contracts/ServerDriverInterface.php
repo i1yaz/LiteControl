@@ -52,4 +52,3 @@ interface ServerDriverInterface
 
     public function getLogs(string $type = 'ols-error', int $lines = 100): array;
 }
-

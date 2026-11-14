@@ -23,4 +23,3 @@ interface TuningDriverInterface
      */
     public function updateTuning(array $settings): array;
 }
-

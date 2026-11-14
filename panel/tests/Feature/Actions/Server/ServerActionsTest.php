@@ -2,15 +2,14 @@
 
 namespace Tests\Feature\Actions\Server;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\ServerOps\Actions\KillProcessAction;
 use App\Domains\ServerOps\Actions\ManageServiceAction;
 use App\Domains\ServerOps\Actions\ToggleWebAdminAction;
 use App\Domains\ServerOps\Actions\UpdateHostnameAction;
 use App\Domains\ServerOps\Actions\UpdateTimezoneAction;
-use App\Exceptions\System\LcCliException;
-use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
 use App\Domains\ServerOps\Contracts\ServerDriverInterface;
+use App\Exceptions\System\LcCliException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -161,4 +160,3 @@ class ServerActionsTest extends TestCase
         ]);
     }
 }
-

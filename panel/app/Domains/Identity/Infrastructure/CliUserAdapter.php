@@ -103,4 +103,3 @@ class CliUserAdapter implements UserDriverInterface
         return $res['data'] ?? [];
     }
 }
-

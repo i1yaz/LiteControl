@@ -1,20 +1,20 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\PackageController;
-use App\Http\Controllers\DomainController;
-use App\Http\Controllers\PhpController;
-use App\Http\Controllers\DatabaseController;
-use App\Http\Controllers\FileManagerController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\ConfigurationController;
-use App\Http\Controllers\ServerController;
-use App\Http\Controllers\SecurityController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DatabaseController;
+use App\Http\Controllers\DomainController;
+use App\Http\Controllers\FileManagerController;
 use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\PackageController;
+use App\Http\Controllers\PhpController;
+use App\Http\Controllers\SecurityController;
+use App\Http\Controllers\ServerController;
 use App\Http\Controllers\ThemeController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/theme/switch', [ThemeController::class, 'switch'])->name('theme.switch');
 

@@ -7,7 +7,9 @@ use InvalidArgumentException;
 final readonly class SystemPath
 {
     public string $baseDir;
+
     public string $subpath;
+
     public string $fullPath;
 
     public function __construct(string $baseDir, string $subpath = '', bool $mustExist = false)
@@ -36,7 +38,7 @@ final readonly class SystemPath
 
         $candidate = $trimmed === ''
             ? $realBase
-            : $realBase . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $trimmed);
+            : $realBase.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $trimmed);
 
         if (file_exists($candidate)) {
             $realFull = realpath($candidate);
@@ -44,6 +46,7 @@ final readonly class SystemPath
                 throw new InvalidArgumentException('Path escapes confined base directory.');
             }
             $this->fullPath = $realFull;
+
             return;
         }
 
@@ -64,7 +67,7 @@ final readonly class SystemPath
 
     private function isWithinBase(string $path, string $base): bool
     {
-        return $path === $base || str_starts_with($path, $base . DIRECTORY_SEPARATOR);
+        return $path === $base || str_starts_with($path, $base.DIRECTORY_SEPARATOR);
     }
 
     public function exists(): bool
@@ -87,4 +90,3 @@ final readonly class SystemPath
         return $this->fullPath;
     }
 }
-

@@ -16,4 +16,3 @@ class UserSuspended
         public readonly string $username,
     ) {}
 }
-

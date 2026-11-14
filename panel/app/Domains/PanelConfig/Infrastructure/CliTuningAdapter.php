@@ -57,4 +57,3 @@ class CliTuningAdapter implements TuningDriverInterface
         return $res['data'] ?? [];
     }
 }
-

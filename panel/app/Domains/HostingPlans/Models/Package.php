@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Models;
+namespace App\Domains\HostingPlans\Models;
 
+use App\Domains\Identity\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -26,4 +27,3 @@ class Package extends Model
         return $this->hasMany(User::class);
     }
 }
-

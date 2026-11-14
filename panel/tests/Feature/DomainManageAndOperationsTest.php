@@ -2,10 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Domains\HostingPlans\Models\Package;
+use App\Domains\Identity\Models\User;
 use App\Domains\WebServer\Models\Domain;
-use App\Domains\Database\Models\Database;
-use App\Models\User;
-use App\Models\Package;
 use App\Domains\WebServer\Models\FtpAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -15,7 +14,9 @@ class DomainManageAndOperationsTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $client;
+
     protected Domain $domain;
 
     protected function setUp(): void
@@ -68,10 +69,9 @@ class DomainManageAndOperationsTest extends TestCase
     {
         $response = $this->actingAs($this->client)->get("/domains/{$this->domain->id}/manage");
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) =>
-            $page->component('Domains/Manage')
-                ->has('domain')
-                ->where('domain.domain', 'mycoolsite.com')
+        $response->assertInertia(fn ($page) => $page->component('Domains/Manage')
+            ->has('domain')
+            ->where('domain.domain', 'mycoolsite.com')
         );
     }
 
@@ -172,8 +172,7 @@ class DomainManageAndOperationsTest extends TestCase
             'has_next',
             'has_prev',
             'page',
-            'per_page'
+            'per_page',
         ]);
     }
 }
-

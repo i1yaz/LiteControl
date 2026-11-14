@@ -54,4 +54,3 @@ interface FileManagerDriverInterface
      */
     public function ensureDirectory(SystemPath $path): void;
 }
-

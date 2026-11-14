@@ -56,4 +56,3 @@ class CliModuleAdapter implements ModuleDriverInterface
         return $res['data'] ?? [];
     }
 }
-

@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Domains\WebServer\Models\Domain;
 use App\Domains\Database\Models\Database as DbModel;
-use App\Models\Package;
+use App\Domains\HostingPlans\Models\Package;
+use App\Domains\Identity\Models\User;
 use App\Domains\ServerOps\Contracts\ServerDriverInterface;
+use App\Domains\WebServer\Models\Domain;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,7 +24,7 @@ class DashboardController extends Controller
 
         // Get server statistics from typed ServerDriverInterface
         $statsData = $this->serverDriver->getStats();
-        $stats = !empty($statsData) ? $statsData : [
+        $stats = ! empty($statsData) ? $statsData : [
             'cpu_percent' => 0,
             'ram_percent' => 0,
             'disk_percent' => 0,

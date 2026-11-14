@@ -2,10 +2,10 @@
 
 namespace App\Domains\WebServer\Services;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\WebServer\Models\Domain;
 use App\Domains\WebServer\Models\FtpAccount;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 class FtpService
@@ -35,7 +35,7 @@ class FtpService
             throw new \RuntimeException("FTP user '{$finalUsername}' already exists.");
         }
 
-        $rawSubdir = trim($data['dir'] ?? '', " /\\");
+        $rawSubdir = trim($data['dir'] ?? '', ' /\\');
         $domainBase = "/home/{$user->username}/{$domain->domain}";
         $fullFtpDir = empty($rawSubdir) ? "{$domainBase}/public_html" : "{$domainBase}/public_html/{$rawSubdir}";
 
@@ -104,4 +104,3 @@ class FtpService
         return true;
     }
 }
-

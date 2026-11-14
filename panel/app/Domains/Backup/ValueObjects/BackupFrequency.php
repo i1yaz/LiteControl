@@ -28,4 +28,3 @@ final readonly class BackupFrequency
         return $this->value;
     }
 }
-

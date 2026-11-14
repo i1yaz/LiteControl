@@ -2,9 +2,9 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
 use App\Support\Cli\LcCliService;
 use Illuminate\Support\Facades\Process;
+use Tests\TestCase;
 
 class LcCliServiceTest extends TestCase
 {

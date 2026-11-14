@@ -2,23 +2,18 @@
 
 namespace Tests\Feature\Actions\User;
 
+use App\Domains\HostingPlans\Models\Package;
 use App\Domains\Identity\Actions\CreateUserAction;
 use App\Domains\Identity\Actions\DeleteUserAction;
 use App\Domains\Identity\Actions\SuspendUserAction;
 use App\Domains\Identity\Actions\UnsuspendUserAction;
 use App\Domains\Identity\Actions\UpdateUserAction;
 use App\Domains\Identity\Contracts\UserDriverInterface;
-use App\Domains\Identity\Events\UserDeleted;
-use App\Domains\Identity\Events\UserSuspended;
-use App\Domains\Identity\ValueObjects\LinuxUsername;
-use App\Exceptions\System\LcCliException;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Identity\Models\User;
 use App\Domains\WebServer\Models\Domain;
-use App\Models\Package;
-use App\Models\User;
 use App\Domains\WebServer\Services\DomainService;
+use App\Exceptions\System\LcCliException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Event;
 use Mockery;
 use Tests\TestCase;
 
@@ -27,7 +22,9 @@ class UserActionsTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected Package $package;
+
     protected Package $packagePro;
 
     protected function setUp(): void
@@ -113,6 +110,7 @@ class UserActionsTest extends TestCase
             ->andReturn(['username' => 'clientwithdom']);
 
         $domainServiceMock = Mockery::mock(DomainService::class);
+        $this->app->instance(DomainService::class, $domainServiceMock);
         $domainServiceMock->shouldReceive('createDomain')
             ->once()
             ->with(
@@ -297,4 +295,3 @@ class UserActionsTest extends TestCase
         ]);
     }
 }
-

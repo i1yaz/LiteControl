@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Domains\PanelConfig\Models\AuditLog;
+use App\Domains\Identity\Models\User;
+use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 class ConfigurationAndServerTest extends TestCase
 {
@@ -16,7 +16,7 @@ class ConfigurationAndServerTest extends TestCase
     {
         parent::setUp();
         $this->seed();
-        $this->seed(\Database\Seeders\DemoDataSeeder::class);
+        $this->seed(DemoDataSeeder::class);
     }
 
     public function test_admin_can_view_settings_page(): void
@@ -282,4 +282,3 @@ class ConfigurationAndServerTest extends TestCase
         $response->assertStatus(403);
     }
 }
-

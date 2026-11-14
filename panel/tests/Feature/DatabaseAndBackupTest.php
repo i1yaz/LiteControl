@@ -2,15 +2,14 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Package;
-use App\Domains\Database\Models\Database as DbModel;
-use App\Domains\Database\Models\DatabaseUser;
 use App\Domains\Backup\Models\Backup;
 use App\Domains\Backup\Models\BackupSchedule;
+use App\Domains\Database\Models\Database as DbModel;
+use App\Domains\Identity\Models\User;
+use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 class DatabaseAndBackupTest extends TestCase
 {
@@ -20,7 +19,7 @@ class DatabaseAndBackupTest extends TestCase
     {
         parent::setUp();
         $this->seed();
-        $this->seed(\Database\Seeders\DemoDataSeeder::class);
+        $this->seed(DemoDataSeeder::class);
     }
 
     public function test_user_can_view_databases(): void

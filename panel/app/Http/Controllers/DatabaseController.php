@@ -13,9 +13,9 @@ use App\Domains\Database\Models\Database;
 use App\Domains\Database\Models\DatabaseUser;
 use App\Domains\Database\ValueObjects\DatabaseName;
 use App\Domains\Database\ValueObjects\DatabaseUsername;
-use App\Exceptions\System\LcCliException;
+use App\Domains\Identity\Models\User;
 use App\Domains\WebServer\Models\Domain;
-use App\Models\User;
+use App\Exceptions\System\LcCliException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -93,11 +93,11 @@ class DatabaseController extends Controller
 
         $validated = $request->validate($rules);
 
-        $targetUser = $user->isAdmin() && !empty($validated['user_id'])
+        $targetUser = $user->isAdmin() && ! empty($validated['user_id'])
             ? User::with('package')->findOrFail($validated['user_id'])
             : $user->load('package');
 
-        if (!empty($validated['domain_id'])) {
+        if (! empty($validated['domain_id'])) {
             $domainBelongsToTarget = Domain::where('id', $validated['domain_id'])
                 ->where('user_id', $targetUser->id)
                 ->exists();
@@ -119,10 +119,10 @@ class DatabaseController extends Controller
         }
 
         // Standardize db name with username prefix if not already prefixed
-        $prefix = $targetUser->username . '_';
+        $prefix = $targetUser->username.'_';
         $finalDbName = str_starts_with($validated['db_name'], $prefix)
             ? $validated['db_name']
-            : $prefix . $validated['db_name'];
+            : $prefix.$validated['db_name'];
 
         if (Database::where('db_name', $finalDbName)->exists()) {
             return back()->withErrors(['db_name' => "Database '{$finalDbName}' already exists."]);
@@ -137,7 +137,7 @@ class DatabaseController extends Controller
                 ipAddress: $request->ip()
             );
         } catch (InvalidArgumentException|LcCliException $e) {
-            return back()->withErrors(['db_name' => 'Failed to create database: ' . $e->getMessage()]);
+            return back()->withErrors(['db_name' => 'Failed to create database: '.$e->getMessage()]);
         }
 
         return redirect()->route('databases.index')->with('success', "Database '{$finalDbName}' created successfully.");
@@ -161,7 +161,7 @@ class DatabaseController extends Controller
         } catch (InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         } catch (LcCliException $e) {
-            return back()->with('error', 'Failed to delete database: ' . $e->getMessage());
+            return back()->with('error', 'Failed to delete database: '.$e->getMessage());
         }
 
         return redirect()->route('databases.index')->with('success', "Database '{$name}' deleted successfully.");
@@ -186,14 +186,14 @@ class DatabaseController extends Controller
 
         $validated = $request->validate($rules);
 
-        $targetUser = $user->isAdmin() && !empty($validated['user_id'])
+        $targetUser = $user->isAdmin() && ! empty($validated['user_id'])
             ? User::findOrFail($validated['user_id'])
             : $user;
 
-        $prefix = $targetUser->username . '_';
+        $prefix = $targetUser->username.'_';
         $finalDbUser = str_starts_with($validated['username'], $prefix)
             ? $validated['username']
-            : $prefix . $validated['username'];
+            : $prefix.$validated['username'];
 
         if (DatabaseUser::where('db_username', $finalDbUser)->exists()) {
             return back()->withErrors(['username' => "Database user '{$finalDbUser}' already exists."]);
@@ -205,11 +205,11 @@ class DatabaseController extends Controller
                 password: $validated['password'],
                 targetUser: $targetUser,
                 actor: $user,
-                databaseId: !empty($validated['database_id']) ? (int) $validated['database_id'] : null,
+                databaseId: ! empty($validated['database_id']) ? (int) $validated['database_id'] : null,
                 ipAddress: $request->ip()
             );
         } catch (InvalidArgumentException|LcCliException $e) {
-            return back()->withErrors(['username' => 'Failed to create DB user: ' . $e->getMessage()]);
+            return back()->withErrors(['username' => 'Failed to create DB user: '.$e->getMessage()]);
         }
 
         return redirect()->route('databases.index')->with('success', "Database user '{$finalDbUser}' created successfully.");
@@ -241,7 +241,7 @@ class DatabaseController extends Controller
                 $request->ip()
             );
         } catch (InvalidArgumentException|LcCliException $e) {
-            return back()->with('error', 'Failed to grant privileges: ' . $e->getMessage());
+            return back()->with('error', 'Failed to grant privileges: '.$e->getMessage());
         }
 
         return back()->with('success', "Granted '{$validated['db_username']}' full privileges on '{$database->db_name}'.");
@@ -267,9 +267,10 @@ class DatabaseController extends Controller
 
         try {
             $changePasswordAction->handle($dbUser, $validated['password'], $user, $request->ip());
+
             return back()->with('success', "Password for DB user '{$dbUser->db_username}' updated.");
         } catch (LcCliException $e) {
-            return back()->with('error', 'Failed to update password: ' . $e->getMessage());
+            return back()->with('error', 'Failed to update password: '.$e->getMessage());
         }
     }
 
@@ -292,7 +293,7 @@ class DatabaseController extends Controller
         try {
             $deleteDatabaseUserAction->handle($dbUser, $user, $request->ip());
         } catch (LcCliException $e) {
-            return back()->with('error', 'Failed to delete database user: ' . $e->getMessage());
+            return back()->with('error', 'Failed to delete database user: '.$e->getMessage());
         }
 
         return redirect()->route('databases.index')->with('success', "Database user '{$name}' deleted.");
@@ -313,7 +314,7 @@ class DatabaseController extends Controller
         }
 
         $token = bin2hex(random_bytes(32));
-        $tokenFile = $tmpDir . '/sso_' . $token;
+        $tokenFile = $tmpDir.'/sso_'.$token;
 
         if (@file_put_contents($tokenFile, (string) time()) === false) {
             abort(500, 'Unable to initialize phpMyAdmin SSO session.');
@@ -321,6 +322,6 @@ class DatabaseController extends Controller
 
         @chmod($tokenFile, 0600);
 
-        return redirect()->away('/phpmyadmin/signon.php?token=' . $token);
+        return redirect()->away('/phpmyadmin/signon.php?token='.$token);
     }
 }

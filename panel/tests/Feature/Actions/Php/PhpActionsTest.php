@@ -2,14 +2,15 @@
 
 namespace Tests\Feature\Actions\Php;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\PhpRuntime\Actions\InstallPhpVersionAction;
 use App\Domains\PhpRuntime\Actions\RemovePhpVersionAction;
 use App\Domains\PhpRuntime\Actions\TogglePhpExtensionAction;
 use App\Domains\PhpRuntime\Actions\UpdatePhpIniAction;
-use App\Exceptions\System\LcCliException;
-use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
+use App\Domains\PhpRuntime\ValueObjects\PhpExtensionName;
+use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
+use App\Exceptions\System\LcCliException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -35,15 +36,15 @@ class PhpActionsTest extends TestCase
         $phpMock = Mockery::mock(PhpRuntimeDriverInterface::class);
         $phpMock->shouldReceive('setIni')
             ->once()
-            ->with(Mockery::on(fn ($v) => $v instanceof \App\Domains\PhpRuntime\ValueObjects\PhpVersion && $v->value === '83'), 'memory_limit', '512M')
+            ->with(Mockery::on(fn ($v) => $v instanceof PhpVersion && $v->value === '83'), 'memory_limit', '512M')
             ->andReturn([]);
         $phpMock->shouldReceive('setIni')
             ->once()
-            ->with(Mockery::on(fn ($v) => $v instanceof \App\Domains\PhpRuntime\ValueObjects\PhpVersion && $v->value === '83'), 'upload_max_filesize', '128M')
+            ->with(Mockery::on(fn ($v) => $v instanceof PhpVersion && $v->value === '83'), 'upload_max_filesize', '128M')
             ->andReturn([]);
 
         $action = new UpdatePhpIniAction($phpMock);
-        $result = $action->handle(new \App\Domains\PhpRuntime\ValueObjects\PhpVersion('83'), [
+        $result = $action->handle(new PhpVersion('83'), [
             'memory_limit' => '512M',
             'upload_max_filesize' => '128M',
             'null_directive' => null,
@@ -72,7 +73,7 @@ class PhpActionsTest extends TestCase
         $this->expectException(LcCliException::class);
         $this->expectExceptionMessage('Failed setting directive');
 
-        $action->handle(new \App\Domains\PhpRuntime\ValueObjects\PhpVersion('83'), ['bad' => 'val'], $this->admin);
+        $action->handle(new PhpVersion('83'), ['bad' => 'val'], $this->admin);
     }
 
     public function test_toggle_php_extension_action_enable(): void
@@ -80,11 +81,11 @@ class PhpActionsTest extends TestCase
         $phpMock = Mockery::mock(PhpRuntimeDriverInterface::class);
         $phpMock->shouldReceive('toggleExtension')
             ->once()
-            ->with(Mockery::on(fn ($v) => $v instanceof \App\Domains\PhpRuntime\ValueObjects\PhpVersion && $v->value === '83'), Mockery::on(fn ($e) => $e instanceof \App\Domains\PhpRuntime\ValueObjects\PhpExtensionName && $e->value === 'redis'), 'enable')
+            ->with(Mockery::on(fn ($v) => $v instanceof PhpVersion && $v->value === '83'), Mockery::on(fn ($e) => $e instanceof PhpExtensionName && $e->value === 'redis'), 'enable')
             ->andReturn(['enabled' => true]);
 
         $action = new TogglePhpExtensionAction($phpMock);
-        $result = $action->handle(new \App\Domains\PhpRuntime\ValueObjects\PhpVersion('83'), new \App\Domains\PhpRuntime\ValueObjects\PhpExtensionName('redis'), 'enable', $this->admin, '10.0.0.2');
+        $result = $action->handle(new PhpVersion('83'), new PhpExtensionName('redis'), 'enable', $this->admin, '10.0.0.2');
 
         $this->assertEquals(['enabled' => true], $result);
 
@@ -102,11 +103,11 @@ class PhpActionsTest extends TestCase
         $phpMock = Mockery::mock(PhpRuntimeDriverInterface::class);
         $phpMock->shouldReceive('toggleExtension')
             ->once()
-            ->with(Mockery::on(fn ($v) => $v instanceof \App\Domains\PhpRuntime\ValueObjects\PhpVersion && $v->value === '82'), Mockery::on(fn ($e) => $e instanceof \App\Domains\PhpRuntime\ValueObjects\PhpExtensionName && $e->value === 'xdebug'), 'disable')
+            ->with(Mockery::on(fn ($v) => $v instanceof PhpVersion && $v->value === '82'), Mockery::on(fn ($e) => $e instanceof PhpExtensionName && $e->value === 'xdebug'), 'disable')
             ->andReturn(['enabled' => false]);
 
         $action = new TogglePhpExtensionAction($phpMock);
-        $result = $action->handle(new \App\Domains\PhpRuntime\ValueObjects\PhpVersion('82'), new \App\Domains\PhpRuntime\ValueObjects\PhpExtensionName('xdebug'), 'disable', $this->admin, '10.0.0.3');
+        $result = $action->handle(new PhpVersion('82'), new PhpExtensionName('xdebug'), 'disable', $this->admin, '10.0.0.3');
 
         $this->assertEquals(['enabled' => false], $result);
 
@@ -124,11 +125,11 @@ class PhpActionsTest extends TestCase
         $phpMock = Mockery::mock(PhpRuntimeDriverInterface::class);
         $phpMock->shouldReceive('installVersion')
             ->once()
-            ->with(Mockery::on(fn ($v) => $v instanceof \App\Domains\PhpRuntime\ValueObjects\PhpVersion && $v->value === '84'))
+            ->with(Mockery::on(fn ($v) => $v instanceof PhpVersion && $v->value === '84'))
             ->andReturn(['version' => '84', 'installed' => true]);
 
         $action = new InstallPhpVersionAction($phpMock);
-        $result = $action->handle(new \App\Domains\PhpRuntime\ValueObjects\PhpVersion('84'), $this->admin, '10.0.0.4');
+        $result = $action->handle(new PhpVersion('84'), $this->admin, '10.0.0.4');
 
         $this->assertEquals(['version' => '84', 'installed' => true], $result);
 
@@ -146,11 +147,11 @@ class PhpActionsTest extends TestCase
         $phpMock = Mockery::mock(PhpRuntimeDriverInterface::class);
         $phpMock->shouldReceive('removeVersion')
             ->once()
-            ->with(Mockery::on(fn ($v) => $v instanceof \App\Domains\PhpRuntime\ValueObjects\PhpVersion && $v->value === '80'))
+            ->with(Mockery::on(fn ($v) => $v instanceof PhpVersion && $v->value === '80'))
             ->andReturn(['version' => '80', 'removed' => true]);
 
         $action = new RemovePhpVersionAction($phpMock);
-        $result = $action->handle(new \App\Domains\PhpRuntime\ValueObjects\PhpVersion('80'), $this->admin, '10.0.0.5');
+        $result = $action->handle(new PhpVersion('80'), $this->admin, '10.0.0.5');
 
         $this->assertEquals(['version' => '80', 'removed' => true], $result);
 
@@ -163,4 +164,3 @@ class PhpActionsTest extends TestCase
         ]);
     }
 }
-

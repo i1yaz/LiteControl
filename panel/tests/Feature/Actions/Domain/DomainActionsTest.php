@@ -2,16 +2,15 @@
 
 namespace Tests\Feature\Actions\Domain;
 
-use App\Domains\WebServer\Actions\DeleteDomainAction;
+use App\Domains\HostingPlans\Models\Package;
+use App\Domains\Identity\Models\User;
 use App\Domains\WebServer\Actions\CreateSubdomainAction;
+use App\Domains\WebServer\Actions\DeleteDomainAction;
 use App\Domains\WebServer\Actions\FixDomainPermissionsAction;
 use App\Domains\WebServer\Actions\UpdateVhostConfAction;
-use App\Exceptions\System\LcCliException;
-use App\Domains\PanelConfig\Models\AuditLog;
-use App\Domains\WebServer\Models\Domain;
-use App\Models\Package;
-use App\Models\User;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
+use App\Domains\WebServer\Models\Domain;
+use App\Exceptions\System\LcCliException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -21,6 +20,7 @@ class DomainActionsTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Domain $domain;
 
     protected function setUp(): void

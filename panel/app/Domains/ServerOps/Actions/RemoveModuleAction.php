@@ -2,10 +2,10 @@
 
 namespace App\Domains\ServerOps\Actions;
 
+use App\Domains\Identity\Models\User;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use App\Exceptions\System\LcCliException;
-use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
 
 class RemoveModuleAction
 {
@@ -34,4 +34,3 @@ class RemoveModuleAction
         return $result;
     }
 }
-

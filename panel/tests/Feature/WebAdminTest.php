@@ -2,8 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
+use App\Domains\Identity\Models\User;
 use App\Support\Cli\LcCliService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -13,6 +12,7 @@ class WebAdminTest extends TestCase
     use RefreshDatabase;
 
     protected User $adminUser;
+
     protected User $regularUser;
 
     protected function setUp(): void

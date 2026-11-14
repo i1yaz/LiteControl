@@ -2,15 +2,14 @@
 
 namespace Tests\Feature\Actions\Configuration;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\PanelConfig\Actions\UpdatePhpLimitsAction;
 use App\Domains\PanelConfig\Actions\UpdateSettingsAction;
 use App\Domains\PanelConfig\Actions\UpdateTuningAction;
-use App\Exceptions\System\LcCliException;
-use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
+use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\ServerOps\Contracts\ServerDriverInterface;
-use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
+use App\Exceptions\System\LcCliException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -174,4 +173,3 @@ class ConfigurationActionsTest extends TestCase
         $action->handle('83', ['memory_limit' => '99999M'], $this->admin);
     }
 }
-

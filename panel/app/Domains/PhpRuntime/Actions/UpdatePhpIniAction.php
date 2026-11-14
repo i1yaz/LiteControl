@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domains\PhpRuntime\Actions;
 
+use App\Domains\Identity\Models\User;
+use App\Domains\PanelConfig\Models\AuditLog;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
-use App\Domains\PanelConfig\Models\AuditLog;
-use App\Models\User;
 
 class UpdatePhpIniAction
 {
@@ -38,4 +38,3 @@ class UpdatePhpIniAction
         return $updated;
     }
 }
-

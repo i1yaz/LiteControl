@@ -2,8 +2,8 @@
 
 namespace App\Domains\Database\Models;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\WebServer\Models\Domain;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,4 +35,3 @@ class Database extends Model
         return $this->hasMany(DatabaseUser::class);
     }
 }
-

@@ -16,4 +16,3 @@ class CleanupUserDatabasesListener
         DatabaseUser::where('user_id', $event->userId)->delete();
     }
 }
-

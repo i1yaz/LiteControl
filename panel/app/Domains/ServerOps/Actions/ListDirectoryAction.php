@@ -23,4 +23,3 @@ class ListDirectoryAction
         return $this->driver->listDirectory($path);
     }
 }
-

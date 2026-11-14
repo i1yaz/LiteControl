@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domains\Identity\Models\User;
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Services\TotpService;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
 
 class AuthController extends Controller
 {
@@ -209,4 +209,3 @@ class AuthController extends Controller
         return redirect()->route('login');
     }
 }
-

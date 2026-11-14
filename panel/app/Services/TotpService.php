@@ -82,7 +82,7 @@ class TotpService
         $codes = [];
 
         for ($i = 0; $i < $count; $i++) {
-            $codes[] = strtoupper(bin2hex(random_bytes(2))) . '-' . strtoupper(bin2hex(random_bytes(2)));
+            $codes[] = strtoupper(bin2hex(random_bytes(2))).'-'.strtoupper(bin2hex(random_bytes(2)));
         }
 
         return $codes;
@@ -128,4 +128,3 @@ class TotpService
         return $bytes;
     }
 }
-
