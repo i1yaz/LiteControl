@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Support\Cli\LcCliService;
+use Illuminate\Support\Facades\DB;
 
 arch('controllers do not use LcCliService or Domain Infrastructure')
     ->expect('App\Http\Controllers')
@@ -14,6 +16,11 @@ arch('domain actions do not use LcCliService or Infrastructure')
     ->not->toUse(LcCliService::class)
     ->not->toUse('App\Domains\*\Infrastructure');
 
+arch('domain queries do not use AuditLoggerInterface or DB')
+    ->expect('App\Domains\*\Queries')
+    ->not->toUse(AuditLoggerInterface::class)
+    ->not->toUse(DB::class);
+
 arch('domain value objects are readonly')
     ->expect('App\Domains\*\ValueObjects')
     ->toBeReadonly();
@@ -21,6 +28,7 @@ arch('domain value objects are readonly')
 $domains = [
     'Backup',
     'Database',
+    'FileManager',
     'HostingPlans',
     'Identity',
     'PanelConfig',

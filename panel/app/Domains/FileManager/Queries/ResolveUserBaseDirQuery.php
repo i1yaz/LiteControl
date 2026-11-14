@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Domains\FileManager\Actions;
+namespace App\Domains\FileManager\Queries;
 
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\ValueObjects\LinuxUsername;
 use Illuminate\Support\Facades\File;
 
-class ResolveUserBaseDirAction
+class ResolveUserBaseDirQuery
 {
     public function handle(User $actor, ?User $targetOwner = null): string
     {

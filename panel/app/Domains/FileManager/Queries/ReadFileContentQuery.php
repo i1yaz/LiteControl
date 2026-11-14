@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Domains\FileManager\Actions;
+namespace App\Domains\FileManager\Queries;
 
 use App\Domains\FileManager\Contracts\FileManagerDriverInterface;
 use App\Domains\Shared\ValueObjects\SystemPath;
 
-class ReadFileContentAction
+class ReadFileContentQuery
 {
     public function __construct(
         private readonly FileManagerDriverInterface $driver,

@@ -5,10 +5,10 @@ namespace Tests\Feature\Domains\FileManager;
 use App\Domains\FileManager\Actions\ChmodFileEntryAction;
 use App\Domains\FileManager\Actions\CreateFileEntryAction;
 use App\Domains\FileManager\Actions\DeleteFileEntryAction;
-use App\Domains\FileManager\Actions\ListDirectoryAction;
-use App\Domains\FileManager\Actions\ReadFileContentAction;
 use App\Domains\FileManager\Actions\SaveFileContentAction;
 use App\Domains\FileManager\Contracts\FileManagerDriverInterface;
+use App\Domains\FileManager\Queries\ListDirectoryQuery;
+use App\Domains\FileManager\Queries\ReadFileContentQuery;
 use App\Domains\Shared\ValueObjects\SystemPath;
 use App\Support\Cli\LcCliService;
 use Illuminate\Support\Facades\File;
@@ -145,8 +145,8 @@ class FileManagerTest extends TestCase
         $driver = app(FileManagerDriverInterface::class);
 
         $createAction = new CreateFileEntryAction($driver);
-        $listAction = new ListDirectoryAction($driver);
-        $readAction = new ReadFileContentAction($driver);
+        $listAction = new ListDirectoryQuery($driver);
+        $readAction = new ReadFileContentQuery($driver);
         $saveAction = new SaveFileContentAction($driver);
         $chmodAction = new ChmodFileEntryAction($driver);
         $deleteAction = new DeleteFileEntryAction($driver);

@@ -5,11 +5,11 @@ namespace App\Http\Controllers;
 use App\Domains\FileManager\Actions\ChmodFileEntryAction;
 use App\Domains\FileManager\Actions\CreateFileEntryAction;
 use App\Domains\FileManager\Actions\DeleteFileEntryAction;
-use App\Domains\FileManager\Actions\ListDirectoryAction;
-use App\Domains\FileManager\Actions\ReadFileContentAction;
-use App\Domains\FileManager\Actions\ResolveUserBaseDirAction;
 use App\Domains\FileManager\Actions\SaveFileContentAction;
 use App\Domains\FileManager\Contracts\FileManagerDriverInterface;
+use App\Domains\FileManager\Queries\ListDirectoryQuery;
+use App\Domains\FileManager\Queries\ReadFileContentQuery;
+use App\Domains\FileManager\Queries\ResolveUserBaseDirQuery;
 use App\Domains\Shared\ValueObjects\SystemPath;
 use App\Domains\WebServer\Models\Domain;
 use Illuminate\Http\JsonResponse;
@@ -23,9 +23,9 @@ use RuntimeException;
 class FileManagerController extends Controller
 {
     public function __construct(
-        private readonly ResolveUserBaseDirAction $resolveUserBaseDir,
-        private readonly ListDirectoryAction $listDirectory,
-        private readonly ReadFileContentAction $readFileContent,
+        private readonly ResolveUserBaseDirQuery $resolveUserBaseDir,
+        private readonly ListDirectoryQuery $listDirectory,
+        private readonly ReadFileContentQuery $readFileContent,
         private readonly SaveFileContentAction $saveFileContent,
         private readonly CreateFileEntryAction $createFileEntry,
         private readonly DeleteFileEntryAction $deleteFileEntry,
