@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domains\ServerOps\Contracts;
+namespace App\Domains\FileManager\Contracts;
 
 use App\Domains\Shared\ValueObjects\SystemPath;
 

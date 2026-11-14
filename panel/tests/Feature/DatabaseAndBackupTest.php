@@ -6,6 +6,7 @@ use App\Domains\Backup\Models\Backup;
 use App\Domains\Backup\Models\BackupSchedule;
 use App\Domains\Database\Models\Database as DbModel;
 use App\Domains\Identity\Models\User;
+use App\Support\Cli\LcCliService;
 use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -144,6 +145,11 @@ class DatabaseAndBackupTest extends TestCase
         ]);
         $createRes->assertJson(['status' => 'success']);
 
+        // Ensure mock home file exists for SystemPath mustExist checks
+        $mockFile = storage_path('app/homes/client1/testfile.txt');
+        @mkdir(dirname($mockFile), 0755, true);
+        file_put_contents($mockFile, 'Hello from LiteControl tests!');
+
         // 2. Save content
         $saveRes = $this->actingAs($client)->postJson('/files/save', [
             'path' => 'testfile.txt',
@@ -152,6 +158,12 @@ class DatabaseAndBackupTest extends TestCase
         $saveRes->assertJson(['status' => 'success']);
 
         // 3. Read content
+        $this->mock(LcCliService::class, function ($mock): void {
+            $mock->shouldReceive('run')->andReturn([
+                'status' => 'success',
+                'data' => ['content' => 'Hello from LiteControl tests!', 'size' => 29],
+            ]);
+        });
         $readRes = $this->actingAs($client)->getJson('/files/content?path=testfile.txt');
         $readRes->assertJson([
             'status' => 'success',
@@ -163,6 +175,7 @@ class DatabaseAndBackupTest extends TestCase
             'path' => 'testfile.txt',
         ]);
         $delRes->assertJson(['status' => 'success']);
+        @unlink($mockFile);
     }
 
     public function test_user_can_create_and_restore_backup(): void

@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Domains\ServerOps\Actions\ChmodFileEntryAction;
-use App\Domains\ServerOps\Actions\CreateFileEntryAction;
-use App\Domains\ServerOps\Actions\DeleteFileEntryAction;
-use App\Domains\ServerOps\Actions\ListDirectoryAction;
-use App\Domains\ServerOps\Actions\ReadFileContentAction;
-use App\Domains\ServerOps\Actions\ResolveUserBaseDirAction;
-use App\Domains\ServerOps\Actions\SaveFileContentAction;
-use App\Domains\ServerOps\Contracts\FileManagerDriverInterface;
+use App\Domains\FileManager\Actions\ChmodFileEntryAction;
+use App\Domains\FileManager\Actions\CreateFileEntryAction;
+use App\Domains\FileManager\Actions\DeleteFileEntryAction;
+use App\Domains\FileManager\Actions\ListDirectoryAction;
+use App\Domains\FileManager\Actions\ReadFileContentAction;
+use App\Domains\FileManager\Actions\ResolveUserBaseDirAction;
+use App\Domains\FileManager\Actions\SaveFileContentAction;
+use App\Domains\FileManager\Contracts\FileManagerDriverInterface;
 use App\Domains\Shared\ValueObjects\SystemPath;
 use App\Domains\WebServer\Models\Domain;
 use Illuminate\Http\JsonResponse;

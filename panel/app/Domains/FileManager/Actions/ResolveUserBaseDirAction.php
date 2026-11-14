@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domains\ServerOps\Actions;
+namespace App\Domains\FileManager\Actions;
 
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\ValueObjects\LinuxUsername;

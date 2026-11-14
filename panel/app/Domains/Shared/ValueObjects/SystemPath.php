@@ -54,10 +54,18 @@ final readonly class SystemPath
             throw new InvalidArgumentException("Target path does not exist: {$trimmed}");
         }
 
-        $parent = dirname($candidate);
-        if (file_exists($parent)) {
-            $realParent = realpath($parent);
-            if (! $realParent || ! $this->isWithinBase($realParent, $realBase)) {
+        if (is_link($candidate)) {
+            throw new InvalidArgumentException('Path escapes confined base directory.');
+        }
+
+        if (is_dir($realBase)) {
+            $ancestor = dirname($candidate);
+            while ($ancestor !== $realBase && ! file_exists($ancestor) && $ancestor !== dirname($ancestor)) {
+                $ancestor = dirname($ancestor);
+            }
+
+            $realAncestor = realpath($ancestor);
+            if (! $realAncestor || ! $this->isWithinBase($realAncestor, $realBase)) {
                 throw new InvalidArgumentException('Parent path escapes confined base directory.');
             }
         }

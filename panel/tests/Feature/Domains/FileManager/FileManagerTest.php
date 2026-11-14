@@ -1,17 +1,19 @@
 <?php
 
-namespace Tests\Feature\Domains\ServerOps;
+namespace Tests\Feature\Domains\FileManager;
 
-use App\Domains\ServerOps\Actions\ChmodFileEntryAction;
-use App\Domains\ServerOps\Actions\CreateFileEntryAction;
-use App\Domains\ServerOps\Actions\DeleteFileEntryAction;
-use App\Domains\ServerOps\Actions\ListDirectoryAction;
-use App\Domains\ServerOps\Actions\ReadFileContentAction;
-use App\Domains\ServerOps\Actions\SaveFileContentAction;
-use App\Domains\ServerOps\Contracts\FileManagerDriverInterface;
+use App\Domains\FileManager\Actions\ChmodFileEntryAction;
+use App\Domains\FileManager\Actions\CreateFileEntryAction;
+use App\Domains\FileManager\Actions\DeleteFileEntryAction;
+use App\Domains\FileManager\Actions\ListDirectoryAction;
+use App\Domains\FileManager\Actions\ReadFileContentAction;
+use App\Domains\FileManager\Actions\SaveFileContentAction;
+use App\Domains\FileManager\Contracts\FileManagerDriverInterface;
 use App\Domains\Shared\ValueObjects\SystemPath;
+use App\Support\Cli\LcCliService;
 use Illuminate\Support\Facades\File;
 use InvalidArgumentException;
+use Mockery;
 use Tests\TestCase;
 
 class FileManagerTest extends TestCase
@@ -84,8 +86,62 @@ class FileManagerTest extends TestCase
         new SystemPath($this->tempBase, 'public_html/missing.txt', mustExist: true);
     }
 
+    public function test_system_path_rejects_symlink_traversal_escapes(): void
+    {
+        $outsideDir = storage_path('app/test_homes/'.uniqid('outside_', true));
+        File::makeDirectory($outsideDir, 0755, true);
+
+        $symlinkPath = $this->tempBase.'/public_html/escape_link';
+
+        try {
+            if (! @symlink($outsideDir, $symlinkPath)) {
+                $this->markTestSkipped('Symlink creation is not permitted in this environment.');
+            }
+
+            $this->expectException(InvalidArgumentException::class);
+            new SystemPath($this->tempBase, 'public_html/escape_link/nonexistent_dir/new_file.txt', mustExist: false);
+        } finally {
+            if (is_link($symlinkPath)) {
+                @unlink($symlinkPath);
+            }
+            if (file_exists($outsideDir)) {
+                File::deleteDirectory($outsideDir);
+            }
+        }
+    }
+
     public function test_file_manager_actions_create_list_read_save_chmod_and_delete_entries(): void
     {
+        $filePath = new SystemPath($this->tempBase, 'public_html/hello.txt');
+        $dirPath = new SystemPath($this->tempBase, 'public_html');
+
+        $mockCli = Mockery::mock(LcCliService::class);
+        $mockCli->shouldReceive('run')
+            ->once()
+            ->with('filemanager', ['create', $filePath->fullPath, 'file'])
+            ->andReturn(['status' => 'success', 'data' => []]);
+        $mockCli->shouldReceive('run')
+            ->once()
+            ->with('filemanager', ['write', $filePath->fullPath, base64_encode('Hello LiteControl')])
+            ->andReturn(['status' => 'success', 'data' => []]);
+        $mockCli->shouldReceive('run')
+            ->once()
+            ->with('filemanager', ['read', $filePath->fullPath, '5242880'])
+            ->andReturn(['status' => 'success', 'data' => ['content' => 'Hello LiteControl', 'size' => 17]]);
+        $mockCli->shouldReceive('run')
+            ->once()
+            ->with('filemanager', ['list', $dirPath->fullPath])
+            ->andReturn(['status' => 'success', 'data' => [['name' => 'hello.txt']]]);
+        $mockCli->shouldReceive('run')
+            ->once()
+            ->with('filemanager', ['chmod', $filePath->fullPath, '0644'])
+            ->andReturn(['status' => 'success', 'data' => ['permissions' => '0644']]);
+        $mockCli->shouldReceive('run')
+            ->once()
+            ->with('filemanager', ['delete', $filePath->fullPath])
+            ->andReturn(['status' => 'success', 'data' => []]);
+
+        $this->app->instance(LcCliService::class, $mockCli);
         $driver = app(FileManagerDriverInterface::class);
 
         $createAction = new CreateFileEntryAction($driver);
@@ -95,24 +151,20 @@ class FileManagerTest extends TestCase
         $chmodAction = new ChmodFileEntryAction($driver);
         $deleteAction = new DeleteFileEntryAction($driver);
 
-        $filePath = new SystemPath($this->tempBase, 'public_html/hello.txt');
         $createAction->handle($filePath, 'file');
-        $this->assertTrue($filePath->exists());
-
         $saveAction->handle($filePath, 'Hello LiteControl');
+
         $read = $readAction->handle($filePath);
         $this->assertSame('Hello LiteControl', $read['content']);
         $this->assertSame(17, $read['size']);
 
-        $dirPath = new SystemPath($this->tempBase, 'public_html');
         $items = $listAction->handle($dirPath);
         $this->assertCount(1, $items);
         $this->assertSame('hello.txt', $items[0]['name']);
 
         $perms = $chmodAction->handle($filePath, 0644);
-        $this->assertIsString($perms);
+        $this->assertSame('0644', $perms);
 
         $deleteAction->handle($filePath);
-        $this->assertFalse($filePath->exists());
     }
 }

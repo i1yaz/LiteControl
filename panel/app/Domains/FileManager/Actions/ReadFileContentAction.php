@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Domains\ServerOps\Actions;
+namespace App\Domains\FileManager\Actions;
 
-use App\Domains\ServerOps\Contracts\FileManagerDriverInterface;
+use App\Domains\FileManager\Contracts\FileManagerDriverInterface;
 use App\Domains\Shared\ValueObjects\SystemPath;
 
 class ReadFileContentAction
