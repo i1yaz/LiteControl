@@ -167,4 +167,54 @@ class FileManagerTest extends TestCase
 
         $deleteAction->handle($filePath);
     }
+
+    public function test_cli_file_manager_adapter_normalizes_directory_listing(): void
+    {
+        $mockCli = Mockery::mock(LcCliService::class);
+        $path = new SystemPath($this->tempBase, 'public_html');
+
+        $mockCli->shouldReceive('run')
+            ->once()
+            ->with('filemanager', ['list', $path->fullPath])
+            ->andReturn([
+                'status' => 'success',
+                'message' => 'Directory listed.',
+                'data' => [
+                    [
+                        'name' => 'logs',
+                        'path' => $path->fullPath.'/logs',
+                        'type' => 'dir',
+                        'size' => 0,
+                        'permissions' => '0755',
+                        'modified_at' => '2026-11-14T21:52:22+00:00',
+                    ],
+                    [
+                        'name' => 'index.php',
+                        'path' => $path->fullPath.'/index.php',
+                        'type' => 'file',
+                        'size' => 1536,
+                        'permissions' => '0644',
+                        'modified_at' => '2026-11-14T21:52:22+00:00',
+                    ],
+                ],
+            ]);
+
+        $adapter = new \App\Domains\FileManager\Infrastructure\CliFileManagerAdapter($mockCli);
+        $items = $adapter->listDirectory($path);
+
+        $this->assertCount(2, $items);
+
+        $this->assertSame('logs', $items[0]['name']);
+        $this->assertSame('public_html/logs', $items[0]['path']);
+        $this->assertTrue($items[0]['is_dir']);
+        $this->assertSame('—', $items[0]['size_human']);
+        $this->assertSame('0755', $items[0]['permissions']);
+
+        $this->assertSame('index.php', $items[1]['name']);
+        $this->assertSame('public_html/index.php', $items[1]['path']);
+        $this->assertFalse($items[1]['is_dir']);
+        $this->assertSame('1.5 KB', $items[1]['size_human']);
+        $this->assertSame('php', $items[1]['extension']);
+        $this->assertSame('0644', $items[1]['permissions']);
+    }
 }

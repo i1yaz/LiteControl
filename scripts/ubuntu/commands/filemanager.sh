@@ -2,6 +2,32 @@
 # LiteControl CLI - File Manager operations
 # Copyright (c) 2026 LiteControl
 
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "${SCRIPT_DIR}/../lib/common.sh"
+
+emit_error() {
+    local msg="$1"
+    if [[ "${LC_JSON_OUTPUT:-0}" == "1" ]]; then
+        json_response "error" "${msg}"
+    else
+        log_error "${msg}"
+    fi
+    exit 1
+}
+
+emit_success() {
+    local msg="$1"
+    local data_json="${2:-null}"
+    if [[ "${LC_JSON_OUTPUT:-0}" == "1" ]]; then
+        json_response "success" "${msg}" "${data_json}"
+    else
+        log_ok "${msg}"
+    fi
+}
+
 cmd_filemanager_list() {
     local target="${1:-}"
     if [[ -z "${target}" ]]; then
@@ -171,3 +197,5 @@ cmd_filemanager_main() {
         *)      emit_error "Unknown filemanager subcommand: ${sub}" ;;
     esac
 }
+
+cmd_filemanager_main "$@"
