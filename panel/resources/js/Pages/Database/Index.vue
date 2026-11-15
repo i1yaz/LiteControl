@@ -172,11 +172,11 @@ const deleteDbUser = async (id, name) => {
 </script>
 
 <template>
-    <Head title="MySQL Relational Telemetry - LiteControl" />
+    <Head :title="__('MySQL Relational Telemetry - LiteControl')" />
 
     <div class="space-y-8">
         <UiPageHeader
-            title="Relational Schema Registry"
+            :title="__('Relational Schema Registry')"
             subtitle="Storage Engine // MARIADB_RELATIONAL_SUBSYSTEM"
         >
             <template #actions>
@@ -185,7 +185,7 @@ const deleteDbUser = async (id, name) => {
                     target="_blank"
                     class="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs transition-colors border border-theme-border"
                 >
-                    <span>phpMyAdmin GUI</span>
+                    <span>{{ __('phpMyAdmin GUI') }}</span>
                     <ExternalLink class="w-3.5 h-3.5 text-theme-text-muted" />
                 </a>
 
@@ -203,19 +203,19 @@ const deleteDbUser = async (id, name) => {
                     <span class="text-xs font-semibold uppercase text-theme-text-secondary tracking-wider">
                         Active Relational Instances ({{ databases.length }})
                     </span>
-                    <span class="text-xs text-emerald-400">DAEMON: MARIADB_LIVE</span>
+                    <span class="text-xs text-emerald-400">{{ __('DAEMON: MARIADB_LIVE') }}</span>
                 </div>
 
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs text-theme-text-primary">
                         <thead class="bg-theme-bg-surface/30 text-[10px] font-semibold text-theme-text-muted uppercase tracking-widest border-b border-theme-border">
                             <tr>
-                                <th class="px-5 py-3.5">Schema Identifier</th>
-                                <th v-if="isAdmin" class="px-5 py-3.5">Assigned Principal</th>
-                                <th class="px-5 py-3.5">Associated Domain</th>
-                                <th class="px-5 py-3.5">Authorized Principals</th>
-                                <th class="px-5 py-3.5">Allocated Footprint</th>
-                                <th class="px-5 py-3.5 text-right">Operations</th>
+                                <th class="px-5 py-3.5">{{ __('Schema Identifier') }}</th>
+                                <th v-if="isAdmin" class="px-5 py-3.5">{{ __('Assigned Principal') }}</th>
+                                <th class="px-5 py-3.5">{{ __('Associated Domain') }}</th>
+                                <th class="px-5 py-3.5">{{ __('Authorized Principals') }}</th>
+                                <th class="px-5 py-3.5">{{ __('Allocated Footprint') }}</th>
+                                <th class="px-5 py-3.5 text-right">{{ __('Operations') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-theme-border">
@@ -253,7 +253,7 @@ const deleteDbUser = async (id, name) => {
                                 <td class="px-5 py-3.5 text-right">
                                     <button
                                         @click="deleteDb(db.id, db.db_name)"
-                                        title="Terminate Schema"
+                                        :title="__('Terminate Schema')"
                                         class="text-theme-text-muted hover:text-rose-400 transition-colors p-1"
                                     >
                                         <Trash2 class="w-4 h-4" />
@@ -275,7 +275,7 @@ const deleteDbUser = async (id, name) => {
         <div class="space-y-3 pt-2">
             <div class="flex items-center justify-between pb-2">
                 <div class="flex items-center gap-2">
-                    <span class="text-xs font-semibold uppercase text-theme-text-secondary tracking-wider">DATABASE USER ACCOUNTS</span>
+                    <span class="text-xs font-semibold uppercase text-theme-text-secondary tracking-wider">{{ __('DATABASE USER ACCOUNTS') }}</span>
                 </div>
 
                 <UiButton
@@ -284,7 +284,7 @@ const deleteDbUser = async (id, name) => {
                     size="sm"
                 >
                     <UserPlus class="w-3.5 h-3.5 mr-1.5 inline text-theme-accent" />
-                    <span>Provision DB User</span>
+                    <span>{{ __('Provision DB User') }}</span>
                 </UiButton>
             </div>
 
@@ -293,18 +293,18 @@ const deleteDbUser = async (id, name) => {
                     <span class="text-xs font-semibold uppercase text-theme-text-secondary tracking-wider">
                         Registered DB Principals ({{ dbUsers.length }})
                     </span>
-                    <span class="text-xs text-theme-text-muted">ACL_AUTH_LAYER</span>
+                    <span class="text-xs text-theme-text-muted">{{ __('ACL_AUTH_LAYER') }}</span>
                 </div>
 
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs text-theme-text-primary">
                         <thead class="bg-theme-bg-surface/30 text-[10px] font-semibold text-theme-text-muted uppercase tracking-widest border-b border-theme-border">
                             <tr>
-                                <th class="px-5 py-3.5">Principal Identity</th>
-                                <th v-if="isAdmin" class="px-5 py-3.5">Owner Context</th>
-                                <th class="px-5 py-3.5">Linked Schema</th>
-                                <th class="px-5 py-3.5">Host Bind</th>
-                                <th class="px-5 py-3.5 text-right">Operations</th>
+                                <th class="px-5 py-3.5">{{ __('Principal Identity') }}</th>
+                                <th v-if="isAdmin" class="px-5 py-3.5">{{ __('Owner Context') }}</th>
+                                <th class="px-5 py-3.5">{{ __('Linked Schema') }}</th>
+                                <th class="px-5 py-3.5">{{ __('Host Bind') }}</th>
+                                <th class="px-5 py-3.5 text-right">{{ __('Operations') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-theme-border">
@@ -320,7 +320,7 @@ const deleteDbUser = async (id, name) => {
                                     <span v-if="u.database?.db_name" class="px-2 py-0.5 bg-theme-bg-surface border border-theme-border text-theme-text-secondary rounded text-[10px]">
                                         {{ u.database.db_name }}
                                     </span>
-                                    <span v-else class="text-theme-text-muted">NONE</span>
+                                    <span v-else class="text-theme-text-muted">{{ __('NONE') }}</span>
                                 </td>
                                 <td class="px-5 py-3.5 text-theme-text-muted">
                                     {{ u.host || 'localhost' }}
@@ -329,21 +329,21 @@ const deleteDbUser = async (id, name) => {
                                     <div class="flex items-center justify-end gap-1.5">
                                         <button
                                             @click="openGrantModal(u)"
-                                            title="Assign Schema Privileges"
+                                            :title="__('Assign Schema Privileges')"
                                             class="text-theme-text-muted hover:text-emerald-400 transition-colors p-1"
                                         >
                                             <Shield class="w-4 h-4" />
                                         </button>
                                         <button
                                             @click="openPasswordModal(u)"
-                                            title="Rotate Credentials"
+                                            :title="__('Rotate Credentials')"
                                             class="text-theme-text-muted hover:text-theme-accent transition-colors p-1"
                                         >
                                             <Key class="w-4 h-4" />
                                         </button>
                                         <button
                                             @click="deleteDbUser(u.id, u.db_username)"
-                                            title="Terminate Principal"
+                                            :title="__('Terminate Principal')"
                                             class="text-theme-text-muted hover:text-rose-400 transition-colors p-1"
                                         >
                                             <Trash2 class="w-4 h-4" />
@@ -363,13 +363,13 @@ const deleteDbUser = async (id, name) => {
         </div>
 
         <!-- Create DB Modal -->
-        <UiModal :show="showCreateDbModal" title="Provision Relational Database" max-width="md" @close="showCreateDbModal = false">
+        <UiModal :show="showCreateDbModal" :title="__('Provision Relational Database')" max-width="md" @close="showCreateDbModal = false">
             <form @submit.prevent="submitDb" class="space-y-4">
                 <div v-if="isAdmin">
                     <UiSelect
                         id="db_owner"
                         v-model="dbForm.user_id"
-                        label="Database Owner / Principal"
+                        :label="__('Database Owner / Principal')"
                         :options="users.map(u => ({ value: u.id, label: `${u.username} (${u.name})` }))"
                         required
                     />
@@ -380,8 +380,8 @@ const deleteDbUser = async (id, name) => {
                         id="db_name"
                         v-model="dbForm.db_name"
                         type="text"
-                        label="Database Name"
-                        placeholder="e.g. blog_db"
+                        :label="__('Database Name')"
+                        :placeholder="__('e.g. blog_db')"
                         :error="dbForm.errors.db_name"
                         required
                     />
@@ -391,7 +391,7 @@ const deleteDbUser = async (id, name) => {
                     <UiSelect
                         id="db_domain"
                         v-model="dbForm.domain_id"
-                        label="Associated Domain / Subdomain (Optional)"
+                        :label="__('Associated Domain / Subdomain (Optional)')"
                         :options="[
                             { value: '', label: 'None (Standalone Database)' },
                             ...availableDomains.map(d => ({ value: d.id, label: d.domain }))
@@ -412,13 +412,13 @@ const deleteDbUser = async (id, name) => {
         </UiModal>
 
         <!-- Create User Modal -->
-        <UiModal :show="showCreateUserModal" title="Provision Database User" max-width="md" @close="showCreateUserModal = false">
+        <UiModal :show="showCreateUserModal" :title="__('Provision Database User')" max-width="md" @close="showCreateUserModal = false">
             <form @submit.prevent="submitUser" class="space-y-4">
                 <div v-if="isAdmin">
                     <UiSelect
                         id="user_owner"
                         v-model="userForm.user_id"
-                        label="Principal Owner"
+                        :label="__('Principal Owner')"
                         :options="users.map(u => ({ value: u.id, label: `${u.username} (${u.name})` }))"
                         required
                     />
@@ -429,8 +429,8 @@ const deleteDbUser = async (id, name) => {
                         id="db_username"
                         v-model="userForm.username"
                         type="text"
-                        label="Database Username"
-                        placeholder="e.g. appuser"
+                        :label="__('Database Username')"
+                        :placeholder="__('e.g. appuser')"
                         :error="userForm.errors.username"
                         required
                     />
@@ -472,7 +472,7 @@ const deleteDbUser = async (id, name) => {
                     <UiSelect
                         id="assign_database"
                         v-model="userForm.database_id"
-                        label="Assign Primary Database (Optional)"
+                        :label="__('Assign Primary Database (Optional)')"
                         :options="[
                             { value: '', label: '-- None (Assign Later) --' },
                             ...databases.map(d => ({ value: d.id, label: d.db_name }))
@@ -492,7 +492,7 @@ const deleteDbUser = async (id, name) => {
         </UiModal>
 
         <!-- Rotate Password Modal -->
-        <UiModal :show="showPasswordModal" title="Rotate Database User Password" max-width="sm" @close="showPasswordModal = false">
+        <UiModal :show="showPasswordModal" :title="__('Rotate Database User Password')" max-width="sm" @close="showPasswordModal = false">
             <form @submit.prevent="submitPassword" class="space-y-4">
                 <div>
                     <p class="text-xs text-theme-text-secondary mb-3">
@@ -541,7 +541,7 @@ const deleteDbUser = async (id, name) => {
         </UiModal>
 
         <!-- Grant Access Modal -->
-        <UiModal :show="showGrantModal" title="Grant Database Privileges" max-width="sm" @close="showGrantModal = false">
+        <UiModal :show="showGrantModal" :title="__('Grant Database Privileges')" max-width="sm" @close="showGrantModal = false">
             <form @submit.prevent="submitGrant" class="space-y-4">
                 <div>
                     <p class="text-xs text-theme-text-secondary mb-3">
@@ -550,7 +550,7 @@ const deleteDbUser = async (id, name) => {
                     <UiSelect
                         id="grant_db"
                         v-model="grantForm.database_id"
-                        label="Target Database Schema"
+                        :label="__('Target Database Schema')"
                         :options="databases.map(d => ({ value: d.id, label: d.db_name }))"
                         required
                     />

@@ -82,7 +82,7 @@ const deletePackage = async (id, name, usersCount) => {
 </script>
 
 <template>
-    <Head title="Hosting Packages" />
+    <Head :title="__('Hosting Packages')" />
 
     <div class="space-y-6">
             <!-- Header -->
@@ -90,7 +90,7 @@ const deletePackage = async (id, name, usersCount) => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Package class="w-6 h-6 text-indigo-400" />
-                        <span>Hosting Packages</span>
+                        <span>{{ __('Hosting Packages') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Define disk quotas, bandwidth limits, and resource allocations for customer accounts.
@@ -102,7 +102,7 @@ const deletePackage = async (id, name, usersCount) => {
                     class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors shadow-sm shadow-indigo-600/30"
                 >
                     <Plus class="w-4 h-4" />
-                    <span>Create Package</span>
+                    <span>{{ __('Create Package') }}</span>
                 </button>
             </div>
 
@@ -148,7 +148,7 @@ const deletePackage = async (id, name, usersCount) => {
                         <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/60">
                             <HardDrive class="w-4 h-4 text-cyan-400" />
                             <div>
-                                <span class="text-slate-400 text-[10px] uppercase block">Disk Quota</span>
+                                <span class="text-slate-400 text-[10px] uppercase block">{{ __('Disk Quota') }}</span>
                                 <span class="font-semibold text-white">{{ pkg.disk_quota_mb }} MB</span>
                             </div>
                         </div>
@@ -156,7 +156,7 @@ const deletePackage = async (id, name, usersCount) => {
                         <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/60">
                             <Activity class="w-4 h-4 text-emerald-400" />
                             <div>
-                                <span class="text-slate-400 text-[10px] uppercase block">Bandwidth</span>
+                                <span class="text-slate-400 text-[10px] uppercase block">{{ __('Bandwidth') }}</span>
                                 <span class="font-semibold text-white">{{ pkg.bandwidth_mb }} MB</span>
                             </div>
                         </div>
@@ -164,7 +164,7 @@ const deletePackage = async (id, name, usersCount) => {
                         <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/60">
                             <Globe class="w-4 h-4 text-indigo-400" />
                             <div>
-                                <span class="text-slate-400 text-[10px] uppercase block">Domains</span>
+                                <span class="text-slate-400 text-[10px] uppercase block">{{ __('Domains') }}</span>
                                 <span class="font-semibold text-white">{{ pkg.max_domains }}</span>
                             </div>
                         </div>
@@ -172,7 +172,7 @@ const deletePackage = async (id, name, usersCount) => {
                         <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/60">
                             <Database class="w-4 h-4 text-amber-400" />
                             <div>
-                                <span class="text-slate-400 text-[10px] uppercase block">Databases</span>
+                                <span class="text-slate-400 text-[10px] uppercase block">{{ __('Databases') }}</span>
                                 <span class="font-semibold text-white">{{ pkg.max_databases }}</span>
                             </div>
                         </div>
@@ -184,11 +184,11 @@ const deletePackage = async (id, name, usersCount) => {
             <UiModal :show="showModal" :title="isEditing ? 'Edit Package' : 'Create Hosting Package'" max-width="lg" @close="showModal = false">
                 <form @submit.prevent="submit" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Package Name</label>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Package Name') }}</label>
                         <input
                             v-model="form.name"
                             type="text"
-                            placeholder="e.g. Standard 5GB"
+                            :placeholder="__('e.g. Standard 5GB')"
                             required
                             class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
                         />
@@ -197,7 +197,7 @@ const deletePackage = async (id, name, usersCount) => {
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Disk Quota (MB)</label>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Disk Quota (MB)') }}</label>
                             <input
                                 v-model="form.disk_quota_mb"
                                 type="number"
@@ -208,7 +208,7 @@ const deletePackage = async (id, name, usersCount) => {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Bandwidth (MB)</label>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Bandwidth (MB)') }}</label>
                             <input
                                 v-model="form.bandwidth_mb"
                                 type="number"
@@ -221,7 +221,7 @@ const deletePackage = async (id, name, usersCount) => {
 
                     <div class="grid grid-cols-3 gap-3">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Max Domains</label>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Max Domains') }}</label>
                             <input
                                 v-model="form.max_domains"
                                 type="number"
@@ -232,7 +232,7 @@ const deletePackage = async (id, name, usersCount) => {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Subdomains</label>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Subdomains') }}</label>
                             <input
                                 v-model="form.max_subdomains"
                                 type="number"
@@ -243,7 +243,7 @@ const deletePackage = async (id, name, usersCount) => {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Databases</label>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Databases') }}</label>
                             <input
                                 v-model="form.max_databases"
                                 type="number"

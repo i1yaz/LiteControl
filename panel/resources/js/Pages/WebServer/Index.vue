@@ -195,11 +195,11 @@ const copySshCommand = (username) => {
 </script>
 
 <template>
-    <Head title="Virtual Host Routing - LiteControl" />
+    <Head :title="__('Virtual Host Routing - LiteControl')" />
 
     <div class="space-y-6">
         <UiPageHeader
-            title="Domain Routing Registry"
+            :title="__('Domain Routing Registry')"
             subtitle="Network Gateway // HTTP_VHOST_ROUTER"
         >
             <template #actions>
@@ -212,7 +212,7 @@ const copySshCommand = (username) => {
 
         <!-- Flash Notice / Warning if present -->
         <div v-if="$page.props.flash?.warning" class="p-3 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-300 flex items-start gap-2.5">
-            <span class="font-bold shrink-0">[WARN]:</span>
+            <span class="font-bold shrink-0">{{ __('[WARN]:') }}</span>
             <span>{{ $page.props.flash.warning }}</span>
         </div>
 
@@ -301,20 +301,20 @@ const copySshCommand = (username) => {
                         <a
                             :href="`/domains/${dom.id}/manage`"
                             class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-sm transition-colors"
-                            title="Manage Website"
+                            :title="__('Manage Website')"
                         >
                             <LayoutGrid class="w-3.5 h-3.5" />
-                            <span>Manage</span>
+                            <span>{{ __('Manage') }}</span>
                         </a>
 
                         <!-- Filemanager Button -->
                         <a
                             :href="`/files?domain_id=${dom.id}`"
                             class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-medium border border-theme-border transition-colors"
-                            title="Open File Manager"
+                            :title="__('Open File Manager')"
                         >
                             <FolderOpen class="w-3.5 h-3.5 text-cyan-400" />
-                            <span>Filemanager</span>
+                            <span>{{ __('Filemanager') }}</span>
                         </a>
 
                         <!-- Copy SSH Command Button -->
@@ -333,10 +333,10 @@ const copySshCommand = (username) => {
                         <button
                             @click="openEditModal(dom)"
                             class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-medium border border-theme-border transition-colors"
-                            title="Quick Modify Domain"
+                            :title="__('Quick Modify Domain')"
                         >
                             <Pencil class="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Modify</span>
+                            <span>{{ __('Modify') }}</span>
                         </button>
 
                         <!-- Suspend / Unsuspend Button -->
@@ -359,10 +359,10 @@ const copySshCommand = (username) => {
                         <button
                             @click="deleteDomain(dom.id, dom.domain)"
                             class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-medium border border-rose-500/30 transition-colors"
-                            title="Terminate VHost"
+                            :title="__('Terminate VHost')"
                         >
                             <Trash2 class="w-3.5 h-3.5" />
-                            <span>Delete</span>
+                            <span>{{ __('Delete') }}</span>
                         </button>
                     </div>
                 </td>
@@ -372,7 +372,7 @@ const copySshCommand = (username) => {
         <!-- Add Domain Modal -->
         <UiModal
             :show="showModal"
-            title="Provision Virtual Host"
+            :title="__('Provision Virtual Host')"
             max-width="md"
             @close="showModal = false"
         >
@@ -381,7 +381,7 @@ const copySshCommand = (username) => {
                     <UiSelect
                         id="user_id"
                         v-model="form.user_id"
-                        label="Target Principal"
+                        :label="__('Target Principal')"
                         :options="userOptions"
                         required
                     />
@@ -392,8 +392,8 @@ const copySshCommand = (username) => {
                         id="domain"
                         v-model="form.domain"
                         type="text"
-                        label="Target FQDN / Domain Name"
-                        placeholder="app.example.com"
+                        :label="__('Target FQDN / Domain Name')"
+                        :placeholder="__('app.example.com')"
                         :error="form.errors.domain"
                         required
                     />
@@ -402,13 +402,13 @@ const copySshCommand = (username) => {
                 <!-- Web Root Subpath (Pointing Target) -->
                 <div>
                     <label class="block text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-1 flex items-center justify-between">
-                        <span>Web Root Subpath (Pointing Target)</span>
-                        <span class="text-theme-text-muted font-normal lowercase">e.g. "public" for Laravel</span>
+                        <span>{{ __('Web Root Subpath (Pointing Target)') }}</span>
+                        <span class="text-theme-text-muted font-normal lowercase">{{ __('e.g. "public" for Laravel') }}</span>
                     </label>
                     <input
                         v-model="form.public_path"
                         type="text"
-                        placeholder="public (leave empty for standard public_html)"
+                        :placeholder="__('public (leave empty for standard public_html)')"
                         class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:border-theme-accent transition-colors"
                     />
                     <p class="text-[11px] text-theme-text-muted mt-1">
@@ -420,7 +420,7 @@ const copySshCommand = (username) => {
                     <UiSelect
                         id="php_version"
                         v-model="form.php_version"
-                        label="PHP Runtime"
+                        :label="__('PHP Runtime')"
                         :options="phpOptions"
                     />
                 </div>
@@ -428,8 +428,8 @@ const copySshCommand = (username) => {
                 <!-- Issue SSL Toggle (Default ON) -->
                 <div class="pt-2 border-t border-theme-border flex items-center justify-between">
                     <div>
-                        <span class="text-xs text-theme-text-primary block font-medium">Generate Let's Encrypt SSL</span>
-                        <span class="text-[11px] text-theme-text-muted">Default: ON (Requires DNS A-record pointed)</span>
+                        <span class="text-xs text-theme-text-primary block font-medium">{{ __('Generate Let\'s Encrypt SSL') }}</span>
+                        <span class="text-[11px] text-theme-text-muted">{{ __('Default: ON (Requires DNS A-record pointed)') }}</span>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input
@@ -470,7 +470,7 @@ const copySshCommand = (username) => {
         >
             <form @submit.prevent="submitEdit" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-1">Target FQDN (Read-Only)</label>
+                    <label class="block text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-1">{{ __('Target FQDN (Read-Only)') }}</label>
                     <input
                         :value="editingDomain?.domain"
                         disabled
@@ -481,13 +481,13 @@ const copySshCommand = (username) => {
                 <!-- Web Root Subpath (Pointing Target) -->
                 <div>
                     <label class="block text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-1 flex items-center justify-between">
-                        <span>Web Root Subpath (Pointing Target)</span>
-                        <span class="text-theme-text-muted font-normal lowercase">e.g. "public" for Laravel</span>
+                        <span>{{ __('Web Root Subpath (Pointing Target)') }}</span>
+                        <span class="text-theme-text-muted font-normal lowercase">{{ __('e.g. "public" for Laravel') }}</span>
                     </label>
                     <input
                         v-model="editForm.public_path"
                         type="text"
-                        placeholder="public (leave empty for standard public_html)"
+                        :placeholder="__('public (leave empty for standard public_html)')"
                         class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:border-theme-accent transition-colors"
                     />
                     <p class="text-[11px] text-theme-text-muted mt-1">
@@ -499,7 +499,7 @@ const copySshCommand = (username) => {
                     <UiSelect
                         id="edit_php_version"
                         v-model="editForm.php_version"
-                        label="PHP Runtime"
+                        :label="__('PHP Runtime')"
                         :options="phpOptions"
                     />
                 </div>
@@ -507,7 +507,7 @@ const copySshCommand = (username) => {
                 <!-- SSL Certificate Status & Issue Toggle -->
                 <div class="pt-2 border-t border-theme-border flex items-center justify-between">
                     <div>
-                        <span class="text-xs text-theme-text-primary block font-medium">TLS / SSL Encryption</span>
+                        <span class="text-xs text-theme-text-primary block font-medium">{{ __('TLS / SSL Encryption') }}</span>
                         <span class="text-[11px] text-theme-text-muted">
                             {{ editingDomain?.ssl_enabled ? 'Active Let\'s Encrypt Certificate' : 'Disabled (toggle ON to request SSL)' }}
                         </span>

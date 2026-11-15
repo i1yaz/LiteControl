@@ -16,7 +16,7 @@ const submit = () => {
 </script>
 
 <template>
-            <Head title="Change Password" />
+            <Head :title="__('Change Password')" />
 
         <div class="max-w-xl mx-auto space-y-6">
             <!-- Header -->
@@ -24,7 +24,7 @@ const submit = () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Lock class="w-6 h-6 text-rose-400" />
-                        <span>Change Account Password</span>
+                        <span>{{ __('Change Account Password') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Update your login credentials. Use a strong password containing at least 8 characters.
@@ -35,7 +35,7 @@ const submit = () => {
             <!-- Form -->
             <form @submit.prevent="submit" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-5">
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Current Password</label>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Current Password') }}</label>
                     <input
                         v-model="form.current_password"
                         type="password"
@@ -46,7 +46,7 @@ const submit = () => {
                 </div>
 
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">New Password</label>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('New Password') }}</label>
                     <input
                         v-model="form.password"
                         type="password"
@@ -57,7 +57,7 @@ const submit = () => {
                 </div>
 
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Confirm New Password</label>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Confirm New Password') }}</label>
                     <input
                         v-model="form.password_confirmation"
                         type="password"

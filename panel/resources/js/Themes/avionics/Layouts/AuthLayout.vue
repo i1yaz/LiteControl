@@ -16,7 +16,7 @@ import { Cpu } from '@lucide/vue';
                 </div>
                 <div class="flex flex-col text-left">
                     <span class="text-base font-black tracking-tight text-white font-mono uppercase">
-                        Lite<span class="text-[#ff6b35]">Control</span>
+                        Lite<span class="text-[#ff6b35]">{{ __('Control') }}</span>
                     </span>
                     <span class="text-[9px] font-mono tracking-widest text-[#6c7d93] uppercase">
                         Avionics & Telemetry Hub
@@ -25,9 +25,9 @@ import { Cpu } from '@lucide/vue';
             </div>
 
             <div class="flex items-center justify-center gap-2 mt-1">
-                <span class="text-[10px] font-mono tracking-widest uppercase text-[#ff6b35]">Access Security</span>
+                <span class="text-[10px] font-mono tracking-widest uppercase text-[#ff6b35]">{{ __('Access Security') }}</span>
                 <span class="text-[#3a4454] font-mono">/</span>
-                <span class="text-[10px] font-mono text-[#6c7d93]">AUTH_TERMINAL_GATEWAY</span>
+                <span class="text-[10px] font-mono text-[#6c7d93]">{{ __('AUTH_TERMINAL_GATEWAY') }}</span>
             </div>
         </div>
 

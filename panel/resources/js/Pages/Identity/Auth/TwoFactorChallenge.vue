@@ -27,7 +27,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Two-Factor Challenge" />
+    <Head :title="__('Two-Factor Challenge')" />
 
     <div class="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
         <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
@@ -35,7 +35,7 @@ const submit = () => {
                 <div class="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                     <ShieldCheck class="w-7 h-7" />
                 </div>
-                <h1 class="text-xl font-bold text-white">Two-Factor Authentication</h1>
+                <h1 class="text-xl font-bold text-white">{{ __('Two-Factor Authentication') }}</h1>
                 <p class="text-xs sm:text-sm text-slate-400">
                     {{
                         useRecoveryCode
@@ -72,7 +72,7 @@ const submit = () => {
                         v-model="form.recovery_code"
                         type="text"
                         autocomplete="off"
-                        placeholder="XXXX-XXXX"
+                        :placeholder="__('XXXX-XXXX')"
                         autofocus
                         class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-center tracking-widest font-mono text-sm uppercase focus:outline-none focus:border-emerald-500 transition-colors"
                     />

@@ -26,7 +26,7 @@ const refresh = () => {
 </script>
 
 <template>
-            <Head title="Error Logs" />
+            <Head :title="__('Error Logs')" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -34,7 +34,7 @@ const refresh = () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <FileText class="w-6 h-6 text-sky-400" />
-                        <span>System & Error Logs</span>
+                        <span>{{ __('System & Error Logs') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Inspect live server runtime logs from OpenLiteSpeed and LiteControl daemon.
@@ -45,7 +45,7 @@ const refresh = () => {
                     <button
                         @click="refresh"
                         class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-                        title="Refresh Log"
+                        :title="__('Refresh Log')"
                     >
                         <RefreshCw class="w-4 h-4" />
                     </button>
@@ -87,17 +87,17 @@ const refresh = () => {
 
                 <!-- Lines selector -->
                 <div class="flex items-center gap-3">
-                    <span class="text-xs text-slate-400">Tail:</span>
+                    <span class="text-xs text-slate-400">{{ __('Tail:') }}</span>
                     <select
                         :value="currentLines"
                         @change="fetchLogs(currentType, $event.target.value)"
                         class="bg-slate-950 border border-slate-800 text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none"
                     >
-                        <option :value="50">50 lines</option>
-                        <option :value="100">100 lines</option>
-                        <option :value="250">250 lines</option>
-                        <option :value="500">500 lines</option>
-                        <option :value="1000">1000 lines</option>
+                        <option :value="50">{{ __('50 lines') }}</option>
+                        <option :value="100">{{ __('100 lines') }}</option>
+                        <option :value="250">{{ __('250 lines') }}</option>
+                        <option :value="500">{{ __('500 lines') }}</option>
+                        <option :value="1000">{{ __('1000 lines') }}</option>
                     </select>
                 </div>
             </div>

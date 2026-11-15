@@ -67,7 +67,7 @@ onMounted(() => {
             <div>
                 <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary flex items-center gap-2">
                     <FileCode class="w-4 h-4 text-blue-500" />
-                    <span>Virtual Host Configuration</span>
+                    <span>{{ __('Virtual Host Configuration') }}</span>
                 </h3>
                 <span class="text-[11px] text-theme-text-secondary font-mono mt-0.5 block">
                     {{ domain.domain }} (vhconf.conf)
@@ -79,7 +79,7 @@ onMounted(() => {
                     @click="loadConf"
                     :disabled="loading || saving"
                     class="p-1.5 rounded-lg bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary border border-theme-border transition-colors text-xs flex items-center gap-1.5"
-                    title="Reload Configuration"
+                    :title="__('Reload Configuration')"
                 >
                     <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" />
                 </button>
@@ -97,8 +97,8 @@ onMounted(() => {
         <div class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-xs text-blue-300 flex items-start gap-2">
             <CheckCircle2 class="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
             <div class="leading-relaxed">
-                <span class="font-semibold">Syntax Validation & Auto-Rollback Guard:</span>
-                Changes are tested with <code class="px-1 py-0.5 rounded bg-blue-900/40 text-blue-200 font-mono">openlitespeed -t</code> before reloading. If syntax errors occur, changes are automatically aborted with zero downtime.
+                <span class="font-semibold">{{ __('Syntax Validation & Auto-Rollback Guard:') }}</span>
+                Changes are tested with <code class="px-1 py-0.5 rounded bg-blue-900/40 text-blue-200 font-mono">{{ __('openlitespeed -t') }}</code> before reloading. If syntax errors occur, changes are automatically aborted with zero downtime.
             </div>
         </div>
 

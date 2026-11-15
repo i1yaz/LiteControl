@@ -24,7 +24,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Panel Settings" />
+    <Head :title="__('Panel Settings')" />
 
     <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -32,7 +32,7 @@ const submit = () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Sliders class="w-6 h-6 text-sky-400" />
-                        <span>System & Panel Settings</span>
+                        <span>{{ __('System & Panel Settings') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Global configuration parameters for LiteControl and OpenLiteSpeed web server.
@@ -47,7 +47,7 @@ const submit = () => {
                         <Server class="w-5 h-5" />
                     </div>
                     <div>
-                        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Server IP</p>
+                        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{{ __('Server IP') }}</p>
                         <p class="text-sm font-semibold text-white">{{ settings.server_ip }}</p>
                     </div>
                 </div>
@@ -57,7 +57,7 @@ const submit = () => {
                         <Globe class="w-5 h-5" />
                     </div>
                     <div>
-                        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Hostname</p>
+                        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{{ __('Hostname') }}</p>
                         <p class="text-sm font-semibold text-white">{{ settings.hostname }}</p>
                     </div>
                 </div>
@@ -67,7 +67,7 @@ const submit = () => {
                         <ShieldCheck class="w-5 h-5" />
                     </div>
                     <div>
-                        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">OpenLiteSpeed</p>
+                        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{{ __('OpenLiteSpeed') }}</p>
                         <p class="text-sm font-semibold text-white">{{ settings.ols_version }}</p>
                     </div>
                 </div>
@@ -76,13 +76,13 @@ const submit = () => {
             <!-- Settings Form Card -->
             <form @submit.prevent="submit" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
                 <div class="border-b border-slate-800 pb-4">
-                    <h2 class="text-base font-semibold text-white">General Information</h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Control panel branding and administrator contact details.</p>
+                    <h2 class="text-base font-semibold text-white">{{ __('General Information') }}</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ __('Control panel branding and administrator contact details.') }}</p>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Control Panel Name</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Control Panel Name') }}</label>
                         <input
                             v-model="form.panel_name"
                             type="text"
@@ -93,7 +93,7 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Administrator Email</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Administrator Email') }}</label>
                         <input
                             v-model="form.admin_email"
                             type="email"
@@ -104,7 +104,7 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">System Timezone</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('System Timezone') }}</label>
                         <input
                             v-model="form.timezone"
                             type="text"
@@ -115,24 +115,24 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Default PHP Version</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Default PHP Version') }}</label>
                         <select
                             v-model="form.default_php"
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
                         >
-                            <option value="74">PHP 7.4 (Legacy)</option>
-                            <option value="80">PHP 8.0</option>
-                            <option value="81">PHP 8.1</option>
-                            <option value="82">PHP 8.2</option>
-                            <option value="83">PHP 8.3 (Recommended Core)</option>
-                            <option value="84">PHP 8.4</option>
-                            <option value="85">PHP 8.5 (Latest)</option>
+                            <option value="74">{{ __('PHP 7.4 (Legacy)') }}</option>
+                            <option value="80">{{ __('PHP 8.0') }}</option>
+                            <option value="81">{{ __('PHP 8.1') }}</option>
+                            <option value="82">{{ __('PHP 8.2') }}</option>
+                            <option value="83">{{ __('PHP 8.3 (Recommended Core)') }}</option>
+                            <option value="84">{{ __('PHP 8.4') }}</option>
+                            <option value="85">{{ __('PHP 8.5 (Latest)') }}</option>
                         </select>
                         <p v-if="form.errors.default_php" class="text-xs text-rose-400 mt-1">{{ form.errors.default_php }}</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Default Interface Theme</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Default Interface Theme') }}</label>
                         <select
                             v-model="form.default_theme"
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"

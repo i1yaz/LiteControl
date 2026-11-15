@@ -24,7 +24,7 @@ const submit = async () => {
 </script>
 
 <template>
-            <Head title="SSH Port" />
+            <Head :title="__('SSH Port')" />
 
         <div class="max-w-2xl mx-auto space-y-6">
             <!-- Header -->
@@ -32,7 +32,7 @@ const submit = async () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Terminal class="w-6 h-6 text-rose-400" />
-                        <span>Change SSH Port</span>
+                        <span>{{ __('Change SSH Port') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Hardening SSH against automated brute-force attacks by moving away from default port 22.
@@ -43,7 +43,7 @@ const submit = async () => {
             <!-- Current SSH Port -->
             <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
                 <div>
-                    <p class="text-xs text-slate-400">Current SSH Port</p>
+                    <p class="text-xs text-slate-400">{{ __('Current SSH Port') }}</p>
                     <p class="text-2xl font-extrabold text-white font-mono mt-0.5">{{ currentPort }}</p>
                 </div>
                 <div class="p-3 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
@@ -55,9 +55,9 @@ const submit = async () => {
             <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-start gap-3">
                 <AlertTriangle class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                    <p class="font-bold">Firewall Synchronization</p>
+                    <p class="font-bold">{{ __('Firewall Synchronization') }}</p>
                     <p class="mt-0.5 text-amber-200/80 leading-relaxed">
-                        LiteControl automatically adds an allow rule for the new SSH port in UFW, tests sshd syntax via <code>sshd -t</code>, restarts the SSH daemon, and removes the old rule once verified.
+                        LiteControl automatically adds an allow rule for the new SSH port in UFW, tests sshd syntax via <code>{{ __('sshd -t') }}</code>, restarts the SSH daemon, and removes the old rule once verified.
                     </p>
                 </div>
             </div>
@@ -65,7 +65,7 @@ const submit = async () => {
             <!-- Form -->
             <form @submit.prevent="submit" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">New SSH Port (1 - 65535)</label>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('New SSH Port (1 - 65535)') }}</label>
                     <input
                         v-model.number="form.port"
                         type="number"

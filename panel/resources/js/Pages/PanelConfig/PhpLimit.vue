@@ -30,7 +30,7 @@ const submit = () => {
 </script>
 
 <template>
-            <Head title="PHP Limit" />
+            <Head :title="__('PHP Limit')" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -38,7 +38,7 @@ const submit = () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Sliders class="w-6 h-6 text-purple-400" />
-                        <span>PHP Limit Configuration</span>
+                        <span>{{ __('PHP Limit Configuration') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Global resource allocation per PHP version (Memory, execution time, and upload quotas).
@@ -72,19 +72,19 @@ const submit = () => {
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Memory Limit</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Memory Limit') }}</label>
                         <input
                             v-model="form.memory_limit"
                             type="text"
                             required
-                            placeholder="256M"
+                            :placeholder="__('256M')"
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
                         />
-                        <p class="text-[11px] text-slate-500 mt-1">E.g. 128M, 256M, 512M, 1G</p>
+                        <p class="text-[11px] text-slate-500 mt-1">{{ __('E.g. 128M, 256M, 512M, 1G') }}</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Max Execution Time (seconds)</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Max Execution Time (seconds)') }}</label>
                         <input
                             v-model.number="form.max_execution_time"
                             type="number"
@@ -93,33 +93,33 @@ const submit = () => {
                             required
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
                         />
-                        <p class="text-[11px] text-slate-500 mt-1">Maximum time a script is allowed to run before termination.</p>
+                        <p class="text-[11px] text-slate-500 mt-1">{{ __('Maximum time a script is allowed to run before termination.') }}</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Upload Max Filesize</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Upload Max Filesize') }}</label>
                         <input
                             v-model="form.upload_max_filesize"
                             type="text"
                             required
-                            placeholder="64M"
+                            :placeholder="__('64M')"
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
                         />
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Post Max Size</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Post Max Size') }}</label>
                         <input
                             v-model="form.post_max_size"
                             type="text"
                             required
-                            placeholder="64M"
+                            :placeholder="__('64M')"
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
                         />
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Max Input Vars</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Max Input Vars') }}</label>
                         <input
                             v-model.number="form.max_input_vars"
                             type="number"
@@ -128,7 +128,7 @@ const submit = () => {
                             required
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"
                         />
-                        <p class="text-[11px] text-slate-500 mt-1">Default: 3000. Important for large form posts and menu builders.</p>
+                        <p class="text-[11px] text-slate-500 mt-1">{{ __('Default: 3000. Important for large form posts and menu builders.') }}</p>
                     </div>
                 </div>
 

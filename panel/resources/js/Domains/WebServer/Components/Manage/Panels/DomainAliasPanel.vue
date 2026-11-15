@@ -60,7 +60,7 @@ const deleteAlias = async (alias) => {
                 <input
                     v-model="form.alias"
                     type="text"
-                    placeholder="alias.example.com"
+                    :placeholder="__('alias.example.com')"
                     required
                     class="w-full px-3.5 py-2 bg-theme-bg-surface border border-theme-border rounded-lg text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:border-blue-500 transition-colors"
                 />
@@ -99,7 +99,7 @@ const deleteAlias = async (alias) => {
                     <button
                         @click="deleteAlias(al)"
                         class="text-theme-text-muted hover:text-rose-400 p-1 transition-colors"
-                        title="Remove Alias"
+                        :title="__('Remove Alias')"
                     >
                         <Trash2 class="w-4 h-4" />
                     </button>

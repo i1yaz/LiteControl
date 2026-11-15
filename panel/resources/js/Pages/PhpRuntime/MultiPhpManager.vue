@@ -53,7 +53,7 @@ const switchSingle = (domainId, ver) => {
 </script>
 
 <template>
-            <Head title="MultiPHP Manager" />
+            <Head :title="__('MultiPHP Manager')" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -61,7 +61,7 @@ const switchSingle = (domainId, ver) => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <FileCode class="w-6 h-6 text-purple-400" />
-                        <span>MultiPHP Manager</span>
+                        <span>{{ __('MultiPHP Manager') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Select virtual hosts and seamlessly assign their dedicated SuEXEC PHP processor engine.
@@ -86,7 +86,7 @@ const switchSingle = (domainId, ver) => {
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <span class="text-xs text-slate-300 font-semibold">Set PHP Version:</span>
+                    <span class="text-xs text-slate-300 font-semibold">{{ __('Set PHP Version:') }}</span>
                     <select
                         v-model="targetVersion"
                         class="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
@@ -113,12 +113,12 @@ const switchSingle = (domainId, ver) => {
                         <thead class="bg-slate-950/50 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
                             <tr>
                                 <th class="w-10 px-5 py-3">
-                                    <span class="sr-only">Select</span>
+                                    <span class="sr-only">{{ __('Select') }}</span>
                                 </th>
-                                <th class="px-5 py-3">Domain</th>
-                                <th class="px-5 py-3">Account User</th>
-                                <th class="px-5 py-3">Current PHP Engine</th>
-                                <th class="px-5 py-3 text-right">Change PHP</th>
+                                <th class="px-5 py-3">{{ __('Domain') }}</th>
+                                <th class="px-5 py-3">{{ __('Account User') }}</th>
+                                <th class="px-5 py-3">{{ __('Current PHP Engine') }}</th>
+                                <th class="px-5 py-3 text-right">{{ __('Change PHP') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60">

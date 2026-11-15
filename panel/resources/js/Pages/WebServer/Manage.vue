@@ -161,7 +161,7 @@ onMounted(() => {
                 <a
                     href="/domains"
                     class="p-2 rounded-lg bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary border border-theme-border transition-colors"
-                    title="Return to Domains Registry"
+                    :title="__('Return to Domains Registry')"
                 >
                     <ChevronLeft class="w-4 h-4" />
                 </a>
@@ -196,11 +196,11 @@ onMounted(() => {
                     </div>
 
                     <p class="text-xs text-theme-text-secondary mt-1 flex items-center gap-2">
-                        <span>Owner: <strong class="text-theme-text-primary">{{ domain.user?.username }}</strong></span>
+                        <span>{{ __('Owner:') }} <strong class="text-theme-text-primary">{{ domain.user?.username }}</strong></span>
                         <span>•</span>
-                        <span>DocRoot: <code class="font-mono text-[11px] text-theme-accent">{{ domain.document_root }}</code></span>
+                        <span>{{ __('DocRoot:') }} <code class="font-mono text-[11px] text-theme-accent">{{ domain.document_root }}</code></span>
                         <span>•</span>
-                        <span>PHP: <strong class="text-theme-text-primary">{{ domain.php_version }}</strong></span>
+                        <span>{{ __('PHP:') }} <strong class="text-theme-text-primary">{{ domain.php_version }}</strong></span>
                     </p>
                 </div>
             </div>
@@ -212,7 +212,7 @@ onMounted(() => {
                     target="_blank"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-semibold border border-theme-border transition-colors"
                 >
-                    <span>Visit Site</span>
+                    <span>{{ __('Visit Site') }}</span>
                     <ExternalLink class="w-3.5 h-3.5 text-theme-text-muted" />
                 </a>
 
@@ -221,7 +221,7 @@ onMounted(() => {
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600/10 hover:bg-cyan-600/20 text-cyan-400 text-xs font-semibold border border-cyan-500/30 transition-colors"
                 >
                     <Folder class="w-3.5 h-3.5" />
-                    <span>File Manager</span>
+                    <span>{{ __('File Manager') }}</span>
                 </a>
 
                 <button
@@ -238,7 +238,7 @@ onMounted(() => {
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold border border-rose-500/30 transition-colors"
                 >
                     <Trash2 class="w-3.5 h-3.5" />
-                    <span>Delete</span>
+                    <span>{{ __('Delete') }}</span>
                 </button>
             </div>
         </div>
@@ -266,7 +266,7 @@ onMounted(() => {
                 <!-- open_basedir Protection Toggle (Files Tab) -->
                 <div v-if="currentTab === 'files'" class="bg-theme-bg-surface border border-theme-border rounded-xl p-4 flex items-center justify-between">
                     <div>
-                        <h3 class="text-sm font-semibold text-theme-text-primary">PHP open_basedir Protection</h3>
+                        <h3 class="text-sm font-semibold text-theme-text-primary">{{ __('PHP open_basedir Protection') }}</h3>
                         <p class="text-xs text-theme-text-muted mt-0.5">
                             Restrict PHP file access to this domain's root directory and /tmp. Default: OFF.
                         </p>

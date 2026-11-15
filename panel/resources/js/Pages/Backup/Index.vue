@@ -83,7 +83,7 @@ const deleteSchedule = async (id) => {
 </script>
 
 <template>
-    <Head title="Backup & Restore" />
+    <Head :title="__('Backup & Restore')" />
 
     <div class="space-y-8">
             <!-- Header -->
@@ -91,7 +91,7 @@ const deleteSchedule = async (id) => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <FolderTree class="w-6 h-6 text-cyan-400" />
-                        <span>Backup & Restore</span>
+                        <span>{{ __('Backup & Restore') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Create full account `.tar.gz` snapshots containing website files, MySQL databases, and virtual host configurations.
@@ -104,7 +104,7 @@ const deleteSchedule = async (id) => {
                         class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors border border-slate-700"
                     >
                         <Calendar class="w-3.5 h-3.5 text-indigo-400" />
-                        <span>Schedule Backups</span>
+                        <span>{{ __('Schedule Backups') }}</span>
                     </button>
 
                     <button
@@ -130,12 +130,12 @@ const deleteSchedule = async (id) => {
                         <table class="w-full text-left text-sm text-slate-300">
                             <thead class="bg-slate-950/50 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
                                 <tr>
-                                    <th class="px-5 py-3">Archive File</th>
-                                    <th v-if="isAdmin" class="px-5 py-3">User</th>
-                                    <th class="px-5 py-3">Size</th>
-                                    <th class="px-5 py-3">Type</th>
-                                    <th class="px-5 py-3">Created</th>
-                                    <th class="px-5 py-3 text-right">Actions</th>
+                                    <th class="px-5 py-3">{{ __('Archive File') }}</th>
+                                    <th v-if="isAdmin" class="px-5 py-3">{{ __('User') }}</th>
+                                    <th class="px-5 py-3">{{ __('Size') }}</th>
+                                    <th class="px-5 py-3">{{ __('Type') }}</th>
+                                    <th class="px-5 py-3">{{ __('Created') }}</th>
+                                    <th class="px-5 py-3 text-right">{{ __('Actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
@@ -162,16 +162,16 @@ const deleteSchedule = async (id) => {
                                         <div class="flex items-center justify-end gap-2">
                                             <button
                                                 @click="triggerRestore(b.path, b.filename)"
-                                                title="Restore Backup"
+                                                :title="__('Restore Backup')"
                                                 class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-600/20 text-cyan-300 hover:bg-cyan-600/30 text-xs font-semibold transition-colors"
                                             >
                                                 <RotateCcw class="w-3.5 h-3.5" />
-                                                <span>Restore</span>
+                                                <span>{{ __('Restore') }}</span>
                                             </button>
 
                                             <button
                                                 @click="deleteBackup(b.id, b.filename)"
-                                                title="Delete"
+                                                :title="__('Delete')"
                                                 class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-400 transition-colors"
                                             >
                                                 <Trash2 class="w-3.5 h-3.5" />
@@ -202,12 +202,12 @@ const deleteSchedule = async (id) => {
                         <table class="w-full text-left text-sm text-slate-300">
                             <thead class="bg-slate-950/50 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
                                 <tr>
-                                    <th class="px-5 py-3">Frequency</th>
-                                    <th v-if="isAdmin" class="px-5 py-3">User</th>
-                                    <th class="px-5 py-3">Retention</th>
-                                    <th class="px-5 py-3">Destination</th>
-                                    <th class="px-5 py-3">Status</th>
-                                    <th class="px-5 py-3 text-right">Actions</th>
+                                    <th class="px-5 py-3">{{ __('Frequency') }}</th>
+                                    <th v-if="isAdmin" class="px-5 py-3">{{ __('User') }}</th>
+                                    <th class="px-5 py-3">{{ __('Retention') }}</th>
+                                    <th class="px-5 py-3">{{ __('Destination') }}</th>
+                                    <th class="px-5 py-3">{{ __('Status') }}</th>
+                                    <th class="px-5 py-3 text-right">{{ __('Actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-800/60 text-xs">
@@ -252,22 +252,22 @@ const deleteSchedule = async (id) => {
             </div>
 
             <!-- Schedule Modal -->
-            <UiModal :show="showScheduleModal" title="Configure Automated Backups" max-width="md" @close="showScheduleModal = false">
+            <UiModal :show="showScheduleModal" :title="__('Configure Automated Backups')" max-width="md" @close="showScheduleModal = false">
                 <form @submit.prevent="submitSchedule" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Frequency</label>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Frequency') }}</label>
                         <select
                             v-model="scheduleForm.frequency"
                             class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
                         >
-                            <option value="daily">Daily</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly">Monthly</option>
+                            <option value="daily">{{ __('Daily') }}</option>
+                            <option value="weekly">{{ __('Weekly') }}</option>
+                            <option value="monthly">{{ __('Monthly') }}</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Retention Count</label>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Retention Count') }}</label>
                         <input
                             v-model="scheduleForm.retention_count"
                             type="number"
@@ -276,18 +276,18 @@ const deleteSchedule = async (id) => {
                             required
                             class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
                         />
-                        <p class="text-[11px] text-slate-500 mt-1">Older archives beyond this limit are automatically pruned.</p>
+                        <p class="text-[11px] text-slate-500 mt-1">{{ __('Older archives beyond this limit are automatically pruned.') }}</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Storage Destination</label>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Storage Destination') }}</label>
                         <select
                             v-model="scheduleForm.destination"
                             class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
                         >
-                            <option value="local">Local (/home/user/backups)</option>
-                            <option value="sftp">Remote SFTP</option>
-                            <option value="s3">Amazon S3 / S3-Compatible</option>
+                            <option value="local">{{ __('Local (/home/user/backups)') }}</option>
+                            <option value="sftp">{{ __('Remote SFTP') }}</option>
+                            <option value="s3">{{ __('Amazon S3 / S3-Compatible') }}</option>
                         </select>
                     </div>
 

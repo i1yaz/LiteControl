@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useClickOutside } from '@shared/Composables/useClickOutside';
 import { useNavigation } from '@shared/Composables/useNavigation';
 import { useTheme } from '@shared/Composables/useTheme';
+import LocaleSwitcher from '@shared/Components/LocaleSwitcher.vue';
 import {
     LayoutDashboard, Users, Globe, Database, FolderTree,
     FileCode, Sliders, Server, Shield, Mail, Layers,
@@ -84,7 +85,7 @@ const logout = () => {
         <div v-if="page.props.auth?.is_impersonating" class="bg-amber-500/15 border-b border-amber-500/30 px-5 py-2 text-xs flex items-center justify-between text-amber-200">
             <div class="flex items-center gap-2.5">
                 <AlertCircle class="w-4 h-4 text-amber-400" />
-                <span>Impersonating user: <strong class="text-white underline">{{ user.username }}</strong></span>
+                <span>{{ __('Impersonating user:') }} <strong class="text-white underline">{{ user.username }}</strong></span>
             </div>
             <form @submit.prevent="router.post('/impersonation/revert')">
                 <button type="submit" class="px-3 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold tracking-wide transition-colors">
@@ -99,7 +100,7 @@ const logout = () => {
                 <button
                     @click="sidebarOpen = !sidebarOpen"
                     class="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                    aria-label="Toggle Navigation"
+                    :aria-label="__('Toggle Navigation')"
                 >
                     <Menu v-if="!sidebarOpen" class="w-5 h-5" />
                     <X v-else class="w-5 h-5" />
@@ -112,7 +113,7 @@ const logout = () => {
                     <div class="flex flex-col">
                         <div class="flex items-center gap-2">
                             <span class="text-base font-bold tracking-tight text-white">
-                                Lite<span class="text-sky-400">Control</span>
+                                Lite<span class="text-sky-400">{{ __('Control') }}</span>
                             </span>
                             <span v-if="isAdmin" class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
                                 Admin
@@ -127,21 +128,21 @@ const logout = () => {
                 <!-- 2FA Status Quick Link -->
                 <div
                     v-if="$page.props.auth?.user?.two_factor_confirmed_at"
-                    title="Two-Factor Authentication is enabled"
+                    :title="__('Two-Factor Authentication is enabled')"
                     aria-disabled="true"
                     class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700/60 text-xs opacity-75 cursor-default select-none"
                 >
-                    <span class="text-slate-400 font-medium text-[11px]">2FA:</span>
-                    <span class="font-semibold text-[11px] text-emerald-400">ON</span>
+                    <span class="text-slate-400 font-medium text-[11px]">{{ __('2FA:') }}</span>
+                    <span class="font-semibold text-[11px] text-emerald-400">{{ __('ON') }}</span>
                 </div>
                 <Link
                     v-else
                     href="/security/two-factor"
-                    title="Click to enable Two-Factor Authentication"
+                    :title="__('Click to enable Two-Factor Authentication')"
                     class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700/60 hover:border-slate-600 text-xs transition-colors"
                 >
-                    <span class="text-slate-400 font-medium text-[11px]">2FA:</span>
-                    <span class="font-semibold text-[11px] text-amber-400">Enable</span>
+                    <span class="text-slate-400 font-medium text-[11px]">{{ __('2FA:') }}</span>
+                    <span class="font-semibold text-[11px] text-amber-400">{{ __('Enable') }}</span>
                 </Link>
 
                 <!-- Daemon Heartbeat & Interactive Status Checker -->
@@ -159,7 +160,7 @@ const logout = () => {
                         :class="olsStatus === 'online' ? 'text-emerald-400 animate-pulse' : (olsStatus === 'offline' ? 'text-rose-400' : 'text-amber-400')"
                     />
 
-                    <span class="text-slate-400 font-medium text-[11px]">OLS:</span>
+                    <span class="text-slate-400 font-medium text-[11px]">{{ __('OLS:') }}</span>
 
                     <span
                         class="font-semibold text-[11px] transition-colors"
@@ -178,11 +179,13 @@ const logout = () => {
                     />
                 </button>
 
+                <LocaleSwitcher />
+
                 <!-- Theme Switcher Dropdown -->
                 <div class="relative" ref="themeDropdownRef">
                     <button
                         @click="themeDropdownOpen = !themeDropdownOpen"
-                        title="Switch Interface Theme"
+                        :title="__('Switch Interface Theme')"
                         class="p-2 rounded-lg bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white hover:bg-slate-700 transition-all flex items-center gap-1.5 text-xs font-medium cursor-pointer"
                     >
                         <Palette class="w-4 h-4 text-sky-400" />
@@ -238,14 +241,14 @@ const logout = () => {
                             class="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
                         >
                             <UserCircle class="w-4 h-4 text-slate-400" />
-                            <span>Account Settings</span>
+                            <span>{{ __('Account Settings') }}</span>
                         </Link>
                         <button
                             @click="logout"
                             class="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-rose-400 hover:bg-rose-500/10 text-left transition-colors cursor-pointer"
                         >
                             <LogOut class="w-4 h-4" />
-                            <span>Sign Out</span>
+                            <span>{{ __('Sign Out') }}</span>
                         </button>
                     </div>
                 </div>
@@ -324,11 +327,11 @@ const logout = () => {
 
                 <!-- Footer Baseline in Sidebar -->
                 <div class="p-4 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
-                    <span>LiteControl v1.0.0</span>
+                    <span>{{ __('LiteControl v1.0.0') }}</span>
                     <span v-if="page.props.panel?.is_mock_mode" class="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px]">
                         MOCK
                     </span>
-                    <span v-else class="text-emerald-400 font-medium text-[11px]">Active</span>
+                    <span v-else class="text-emerald-400 font-medium text-[11px]">{{ __('Active') }}</span>
                 </div>
             </aside>
 

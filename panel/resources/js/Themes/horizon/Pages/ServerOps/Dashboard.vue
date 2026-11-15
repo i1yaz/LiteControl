@@ -36,7 +36,7 @@ const {
 </script>
 
 <template>
-    <Head title="Dashboard - LiteControl" />
+    <Head :title="__('Dashboard - LiteControl')" />
 
     <div class="space-y-6">
         <!-- Welcome & System Health Banner -->
@@ -83,7 +83,7 @@ const {
                             <Cpu class="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 class="text-sm font-semibold text-white">CPU Processing</h3>
+                            <h3 class="text-sm font-semibold text-white">{{ __('CPU Processing') }}</h3>
                             <span class="text-[11px] text-slate-400">{{ metrics?.cpu_cores ?? 1 }} vCPU Cores</span>
                         </div>
                     </div>
@@ -110,7 +110,7 @@ const {
                             <Server class="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 class="text-sm font-semibold text-white">System Memory</h3>
+                            <h3 class="text-sm font-semibold text-white">{{ __('System Memory') }}</h3>
                             <span class="text-[11px] text-slate-400">{{ ramUsedGb }} GB / {{ ramTotalGb }} GB</span>
                         </div>
                     </div>
@@ -124,7 +124,7 @@ const {
                         ></div>
                     </div>
                     <div class="flex justify-between text-xs text-slate-400">
-                        <span>Dynamic Memory Pool</span>
+                        <span>{{ __('Dynamic Memory Pool') }}</span>
                         <span>{{ ramPercent }}% Active</span>
                     </div>
                 </div>
@@ -138,7 +138,7 @@ const {
                             <HardDrive class="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 class="text-sm font-semibold text-white">Disk Storage</h3>
+                            <h3 class="text-sm font-semibold text-white">{{ __('Disk Storage') }}</h3>
                             <span class="text-[11px] text-slate-400">{{ metrics?.disk_used_gb ?? 0 }} GB / {{ metrics?.disk_total_gb ?? 0 }} GB</span>
                         </div>
                     </div>
@@ -152,8 +152,8 @@ const {
                         ></div>
                     </div>
                     <div class="flex justify-between text-xs text-slate-400">
-                        <span>NVMe Primary Partition</span>
-                        <span>ext4</span>
+                        <span>{{ __('NVMe Primary Partition') }}</span>
+                        <span>{{ __('ext4') }}</span>
                     </div>
                 </div>
             </div>
@@ -163,7 +163,7 @@ const {
         <div v-if="adminRole && counts" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Link href="/users" class="p-4 bg-slate-900/70 border border-slate-800/90 rounded-xl hover:border-slate-700 transition-colors flex items-center justify-between group">
                 <div>
-                    <span class="text-xs text-slate-400 font-medium">User Accounts</span>
+                    <span class="text-xs text-slate-400 font-medium">{{ __('User Accounts') }}</span>
                     <span class="text-xl font-bold text-white mt-0.5 block">{{ counts.total_users ?? 0 }}</span>
                 </div>
                 <Users class="w-5 h-5 text-sky-400 group-hover:scale-110 transition-transform" />
@@ -171,7 +171,7 @@ const {
 
             <Link href="/domains" class="p-4 bg-slate-900/70 border border-slate-800/90 rounded-xl hover:border-slate-700 transition-colors flex items-center justify-between group">
                 <div>
-                    <span class="text-xs text-slate-400 font-medium">Hosted Domains</span>
+                    <span class="text-xs text-slate-400 font-medium">{{ __('Hosted Domains') }}</span>
                     <span class="text-xl font-bold text-white mt-0.5 block">{{ counts.total_domains ?? 0 }}</span>
                 </div>
                 <Globe class="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
@@ -179,7 +179,7 @@ const {
 
             <Link href="/databases" class="p-4 bg-slate-900/70 border border-slate-800/90 rounded-xl hover:border-slate-700 transition-colors flex items-center justify-between group">
                 <div>
-                    <span class="text-xs text-slate-400 font-medium">Databases</span>
+                    <span class="text-xs text-slate-400 font-medium">{{ __('Databases') }}</span>
                     <span class="text-xl font-bold text-white mt-0.5 block">{{ counts.total_databases ?? 0 }}</span>
                 </div>
                 <Database class="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" />
@@ -187,7 +187,7 @@ const {
 
             <Link href="/packages" class="p-4 bg-slate-900/70 border border-slate-800/90 rounded-xl hover:border-slate-700 transition-colors flex items-center justify-between group">
                 <div>
-                    <span class="text-xs text-slate-400 font-medium">Hosting Packages</span>
+                    <span class="text-xs text-slate-400 font-medium">{{ __('Hosting Packages') }}</span>
                     <span class="text-xl font-bold text-white mt-0.5 block">{{ counts.total_packages ?? 0 }}</span>
                 </div>
                 <Package class="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
@@ -203,20 +203,20 @@ const {
                 </h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800/60">
-                        <span class="text-slate-400 block mb-0.5">Web Server</span>
+                        <span class="text-slate-400 block mb-0.5">{{ __('Web Server') }}</span>
                         <span class="text-slate-100 font-medium">{{ olsVersion }}</span>
                     </div>
                     <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800/60">
-                        <span class="text-slate-400 block mb-0.5">Operating System</span>
+                        <span class="text-slate-400 block mb-0.5">{{ __('Operating System') }}</span>
                         <span class="text-slate-100 font-medium">{{ osPretty }}</span>
                     </div>
                     <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800/60">
-                        <span class="text-slate-400 block mb-0.5">Time Zone</span>
+                        <span class="text-slate-400 block mb-0.5">{{ __('Time Zone') }}</span>
                         <span class="text-slate-100 font-medium">{{ timezone }}</span>
                     </div>
                     <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800/60">
-                        <span class="text-slate-400 block mb-0.5">PHP Engine</span>
-                        <span class="text-emerald-400 font-medium">LiteSpeed LSAPI</span>
+                        <span class="text-slate-400 block mb-0.5">{{ __('PHP Engine') }}</span>
+                        <span class="text-emerald-400 font-medium">{{ __('LiteSpeed LSAPI') }}</span>
                     </div>
                 </div>
             </div>
@@ -260,8 +260,8 @@ const {
                 </div>
 
                 <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
-                    <span>LiteControl Core</span>
-                    <span class="text-emerald-400 font-medium">Ready</span>
+                    <span>{{ __('LiteControl Core') }}</span>
+                    <span class="text-emerald-400 font-medium">{{ __('Ready') }}</span>
                 </div>
             </div>
         </div>

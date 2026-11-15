@@ -5,6 +5,7 @@ import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import ThemePersistentLayout from '@shared/Layouts/ThemePersistentLayout.vue';
 import { loadThemeModule } from '@shared/Composables/useTheme';
+import { createTranslator } from '@shared/Composables/useTranslation';
 
 const appName = window.document.getElementsByTagName('title')[0]?.innerText || 'LiteControl';
 
@@ -44,7 +45,12 @@ createInertiaApp({
             loadThemeModule(props.initialPage.props.panel.theme.id);
         }
 
-        return createApp({ render: () => h(App, props) })
+        const app = createApp({ render: () => h(App, props) });
+        app.config.globalProperties.__ = createTranslator(
+            () => props.initialPage?.props?.translations,
+        );
+
+        return app
             .use(plugin)
             .mount(el);
     },

@@ -24,7 +24,7 @@ const submit = () => {
 </script>
 
 <template>
-            <Head title="Panel SSL" />
+            <Head :title="__('Panel SSL')" />
 
         <div class="max-w-3xl mx-auto space-y-6">
             <!-- Header -->
@@ -32,7 +32,7 @@ const submit = () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Lock class="w-6 h-6 text-rose-400" />
-                        <span>Panel SSL Certificate</span>
+                        <span>{{ __('Panel SSL Certificate') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Secure the LiteControl control panel listener with an official TLS certificate.
@@ -50,7 +50,7 @@ const submit = () => {
                     ]"
                 >
                     <Globe class="w-3.5 h-3.5" />
-                    <span>Let's Encrypt (Automated)</span>
+                    <span>{{ __('Let\'s Encrypt (Automated)') }}</span>
                 </button>
                 <button
                     @click="mode = 'custom'"
@@ -60,7 +60,7 @@ const submit = () => {
                     ]"
                 >
                     <Key class="w-3.5 h-3.5" />
-                    <span>Custom Certificate</span>
+                    <span>{{ __('Custom Certificate') }}</span>
                 </button>
             </div>
 
@@ -68,12 +68,12 @@ const submit = () => {
             <form @submit.prevent="submit" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
                 <div v-if="mode === 'letsencrypt'" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Hostname / Panel Domain</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Hostname / Panel Domain') }}</label>
                         <input
                             v-model="form.domain"
                             type="text"
                             required
-                            placeholder="panel.yourdomain.com"
+                            :placeholder="__('panel.yourdomain.com')"
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 font-mono"
                         />
                         <p class="text-[11px] text-slate-500 mt-1">
@@ -84,23 +84,23 @@ const submit = () => {
 
                 <div v-else class="space-y-4">
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Certificate (CRT/PEM)</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Certificate (CRT/PEM)') }}</label>
                         <textarea
                             v-model="form.certificate"
                             rows="5"
                             required
-                            placeholder="-----BEGIN CERTIFICATE-----"
+                            :placeholder="__('-----BEGIN CERTIFICATE-----')"
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-rose-500"
                         ></textarea>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Private Key (KEY)</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Private Key (KEY)') }}</label>
                         <textarea
                             v-model="form.private_key"
                             rows="5"
                             required
-                            placeholder="-----BEGIN PRIVATE KEY-----"
+                            :placeholder="__('-----BEGIN PRIVATE KEY-----')"
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-rose-500"
                         ></textarea>
                     </div>

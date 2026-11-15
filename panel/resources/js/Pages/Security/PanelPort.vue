@@ -24,7 +24,7 @@ const submit = async () => {
 </script>
 
 <template>
-            <Head title="Panel Port" />
+            <Head :title="__('Panel Port')" />
 
         <div class="max-w-2xl mx-auto space-y-6">
             <!-- Header -->
@@ -32,7 +32,7 @@ const submit = async () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Sliders class="w-6 h-6 text-rose-400" />
-                        <span>Change Panel Listening Port</span>
+                        <span>{{ __('Change Panel Listening Port') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Configure the TCP port that the LiteControl admin web panel binds to.
@@ -43,7 +43,7 @@ const submit = async () => {
             <!-- Current Port Card -->
             <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
                 <div>
-                    <p class="text-xs text-slate-400">Current Panel Port</p>
+                    <p class="text-xs text-slate-400">{{ __('Current Panel Port') }}</p>
                     <p class="text-2xl font-extrabold text-white font-mono mt-0.5">{{ currentPort }}</p>
                 </div>
                 <div class="p-3 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
@@ -55,7 +55,7 @@ const submit = async () => {
             <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-start gap-3">
                 <AlertTriangle class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                    <p class="font-bold">Self-Lockout Protection</p>
+                    <p class="font-bold">{{ __('Self-Lockout Protection') }}</p>
                     <p class="mt-0.5 text-amber-200/80 leading-relaxed">
                         The new port is automatically allowed in UFW before the OpenLiteSpeed listener is updated. If OLS fails to bind to the new port, it will automatically roll back.
                     </p>
@@ -65,7 +65,7 @@ const submit = async () => {
             <!-- Form -->
             <form @submit.prevent="submit" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">New Port (1024 - 65535)</label>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('New Port (1024 - 65535)') }}</label>
                     <input
                         v-model.number="form.port"
                         type="number"

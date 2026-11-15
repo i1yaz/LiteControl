@@ -24,7 +24,7 @@ const submit = () => {
 </script>
 
 <template>
-            <Head title="LiteSpeed Tuning" />
+            <Head :title="__('LiteSpeed Tuning')" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -32,7 +32,7 @@ const submit = () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Zap class="w-6 h-6 text-amber-400" />
-                        <span>OpenLiteSpeed Tuning</span>
+                        <span>{{ __('OpenLiteSpeed Tuning') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         High-concurrency connection limits, keep-alive parameters, body size buffers, and QUIC/HTTP3 acceleration.
@@ -44,13 +44,13 @@ const submit = () => {
             <form @submit.prevent="submit" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
                 <!-- Section 1: Connection Capacity -->
                 <div>
-                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider text-slate-300">Connection Capacity</h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Configure simultaneous concurrent worker connection thresholds.</p>
+                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider text-slate-300">{{ __('Connection Capacity') }}</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ __('Configure simultaneous concurrent worker connection thresholds.') }}</p>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Max Connections</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Max Connections') }}</label>
                         <input
                             v-model.number="form.maxConnections"
                             type="number"
@@ -59,11 +59,11 @@ const submit = () => {
                             required
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
                         />
-                        <p class="text-[11px] text-slate-500 mt-1">Maximum concurrent connections allowed (default: 10000).</p>
+                        <p class="text-[11px] text-slate-500 mt-1">{{ __('Maximum concurrent connections allowed (default: 10000).') }}</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Max SSL Connections</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Max SSL Connections') }}</label>
                         <input
                             v-model.number="form.maxSSLConnections"
                             type="number"
@@ -72,11 +72,11 @@ const submit = () => {
                             required
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
                         />
-                        <p class="text-[11px] text-slate-500 mt-1">Maximum concurrent TLS/HTTPS connections (default: 8000).</p>
+                        <p class="text-[11px] text-slate-500 mt-1">{{ __('Maximum concurrent TLS/HTTPS connections (default: 8000).') }}</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Connection Timeout (seconds)</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Connection Timeout (seconds)') }}</label>
                         <input
                             v-model.number="form.connTimeout"
                             type="number"
@@ -85,29 +85,29 @@ const submit = () => {
                             required
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
                         />
-                        <p class="text-[11px] text-slate-500 mt-1">Idle socket close timeout.</p>
+                        <p class="text-[11px] text-slate-500 mt-1">{{ __('Idle socket close timeout.') }}</p>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Max Request Body Size</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Max Request Body Size') }}</label>
                         <input
                             v-model="form.maxReqBodySize"
                             type="text"
                             required
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
                         />
-                        <p class="text-[11px] text-slate-500 mt-1">E.g. 500M or 2047M maximum HTTP POST buffer.</p>
+                        <p class="text-[11px] text-slate-500 mt-1">{{ __('E.g. 500M or 2047M maximum HTTP POST buffer.') }}</p>
                     </div>
                 </div>
 
                 <!-- Section 2: Keep-Alive -->
                 <div class="pt-4 border-t border-slate-800">
-                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider text-slate-300">Keep-Alive Optimization</h2>
+                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider text-slate-300">{{ __('Keep-Alive Optimization') }}</h2>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Max Keep-Alive Requests</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Max Keep-Alive Requests') }}</label>
                         <input
                             v-model.number="form.maxKeepAliveReq"
                             type="number"
@@ -119,7 +119,7 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Keep-Alive Timeout (seconds)</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Keep-Alive Timeout (seconds)') }}</label>
                         <input
                             v-model.number="form.keepAliveTimeout"
                             type="number"
@@ -133,23 +133,23 @@ const submit = () => {
 
                 <!-- Section 3: Compression & Protocols -->
                 <div class="pt-4 border-t border-slate-800">
-                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider text-slate-300">Compression & HTTP/3 (QUIC)</h2>
+                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider text-slate-300">{{ __('Compression & HTTP/3 (QUIC)') }}</h2>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">GZIP Compression</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('GZIP Compression') }}</label>
                         <select
                             v-model="form.enableGzipCompress"
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
                         >
-                            <option :value="1">Enabled</option>
-                            <option :value="0">Disabled</option>
+                            <option :value="1">{{ __('Enabled') }}</option>
+                            <option :value="0">{{ __('Disabled') }}</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">GZIP Compression Level</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('GZIP Compression Level') }}</label>
                         <select
                             v-model="form.gzipCompressLevel"
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
@@ -159,13 +159,13 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">HTTP/3 & QUIC Support</label>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('HTTP/3 & QUIC Support') }}</label>
                         <select
                             v-model="form.quicEnable"
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
                         >
-                            <option :value="1">Enabled</option>
-                            <option :value="0">Disabled</option>
+                            <option :value="1">{{ __('Enabled') }}</option>
+                            <option :value="0">{{ __('Disabled') }}</option>
                         </select>
                     </div>
                 </div>

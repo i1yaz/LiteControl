@@ -62,7 +62,7 @@ const deleteSubdomain = async (id, domain) => {
 </script>
 
 <template>
-            <Head title="Subdomains Management" />
+            <Head :title="__('Subdomains Management')" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -70,7 +70,7 @@ const deleteSubdomain = async (id, domain) => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Globe class="w-6 h-6 text-emerald-400" />
-                        <span>Subdomains</span>
+                        <span>{{ __('Subdomains') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Create and manage subdomains for your hosted domains.
@@ -82,7 +82,7 @@ const deleteSubdomain = async (id, domain) => {
                     class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium transition-colors shadow-sm shadow-emerald-600/30"
                 >
                     <Plus class="w-4 h-4" />
-                    <span>Create Subdomain</span>
+                    <span>{{ __('Create Subdomain') }}</span>
                 </button>
             </div>
 
@@ -92,11 +92,11 @@ const deleteSubdomain = async (id, domain) => {
                     <table class="w-full text-left text-sm text-slate-300">
                         <thead class="bg-slate-950/50 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
                             <tr>
-                                <th class="px-5 py-3">Subdomain</th>
-                                <th class="px-5 py-3">Base Domain</th>
-                                <th class="px-5 py-3">Document Root</th>
-                                <th class="px-5 py-3">PHP Version</th>
-                                <th class="px-5 py-3 text-right">Actions</th>
+                                <th class="px-5 py-3">{{ __('Subdomain') }}</th>
+                                <th class="px-5 py-3">{{ __('Base Domain') }}</th>
+                                <th class="px-5 py-3">{{ __('Document Root') }}</th>
+                                <th class="px-5 py-3">{{ __('PHP Version') }}</th>
+                                <th class="px-5 py-3 text-right">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60">
@@ -136,14 +136,14 @@ const deleteSubdomain = async (id, domain) => {
             </div>
 
             <!-- Modal -->
-            <UiModal :show="showModal" title="Create Subdomain" max-width="md" @close="showModal = false">
+            <UiModal :show="showModal" :title="__('Create Subdomain')" max-width="md" @close="showModal = false">
                 <form @submit.prevent="submit" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Subdomain Prefix</label>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Subdomain Prefix') }}</label>
                         <input
                             v-model="form.subdomain_prefix"
                             type="text"
-                            placeholder="blog, app, api"
+                            :placeholder="__('blog, app, api')"
                             required
                             class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
                         />
@@ -151,7 +151,7 @@ const deleteSubdomain = async (id, domain) => {
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Parent Domain</label>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Parent Domain') }}</label>
                         <select
                             v-model="form.parent_domain_id"
                             required
@@ -166,13 +166,13 @@ const deleteSubdomain = async (id, domain) => {
                     <!-- Web Root Subpath (Pointing Target) -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center justify-between">
-                            <span>Web Root Subpath (Pointing Target)</span>
-                            <span class="text-slate-400 font-normal lowercase">e.g. "public" for Laravel</span>
+                            <span>{{ __('Web Root Subpath (Pointing Target)') }}</span>
+                            <span class="text-slate-400 font-normal lowercase">{{ __('e.g. "public" for Laravel') }}</span>
                         </label>
                         <input
                             v-model="form.public_path"
                             type="text"
-                            placeholder="public (leave empty for standard public_html)"
+                            :placeholder="__('public (leave empty for standard public_html)')"
                             class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
                         />
                         <p v-if="form.errors.public_path" class="text-xs text-rose-400 mt-1">{{ form.errors.public_path }}</p>
@@ -183,7 +183,7 @@ const deleteSubdomain = async (id, domain) => {
 
                     <!-- PHP Runtime -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">PHP Runtime</label>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('PHP Runtime') }}</label>
                         <select
                             v-model="form.php_version"
                             class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
@@ -198,8 +198,8 @@ const deleteSubdomain = async (id, domain) => {
                     <!-- Generate Let's Encrypt SSL -->
                     <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
                         <div>
-                            <span class="text-xs text-slate-200 block font-medium">Generate Let's Encrypt SSL</span>
-                            <span class="text-[11px] text-slate-400">Default: ON (Requires DNS A-record pointed)</span>
+                            <span class="text-xs text-slate-200 block font-medium">{{ __('Generate Let\'s Encrypt SSL') }}</span>
+                            <span class="text-[11px] text-slate-400">{{ __('Default: ON (Requires DNS A-record pointed)') }}</span>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input

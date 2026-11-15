@@ -16,7 +16,7 @@ const submit = () => {
 </script>
 
 <template>
-            <Head title="Change Hostname" />
+            <Head :title="__('Change Hostname')" />
 
         <div class="max-w-3xl mx-auto space-y-6">
             <!-- Header -->
@@ -24,7 +24,7 @@ const submit = () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Globe class="w-6 h-6 text-blue-400" />
-                        <span>Change Server Hostname</span>
+                        <span>{{ __('Change Server Hostname') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Update the server Fully Qualified Domain Name (FQDN) across systemd and OpenLiteSpeed configuration.
@@ -35,7 +35,7 @@ const submit = () => {
             <!-- Current Hostname Banner -->
             <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
                 <div>
-                    <p class="text-xs text-slate-400">Current Hostname</p>
+                    <p class="text-xs text-slate-400">{{ __('Current Hostname') }}</p>
                     <p class="text-lg font-bold text-white font-mono mt-0.5">{{ currentHostname }}</p>
                 </div>
                 <div class="p-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
@@ -46,12 +46,12 @@ const submit = () => {
             <!-- Hostname Form -->
             <form @submit.prevent="submit" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">New Server Hostname (FQDN)</label>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('New Server Hostname (FQDN)') }}</label>
                     <input
                         v-model="form.hostname"
                         type="text"
                         required
-                        placeholder="server1.yourdomain.com"
+                        :placeholder="__('server1.yourdomain.com')"
                         class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-blue-500"
                     />
                     <p v-if="form.errors.hostname" class="text-xs text-rose-400 mt-1">{{ form.errors.hostname }}</p>

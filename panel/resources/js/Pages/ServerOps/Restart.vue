@@ -25,7 +25,7 @@ const execute = async (actionName) => {
 </script>
 
 <template>
-            <Head title="Restart Services" />
+            <Head :title="__('Restart Services')" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -33,7 +33,7 @@ const execute = async (actionName) => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <RotateCw class="w-6 h-6 text-blue-400" />
-                        <span>Restart Services & Server</span>
+                        <span>{{ __('Restart Services & Server') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Trigger graceful restarts of OpenLiteSpeed web server, database, cache, or system components.
@@ -50,7 +50,7 @@ const execute = async (actionName) => {
                             <Zap class="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 class="text-base font-bold text-white">OpenLiteSpeed Safe Reload</h2>
+                            <h2 class="text-base font-bold text-white">{{ __('OpenLiteSpeed Safe Reload') }}</h2>
                             <p class="text-xs text-slate-400 mt-1">
                                 Zero-downtime graceful reload. Validates syntax before reloading worker pools with automatic rollback on error.
                             </p>
@@ -72,7 +72,7 @@ const execute = async (actionName) => {
                             <RotateCw class="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 class="text-base font-bold text-white">OpenLiteSpeed Hard Restart</h2>
+                            <h2 class="text-base font-bold text-white">{{ __('OpenLiteSpeed Hard Restart') }}</h2>
                             <p class="text-xs text-slate-400 mt-1">
                                 Fully stops and starts OpenLiteSpeed server daemon and all SuEXEC detached PHP processes.
                             </p>
@@ -94,7 +94,7 @@ const execute = async (actionName) => {
                             <Database class="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 class="text-base font-bold text-white">MariaDB SQL Restart</h2>
+                            <h2 class="text-base font-bold text-white">{{ __('MariaDB SQL Restart') }}</h2>
                             <p class="text-xs text-slate-400 mt-1">
                                 Restarts the MySQL / MariaDB database engine daemon. May interrupt active client transactions.
                             </p>
@@ -116,7 +116,7 @@ const execute = async (actionName) => {
                             <Server class="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 class="text-base font-bold text-white">Redis Cache Restart</h2>
+                            <h2 class="text-base font-bold text-white">{{ __('Redis Cache Restart') }}</h2>
                             <p class="text-xs text-slate-400 mt-1">
                                 Restarts Redis in-memory cache server. Cached session keys and transient queue jobs may reset.
                             </p>

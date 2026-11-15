@@ -12,7 +12,7 @@ import { Globe } from '@lucide/vue';
                 <Globe class="w-6 h-6" />
             </div>
             <h1 class="text-2xl font-bold tracking-tight text-white">
-                Lite<span class="text-sky-400">Control</span>
+                Lite<span class="text-sky-400">{{ __('Control') }}</span>
             </h1>
             <p class="text-xs text-slate-400 mt-1">
                 Enter your credentials to access the management portal

@@ -30,7 +30,7 @@ const removeModule = async (mod) => {
 </script>
 
 <template>
-    <Head title="Module Manager" />
+    <Head :title="__('Module Manager')" />
 
     <div class="max-w-5xl mx-auto space-y-6">
             <!-- Header -->
@@ -38,7 +38,7 @@ const removeModule = async (mod) => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Layers class="w-6 h-6 text-emerald-400" />
-                        <span>On-Demand Module Manager</span>
+                        <span>{{ __('On-Demand Module Manager') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Extend LiteControl capabilities on-demand without bloating the core OpenLiteSpeed installation.
@@ -89,7 +89,7 @@ const removeModule = async (mod) => {
                                 class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 transition-all"
                             >
                                 <Download class="w-3.5 h-3.5" />
-                                <span>Install</span>
+                                <span>{{ __('Install') }}</span>
                             </button>
                             <button
                                 v-else
@@ -97,7 +97,7 @@ const removeModule = async (mod) => {
                                 class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 font-medium text-xs flex items-center gap-1.5 border border-slate-700 hover:border-rose-500/30 transition-all"
                             >
                                 <Trash2 class="w-3.5 h-3.5" />
-                                <span>Uninstall</span>
+                                <span>{{ __('Uninstall') }}</span>
                             </button>
                         </div>
                     </div>

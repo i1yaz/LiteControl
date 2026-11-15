@@ -13,7 +13,7 @@ const installCsf = () => {
 </script>
 
 <template>
-            <Head title="CSF Firewall" />
+            <Head :title="__('CSF Firewall')" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -21,7 +21,7 @@ const installCsf = () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Shield class="w-6 h-6 text-rose-400" />
-                        <span>ConfigServer Security & Firewall (CSF)</span>
+                        <span>{{ __('ConfigServer Security & Firewall (CSF)') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Advanced SPI firewall, Login Failure Daemon (LFD), intrusion prevention, and automated brute-force mitigation.
@@ -36,15 +36,15 @@ const installCsf = () => {
                         <CheckCircle2 class="w-7 h-7" />
                     </div>
                     <div>
-                        <h2 class="text-lg font-bold text-white">CSF & LFD Active</h2>
-                        <p class="text-xs text-slate-400 mt-0.5">CSF stateful packet inspection firewall is installed and synchronizing with OpenLiteSpeed listeners.</p>
+                        <h2 class="text-lg font-bold text-white">{{ __('CSF & LFD Active') }}</h2>
+                        <p class="text-xs text-slate-400 mt-0.5">{{ __('CSF stateful packet inspection firewall is installed and synchronizing with OpenLiteSpeed listeners.') }}</p>
                     </div>
                 </div>
 
                 <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 font-mono space-y-1">
-                    <p>Status: <span class="text-emerald-400 font-bold uppercase">{{ status }}</span></p>
-                    <p>Config file: /etc/csf/csf.conf</p>
-                    <p>Daemon: lfd.service (Running)</p>
+                    <p>{{ __('Status:') }} <span class="text-emerald-400 font-bold uppercase">{{ status }}</span></p>
+                    <p>{{ __('Config file: /etc/csf/csf.conf') }}</p>
+                    <p>{{ __('Daemon: lfd.service (Running)') }}</p>
                 </div>
             </div>
 
@@ -54,7 +54,7 @@ const installCsf = () => {
                     <Shield class="w-8 h-8" />
                 </div>
                 <div class="max-w-md mx-auto space-y-2">
-                    <h2 class="text-lg font-bold text-white">CSF Firewall is Not Installed</h2>
+                    <h2 class="text-lg font-bold text-white">{{ __('CSF Firewall is Not Installed') }}</h2>
                     <p class="text-xs text-slate-400 leading-relaxed">
                         CSF is an optional module in LiteControl. It replaces or enhances default UFW rules with deeper deep packet inspection and port scanning defense.
                     </p>
@@ -65,7 +65,7 @@ const installCsf = () => {
                         class="px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs inline-flex items-center gap-2 shadow-lg shadow-rose-600/20 transition-all"
                     >
                         <Download class="w-4 h-4" />
-                        <span>Install CSF Module Now</span>
+                        <span>{{ __('Install CSF Module Now') }}</span>
                     </button>
                 </div>
             </div>

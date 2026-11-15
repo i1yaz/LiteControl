@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useClickOutside } from '@shared/Composables/useClickOutside';
 import { useNavigation } from '@shared/Composables/useNavigation';
 import { useTheme } from '@shared/Composables/useTheme';
+import LocaleSwitcher from '@shared/Components/LocaleSwitcher.vue';
 import {
     LayoutDashboard, Users, Globe, Database, FolderTree,
     FileCode, Sliders, Server, Shield, Mail, Layers,
@@ -84,7 +85,7 @@ const logout = () => {
         <div v-if="page.props.auth?.is_impersonating" class="bg-[#ff6b35]/15 border-b border-[#ff6b35]/30 px-5 py-2 text-xs flex items-center justify-between text-[#ffab85]">
             <div class="flex items-center gap-2.5 font-mono">
                 <AlertCircle class="w-4 h-4 text-[#ff6b35]" />
-                <span>ACTIVE_IMPERSONATION // TARGET: <strong class="text-white underline">{{ user.username }}</strong></span>
+                <span>{{ __('ACTIVE_IMPERSONATION // TARGET:') }} <strong class="text-white underline">{{ user.username }}</strong></span>
             </div>
             <form @submit.prevent="router.post('/impersonation/revert')">
                 <button type="submit" class="px-3 py-1 rounded bg-[#ff6b35] hover:bg-[#ff8252] text-black text-xs font-mono font-bold uppercase tracking-wider transition-colors">
@@ -99,7 +100,7 @@ const logout = () => {
                 <button
                     @click="sidebarOpen = !sidebarOpen"
                     class="lg:hidden p-2 rounded border border-[#232a36] text-[#7d8b9e] hover:text-white hover:bg-[#151921] transition-all"
-                    aria-label="Toggle Navigation"
+                    :aria-label="__('Toggle Navigation')"
                 >
                     <Menu v-if="!sidebarOpen" class="w-4 h-4" />
                     <X v-else class="w-4 h-4" />
@@ -113,7 +114,7 @@ const logout = () => {
                     <div class="flex flex-col">
                         <div class="flex items-center gap-2">
                             <span class="text-sm font-black tracking-tight text-white font-mono uppercase">
-                                Lite<span class="text-[#ff6b35]">Control</span>
+                                Lite<span class="text-[#ff6b35]">{{ __('Control') }}</span>
                             </span>
                             <span v-if="isAdmin" class="px-1.5 py-0.2 rounded-xs text-[9px] font-mono font-bold bg-[#ff6b35]/15 text-[#ff8e62] border border-[#ff6b35]/30">
                                 ROOT:WHM
@@ -131,21 +132,21 @@ const logout = () => {
                 <!-- 2FA Status Quick Link -->
                 <div
                     v-if="$page.props.auth?.user?.two_factor_confirmed_at"
-                    title="Two-Factor Authentication is enabled"
+                    :title="__('Two-Factor Authentication is enabled')"
                     aria-disabled="true"
                     class="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-sm bg-[#11161d] border border-[#1f2633] text-xs font-mono opacity-75 cursor-default select-none"
                 >
-                    <span class="text-[#8e9cae]">2FA:</span>
-                    <span class="font-bold text-emerald-400">ON</span>
+                    <span class="text-[#8e9cae]">{{ __('2FA:') }}</span>
+                    <span class="font-bold text-emerald-400">{{ __('ON') }}</span>
                 </div>
                 <Link
                     v-else
                     href="/security/two-factor"
-                    title="Click to enable Two-Factor Authentication"
+                    :title="__('Click to enable Two-Factor Authentication')"
                     class="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-sm bg-[#11161d] border border-[#1f2633] hover:border-[#2a3445] text-xs font-mono transition-colors"
                 >
-                    <span class="text-[#8e9cae]">2FA:</span>
-                    <span class="font-bold text-amber-400">ENABLE</span>
+                    <span class="text-[#8e9cae]">{{ __('2FA:') }}</span>
+                    <span class="font-bold text-amber-400">{{ __('ENABLE') }}</span>
                 </Link>
 
                 <!-- Daemon Heartbeat & Interactive Status Checker -->
@@ -163,7 +164,7 @@ const logout = () => {
                         :class="olsStatus === 'online' ? 'text-emerald-400 animate-pulse' : (olsStatus === 'offline' ? 'text-rose-400' : 'text-amber-400')"
                     />
 
-                    <span class="text-[#8e9cae]">OLS DAEMON:</span>
+                    <span class="text-[#8e9cae]">{{ __('OLS DAEMON:') }}</span>
 
                     <span
                         class="font-bold transition-colors"
@@ -182,11 +183,13 @@ const logout = () => {
                     />
                 </button>
 
+                <LocaleSwitcher />
+
                 <!-- Theme Switcher Dropdown -->
                 <div class="relative" ref="themeDropdownRef">
                     <button
                         @click="themeDropdownOpen = !themeDropdownOpen"
-                        title="Switch Interface Theme"
+                        :title="__('Switch Interface Theme')"
                         class="p-2 rounded-sm bg-[#11161d] border border-[#1f2633] hover:border-[#2a3445] text-[#98a6b8] hover:text-white transition-all flex items-center gap-1.5 text-xs font-mono"
                     >
                         <Palette class="w-3.5 h-3.5 text-[#ff6b35]" />
@@ -243,14 +246,14 @@ const logout = () => {
                             class="flex items-center gap-2.5 px-3 py-2 text-xs text-[#a0adbf] hover:bg-[#161c24] hover:text-white transition-colors"
                         >
                             <UserCircle class="w-3.5 h-3.5 text-[#586477]" />
-                            <span>Security Profile</span>
+                            <span>{{ __('Security Profile') }}</span>
                         </Link>
                         <button
                             @click="logout"
                             class="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[#ff5a5a] hover:bg-[#ff5a5a]/10 hover:text-[#ff7878] text-left transition-colors"
                         >
                             <LogOut class="w-3.5 h-3.5" />
-                            <span>Terminate Session</span>
+                            <span>{{ __('Terminate Session') }}</span>
                         </button>
                     </div>
                 </div>
@@ -329,11 +332,11 @@ const logout = () => {
 
                 <!-- Footer Baseline -->
                 <div class="p-3 border-t border-[#181e28] text-[10px] font-mono text-[#4e5a6c] flex items-center justify-between">
-                    <span>SYS // v1.0.0</span>
+                    <span>{{ __('SYS // v1.0.0') }}</span>
                     <span v-if="page.props.panel?.is_mock_mode" class="px-1.5 py-0.5 bg-[#ff6b35]/15 text-[#ff8e62] border border-[#ff6b35]/30">
                         EMULATOR
                     </span>
-                    <span v-else class="text-emerald-500 font-semibold">STANDALONE</span>
+                    <span v-else class="text-emerald-500 font-semibold">{{ __('STANDALONE') }}</span>
                 </div>
             </aside>
 

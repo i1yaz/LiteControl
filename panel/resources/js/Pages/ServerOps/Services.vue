@@ -47,7 +47,7 @@ const updateWebAdminIps = () => {
 </script>
 
 <template>
-            <Head title="Services & WebAdmin Manager" />
+            <Head :title="__('Services & WebAdmin Manager')" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -55,7 +55,7 @@ const updateWebAdminIps = () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Server class="w-6 h-6 text-blue-400" />
-                        <span>Services & WebAdmin Manager</span>
+                        <span>{{ __('Services & WebAdmin Manager') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Monitor system daemons and manage OpenLiteSpeed native WebAdmin console access.
@@ -75,7 +75,7 @@ const updateWebAdminIps = () => {
                             </div>
                             <div>
                                 <div class="flex items-center gap-2.5">
-                                    <h2 class="text-lg font-bold text-white">OpenLiteSpeed WebAdmin Console</h2>
+                                    <h2 class="text-lg font-bold text-white">{{ __('OpenLiteSpeed WebAdmin Console') }}</h2>
                                     <span
                                         :class="[
                                             'px-2.5 py-0.5 rounded-full text-[11px] font-semibold border',
@@ -103,7 +103,7 @@ const updateWebAdminIps = () => {
                                     <input
                                         v-model="form.allowed_ips"
                                         type="text"
-                                        placeholder="Allowed IPs (comma separated, e.g. 192.0.2.1, 10.0.0.0/24, or empty for all)"
+                                        :placeholder="__('Allowed IPs (comma separated, e.g. 192.0.2.1, 10.0.0.0/24, or empty for all)')"
                                         class="w-full pl-9 pr-3 py-2 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                     />
                                 </div>
@@ -131,7 +131,7 @@ const updateWebAdminIps = () => {
                             class="px-4 py-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-xs font-semibold flex items-center gap-2 transition-all shadow-lg shadow-blue-500/5"
                         >
                             <ExternalLink class="w-4 h-4" />
-                            <span>Launch WebAdmin</span>
+                            <span>{{ __('Launch WebAdmin') }}</span>
                         </a>
 
                         <button
@@ -157,9 +157,9 @@ const updateWebAdminIps = () => {
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="border-b border-slate-800/80 bg-slate-950/40 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                                <th class="px-6 py-4">Service</th>
-                                <th class="px-6 py-4">Status</th>
-                                <th class="px-6 py-4 text-right">Actions</th>
+                                <th class="px-6 py-4">{{ __('Service') }}</th>
+                                <th class="px-6 py-4">{{ __('Status') }}</th>
+                                <th class="px-6 py-4 text-right">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60 text-xs text-slate-300">
@@ -190,16 +190,16 @@ const updateWebAdminIps = () => {
                                         <button
                                             @click="serviceAction(svc.service || svc.name, 'restart')"
                                             class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors"
-                                            title="Restart"
+                                            :title="__('Restart')"
                                         >
                                             <RotateCw class="w-3.5 h-3.5 text-blue-400" />
-                                            <span>Restart</span>
+                                            <span>{{ __('Restart') }}</span>
                                         </button>
                                         <button
                                             v-if="svc.status === 'active'"
                                             @click="serviceAction(svc.service || svc.name, 'stop')"
                                             class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 transition-colors"
-                                            title="Stop Service"
+                                            :title="__('Stop Service')"
                                         >
                                             <Square class="w-3.5 h-3.5" />
                                         </button>
@@ -207,7 +207,7 @@ const updateWebAdminIps = () => {
                                             v-else
                                             @click="serviceAction(svc.service || svc.name, 'start')"
                                             class="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-950/40 text-slate-400 hover:text-emerald-400 transition-colors"
-                                            title="Start Service"
+                                            :title="__('Start Service')"
                                         >
                                             <Play class="w-3.5 h-3.5" />
                                         </button>

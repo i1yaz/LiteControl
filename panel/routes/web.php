@@ -6,6 +6,7 @@ use App\Http\Controllers\FileManager\FileManagerController;
 use App\Http\Controllers\HostingPlans\PackageController;
 use App\Http\Controllers\Identity\AuthController;
 use App\Http\Controllers\Identity\UserController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\PanelConfig\ConfigurationController;
 use App\Http\Controllers\PanelConfig\ThemeController;
 use App\Http\Controllers\PhpRuntime\PhpController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\WebServer\DomainController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/theme/switch', [ThemeController::class, 'switch'])->name('theme.switch');
+Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
 
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');

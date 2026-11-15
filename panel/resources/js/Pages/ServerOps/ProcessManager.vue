@@ -37,7 +37,7 @@ const refresh = () => {
 </script>
 
 <template>
-            <Head title="Process Manager" />
+            <Head :title="__('Process Manager')" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -45,7 +45,7 @@ const refresh = () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Cpu class="w-6 h-6 text-blue-400" />
-                        <span>Process Manager</span>
+                        <span>{{ __('Process Manager') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Active Linux server processes sorted by CPU and memory consumption.
@@ -58,14 +58,14 @@ const refresh = () => {
                         <input
                             v-model="search"
                             type="text"
-                            placeholder="Filter processes..."
+                            :placeholder="__('Filter processes...')"
                             class="pl-9 pr-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                         />
                     </div>
                     <button
                         @click="refresh"
                         class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-                        title="Refresh"
+                        :title="__('Refresh')"
                     >
                         <RefreshCw class="w-4 h-4" />
                     </button>
@@ -78,12 +78,12 @@ const refresh = () => {
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="border-b border-slate-800/80 bg-slate-950/40 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                                <th class="px-5 py-3.5">PID</th>
-                                <th class="px-5 py-3.5">User</th>
-                                <th class="px-5 py-3.5">CPU %</th>
-                                <th class="px-5 py-3.5">Mem %</th>
-                                <th class="px-5 py-3.5">Command</th>
-                                <th class="px-5 py-3.5 text-right">Actions</th>
+                                <th class="px-5 py-3.5">{{ __('PID') }}</th>
+                                <th class="px-5 py-3.5">{{ __('User') }}</th>
+                                <th class="px-5 py-3.5">{{ __('CPU %') }}</th>
+                                <th class="px-5 py-3.5">{{ __('Mem %') }}</th>
+                                <th class="px-5 py-3.5">{{ __('Command') }}</th>
+                                <th class="px-5 py-3.5 text-right">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60 font-mono text-xs text-slate-300">

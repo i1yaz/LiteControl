@@ -54,7 +54,7 @@ const submitCustomSsl = () => {
 </script>
 
 <template>
-            <Head title="SSL Certificates" />
+            <Head :title="__('SSL Certificates')" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -62,7 +62,7 @@ const submitCustomSsl = () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Lock class="w-6 h-6 text-rose-400" />
-                        <span>SSL Certificates</span>
+                        <span>{{ __('SSL Certificates') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Issue free automated Let's Encrypt TLS/SSL certificates or install custom enterprise SSL certificates.
@@ -76,11 +76,11 @@ const submitCustomSsl = () => {
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="border-b border-slate-800/80 bg-slate-950/40 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                                <th class="px-6 py-4">Domain</th>
-                                <th class="px-6 py-4">User</th>
-                                <th class="px-6 py-4">SSL Status</th>
-                                <th class="px-6 py-4">Expires</th>
-                                <th class="px-6 py-4 text-right">Actions</th>
+                                <th class="px-6 py-4">{{ __('Domain') }}</th>
+                                <th class="px-6 py-4">{{ __('User') }}</th>
+                                <th class="px-6 py-4">{{ __('SSL Status') }}</th>
+                                <th class="px-6 py-4">{{ __('Expires') }}</th>
+                                <th class="px-6 py-4 text-right">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60 text-xs text-slate-300">
@@ -124,14 +124,14 @@ const submitCustomSsl = () => {
                                             class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs flex items-center gap-1.5 transition-colors"
                                         >
                                             <RefreshCw class="w-3 h-3 text-emerald-400" />
-                                            <span>Renew</span>
+                                            <span>{{ __('Renew') }}</span>
                                         </button>
                                         <button
                                             @click="openCustomModal(d)"
                                             class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs flex items-center gap-1 transition-colors"
                                         >
                                             <Key class="w-3.5 h-3.5 text-rose-400" />
-                                            <span>Custom SSL</span>
+                                            <span>{{ __('Custom SSL') }}</span>
                                         </button>
                                     </div>
                                 </td>
@@ -154,28 +154,28 @@ const submitCustomSsl = () => {
                             <Key class="w-5 h-5 text-rose-400" />
                             <span>Install Custom SSL: {{ selectedDomain?.domain }}</span>
                         </h2>
-                        <button @click="customModalOpen = false" class="text-slate-400 hover:text-white">&times;</button>
+                        <button @click="customModalOpen = false" class="text-slate-400 hover:text-white">{{ __('&times;') }}</button>
                     </div>
 
                     <form @submit.prevent="submitCustomSsl" class="space-y-4">
                         <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1.5">Certificate (CRT/PEM)</label>
+                            <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Certificate (CRT/PEM)') }}</label>
                             <textarea
                                 v-model="customForm.certificate"
                                 rows="5"
                                 required
-                                placeholder="-----BEGIN CERTIFICATE-----"
+                                :placeholder="__('-----BEGIN CERTIFICATE-----')"
                                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-rose-500"
                             ></textarea>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1.5">Private Key (KEY)</label>
+                            <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Private Key (KEY)') }}</label>
                             <textarea
                                 v-model="customForm.private_key"
                                 rows="5"
                                 required
-                                placeholder="-----BEGIN PRIVATE KEY-----"
+                                :placeholder="__('-----BEGIN PRIVATE KEY-----')"
                                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-rose-500"
                             ></textarea>
                         </div>

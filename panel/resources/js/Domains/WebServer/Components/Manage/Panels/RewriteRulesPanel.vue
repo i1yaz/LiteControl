@@ -71,7 +71,7 @@ onMounted(() => {
             <div>
                 <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary flex items-center gap-2">
                     <FileEdit class="w-4 h-4 text-purple-400" />
-                    <span>Rewrite Rules (.htaccess)</span>
+                    <span>{{ __('Rewrite Rules (.htaccess)') }}</span>
                 </h3>
                 <span class="text-[11px] text-theme-text-secondary font-mono mt-0.5 block">
                     {{ domain.document_root }}/.htaccess
@@ -95,7 +95,7 @@ onMounted(() => {
                     @change="applyTemplate"
                     class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded-lg text-xs text-theme-text-primary focus:outline-none focus:border-blue-500 transition-colors"
                 >
-                    <option value="" disabled>-- Choose Rewrite Template --</option>
+                    <option value="" disabled>{{ __('-- Choose Rewrite Template --') }}</option>
                     <option
                         v-for="tpl in REWRITE_TEMPLATES"
                         :key="tpl.id"

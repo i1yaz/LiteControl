@@ -418,7 +418,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <Head title="File Manager" />
+    <Head :title="__('File Manager')" />
 
     <div class="space-y-6">
             <!-- Header -->
@@ -426,7 +426,7 @@ onMounted(() => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <FolderTree class="w-6 h-6 text-cyan-400" />
-                        <span>Web File Manager</span>
+                        <span>{{ __('Web File Manager') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Securely browse, create, edit, and upload files within your home directory (`{{ baseDir }}`).
@@ -454,15 +454,15 @@ onMounted(() => {
                         v-if="targetDomain"
                         @click="fixDomainPermissions"
                         class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition-colors"
-                        title="Reset permissions to standard 755 (dirs) / 644 (files)"
+                        :title="__('Reset permissions to standard 755 (dirs) / 644 (files)')"
                     >
                         <ShieldCheck class="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Fix Permissions</span>
+                        <span>{{ __('Fix Permissions') }}</span>
                     </button>
 
                     <label class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer transition-colors border border-slate-700">
                         <Upload class="w-3.5 h-3.5 text-cyan-400" />
-                        <span>Upload</span>
+                        <span>{{ __('Upload') }}</span>
                         <input type="file" multiple class="hidden" @change="handleFileUpload" />
                     </label>
 
@@ -471,7 +471,7 @@ onMounted(() => {
                         class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition-colors shadow-sm shadow-cyan-600/30"
                     >
                         <Plus class="w-3.5 h-3.5" />
-                        <span>New Item</span>
+                        <span>{{ __('New Item') }}</span>
                     </button>
                 </div>
             </div>
@@ -508,14 +508,14 @@ onMounted(() => {
                         @click="navigateUp"
                         :disabled="!currentPath"
                         class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 transition-colors"
-                        title="Up one directory"
+                        :title="__('Up one directory')"
                     >
                         <ArrowUp class="w-4 h-4" />
                     </button>
                     <button
                         @click="loadFiles(currentPath)"
                         class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-                        title="Refresh"
+                        :title="__('Refresh')"
                     >
                         <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
                     </button>
@@ -531,11 +531,11 @@ onMounted(() => {
                     <table class="w-full text-left text-sm text-slate-300">
                         <thead class="bg-slate-950/50 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
                             <tr>
-                                <th class="px-5 py-3">Name</th>
-                                <th class="px-5 py-3">Size</th>
-                                <th class="px-5 py-3">Permissions</th>
-                                <th class="px-5 py-3">Last Modified</th>
-                                <th class="px-5 py-3 text-right">Actions</th>
+                                <th class="px-5 py-3">{{ __('Name') }}</th>
+                                <th class="px-5 py-3">{{ __('Size') }}</th>
+                                <th class="px-5 py-3">{{ __('Permissions') }}</th>
+                                <th class="px-5 py-3">{{ __('Last Modified') }}</th>
+                                <th class="px-5 py-3 text-right">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
@@ -574,7 +574,7 @@ onMounted(() => {
                                     <button
                                         @click="openChmodModal(item)"
                                         class="hover:text-cyan-400 hover:underline transition-colors font-mono cursor-pointer"
-                                        title="Click to edit permissions (chmod)"
+                                        :title="__('Click to edit permissions (chmod)')"
                                     >
                                         {{ item.permissions }}
                                     </button>
@@ -586,7 +586,7 @@ onMounted(() => {
                                     <div class="flex items-center justify-end gap-2">
                                         <button
                                             @click="openChmodModal(item)"
-                                            title="Change Permissions"
+                                            :title="__('Change Permissions')"
                                             class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 transition-colors"
                                         >
                                             <KeyRound class="w-3.5 h-3.5" />
@@ -594,14 +594,14 @@ onMounted(() => {
                                         <button
                                             v-if="!item.is_dir"
                                             @click="openEditor(item.path)"
-                                            title="Edit in Code Editor"
+                                            :title="__('Edit in Code Editor')"
                                             class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 transition-colors"
                                         >
                                             <Edit3 class="w-3.5 h-3.5" />
                                         </button>
                                         <button
                                             @click="deleteItem(item.path, item.name)"
-                                            title="Delete"
+                                            :title="__('Delete')"
                                             class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-400 transition-colors"
                                         >
                                             <Trash2 class="w-3.5 h-3.5" />
@@ -620,7 +620,7 @@ onMounted(() => {
             </div>
 
             <!-- Create New File / Folder Modal -->
-            <UiModal :show="showCreateModal" title="Create New Item" max-width="sm" @close="showCreateModal = false">
+            <UiModal :show="showCreateModal" :title="__('Create New Item')" max-width="sm" @close="showCreateModal = false">
                 <div class="space-y-3">
                     <div class="flex gap-2">
                         <button
@@ -638,11 +638,11 @@ onMounted(() => {
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Name</label>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Name') }}</label>
                         <input
                             v-model="newItemName"
                             type="text"
-                            placeholder="e.g. index.php or assets"
+                            :placeholder="__('e.g. index.php or assets')"
                             class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
                         />
                     </div>
@@ -694,13 +694,13 @@ onMounted(() => {
                         class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-xs font-semibold text-white shadow-sm"
                     >
                         <Save class="w-3.5 h-3.5" />
-                        <span>Save</span>
+                        <span>{{ __('Save') }}</span>
                     </button>
                 </template>
             </UiModal>
 
             <!-- cPanel-Style Change Permissions Modal -->
-            <UiModal :show="showChmodModal" title="Change Permissions" max-width="md" @close="showChmodModal = false">
+            <UiModal :show="showChmodModal" :title="__('Change Permissions')" max-width="md" @close="showChmodModal = false">
                 <div class="space-y-4">
                     <div v-if="chmodTarget" class="text-xs text-slate-400 break-all font-mono">
                         {{ chmodTarget.name }} ({{ chmodTarget.is_dir ? 'Directory' : 'File' }})
@@ -711,15 +711,15 @@ onMounted(() => {
                         <table class="w-full text-center">
                             <thead class="bg-slate-950/70 border-b border-slate-800 text-slate-400 font-semibold uppercase">
                                 <tr>
-                                    <th class="py-2.5 px-3 text-left">Mode</th>
-                                    <th class="py-2.5 px-3">User</th>
-                                    <th class="py-2.5 px-3">Group</th>
-                                    <th class="py-2.5 px-3">World</th>
+                                    <th class="py-2.5 px-3 text-left">{{ __('Mode') }}</th>
+                                    <th class="py-2.5 px-3">{{ __('User') }}</th>
+                                    <th class="py-2.5 px-3">{{ __('Group') }}</th>
+                                    <th class="py-2.5 px-3">{{ __('World') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-800 font-mono text-slate-300">
                                 <tr>
-                                    <td class="py-2.5 px-3 text-left font-semibold text-slate-200">Read (4)</td>
+                                    <td class="py-2.5 px-3 text-left font-semibold text-slate-200">{{ __('Read (4)') }}</td>
                                     <td class="py-2.5 px-3">
                                         <input type="checkbox" v-model="chmodPerms.userRead" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0" />
                                     </td>
@@ -731,7 +731,7 @@ onMounted(() => {
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td class="py-2.5 px-3 text-left font-semibold text-slate-200">Write (2)</td>
+                                    <td class="py-2.5 px-3 text-left font-semibold text-slate-200">{{ __('Write (2)') }}</td>
                                     <td class="py-2.5 px-3">
                                         <input type="checkbox" v-model="chmodPerms.userWrite" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0" />
                                     </td>
@@ -743,7 +743,7 @@ onMounted(() => {
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td class="py-2.5 px-3 text-left font-semibold text-slate-200">Execute (1)</td>
+                                    <td class="py-2.5 px-3 text-left font-semibold text-slate-200">{{ __('Execute (1)') }}</td>
                                     <td class="py-2.5 px-3">
                                         <input type="checkbox" v-model="chmodPerms.userExec" class="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0" />
                                     </td>
@@ -760,7 +760,7 @@ onMounted(() => {
 
                     <!-- Octal Display -->
                     <div class="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs">
-                        <span class="text-slate-400 font-semibold uppercase">Permission Value:</span>
+                        <span class="text-slate-400 font-semibold uppercase">{{ __('Permission Value:') }}</span>
                         <span class="font-mono text-base font-bold text-cyan-400">{{ computedOctal }}</span>
                     </div>
 
@@ -796,14 +796,14 @@ onMounted(() => {
                         class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-cyan-400"
                     >
                         <Edit3 class="w-3.5 h-3.5" />
-                        <span>Edit</span>
+                        <span>{{ __('Edit') }}</span>
                     </button>
                     <button
                         @click="openChmodModal(contextMenu.item); closeContextMenu()"
                         class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-amber-400"
                     >
                         <KeyRound class="w-3.5 h-3.5" />
-                        <span>Change Permissions</span>
+                        <span>{{ __('Change Permissions') }}</span>
                     </button>
                     <div class="my-1 border-t border-slate-800"></div>
                     <button
@@ -811,7 +811,7 @@ onMounted(() => {
                         class="w-full px-3 py-2 text-left hover:bg-rose-500/20 flex items-center gap-2 text-rose-400"
                     >
                         <Trash2 class="w-3.5 h-3.5" />
-                        <span>Delete</span>
+                        <span>{{ __('Delete') }}</span>
                     </button>
                 </template>
 
@@ -821,14 +821,14 @@ onMounted(() => {
                         class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-cyan-400"
                     >
                         <Folder class="w-3.5 h-3.5" />
-                        <span>Open</span>
+                        <span>{{ __('Open') }}</span>
                     </button>
                     <button
                         @click="openChmodModal(contextMenu.item); closeContextMenu()"
                         class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-amber-400"
                     >
                         <KeyRound class="w-3.5 h-3.5" />
-                        <span>Change Permissions</span>
+                        <span>{{ __('Change Permissions') }}</span>
                     </button>
                     <div class="my-1 border-t border-slate-800"></div>
                     <button
@@ -836,7 +836,7 @@ onMounted(() => {
                         class="w-full px-3 py-2 text-left hover:bg-rose-500/20 flex items-center gap-2 text-rose-400"
                     >
                         <Trash2 class="w-3.5 h-3.5" />
-                        <span>Delete</span>
+                        <span>{{ __('Delete') }}</span>
                     </button>
                 </template>
 
@@ -846,14 +846,14 @@ onMounted(() => {
                         class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-cyan-400"
                     >
                         <Plus class="w-3.5 h-3.5" />
-                        <span>Create File</span>
+                        <span>{{ __('Create File') }}</span>
                     </button>
                     <button
                         @click="openCreateModal('dir')"
                         class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-slate-200"
                     >
                         <Folder class="w-3.5 h-3.5" />
-                        <span>Create Folder</span>
+                        <span>{{ __('Create Folder') }}</span>
                     </button>
                     <div class="my-1 border-t border-slate-800"></div>
                     <button
@@ -861,7 +861,7 @@ onMounted(() => {
                         class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-slate-300"
                     >
                         <RefreshCw class="w-3.5 h-3.5" />
-                        <span>Refresh</span>
+                        <span>{{ __('Refresh') }}</span>
                     </button>
                 </template>
             </div>

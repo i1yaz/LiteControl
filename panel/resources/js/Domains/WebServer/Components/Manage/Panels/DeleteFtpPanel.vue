@@ -65,10 +65,10 @@ const deleteFtp = async (acc) => {
                 <button
                     @click="deleteFtp(acc)"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold rounded-lg border border-rose-500/30 transition-colors"
-                    title="Delete FTP Account"
+                    :title="__('Delete FTP Account')"
                 >
                     <Trash2 class="w-3.5 h-3.5" />
-                    <span>Delete</span>
+                    <span>{{ __('Delete') }}</span>
                 </button>
             </div>
         </div>

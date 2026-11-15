@@ -23,7 +23,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Sign In - LiteControl" />
+    <Head :title="__('Sign In - LiteControl')" />
 
     <form class="space-y-4" @submit.prevent="submit">
         <UiAlert v-if="form.errors.username" variant="danger">
@@ -33,17 +33,17 @@ const submit = () => {
         <UiInput
             id="username"
             v-model="form.username"
-            label="Username or Email"
+            :label="__('Username or Email')"
             type="text"
             required
-            placeholder="admin"
+            :placeholder="__('admin')"
             :error="form.errors.username"
         />
 
         <UiInput
             id="password"
             v-model="form.password"
-            label="Password"
+            :label="__('Password')"
             type="password"
             required
             placeholder="••••••••••••"
@@ -57,7 +57,7 @@ const submit = () => {
                     type="checkbox"
                     class="rounded"
                 />
-                <span>Remember me</span>
+                <span>{{ __('Remember me') }}</span>
             </label>
         </div>
 
@@ -67,7 +67,7 @@ const submit = () => {
             class="w-full"
         >
             <ShieldCheck class="w-4 h-4" />
-            <span>Sign In</span>
+            <span>{{ __('Sign In') }}</span>
         </UiButton>
     </form>
 </template>

@@ -17,7 +17,7 @@ const submit = () => {
 </script>
 
 <template>
-            <Head title="Server Time Zone" />
+            <Head :title="__('Server Time Zone')" />
 
         <div class="max-w-3xl mx-auto space-y-6">
             <!-- Header -->
@@ -25,7 +25,7 @@ const submit = () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Clock class="w-6 h-6 text-blue-400" />
-                        <span>System Time Zone</span>
+                        <span>{{ __('System Time Zone') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Configure Linux host timezone and synchronize cron scheduled tasks.
@@ -36,7 +36,7 @@ const submit = () => {
             <!-- Current Timezone Banner -->
             <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
                 <div>
-                    <p class="text-xs text-slate-400">Current Server Timezone</p>
+                    <p class="text-xs text-slate-400">{{ __('Current Server Timezone') }}</p>
                     <p class="text-lg font-bold text-white mt-0.5">{{ currentTimezone }}</p>
                 </div>
                 <div class="p-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
@@ -47,7 +47,7 @@ const submit = () => {
             <!-- Form -->
             <form @submit.prevent="submit" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Select Timezone</label>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Select Timezone') }}</label>
                     <select
                         v-model="form.timezone"
                         class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
@@ -57,11 +57,11 @@ const submit = () => {
                 </div>
 
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1.5">Or Enter Custom Timezone Identifier</label>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Or Enter Custom Timezone Identifier') }}</label>
                     <input
                         v-model="form.timezone"
                         type="text"
-                        placeholder="e.g. Europe/Berlin"
+                        :placeholder="__('e.g. Europe/Berlin')"
                         class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
                     />
                     <p v-if="form.errors.timezone" class="text-xs text-rose-400 mt-1">{{ form.errors.timezone }}</p>

@@ -42,7 +42,7 @@ const deleteRule = async (ruleId) => {
 </script>
 
 <template>
-            <Head title="UFW Firewall" />
+            <Head :title="__('UFW Firewall')" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -50,7 +50,7 @@ const deleteRule = async (ruleId) => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Shield class="w-6 h-6 text-rose-400" />
-                        <span>UFW Firewall Manager</span>
+                        <span>{{ __('UFW Firewall Manager') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Control inbound server network traffic and ports with Uncomplicated Firewall.
@@ -73,7 +73,7 @@ const deleteRule = async (ruleId) => {
                         class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs flex items-center gap-2 shadow-lg shadow-rose-600/20 transition-colors"
                     >
                         <Plus class="w-4 h-4" />
-                        <span>Add Rule</span>
+                        <span>{{ __('Add Rule') }}</span>
                     </button>
                 </div>
             </div>
@@ -85,10 +85,10 @@ const deleteRule = async (ruleId) => {
                         <thead>
                             <tr class="border-b border-slate-800/80 bg-slate-950/40 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                                 <th class="px-6 py-4"># / Port</th>
-                                <th class="px-6 py-4">Protocol</th>
-                                <th class="px-6 py-4">Action</th>
-                                <th class="px-6 py-4">Source IP</th>
-                                <th class="px-6 py-4 text-right">Actions</th>
+                                <th class="px-6 py-4">{{ __('Protocol') }}</th>
+                                <th class="px-6 py-4">{{ __('Action') }}</th>
+                                <th class="px-6 py-4">{{ __('Source IP') }}</th>
+                                <th class="px-6 py-4 text-right">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60 font-mono text-xs text-slate-300">
@@ -119,7 +119,7 @@ const deleteRule = async (ruleId) => {
                                     <button
                                         @click="deleteRule(r.id || r.number || r.to)"
                                         class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 transition-colors"
-                                        title="Delete Rule"
+                                        :title="__('Delete Rule')"
                                     >
                                         <Trash2 class="w-3.5 h-3.5" />
                                     </button>
@@ -136,26 +136,26 @@ const deleteRule = async (ruleId) => {
                     <div class="flex items-center justify-between border-b border-slate-800 pb-4">
                         <h2 class="text-base font-bold text-white flex items-center gap-2">
                             <Shield class="w-5 h-5 text-rose-400" />
-                            <span>Add Firewall Rule</span>
+                            <span>{{ __('Add Firewall Rule') }}</span>
                         </h2>
-                        <button @click="modalOpen = false" class="text-slate-400 hover:text-white">&times;</button>
+                        <button @click="modalOpen = false" class="text-slate-400 hover:text-white">{{ __('&times;') }}</button>
                     </div>
 
                     <form @submit.prevent="submitRule" class="space-y-4">
                         <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1.5">Rule Name / Description</label>
+                            <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Rule Name / Description') }}</label>
                             <input
                                 v-model="form.name"
                                 type="text"
                                 required
-                                placeholder="Custom App Port"
+                                :placeholder="__('Custom App Port')"
                                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
                             />
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-medium text-slate-300 mb-1.5">Port (or Range)</label>
+                                <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Port (or Range)') }}</label>
                                 <input
                                     v-model="form.port"
                                     type="text"
@@ -166,36 +166,36 @@ const deleteRule = async (ruleId) => {
                             </div>
 
                             <div>
-                                <label class="block text-xs font-medium text-slate-300 mb-1.5">Protocol</label>
+                                <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Protocol') }}</label>
                                 <select
                                     v-model="form.protocol"
                                     class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
                                 >
-                                    <option value="tcp">TCP</option>
-                                    <option value="udp">UDP</option>
-                                    <option value="any">Any</option>
+                                    <option value="tcp">{{ __('TCP') }}</option>
+                                    <option value="udp">{{ __('UDP') }}</option>
+                                    <option value="any">{{ __('Any') }}</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-medium text-slate-300 mb-1.5">Action</label>
+                                <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Action') }}</label>
                                 <select
                                     v-model="form.action"
                                     class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
                                 >
-                                    <option value="allow">ALLOW</option>
-                                    <option value="deny">DENY</option>
+                                    <option value="allow">{{ __('ALLOW') }}</option>
+                                    <option value="deny">{{ __('DENY') }}</option>
                                 </select>
                             </div>
 
                             <div>
-                                <label class="block text-xs font-medium text-slate-300 mb-1.5">Source IP (Optional)</label>
+                                <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Source IP (Optional)') }}</label>
                                 <input
                                     v-model="form.source_ip"
                                     type="text"
-                                    placeholder="Anywhere"
+                                    :placeholder="__('Anywhere')"
                                     class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
                                 />
                             </div>

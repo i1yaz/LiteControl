@@ -24,7 +24,7 @@ const switchVersion = (ver) => {
 </script>
 
 <template>
-            <Head title="PHP Modules" />
+            <Head :title="__('PHP Modules')" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -32,7 +32,7 @@ const switchVersion = (ver) => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <FileCode class="w-6 h-6 text-purple-400" />
-                        <span>Loaded PHP Modules</span>
+                        <span>{{ __('Loaded PHP Modules') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         View all active compiled and dynamic extensions currently loaded by the PHP engine (`php -m`).
@@ -64,7 +64,7 @@ const switchVersion = (ver) => {
                     <input
                         v-model="searchQuery"
                         type="text"
-                        placeholder="Search loaded modules (e.g. openssl, curl, opcache)..."
+                        :placeholder="__('Search loaded modules (e.g. openssl, curl, opcache)...')"
                         class="w-full pl-9 pr-4 py-1.5 bg-slate-950/70 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
                     />
                 </div>

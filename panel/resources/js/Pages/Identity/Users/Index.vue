@@ -141,11 +141,11 @@ const tableHeaders = [
 </script>
 
 <template>
-    <Head title="Identity & Principals - LiteControl" />
+    <Head :title="__('Identity & Principals - LiteControl')" />
 
     <div class="space-y-6">
         <UiPageHeader
-            title="Principals & Tenant Accounts"
+            :title="__('Principals & Tenant Accounts')"
             subtitle="Access Security // AUTH_IDENTITY_REGISTRY"
         >
             <template #actions>
@@ -166,7 +166,7 @@ const tableHeaders = [
                     v-model="search"
                     @keyup.enter="handleSearch"
                     type="text"
-                    placeholder="FILTER_PRINCIPALS: USERNAME, EMAIL, IDENTITY_SPEC..."
+                    :placeholder="__('FILTER_PRINCIPALS: USERNAME, EMAIL, IDENTITY_SPEC...')"
                     class="w-full pl-9 pr-4 py-1.5 bg-theme-bg-surface border border-theme-border rounded text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:border-theme-accent transition-colors"
                 />
             </div>
@@ -255,7 +255,7 @@ const tableHeaders = [
                         <!-- Impersonate Button -->
                         <button
                             @click="impersonateUser(user.id, user.username)"
-                            title="Assume Context"
+                            :title="__('Assume Context')"
                             class="text-theme-text-muted hover:text-theme-accent transition-colors p-1"
                         >
                             <LogIn class="w-4 h-4" />
@@ -264,7 +264,7 @@ const tableHeaders = [
                         <!-- Edit Principal -->
                         <button
                             @click="openEditModal(user)"
-                            title="Edit Principal"
+                            :title="__('Edit Principal')"
                             class="text-theme-text-muted hover:text-emerald-400 transition-colors p-1"
                         >
                             <Pencil class="w-4 h-4" />
@@ -274,7 +274,7 @@ const tableHeaders = [
                         <button
                             v-if="user.status === 'active'"
                             @click="suspendUser(user.id, user.username)"
-                            title="Suspend Context"
+                            :title="__('Suspend Context')"
                             class="text-theme-text-muted hover:text-amber-400 transition-colors p-1"
                         >
                             <Lock class="w-4 h-4" />
@@ -282,7 +282,7 @@ const tableHeaders = [
                         <button
                             v-else
                             @click="unsuspendUser(user.id, user.username)"
-                            title="Restore Context"
+                            :title="__('Restore Context')"
                             class="text-theme-text-muted hover:text-emerald-400 transition-colors p-1"
                         >
                             <Unlock class="w-4 h-4" />
@@ -291,7 +291,7 @@ const tableHeaders = [
                         <!-- Delete -->
                         <button
                             @click="deleteUser(user.id, user.username)"
-                            title="Terminate Principal"
+                            :title="__('Terminate Principal')"
                             class="text-theme-text-muted hover:text-rose-400 transition-colors p-1"
                         >
                             <Trash2 class="w-4 h-4" />
@@ -315,7 +315,7 @@ const tableHeaders = [
                         id="name"
                         v-model="editForm.name"
                         type="text"
-                        label="Full Name"
+                        :label="__('Full Name')"
                         :error="editForm.errors.name"
                         required
                     />
@@ -327,7 +327,7 @@ const tableHeaders = [
                         id="email"
                         v-model="editForm.email"
                         type="email"
-                        label="Email Address"
+                        :label="__('Email Address')"
                         :error="editForm.errors.email"
                         required
                     />
@@ -338,7 +338,7 @@ const tableHeaders = [
                     <UiSelect
                         id="package_id"
                         v-model="editForm.package_id"
-                        label="Quota Plan"
+                        :label="__('Quota Plan')"
                         :options="packageOptions"
                         :error="editForm.errors.package_id"
                         required
@@ -351,7 +351,7 @@ const tableHeaders = [
                         id="password"
                         v-model="editForm.password"
                         type="password"
-                        label="Password Reset (Leave blank to keep unchanged)"
+                        :label="__('Password Reset (Leave blank to keep unchanged)')"
                         placeholder="••••••••••••"
                         :error="editForm.errors.password"
                     />
@@ -362,14 +362,14 @@ const tableHeaders = [
                     <label class="block text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-1 flex items-center justify-between">
                         <span class="flex items-center gap-1.5">
                             <Key class="w-3.5 h-3.5 text-theme-accent" />
-                            <span>SSH Public Key</span>
+                            <span>{{ __('SSH Public Key') }}</span>
                         </span>
-                        <span class="text-theme-text-muted font-normal lowercase">Stored in ~/.ssh/authorized_keys</span>
+                        <span class="text-theme-text-muted font-normal lowercase">{{ __('Stored in ~/.ssh/authorized_keys') }}</span>
                     </label>
                     <textarea
                         v-model="editForm.ssh_public_key"
                         rows="3"
-                        placeholder="ssh-ed25519 AAAAC3... or leave empty to clear"
+                        :placeholder="__('ssh-ed25519 AAAAC3... or leave empty to clear')"
                         class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded text-xs font-mono text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:border-theme-accent transition-colors"
                     ></textarea>
                     <p v-if="editForm.errors.ssh_public_key" class="text-xs text-rose-400 mt-1">{{ editForm.errors.ssh_public_key }}</p>

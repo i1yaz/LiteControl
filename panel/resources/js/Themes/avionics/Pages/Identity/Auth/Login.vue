@@ -20,7 +20,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Sign In - LiteControl" />
+    <Head :title="__('Sign In - LiteControl')" />
 
     <form class="space-y-4 font-mono text-xs" @submit.prevent="submit">
         <div v-if="form.errors.username" class="p-3 rounded-xs bg-[#ff3366]/10 border border-[#ff3366]/30 text-[#ff6685] text-[11px]">
@@ -41,7 +41,7 @@ const submit = () => {
                     type="text"
                     autocomplete="username"
                     required
-                    placeholder="admin"
+                    :placeholder="__('admin')"
                     class="w-full pl-9 pr-3 py-2 bg-[#080b0f] border border-[#1e2634] rounded-xs text-[#cad3e0] placeholder-[#4e5c6e] text-xs focus:outline-none focus:border-[#ff6b35] transition-colors"
                 />
             </div>
@@ -74,7 +74,7 @@ const submit = () => {
                     type="checkbox"
                     class="rounded-xs bg-[#080b0f] border-[#222c3d] text-[#ff6b35] focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5"
                 />
-                <span>Persist Session Token</span>
+                <span>{{ __('Persist Session Token') }}</span>
             </label>
         </div>
 
@@ -84,7 +84,7 @@ const submit = () => {
             class="w-full py-2.5 px-4 rounded-xs bg-[#ff6b35] hover:bg-[#ff8252] disabled:opacity-50 text-black text-xs font-mono font-bold uppercase tracking-wider transition-all duration-150 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,107,53,0.3)] hover:shadow-[0_0_25px_rgba(255,107,53,0.5)] cursor-pointer"
         >
             <ShieldCheck class="w-4 h-4" />
-            <span>Authenticate Session</span>
+            <span>{{ __('Authenticate Session') }}</span>
         </button>
     </form>
 </template>

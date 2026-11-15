@@ -39,7 +39,7 @@ const togglePort = async (item) => {
 </script>
 
 <template>
-            <Head title="Port Firewall" />
+            <Head :title="__('Port Firewall')" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -47,7 +47,7 @@ const togglePort = async (item) => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <Server class="w-6 h-6 text-rose-400" />
-                        <span>Port Firewall (Service Presets)</span>
+                        <span>{{ __('Port Firewall (Service Presets)') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Quick 1-click firewall control for standard web hosting protocols and ports.

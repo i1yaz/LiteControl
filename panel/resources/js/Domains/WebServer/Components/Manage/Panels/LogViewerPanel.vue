@@ -70,10 +70,10 @@ onMounted(() => {
                     @click="loadLogs(page)"
                     :disabled="loading"
                     class="p-1.5 rounded-lg bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary border border-theme-border transition-colors text-xs flex items-center gap-1.5"
-                    title="Refresh Log Stream"
+                    :title="__('Refresh Log Stream')"
                 >
                     <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" />
-                    <span class="hidden sm:inline">Refresh</span>
+                    <span class="hidden sm:inline">{{ __('Refresh') }}</span>
                 </button>
                 <button @click="emit('close')" class="text-theme-text-muted hover:text-theme-text-primary p-1">
                     <X class="w-4 h-4" />
@@ -112,7 +112,7 @@ onMounted(() => {
                     class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-theme-bg-surface border border-theme-border text-xs font-semibold text-theme-text-secondary hover:text-theme-text-primary disabled:opacity-40 transition-colors"
                 >
                     <ChevronLeft class="w-3.5 h-3.5" />
-                    <span>Previous</span>
+                    <span>{{ __('Previous') }}</span>
                 </button>
 
                 <button
@@ -120,7 +120,7 @@ onMounted(() => {
                     :disabled="!hasNext || loading"
                     class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-theme-bg-surface border border-theme-border text-xs font-semibold text-theme-text-secondary hover:text-theme-text-primary disabled:opacity-40 transition-colors"
                 >
-                    <span>Next</span>
+                    <span>{{ __('Next') }}</span>
                     <ChevronRight class="w-3.5 h-3.5" />
                 </button>
             </div>

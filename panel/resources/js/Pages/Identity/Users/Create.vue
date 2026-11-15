@@ -41,7 +41,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Create New Hosting Account" />
+    <Head :title="__('Create New Hosting Account')" />
 
     <div class="max-w-2xl mx-auto space-y-6">
         <!-- Header -->
@@ -56,9 +56,9 @@ const submit = () => {
                 <div>
                     <h1 class="text-xl font-bold text-white flex items-center gap-2">
                         <UserPlus class="w-5 h-5 text-indigo-400" />
-                        <span>Create Hosting Account</span>
+                        <span>{{ __('Create Hosting Account') }}</span>
                     </h1>
-                    <p class="text-xs text-slate-400">Add a new Linux tenant account, configure quotas, SSH credentials, and optional domain.</p>
+                    <p class="text-xs text-slate-400">{{ __('Add a new Linux tenant account, configure quotas, SSH credentials, and optional domain.') }}</p>
                 </div>
             </div>
         </div>
@@ -76,7 +76,7 @@ const submit = () => {
                         <input
                             v-model="form.username"
                             type="text"
-                            placeholder="e.g. john"
+                            :placeholder="__('e.g. john')"
                             required
                             class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500 font-mono"
                         />
@@ -91,7 +91,7 @@ const submit = () => {
                         <input
                             v-model="form.name"
                             type="text"
-                            placeholder="e.g. John Doe"
+                            :placeholder="__('e.g. John Doe')"
                             required
                             class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
                         />
@@ -108,7 +108,7 @@ const submit = () => {
                         <input
                             v-model="form.email"
                             type="email"
-                            placeholder="john@example.com"
+                            :placeholder="__('john@example.com')"
                             required
                             class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
                         />
@@ -153,17 +153,17 @@ const submit = () => {
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
                         <span class="flex items-center gap-1.5">
                             <Key class="w-3.5 h-3.5 text-indigo-400" />
-                            <span>SSH Public Key</span>
+                            <span>{{ __('SSH Public Key') }}</span>
                         </span>
-                        <span class="text-[10px] text-slate-500 font-normal">Optional (for terminal / SFTP access)</span>
+                        <span class="text-[10px] text-slate-500 font-normal">{{ __('Optional (for terminal / SFTP access)') }}</span>
                     </label>
                     <textarea
                         v-model="form.ssh_public_key"
                         rows="3"
-                        placeholder="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... or ssh-rsa AAAA..."
+                        :placeholder="__('ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... or ssh-rsa AAAA...')"
                         class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
                     ></textarea>
-                    <p class="text-[11px] text-slate-500 mt-0.5">Key will be saved to <code class="text-slate-400 font-mono">~/.ssh/authorized_keys</code> with strict 0600 permissions.</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">{{ __('Key will be saved to') }} <code class="text-slate-400 font-mono">{{ __('~/.ssh/authorized_keys') }}</code> {{ __('with strict 0600 permissions.') }}</p>
                     <p v-if="form.errors.ssh_public_key" class="text-xs text-rose-400 mt-1">{{ form.errors.ssh_public_key }}</p>
                 </div>
 
@@ -179,11 +179,11 @@ const submit = () => {
                             <span class="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">
                                 Provision Primary Domain Now
                             </span>
-                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-medium">Optional</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-medium">{{ __('Optional') }}</span>
                         </div>
                         <component :is="showDomainSection ? ChevronDown : ChevronRight" class="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
                     </button>
-                    <p class="text-[11px] text-slate-500">You can also leave this blank and add domains later anytime from the Domains page.</p>
+                    <p class="text-[11px] text-slate-500">{{ __('You can also leave this blank and add domains later anytime from the Domains page.') }}</p>
                 </div>
 
                 <!-- Collapsible Primary Domain Fields -->
@@ -197,7 +197,7 @@ const submit = () => {
                             <input
                                 v-model="form.domain"
                                 type="text"
-                                placeholder="example.com"
+                                :placeholder="__('example.com')"
                                 :required="showDomainSection"
                                 class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
                             />
@@ -213,11 +213,11 @@ const submit = () => {
                                 v-model="form.php_version"
                                 class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
                             >
-                                <option value="83">PHP 8.3 (Default Recommended)</option>
-                                <option value="82">PHP 8.2</option>
-                                <option value="81">PHP 8.1</option>
-                                <option value="80">PHP 8.0</option>
-                                <option value="74">PHP 7.4</option>
+                                <option value="83">{{ __('PHP 8.3 (Default Recommended)') }}</option>
+                                <option value="82">{{ __('PHP 8.2') }}</option>
+                                <option value="81">{{ __('PHP 8.1') }}</option>
+                                <option value="80">{{ __('PHP 8.0') }}</option>
+                                <option value="74">{{ __('PHP 7.4') }}</option>
                             </select>
                         </div>
                     </div>
@@ -225,17 +225,17 @@ const submit = () => {
                     <!-- Web Root Pointing Location (Subpath) -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
-                            <span>Web Root Subpath (Pointing Target)</span>
-                            <span class="text-[10px] text-slate-500 font-normal">e.g. "public" for Laravel</span>
+                            <span>{{ __('Web Root Subpath (Pointing Target)') }}</span>
+                            <span class="text-[10px] text-slate-500 font-normal">{{ __('e.g. "public" for Laravel') }}</span>
                         </label>
                         <input
                             v-model="form.public_path"
                             type="text"
-                            placeholder="public (leave empty for standard public_html root)"
+                            :placeholder="__('public (leave empty for standard public_html root)')"
                             class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500"
                         />
                         <div class="mt-1.5 text-[11px] text-slate-500 flex items-center gap-1 font-mono">
-                            <span>Active VirtualHost docRoot:</span>
+                            <span>{{ __('Active VirtualHost docRoot:') }}</span>
                             <span class="text-emerald-400/90 break-all">{{ calculatedDocRoot }}</span>
                         </div>
                     </div>
@@ -245,8 +245,8 @@ const submit = () => {
                         <div class="flex items-center gap-2.5">
                             <ShieldCheck class="w-4 h-4 text-emerald-400" />
                             <div>
-                                <span class="text-xs font-semibold text-slate-200 block">Issue Let's Encrypt SSL Certificate</span>
-                                <span class="text-[10px] text-slate-500">Requires DNS A-record to point to this server. Non-blocking if pending.</span>
+                                <span class="text-xs font-semibold text-slate-200 block">{{ __('Issue Let\'s Encrypt SSL Certificate') }}</span>
+                                <span class="text-[10px] text-slate-500">{{ __('Requires DNS A-record to point to this server. Non-blocking if pending.') }}</span>
                             </div>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">

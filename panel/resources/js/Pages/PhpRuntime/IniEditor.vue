@@ -29,7 +29,7 @@ const submit = () => {
 </script>
 
 <template>
-            <Head title="MultiPHP INI Editor" />
+            <Head :title="__('MultiPHP INI Editor')" />
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
@@ -37,7 +37,7 @@ const submit = () => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <FileCode class="w-6 h-6 text-purple-400" />
-                        <span>MultiPHP INI Editor</span>
+                        <span>{{ __('MultiPHP INI Editor') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Configure runtime directives such as memory limits, upload limits, and execution timeouts per PHP version.
@@ -64,7 +64,7 @@ const submit = () => {
 
             <div v-if="!isAdmin" class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2">
                 <AlertCircle class="w-4 h-4 shrink-0" />
-                <span>You are in read-only mode. Only system administrators can commit global PHP INI changes.</span>
+                <span>{{ __('You are in read-only mode. Only system administrators can commit global PHP INI changes.') }}</span>
             </div>
 
             <!-- Editor Form -->
@@ -77,40 +77,40 @@ const submit = () => {
                 <form @submit.prevent="submit" class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">memory_limit</label>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('memory_limit') }}</label>
                             <input
                                 v-model="form.directives.memory_limit"
                                 :disabled="!isAdmin"
                                 type="text"
-                                placeholder="256M"
+                                :placeholder="__('256M')"
                                 class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-purple-500 disabled:opacity-60"
                             />
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">upload_max_filesize</label>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('upload_max_filesize') }}</label>
                             <input
                                 v-model="form.directives.upload_max_filesize"
                                 :disabled="!isAdmin"
                                 type="text"
-                                placeholder="64M"
+                                :placeholder="__('64M')"
                                 class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-purple-500 disabled:opacity-60"
                             />
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">post_max_size</label>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('post_max_size') }}</label>
                             <input
                                 v-model="form.directives.post_max_size"
                                 :disabled="!isAdmin"
                                 type="text"
-                                placeholder="64M"
+                                :placeholder="__('64M')"
                                 class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-purple-500 disabled:opacity-60"
                             />
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">max_execution_time</label>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('max_execution_time') }}</label>
                             <input
                                 v-model="form.directives.max_execution_time"
                                 :disabled="!isAdmin"
@@ -121,7 +121,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">max_input_vars</label>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('max_input_vars') }}</label>
                             <input
                                 v-model="form.directives.max_input_vars"
                                 :disabled="!isAdmin"
@@ -132,25 +132,25 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">display_errors</label>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('display_errors') }}</label>
                             <select
                                 v-model="form.directives.display_errors"
                                 :disabled="!isAdmin"
                                 class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-purple-500 disabled:opacity-60"
                             >
-                                <option value="Off">Off (Production)</option>
-                                <option value="On">On (Development)</option>
+                                <option value="Off">{{ __('Off (Production)') }}</option>
+                                <option value="On">{{ __('On (Development)') }}</option>
                             </select>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">disable_functions</label>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('disable_functions') }}</label>
                         <input
                             v-model="form.directives.disable_functions"
                             :disabled="!isAdmin"
                             type="text"
-                            placeholder="exec,passthru,shell_exec,system,proc_open,popen"
+                            :placeholder="__('exec,passthru,shell_exec,system,proc_open,popen')"
                             class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 font-mono text-xs focus:outline-none focus:border-purple-500 disabled:opacity-60"
                         />
                     </div>

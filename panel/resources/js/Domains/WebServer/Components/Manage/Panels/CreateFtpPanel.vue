@@ -57,7 +57,7 @@ const submitFtp = () => {
                         v-model="form.username"
                         type="text"
                         required
-                        placeholder="webuser"
+                        :placeholder="__('webuser')"
                         class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded-r-lg text-xs text-theme-text-primary focus:outline-none focus:border-blue-500"
                     />
                 </div>
@@ -89,7 +89,7 @@ const submitFtp = () => {
                 <input
                     v-model="form.dir"
                     type="text"
-                    placeholder="public_html (or leave blank for default)"
+                    :placeholder="__('public_html (or leave blank for default)')"
                     class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded-lg text-xs text-theme-text-primary focus:outline-none focus:border-blue-500"
                 />
             </div>
@@ -102,7 +102,7 @@ const submitFtp = () => {
                     v-model="form.quota_mb"
                     type="number"
                     min="0"
-                    placeholder="0 for unlimited"
+                    :placeholder="__('0 for unlimited')"
                     class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded-lg text-xs text-theme-text-primary focus:outline-none focus:border-blue-500"
                 />
             </div>

@@ -31,7 +31,7 @@ const toggleExt = (ext, currentActive) => {
 </script>
 
 <template>
-            <Head title="PHP Extensions" />
+            <Head :title="__('PHP Extensions')" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -39,7 +39,7 @@ const toggleExt = (ext, currentActive) => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <FileCode class="w-6 h-6 text-purple-400" />
-                        <span>PHP Extensions</span>
+                        <span>{{ __('PHP Extensions') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Enable or disable compiled PHP modules and extensions for your chosen runtime engine.
@@ -84,7 +84,7 @@ const toggleExt = (ext, currentActive) => {
                         <button
                             v-if="isAdmin"
                             @click="toggleExt(ext, true)"
-                            title="Disable Extension"
+                            :title="__('Disable Extension')"
                             class="text-[10px] text-slate-400 hover:text-rose-400 transition-colors"
                         >
                             Disable
@@ -113,7 +113,7 @@ const toggleExt = (ext, currentActive) => {
                         <button
                             v-if="isAdmin"
                             @click="toggleExt(ext, false)"
-                            title="Enable Extension"
+                            :title="__('Enable Extension')"
                             class="text-[10px] text-purple-400 hover:text-purple-300 font-semibold transition-colors"
                         >
                             Enable

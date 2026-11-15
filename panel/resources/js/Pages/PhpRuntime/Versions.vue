@@ -38,7 +38,7 @@ const removeVer = async (ver) => {
 </script>
 
 <template>
-            <Head title="PHP Version Manager" />
+            <Head :title="__('PHP Version Manager')" />
 
         <div class="space-y-6">
             <!-- Header -->
@@ -46,7 +46,7 @@ const removeVer = async (ver) => {
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <FileCode class="w-6 h-6 text-purple-400" />
-                        <span>PHP Version Manager</span>
+                        <span>{{ __('PHP Version Manager') }}</span>
                     </h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-1">
                         Install or remove multiple OpenLiteSpeed PHP versions (lsphp74 through lsphp85).
@@ -111,7 +111,7 @@ const removeVer = async (ver) => {
                                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold transition-colors shadow-sm"
                             >
                                 <Download class="w-3.5 h-3.5" />
-                                <span>Install</span>
+                                <span>{{ __('Install') }}</span>
                             </button>
 
                             <button
@@ -120,7 +120,7 @@ const removeVer = async (ver) => {
                                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-400 font-semibold transition-colors"
                             >
                                 <Trash2 class="w-3.5 h-3.5" />
-                                <span>Remove</span>
+                                <span>{{ __('Remove') }}</span>
                             </button>
 
                             <span v-else class="text-slate-500 text-[11px] flex items-center gap-1">

@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Domains\PanelConfig\Queries\ThemeManager;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -64,6 +65,41 @@ class HandleInertiaRequests extends Middleware
                 'available_themes' => $availableThemes,
                 'server_ip' => $request->server('SERVER_ADDR', '127.0.0.1'),
             ],
+            'locale' => App::getLocale(),
+            'available_locales' => collect(config('app.available_locales', []))
+                ->map(fn (array $meta, string $code) => [
+                    'code' => $code,
+                    'name' => $meta['name'] ?? $code,
+                    'native' => $meta['native'] ?? $code,
+                    'dir' => $meta['dir'] ?? 'ltr',
+                ])
+                ->values()
+                ->all(),
+            'translations' => fn () => $this->loadTranslations(App::getLocale()),
         ];
+    }
+
+    /**
+     * Load JSON translations for the active locale with English fallback.
+     *
+     * @return array<string, string>
+     */
+    protected function loadTranslations(string $locale): array
+    {
+        $fallbackPath = lang_path('en.json');
+        $fallback = is_file($fallbackPath)
+            ? (json_decode((string) file_get_contents($fallbackPath), true) ?: [])
+            : [];
+
+        if ($locale === 'en') {
+            return $fallback;
+        }
+
+        $localePath = lang_path("{$locale}.json");
+        $current = is_file($localePath)
+            ? (json_decode((string) file_get_contents($localePath), true) ?: [])
+            : [];
+
+        return array_merge($fallback, $current);
     }
 }
