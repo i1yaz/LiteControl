@@ -126,9 +126,9 @@ export const PANEL_NAVIGATION = [
         icon: 'email',
         adminOnly: false,
         children: [
-            { id: 'email.accounts', label: 'Mail Accounts', route: '/dashboard' },
-            { id: 'email.forwarders', label: 'Forwarding Rules', route: '/dashboard' },
-            { id: 'email.dkim', label: 'DKIM Signatures', route: '/dashboard' },
+            { id: 'email.accounts', label: 'Mail Accounts', route: '/email/accounts' },
+            { id: 'email.forwarders', label: 'Forwarding Rules', route: '/email/forwarders' },
+            { id: 'email.dkim', label: 'DKIM Signatures', route: '/email/dkim' },
         ],
     },
 ];
