@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { shallowRef, computed, onMounted } from 'vue';
+import { shallowRef, computed, onMounted, onUnmounted } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import { confirmDialog, alertDialog } from '@shared/Composables/useDialog';
 import UiModal from '@shared/Ui/UiModal.vue';
@@ -48,6 +48,65 @@ const loading = shallowRef(false);
 const showCreateModal = shallowRef(false);
 const newItemName = shallowRef('');
 const newItemType = shallowRef('file');
+
+const contextMenu = shallowRef({
+    visible: false,
+    x: 0,
+    y: 0,
+    targetType: 'empty',
+    item: null,
+});
+
+const closeContextMenu = () => {
+    if (contextMenu.value.visible) {
+        contextMenu.value = { ...contextMenu.value, visible: false, item: null };
+    }
+};
+
+const positionContextMenu = (e, targetType, item = null) => {
+    const menuWidth = 192;
+    const menuHeight = targetType === 'empty' ? 132 : 140;
+    const x = Math.min(e.clientX, window.innerWidth - menuWidth - 8);
+    const y = Math.min(e.clientY, window.innerHeight - menuHeight - 8);
+    contextMenu.value = {
+        visible: true,
+        x: Math.max(8, x),
+        y: Math.max(8, y),
+        targetType,
+        item,
+    };
+};
+
+const openContextMenu = (e, item) => {
+    positionContextMenu(e, item.is_dir ? 'dir' : 'file', item);
+};
+
+const openEmptyContextMenu = (e) => {
+    positionContextMenu(e, 'empty', null);
+};
+
+const openCreateModal = (type = 'file') => {
+    newItemType.value = type;
+    newItemName.value = '';
+    showCreateModal.value = true;
+    closeContextMenu();
+};
+
+const handleGlobalKeydown = (e) => {
+    if (e.key === 'Escape') {
+        closeContextMenu();
+    }
+};
+
+onMounted(() => {
+    window.addEventListener('click', closeContextMenu);
+    window.addEventListener('keydown', handleGlobalKeydown);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('click', closeContextMenu);
+    window.removeEventListener('keydown', handleGlobalKeydown);
+});
 
 const showEditorModal = shallowRef(false);
 const editingPath = shallowRef('');
@@ -464,7 +523,10 @@ onMounted(() => {
             </div>
 
             <!-- File List Table -->
-            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+            <div
+                class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm min-h-[260px]"
+                @contextmenu.prevent="openEmptyContextMenu($event)"
+            >
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-slate-300">
                         <thead class="bg-slate-950/50 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
@@ -480,6 +542,7 @@ onMounted(() => {
                             <tr
                                 v-for="item in items"
                                 :key="item.name"
+                                @contextmenu.prevent.stop="openContextMenu($event, item)"
                                 class="hover:bg-slate-800/40 transition-colors"
                             >
                                 <td class="px-5 py-3">
@@ -495,9 +558,13 @@ onMounted(() => {
                                         >
                                             {{ item.name }}
                                         </button>
-                                        <span v-else class="text-slate-200">
+                                        <button
+                                            v-else
+                                            @click="openEditor(item.path)"
+                                            class="text-slate-200 hover:text-cyan-400 hover:underline transition-colors text-left"
+                                        >
                                             {{ item.name }}
-                                        </span>
+                                        </button>
                                     </div>
                                 </td>
                                 <td class="px-5 py-3 text-slate-400">
@@ -715,6 +782,89 @@ onMounted(() => {
                     </div>
                 </div>
             </UiModal>
+
+            <!-- Context Menu -->
+            <div
+                v-if="contextMenu.visible"
+                :style="{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }"
+                @click.stop
+                class="fixed z-50 w-48 rounded-lg bg-slate-900 border border-slate-700 shadow-xl py-1 text-xs text-slate-200"
+            >
+                <template v-if="contextMenu.targetType === 'file' && contextMenu.item">
+                    <button
+                        @click="openEditor(contextMenu.item.path); closeContextMenu()"
+                        class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-cyan-400"
+                    >
+                        <Edit3 class="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                    </button>
+                    <button
+                        @click="openChmodModal(contextMenu.item); closeContextMenu()"
+                        class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-amber-400"
+                    >
+                        <KeyRound class="w-3.5 h-3.5" />
+                        <span>Change Permissions</span>
+                    </button>
+                    <div class="my-1 border-t border-slate-800"></div>
+                    <button
+                        @click="deleteItem(contextMenu.item.path, contextMenu.item.name); closeContextMenu()"
+                        class="w-full px-3 py-2 text-left hover:bg-rose-500/20 flex items-center gap-2 text-rose-400"
+                    >
+                        <Trash2 class="w-3.5 h-3.5" />
+                        <span>Delete</span>
+                    </button>
+                </template>
+
+                <template v-else-if="contextMenu.targetType === 'dir' && contextMenu.item">
+                    <button
+                        @click="navigateTo(contextMenu.item.path); closeContextMenu()"
+                        class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-cyan-400"
+                    >
+                        <Folder class="w-3.5 h-3.5" />
+                        <span>Open</span>
+                    </button>
+                    <button
+                        @click="openChmodModal(contextMenu.item); closeContextMenu()"
+                        class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-amber-400"
+                    >
+                        <KeyRound class="w-3.5 h-3.5" />
+                        <span>Change Permissions</span>
+                    </button>
+                    <div class="my-1 border-t border-slate-800"></div>
+                    <button
+                        @click="deleteItem(contextMenu.item.path, contextMenu.item.name); closeContextMenu()"
+                        class="w-full px-3 py-2 text-left hover:bg-rose-500/20 flex items-center gap-2 text-rose-400"
+                    >
+                        <Trash2 class="w-3.5 h-3.5" />
+                        <span>Delete</span>
+                    </button>
+                </template>
+
+                <template v-else>
+                    <button
+                        @click="openCreateModal('file')"
+                        class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-cyan-400"
+                    >
+                        <Plus class="w-3.5 h-3.5" />
+                        <span>Create File</span>
+                    </button>
+                    <button
+                        @click="openCreateModal('dir')"
+                        class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-slate-200"
+                    >
+                        <Folder class="w-3.5 h-3.5" />
+                        <span>Create Folder</span>
+                    </button>
+                    <div class="my-1 border-t border-slate-800"></div>
+                    <button
+                        @click="fetchDirectory(currentPath); closeContextMenu()"
+                        class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-slate-300"
+                    >
+                        <RefreshCw class="w-3.5 h-3.5" />
+                        <span>Refresh</span>
+                    </button>
+                </template>
+            </div>
         </div>
 </template>
 
