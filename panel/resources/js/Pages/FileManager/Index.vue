@@ -857,7 +857,7 @@ onMounted(() => {
                     </button>
                     <div class="my-1 border-t border-slate-800"></div>
                     <button
-                        @click="fetchDirectory(currentPath); closeContextMenu()"
+                        @click="loadFiles(currentPath); closeContextMenu()"
                         class="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2 text-slate-300"
                     >
                         <RefreshCw class="w-3.5 h-3.5" />
