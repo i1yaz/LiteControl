@@ -639,6 +639,37 @@ class LcCliService
 
                 return ['status' => 'success', 'message' => "SSL operation '$sub' completed", 'data' => []];
 
+            case 'filemanager':
+                if ($sub === 'list') {
+                    $target = (string) ($args[1] ?? '');
+                    $items = [];
+                    if ($target !== '' && is_dir($target)) {
+                        foreach (@scandir($target) ?: [] as $entry) {
+                            if ($entry === '.' || $entry === '..') {
+                                continue;
+                            }
+                            $full = rtrim($target, '/\\').DIRECTORY_SEPARATOR.$entry;
+                            $isDir = is_dir($full);
+                            $items[] = [
+                                'name' => $entry,
+                                'path' => $full,
+                                'type' => $isDir ? 'dir' : 'file',
+                                'size' => $isDir ? 0 : (int) (@filesize($full) ?: 0),
+                                'permissions' => sprintf('%04o', (@fileperms($full) ?: 0644) & 0777),
+                                'modified_at' => gmdate('c', @filemtime($full) ?: time()),
+                            ];
+                        }
+                    }
+
+                    return [
+                        'status' => 'success',
+                        'message' => 'Directory listed.',
+                        'data' => $items,
+                    ];
+                }
+
+                return ['status' => 'success', 'message' => "Mock operation '$command $sub' completed successfully.", 'data' => []];
+
             default:
                 return [
                     'status' => 'success',
