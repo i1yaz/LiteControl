@@ -22,7 +22,49 @@ class CliFileManagerAdapter implements FileManagerDriverInterface
             throw new LcCliException($res['message'] ?? 'Failed to list directory.', 'filemanager', $args, $res);
         }
 
-        return is_array($res['data'] ?? null) ? $res['data'] : [];
+        $rawItems = is_array($res['data']['items'] ?? null)
+            ? $res['data']['items']
+            : (is_array($res['data'] ?? null) ? $res['data'] : []);
+
+        $baseSubpath = trim($path->subpath, '/');
+        $items = [];
+
+        foreach ($rawItems as $item) {
+            if (! is_array($item) || ! isset($item['name'])) {
+                continue;
+            }
+
+            $name = (string) $item['name'];
+            $isDir = ($item['type'] ?? '') === 'dir' || (bool) ($item['is_dir'] ?? false);
+            $size = (int) ($item['size'] ?? 0);
+            $relPath = $baseSubpath !== '' ? "{$baseSubpath}/{$name}" : $name;
+
+            $items[] = [
+                'name' => $name,
+                'path' => $relPath,
+                'is_dir' => $isDir,
+                'size' => $size,
+                'size_human' => $isDir ? '—' : $this->formatBytes($size),
+                'extension' => $isDir ? '' : strtolower((string) pathinfo($name, PATHINFO_EXTENSION)),
+                'permissions' => (string) ($item['permissions'] ?? ($isDir ? '0755' : '0644')),
+                'modified_at' => (string) ($item['modified_at'] ?? ''),
+            ];
+        }
+
+        return $items;
+    }
+
+    private function formatBytes(int $bytes): string
+    {
+        if ($bytes <= 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $power = (int) floor(log($bytes, 1024));
+        $power = min($power, count($units) - 1);
+
+        return round($bytes / (1024 ** $power), 2).' '.$units[$power];
     }
 
     public function readFile(SystemPath $path, int $maxBytes = 5242880): array
