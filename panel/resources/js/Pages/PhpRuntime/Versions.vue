@@ -5,7 +5,17 @@ import { confirmDialog, alertDialog } from '@shared/Composables/useDialog';
 
 const props = defineProps({
     phpVersions: Array,
+    cliUsageCounts: {
+        type: Object,
+        default: () => ({}),
+    },
 });
+
+const getCliUserCount = (ver) => {
+    const str = String(ver ?? '');
+    const dotted = !str.includes('.') && str.length === 2 ? `${str[0]}.${str[1]}` : str;
+    return Number(props.cliUsageCounts?.[dotted] ?? props.cliUsageCounts?.[str] ?? 0);
+};
 
 const installVer = async (ver) => {
     if (await confirmDialog({
@@ -83,6 +93,12 @@ const removeVer = async (ver) => {
                                 <span class="text-xs text-slate-400">
                                     Package: lsphp{{ v.version }}
                                 </span>
+                                <span
+                                    v-if="v.installed"
+                                    class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/20"
+                                >
+                                    {{ getCliUserCount(v.version) }} CLI {{ getCliUserCount(v.version) === 1 ? 'user' : 'users' }}
+                                </span>
                             </div>
                         </div>
 
@@ -117,7 +133,9 @@ const removeVer = async (ver) => {
                             <button
                                 v-else-if="v.version !== '83'"
                                 @click="removeVer(v.version)"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-400 font-semibold transition-colors"
+                                :disabled="getCliUserCount(v.version) > 0"
+                                :title="getCliUserCount(v.version) > 0 ? `Cannot remove: ${getCliUserCount(v.version)} user(s) actively using this PHP CLI version` : 'Remove PHP version'"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-400 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-800"
                             >
                                 <Trash2 class="w-3.5 h-3.5" />
                                 <span>{{ __('Remove') }}</span>

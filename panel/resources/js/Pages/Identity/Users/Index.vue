@@ -8,6 +8,7 @@ import UiModal from '@shared/Ui/UiModal.vue';
 import UiInput from '@shared/Ui/UiInput.vue';
 import UiSelect from '@shared/Ui/UiSelect.vue';
 import UiDataTable from '@shared/Ui/UiDataTable.vue';
+import PhpCliVersionCard from '../../../Domains/Identity/Components/PhpCliVersionCard.vue';
 import {
     UserPlus,
     Search,
@@ -30,6 +31,10 @@ const props = defineProps({
     diskUsageMap: Object,
     filters: Object,
     packages: Array,
+    installedPhpVersions: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const search = shallowRef(props.filters?.search || '');
@@ -196,6 +201,13 @@ const tableHeaders = [
                         <div>
                             <div class="font-bold text-theme-text-primary flex items-center gap-1.5">
                                 <span>{{ user.username }}</span>
+                                <span
+                                    v-if="user.php_cli_version"
+                                    class="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/30"
+                                    title="Default PHP CLI Version"
+                                >
+                                    PHP {{ user.php_cli_version }}
+                                </span>
                             </div>
                             <div class="text-[11px] text-theme-text-muted">{{ user.email }}</div>
                         </div>
@@ -394,6 +406,13 @@ const tableHeaders = [
                     </UiButton>
                 </div>
             </form>
+
+            <PhpCliVersionCard
+                v-if="editingUser"
+                :user="editingUser"
+                :installed-versions="installedPhpVersions"
+                class="mt-6"
+            />
         </UiModal>
     </div>
 </template>

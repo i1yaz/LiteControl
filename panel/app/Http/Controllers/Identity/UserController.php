@@ -13,6 +13,7 @@ use App\Domains\Identity\Contracts\UserDriverInterface;
 use App\Domains\Identity\Exceptions\PhpCliUpdateFailedException;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\ValueObjects\PhpCliVersion;
+use App\Domains\PhpRuntime\Queries\InstalledPhpVersionsQuery;
 use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
 use App\Exceptions\System\LcCliException;
 use App\Http\Controllers\Controller;
@@ -32,7 +33,7 @@ class UserController extends Controller
     /**
      * Display a listing of hosting users.
      */
-    public function index(Request $request): Response
+    public function index(Request $request, InstalledPhpVersionsQuery $installedPhpVersions): Response
     {
         $search = $request->input('search');
 
@@ -68,6 +69,7 @@ class UserController extends Controller
                 'search' => $search,
             ],
             'packages' => Package::all(['id', 'name', 'disk_quota_mb']),
+            'installedPhpVersions' => $installedPhpVersions->getInstalledVersionStrings(),
         ]);
     }
 

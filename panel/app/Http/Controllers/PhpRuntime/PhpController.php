@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\PhpRuntime;
 
 use App\Domains\PhpRuntime\Actions\InstallPhpExtensionAction;
+use App\Domains\Identity\Models\User;
 use App\Domains\PhpRuntime\Actions\InstallPhpVersionAction;
 use App\Domains\PhpRuntime\Actions\RemovePhpVersionAction;
 use App\Domains\PhpRuntime\Actions\TogglePhpExtensionAction;
@@ -232,8 +233,16 @@ class PhpController extends Controller
             $allVersions = [];
         }
 
+        $cliUsageCounts = User::query()
+            ->whereNotNull('php_cli_version')
+            ->selectRaw('php_cli_version, COUNT(*) as count')
+            ->groupBy('php_cli_version')
+            ->pluck('count', 'php_cli_version')
+            ->toArray();
+
         return Inertia::render('PhpRuntime/Versions', [
             'phpVersions' => $allVersions,
+            'cliUsageCounts' => $cliUsageCounts,
         ]);
     }
 
