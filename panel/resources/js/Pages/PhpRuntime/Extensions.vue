@@ -20,8 +20,15 @@ const isAdmin = page.props.auth?.user?.role === 'admin';
 const searchQuery = shallowRef('');
 const processingExt = shallowRef<string | null>(null);
 
-const enabledSet = computed(() => new Set((props.extensionsData?.installed || []).map((e: string) => e.toLowerCase())));
-const disabledSet = computed(() => new Set((props.extensionsData?.available || []).map((e: string) => e.toLowerCase())));
+const enabledSet = computed(() => {
+    const data = props.extensionsData as any;
+    if (Array.isArray(data)) {
+        return new Set(
+            data.filter((e) => e.enabled).map((e) => String(e.extension).toLowerCase())
+        );
+    }
+    return new Set((data?.installed || []).map((e: string) => String(e).toLowerCase()));
+});
 
 const unifiedRows = computed(() => {
     const map = new Map<string, { name: string; package: string; installed: boolean; enabled: boolean }>();
