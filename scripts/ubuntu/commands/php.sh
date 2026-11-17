@@ -105,8 +105,8 @@ cmd_php_install() {
             emit_error "LSPHP ${dotted} (lsphp${ver}) is not available in OpenLiteSpeed repositories for this OS release."
         fi
 
-        apt_install "lsphp${ver}" "lsphp${ver}-common" "lsphp${ver}-mysql" "lsphp${ver}-curl" "lsphp${ver}-intl" "lsphp${ver}-opcache" || true
-        for ext in redis imagick igbinary; do
+        apt_install "lsphp${ver}"
+        for ext in common mysql curl intl opcache redis memcached imagick igbinary; do
             if apt-cache show "lsphp${ver}-${ext}" >/dev/null 2>&1; then
                 apt_install "lsphp${ver}-${ext}" || true
             fi
