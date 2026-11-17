@@ -29,7 +29,7 @@ chmod 0644 "$TMP_FILE"
 mv -f "$TMP_FILE" "${CFG_DIR}/${USERNAME}"
 
 # Verify effective CLI version AND ensure SAPI is 'cli' (not 'litespeed' or 'cgi-fcgi')
-VERIFY_OUT=$(sudo -u "$USERNAME" -i /usr/local/bin/php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION.':'.PHP_SAPI;")
+VERIFY_OUT=$(sudo -u "$USERNAME" -i php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION.':'.PHP_SAPI;")
 EXPECTED_OUT="${VERSION}:cli"
 
 if [[ "$VERIFY_OUT" != "$EXPECTED_OUT" ]]; then
