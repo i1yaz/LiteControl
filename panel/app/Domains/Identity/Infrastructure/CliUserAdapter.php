@@ -121,6 +121,7 @@ class CliUserAdapter implements UserDriverInterface
                 'username' => $username->value,
                 'requested_version' => $version->value,
                 'exit_code' => $result->exitCode(),
+                'stdout' => trim($result->output()),
                 'stderr' => trim($result->errorOutput()),
             ]);
 
