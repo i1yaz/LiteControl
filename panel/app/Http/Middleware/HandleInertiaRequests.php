@@ -56,6 +56,7 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'warning' => fn () => $request->session()->get('warning'),
                 'message' => fn () => $request->session()->get('message'),
+                'missing_php_version' => fn () => $request->session()->get('missing_php_version'),
             ],
             'panel' => [
                 'name' => config('app.name', 'LiteControl'),
