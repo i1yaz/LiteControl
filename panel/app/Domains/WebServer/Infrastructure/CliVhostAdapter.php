@@ -3,6 +3,7 @@
 namespace App\Domains\WebServer\Infrastructure;
 
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
+use App\Domains\WebServer\ValueObjects\SiteTuningConfig;
 use App\Exceptions\System\LcCliException;
 use App\Support\Cli\LcCliService;
 
@@ -91,6 +92,17 @@ class CliVhostAdapter implements VhostDriverInterface
     public function toggleOpenBasedir(string $domain, bool $enabled): array
     {
         return $this->runVhost(['open-basedir', $domain, $enabled ? 'on' : 'off'], 'Failed to toggle open_basedir.');
+    }
+
+    public function applyTuning(string $domain, string $unixUser, string $phpVersion, SiteTuningConfig $config): array
+    {
+        $phpVersionClean = str_replace('.', '', $phpVersion);
+        $fragment = $config->renderOlsFragment($unixUser, $phpVersionClean);
+
+        return $this->runVhost(
+            ['apply-tuning', $domain, base64_encode($fragment)],
+            'Failed to apply per-site tuning configuration.'
+        );
     }
 
     /**

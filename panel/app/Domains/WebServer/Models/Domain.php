@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Domain extends Model
 {
@@ -64,5 +65,10 @@ class Domain extends Model
     public function aliases(): HasMany
     {
         return $this->hasMany(Domain::class, 'parent_domain_id')->where('type', 'alias');
+    }
+
+    public function tuning(): HasOne
+    {
+        return $this->hasOne(SiteTuning::class);
     }
 }

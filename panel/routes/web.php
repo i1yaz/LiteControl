@@ -141,6 +141,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/configuration/settings', [ConfigurationController::class, 'updateSettings'])->name('configuration.settings.update');
         Route::get('/configuration/tuning', [ConfigurationController::class, 'tuning'])->name('configuration.tuning');
         Route::post('/configuration/tuning', [ConfigurationController::class, 'updateTuning'])->name('configuration.tuning.update');
+        Route::post('/configuration/tuning/site/{domain}', [ConfigurationController::class, 'updateSiteTuning'])->name('configuration.tuning.site.update');
         Route::get('/configuration/error-logs', [ConfigurationController::class, 'errorLogs'])->name('configuration.error-logs');
 
         // Server Management (Admin Only)

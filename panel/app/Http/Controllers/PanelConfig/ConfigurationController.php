@@ -7,8 +7,12 @@ use App\Domains\PanelConfig\Actions\UpdateTuningAction;
 use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\ServerOps\Contracts\ServerDriverInterface;
+use App\Domains\WebServer\Actions\UpdateSiteTuningAction;
+use App\Domains\WebServer\Models\Domain;
+use App\Domains\WebServer\ValueObjects\SiteTuningConfig;
 use App\Exceptions\System\LcCliException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\WebServer\UpdateSiteTuningRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -75,9 +79,14 @@ class ConfigurationController extends Controller
     public function tuning(Request $request): Response
     {
         $tuning = $this->tuningCli->getTuning();
+        $domains = Domain::query()
+            ->with(['user:id,username', 'tuning'])
+            ->orderBy('domain')
+            ->get(['id', 'user_id', 'domain', 'php_version', 'status']);
 
         return Inertia::render('PanelConfig/LiteSpeedTuning', [
             'tuning' => $tuning,
+            'domains' => $domains,
         ]);
     }
 
@@ -102,6 +111,24 @@ class ConfigurationController extends Controller
             $action->handle($validated, $request->user(), $request->ip());
 
             return redirect()->back()->with('success', 'LiteSpeed tuning parameters updated and applied successfully.');
+        } catch (LcCliException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Update Per-Site LSAPI Worker & PHP Runtime Tuning.
+     */
+    public function updateSiteTuning(
+        UpdateSiteTuningRequest $request,
+        Domain $domain,
+        UpdateSiteTuningAction $action
+    ): RedirectResponse {
+        try {
+            $config = SiteTuningConfig::fromArray($request->validated());
+            $action->handle($domain, $config, $request->user(), $request->ip());
+
+            return redirect()->back()->with('success', "Per-site tuning for {$domain->domain} updated and applied.");
         } catch (LcCliException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

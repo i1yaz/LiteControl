@@ -2,6 +2,7 @@
 
 namespace App\Domains\WebServer\Contracts;
 
+use App\Domains\WebServer\ValueObjects\SiteTuningConfig;
 use App\Exceptions\System\LcCliException;
 
 interface VhostDriverInterface
@@ -70,4 +71,9 @@ interface VhostDriverInterface
      * @throws LcCliException
      */
     public function toggleOpenBasedir(string $domain, bool $enabled): array;
+
+    /**
+     * @throws LcCliException
+     */
+    public function applyTuning(string $domain, string $unixUser, string $phpVersion, SiteTuningConfig $config): array;
 }
