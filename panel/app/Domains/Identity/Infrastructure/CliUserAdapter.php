@@ -110,6 +110,7 @@ class CliUserAdapter implements UserDriverInterface
     public function setPhpCliVersion(LinuxUsername $username, PhpCliVersion $version): void
     {
         $result = Process::timeout(5)->run([
+            'sudo',
             '/usr/local/lib/lc-panel/set-user-php-cli.sh',
             $username->value,
             $version->value,

@@ -73,6 +73,7 @@ test('admin can update user php cli version when host script succeeds', function
 
     Process::assertRan(function ($process) {
         return $process->command === [
+            'sudo',
             '/usr/local/lib/lc-panel/set-user-php-cli.sh',
             'bob',
             '8.2',
