@@ -84,7 +84,7 @@ const saveRawIni = async () => {
 
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="space-y-3">
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
                         <FileCode class="w-6 h-6 text-purple-400" />
@@ -96,7 +96,7 @@ const saveRawIni = async () => {
                 </div>
 
                 <!-- Version Selector Tabs -->
-                <div class="flex items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto">
+                <div class="inline-flex flex-wrap items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-xl">
                     <button
                         v-for="v in installedVersions"
                         :key="v.version"
@@ -120,13 +120,13 @@ const saveRawIni = async () => {
 
             <!-- Editor Form -->
             <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
-                <div class="text-xs font-mono text-slate-400 pb-4 mb-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
+                <div class="text-xs font-mono text-slate-400 pb-4 mb-4 border-b border-slate-800 flex flex-col gap-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
                         <span>Config File: {{ rawIniPath || iniData?.ini_path || `/usr/local/lsws/lsphp${currentVersion}/etc/php/${currentVersion}/litespeed/php.ini` }}</span>
-                        <span class="text-purple-400 font-semibold ml-3">Active Engine: lsphp{{ currentVersion }}</span>
+                        <span class="text-purple-400 font-semibold">Active Engine: lsphp{{ currentVersion }}</span>
                     </div>
 
-                    <div class="inline-flex items-center gap-1 p-1 bg-slate-950 border border-slate-800 rounded-lg font-sans self-start sm:self-auto">
+                    <div class="inline-flex items-center gap-1 p-1 bg-slate-950 border border-slate-800 rounded-lg font-sans self-start">
                         <button
                             type="button"
                             @click="switchMode('basic')"
