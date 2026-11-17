@@ -22,7 +22,14 @@ $nodeArch = $archMap[$arch] ?? 'x64';
 $nodeBinary = $nodeDir.DIRECTORY_SEPARATOR.($isWindows ? 'node.exe' : 'bin/node');
 $npmBinary = $nodeDir.DIRECTORY_SEPARATOR.($isWindows ? 'npm.cmd' : 'bin/npm');
 
-if (! file_exists($nodeBinary)) {
+$systemNode = trim((string) shell_exec($isWindows ? 'where node 2>NUL' : 'command -v node 2>/dev/null'));
+$systemNpm = trim((string) shell_exec($isWindows ? 'where npm 2>NUL' : 'command -v npm 2>/dev/null'));
+if ($systemNode !== '' && $systemNpm !== '') {
+    $nodeBinary = explode("\n", $systemNode)[0];
+    $npmBinary = explode("\n", $systemNpm)[0];
+    $installedVersion = trim((string) shell_exec(escapeshellarg($nodeBinary).' -v'));
+    echo ">> [LiteControl] Using system Node {$installedVersion} at {$nodeBinary}\n";
+} elseif (! file_exists($nodeBinary)) {
     echo ">> [LiteControl] Isolated Node 24 not found. Checking latest Node v24.x release for {$os}-{$nodeArch}...\n";
 
     $context = stream_context_create([

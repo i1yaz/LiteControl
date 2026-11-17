@@ -145,15 +145,20 @@ EOF
         if [[ ! -x "${php_bin}" ]]; then
             php_bin="$(command -v php 2>/dev/null || echo "/usr/bin/php")"
         fi
-        if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
-            log_info "Fetching verified Composer standalone binary..."
-            mkdir -p "${LC_BASE_DIR}/bin"
-            curl -4 -fsSL --connect-timeout 15 --max-time 120 -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar || true
-            chmod 755 "${composer_bin}"
-        fi
-        local run_composer="${php_bin} -d memory_limit=-1 ${composer_bin}"
-        if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
-            run_composer="/usr/local/bin/composer"
+        local run_composer=""
+        if command -v composer >/dev/null 2>&1; then
+            run_composer="${php_bin} -d memory_limit=-1 $(command -v composer)"
+        else
+            if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+                log_info "Fetching verified Composer standalone binary..."
+                mkdir -p "${LC_BASE_DIR}/bin"
+                curl -4 -fsSL --connect-timeout 15 --max-time 120 -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar || true
+                chmod 755 "${composer_bin}"
+            fi
+            run_composer="${php_bin} -d memory_limit=-1 ${composer_bin}"
+            if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+                run_composer="/usr/local/bin/composer"
+            fi
         fi
 
         local composer_env="export HOME='${LC_BASE_DIR}' COMPOSER_HOME='${LC_BASE_DIR}/.config/composer' COMPOSER_CACHE_DIR='${LC_BASE_DIR}/.cache/composer' COMPOSER_MEMORY_LIMIT=-1 GIT_TERMINAL_PROMPT=0;"
