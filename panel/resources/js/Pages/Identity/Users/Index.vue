@@ -153,9 +153,22 @@ const copySshCommand = (username) => {
     });
 };
 
+const updatingCliUserId = shallowRef(null);
+const updateUserPhpCli = (user, version) => {
+    if (!version || version === user.php_cli_version) return;
+    updatingCliUserId.value = user.id;
+    router.patch(`/users/${user.id}/php-cli-version`, { version }, {
+        preserveScroll: true,
+        onFinish: () => {
+            updatingCliUserId.value = null;
+        },
+    });
+};
+
 const tableHeaders = [
     { label: 'User Identity' },
     { label: 'Quota Plan' },
+    { label: 'PHP CLI' },
     { label: 'Active Ingress' },
     { label: 'Relational DBs' },
     { label: 'Storage Footprint' },
@@ -220,13 +233,6 @@ const tableHeaders = [
                         <div>
                             <div class="font-bold text-theme-text-primary flex items-center gap-1.5">
                                 <span>{{ user.username }}</span>
-                                <span
-                                    v-if="user.php_cli_version"
-                                    class="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/30"
-                                    title="Default PHP CLI Version"
-                                >
-                                    PHP {{ user.php_cli_version }}
-                                </span>
                             </div>
                             <div class="text-[11px] text-theme-text-muted">{{ user.email }}</div>
                         </div>
@@ -237,6 +243,23 @@ const tableHeaders = [
                         <PackageIcon class="w-3.5 h-3.5 text-theme-accent" />
                         {{ user.package?.name || 'DEFAULT' }}
                     </span>
+                </td>
+                <td class="py-3.5 px-4">
+                    <select
+                        :value="user.php_cli_version || '8.3'"
+                        :disabled="updatingCliUserId === user.id"
+                        :aria-label="`PHP CLI version for ${user.username}`"
+                        @change="updateUserPhpCli(user, ($event.target as HTMLSelectElement).value)"
+                        class="px-2 py-1 bg-theme-bg-surface border border-theme-border rounded text-xs font-mono text-theme-text-primary focus:outline-none focus:border-theme-accent disabled:opacity-50"
+                    >
+                        <option
+                            v-for="ver in installedPhpVersions"
+                            :key="ver"
+                            :value="ver"
+                        >
+                            PHP {{ ver }}
+                        </option>
+                    </select>
                 </td>
                 <td class="py-3.5 px-4">
                     <span class="inline-flex items-center gap-1.5 text-theme-text-primary">
