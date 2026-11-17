@@ -325,6 +325,7 @@ upgrade_laravel_panel() {
         --exclude='storage/' \
         --exclude='node_modules/' \
         --exclude='vendor/' \
+        --exclude='.node-bin/' \
         "${UPGRADE_SRC_DIR}/panel/" "${LC_PANEL_DIR}/"
 
     # Restore .env if missing
