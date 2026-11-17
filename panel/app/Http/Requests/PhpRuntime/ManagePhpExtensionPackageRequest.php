@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\PhpRuntime;
 
+use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,7 +18,7 @@ class ManagePhpExtensionPackageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'version' => ['required', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
+            'version' => ['required', 'string', Rule::in(PhpVersion::SUPPORTED)],
             'extension' => ['required', 'string', 'max:64', 'regex:/^[a-zA-Z0-9_-]+$/'],
         ];
     }

@@ -11,6 +11,7 @@ use App\Domains\Identity\Actions\UpdateUserAction;
 use App\Domains\Identity\Contracts\UserDriverInterface;
 use App\Domains\Identity\Models\User;
 use App\Exceptions\System\LcCliException;
+use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -105,7 +106,7 @@ class UserController extends Controller
                 'unique:domains,domain',
             ],
             'public_path' => ['nullable', 'string', 'max:255'],
-            'php_version' => ['nullable', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
+            'php_version' => ['nullable', 'string', Rule::in(PhpVersion::SUPPORTED)],
             'ssl_enabled' => ['nullable', 'boolean'],
         ]);
 

@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
+
 use App\Domains\PanelConfig\Queries\ThemeManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -50,6 +52,9 @@ class HandleInertiaRequests extends Middleware
                     'theme' => $user->theme,
                 ] : null,
                 'is_impersonating' => (bool) $request->session()->has('impersonator_id'),
+            ],
+            'php' => [
+                'supported_versions' => PhpVersion::SUPPORTED,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

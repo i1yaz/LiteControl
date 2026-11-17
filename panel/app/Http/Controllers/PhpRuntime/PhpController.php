@@ -69,7 +69,7 @@ class PhpController extends Controller
         }
 
         $validated = $request->validate([
-            'version' => ['required', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
+            'version' => ['required', 'string', Rule::in(PhpVersion::SUPPORTED)],
             'directives' => ['required', 'array'],
             'directives.*' => ['nullable', 'string'],
         ]);
@@ -165,7 +165,7 @@ class PhpController extends Controller
         }
 
         $validated = $request->validate([
-            'version' => ['required', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
+            'version' => ['required', 'string', Rule::in(PhpVersion::SUPPORTED)],
             'extension' => ['required', 'string', 'alpha_dash'],
             'action' => ['required', 'in:enable,disable'],
         ]);
@@ -247,7 +247,7 @@ class PhpController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'version' => ['required', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
+            'version' => ['required', 'string', Rule::in(PhpVersion::SUPPORTED)],
         ]);
 
         if ($validator->fails()) {
@@ -313,7 +313,7 @@ class PhpController extends Controller
         }
 
         $validated = $request->validate([
-            'version' => ['required', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
+            'version' => ['required', 'string', Rule::in(PhpVersion::SUPPORTED)],
         ]);
 
         if ($validated['version'] === '83') {

@@ -388,11 +388,18 @@ cmd_php_limits() {
     fi
 }
 
-cmd_php_pkg_list() {
+SUPPORTED_PHP_VERSIONS_REGEX='^(74|80|81|82|83|84|85|86)$'
+
+validate_php_version() {
     local ver="${1:-}"
-    if ! [[ "${ver}" =~ ^(74|80|81|82|83|84|85|86)$ ]]; then
+    if ! [[ "${ver}" =~ ${SUPPORTED_PHP_VERSIONS_REGEX} ]]; then
         emit_error "Invalid PHP version: ${ver}"
     fi
+}
+
+cmd_php_pkg_list() {
+    local ver="${1:-}"
+    validate_php_version "${ver}"
 
     local prefix="lsphp${ver}-"
     local items=""
@@ -421,9 +428,7 @@ cmd_php_pkg_list() {
 cmd_php_ext_install() {
     local ver="${1:-}"
     local ext="${2:-}"
-    if ! [[ "${ver}" =~ ^(74|80|81|82|83|84|85|86)$ ]]; then
-        emit_error "Invalid PHP version: ${ver}"
-    fi
+    validate_php_version "${ver}"
     if ! [[ "${ext}" =~ ^[a-zA-Z0-9_-]+$ ]]; then
         emit_error "Invalid extension name: ${ext}"
     fi
@@ -440,9 +445,7 @@ cmd_php_ext_install() {
 cmd_php_ext_uninstall() {
     local ver="${1:-}"
     local ext="${2:-}"
-    if ! [[ "${ver}" =~ ^(74|80|81|82|83|84|85|86)$ ]]; then
-        emit_error "Invalid PHP version: ${ver}"
-    fi
+    validate_php_version "${ver}"
     if ! [[ "${ext}" =~ ^[a-zA-Z0-9_-]+$ ]]; then
         emit_error "Invalid extension name: ${ext}"
     fi

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { shallowRef, computed } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { FileCode, Globe, Download } from '@lucide/vue';
 import { confirmDialog } from '@shared/Composables/useDialog';
 
@@ -9,11 +9,12 @@ const props = defineProps({
     installedVersions: Array,
 });
 
-const supportedVersions = ['74', '80', '81', '82', '83', '84', '85'];
+const page = usePage();
+const supportedVersions = computed(() => (page.props.php as { supported_versions?: string[] })?.supported_versions || []);
 
 const uninstalledVersions = computed(() => {
     const installed = new Set((props.installedVersions || []).map((v) => String(v.version)));
-    return supportedVersions.filter((v) => !installed.has(v));
+    return supportedVersions.value.filter((v) => !installed.has(v));
 });
 
 const versionToInstall = shallowRef(uninstalledVersions.value[0] || '');
