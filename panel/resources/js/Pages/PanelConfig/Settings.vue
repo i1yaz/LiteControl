@@ -8,14 +8,13 @@ const props = defineProps({
     stats: Object,
 });
 
-const { availableThemes } = useTheme();
+const { availableThemes, activeThemeId, switchTheme } = useTheme();
 
 const form = useForm({
     panel_name: props.settings.panel_name || 'LiteControl',
     admin_email: props.settings.admin_email || '',
     timezone: props.settings.timezone || 'UTC',
     default_php: props.settings.default_php || '83',
-    default_theme: props.settings.default_theme || 'avionics',
 });
 
 const submit = () => {
@@ -134,7 +133,8 @@ const submit = () => {
                     <div>
                         <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Default Interface Theme') }}</label>
                         <select
-                            v-model="form.default_theme"
+                            :value="activeThemeId"
+                            @change="switchTheme(($event.target as HTMLSelectElement).value)"
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
                         >
                             <option
@@ -145,7 +145,6 @@ const submit = () => {
                                 {{ t.name }} ({{ t.layout_type }})
                             </option>
                         </select>
-                        <p v-if="form.errors.default_theme" class="text-xs text-rose-400 mt-1">{{ form.errors.default_theme }}</p>
                     </div>
                 </div>
 

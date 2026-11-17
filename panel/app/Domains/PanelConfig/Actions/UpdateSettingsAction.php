@@ -23,13 +23,6 @@ class UpdateSettingsAction
      */
     public function handle(array $validated, ?User $actor = null, ?string $ipAddress = null): void
     {
-        if (! empty($validated['default_theme'])) {
-            session(['theme' => $validated['default_theme']]);
-            if ($actor) {
-                $actor->update(['theme' => $validated['default_theme']]);
-            }
-        }
-
         // Sync timezone via ServerCliService
         $this->serverCli->setTimezone($validated['timezone']);
 

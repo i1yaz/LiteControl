@@ -44,14 +44,9 @@ class ConfigurationActionsTest extends TestCase
             'admin_email' => 'admin@domain.com',
             'timezone' => 'America/New_York',
             'default_php' => '83',
-            'default_theme' => 'nordic',
         ];
 
         $action->handle($settings, $this->admin, '192.168.1.100');
-
-        $this->admin->refresh();
-        $this->assertEquals('nordic', $this->admin->theme);
-        $this->assertEquals('nordic', session('theme'));
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $this->admin->id,

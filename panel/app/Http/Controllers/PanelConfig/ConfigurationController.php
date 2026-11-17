@@ -39,7 +39,6 @@ class ConfigurationController extends Controller
             'timezone' => $stats['timezone'] ?? 'UTC',
             'ols_version' => $stats['ols_version'] ?? '1.8.2',
             'default_php' => '83',
-            'default_theme' => config('themes.default', 'avionics'),
             'allow_registration' => false,
             'force_ssl' => true,
         ];
@@ -60,7 +59,6 @@ class ConfigurationController extends Controller
             'admin_email' => ['required', 'email'],
             'timezone' => ['required', 'string', 'max:50'],
             'default_php' => ['required', 'string'],
-            'default_theme' => ['nullable', 'string'],
         ]);
 
         try {
