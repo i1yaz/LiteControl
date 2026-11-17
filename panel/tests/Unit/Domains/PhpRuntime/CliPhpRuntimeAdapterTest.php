@@ -32,7 +32,7 @@ class CliPhpRuntimeAdapterTest extends TestCase
         $adapter->setIni($version, 'memory_limit', '256M');
 
         Process::assertRan(fn ($process) => is_array($process->command) && array_slice($process->command, -2) === ['php', 'list']);
-        Process::assertRan(fn ($process) => is_array($process->command) && array_slice($process->command, -4) === ['php', 'ini-set', '8.3', 'memory_limit=256M']);
+        Process::assertRan(fn ($process) => is_array($process->command) && array_slice($process->command, -5) === ['php', 'ini-set', '8.3', 'memory_limit', '256M']);
     }
 
     public function test_throws_lc_cli_exception_when_php_command_fails(): void
