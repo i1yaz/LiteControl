@@ -4,7 +4,19 @@ declare(strict_types=1);
 
 $baseDir = dirname(__DIR__);
 $parentDir = dirname($baseDir);
-$nodeDir = (is_writable($parentDir) ? $parentDir : $baseDir).DIRECTORY_SEPARATOR.'.node-bin';
+$homeDir = getenv('HOME') ?: '';
+if (is_writable($parentDir)) {
+    $nodeDir = $parentDir.DIRECTORY_SEPARATOR.'.node-bin';
+} elseif ($homeDir !== '' && is_dir($homeDir) && is_writable($homeDir)) {
+    $nodeDir = $homeDir.DIRECTORY_SEPARATOR.'.node-bin';
+} else {
+    $nodeDir = $baseDir.DIRECTORY_SEPARATOR.'.node-bin';
+}
+$nvmrcFile = $baseDir.DIRECTORY_SEPARATOR.'.nvmrc';
+$nodeVersion = is_file($nvmrcFile) ? ltrim(trim((string) file_get_contents($nvmrcFile)), 'v') : '';
+if ($nodeVersion === '') {
+    $nodeVersion = '24.22.3';
+}
 $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 
 $os = $isWindows ? 'win' : (PHP_OS_FAMILY === 'Darwin' ? 'darwin' : 'linux');
@@ -30,8 +42,11 @@ if ($systemNode !== '' && $systemNpm !== '') {
     $npmBinary = explode("\n", $systemNpm)[0];
     $installedVersion = trim((string) shell_exec(escapeshellarg($nodeBinary).' -v'));
     echo ">> [LiteControl] Using system Node {$installedVersion} at {$nodeBinary}\n";
-} elseif (! file_exists($nodeBinary)) {
-    echo ">> [LiteControl] Isolated Node 24 not found. Checking latest Node v24.x release for {$os}-{$nodeArch}...\n";
+} elseif (file_exists($nodeBinary)) {
+    $installedVersion = trim((string) shell_exec(escapeshellarg($nodeBinary).' -v'));
+    echo ">> [LiteControl] Reusing isolated Node {$installedVersion} at {$nodeBinary}\n";
+} else {
+    echo ">> [LiteControl] Isolated Node v{$nodeVersion} not found at {$nodeDir}. Downloading for {$os}-{$nodeArch}...\n";
 
     $context = stream_context_create([
         'http' => [
@@ -44,31 +59,20 @@ if ($systemNode !== '' && $systemNpm !== '') {
         ],
     ]);
 
-    $shasums = @file_get_contents('https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt', false, $context);
-    if ($shasums === false) {
-        fwrite(STDERR, "Error: Could not reach nodejs.org to query Node 24 distribution index.\n");
-        exit(1);
-    }
-
     $ext = $isWindows ? 'zip' : 'tar.xz';
-    $pattern = '/node-(v24\.[0-9]+\.[0-9]+)-'.preg_quote("{$os}-{$nodeArch}", '/').'\.'.preg_quote($ext, '/').'/';
-
-    if (! preg_match($pattern, $shasums, $matches)) {
-        // Fallback to tar.gz if tar.xz pattern is not found
-        $ext = $isWindows ? 'zip' : 'tar.gz';
-        $pattern = '/node-(v24\.[0-9]+\.[0-9]+)-'.preg_quote("{$os}-{$nodeArch}", '/').'\.'.preg_quote($ext, '/').'/';
-        if (! preg_match($pattern, $shasums, $matches)) {
-            fwrite(STDERR, "Error: Could not find matching Node 24 archive for {$os}-{$nodeArch} in official index.\n");
-            exit(1);
-        }
-    }
-
-    $archiveName = $matches[0];
-    $downloadUrl = "https://nodejs.org/dist/latest-v24.x/{$archiveName}";
+    $archiveName = "node-v{$nodeVersion}-{$os}-{$nodeArch}.{$ext}";
+    $downloadUrl = "https://nodejs.org/dist/v{$nodeVersion}/{$archiveName}";
     $tempArchive = sys_get_temp_dir().DIRECTORY_SEPARATOR.$archiveName;
 
     echo ">> Downloading isolated {$archiveName} from nodejs.org...\n";
     $fp = @fopen($downloadUrl, 'rb', false, $context);
+    if (! $fp && ! $isWindows) {
+        $ext = 'tar.gz';
+        $archiveName = "node-v{$nodeVersion}-{$os}-{$nodeArch}.{$ext}";
+        $downloadUrl = "https://nodejs.org/dist/v{$nodeVersion}/{$archiveName}";
+        $tempArchive = sys_get_temp_dir().DIRECTORY_SEPARATOR.$archiveName;
+        $fp = @fopen($downloadUrl, 'rb', false, $context);
+    }
     if (! $fp) {
         fwrite(STDERR, "Error: Failed to open download stream for {$downloadUrl}.\n");
         exit(1);
