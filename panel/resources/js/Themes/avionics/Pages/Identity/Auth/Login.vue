@@ -29,7 +29,7 @@ const submit = () => {
 
         <div>
             <label for="username" class="block text-[10px] uppercase tracking-wider text-[#7a8b9f] mb-1.5">
-                Principal Identity (Username or Email)
+                User Identity (Username or Email)
             </label>
             <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#5a6b80]">

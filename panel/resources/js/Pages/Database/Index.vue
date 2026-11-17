@@ -161,8 +161,8 @@ const deleteDb = async (id, name) => {
 
 const deleteDbUser = async (id, name) => {
     if (await confirmDialog({
-        title: 'Delete Database Principal',
-        message: `Are you sure you want to delete database principal '${name}'?`,
+        title: 'Delete Database User',
+        message: `Are you sure you want to delete database user '${name}'?`,
         confirmText: 'Delete',
         variant: 'danger',
     })) {
@@ -211,9 +211,9 @@ const deleteDbUser = async (id, name) => {
                         <thead class="bg-theme-bg-surface/30 text-[10px] font-semibold text-theme-text-muted uppercase tracking-widest border-b border-theme-border">
                             <tr>
                                 <th class="px-5 py-3.5">{{ __('Schema Identifier') }}</th>
-                                <th v-if="isAdmin" class="px-5 py-3.5">{{ __('Assigned Principal') }}</th>
+                                <th v-if="isAdmin" class="px-5 py-3.5">{{ __('Assigned User') }}</th>
                                 <th class="px-5 py-3.5">{{ __('Associated Domain') }}</th>
-                                <th class="px-5 py-3.5">{{ __('Authorized Principals') }}</th>
+                                <th class="px-5 py-3.5">{{ __('Authorized Users') }}</th>
                                 <th class="px-5 py-3.5">{{ __('Allocated Footprint') }}</th>
                                 <th class="px-5 py-3.5 text-right">{{ __('Operations') }}</th>
                             </tr>
@@ -291,7 +291,7 @@ const deleteDbUser = async (id, name) => {
             <div class="bg-theme-bg-card border border-theme-border rounded overflow-hidden">
                 <div class="px-5 py-3 border-b border-theme-border bg-theme-bg-surface/50 flex items-center justify-between">
                     <span class="text-xs font-semibold uppercase text-theme-text-secondary tracking-wider">
-                        Registered DB Principals ({{ dbUsers.length }})
+                        Registered DB Users ({{ dbUsers.length }})
                     </span>
                     <span class="text-xs text-theme-text-muted">{{ __('ACL_AUTH_LAYER') }}</span>
                 </div>
@@ -300,7 +300,7 @@ const deleteDbUser = async (id, name) => {
                     <table class="w-full text-left text-xs text-theme-text-primary">
                         <thead class="bg-theme-bg-surface/30 text-[10px] font-semibold text-theme-text-muted uppercase tracking-widest border-b border-theme-border">
                             <tr>
-                                <th class="px-5 py-3.5">{{ __('Principal Identity') }}</th>
+                                <th class="px-5 py-3.5">{{ __('User Identity') }}</th>
                                 <th v-if="isAdmin" class="px-5 py-3.5">{{ __('Owner Context') }}</th>
                                 <th class="px-5 py-3.5">{{ __('Linked Schema') }}</th>
                                 <th class="px-5 py-3.5">{{ __('Host Bind') }}</th>
@@ -343,7 +343,7 @@ const deleteDbUser = async (id, name) => {
                                         </button>
                                         <button
                                             @click="deleteDbUser(u.id, u.db_username)"
-                                            :title="__('Terminate Principal')"
+                                            :title="__('Terminate User')"
                                             class="text-theme-text-muted hover:text-rose-400 transition-colors p-1"
                                         >
                                             <Trash2 class="w-4 h-4" />
@@ -369,7 +369,7 @@ const deleteDbUser = async (id, name) => {
                     <UiSelect
                         id="db_owner"
                         v-model="dbForm.user_id"
-                        :label="__('Database Owner / Principal')"
+                        :label="__('Database Owner / User')"
                         :options="users.map(u => ({ value: u.id, label: `${u.username} (${u.name})` }))"
                         required
                     />
@@ -418,7 +418,7 @@ const deleteDbUser = async (id, name) => {
                     <UiSelect
                         id="user_owner"
                         v-model="userForm.user_id"
-                        :label="__('Principal Owner')"
+                        :label="__('User Owner')"
                         :options="users.map(u => ({ value: u.id, label: `${u.username} (${u.name})` }))"
                         required
                     />

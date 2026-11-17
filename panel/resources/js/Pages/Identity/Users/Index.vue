@@ -41,7 +41,7 @@ const handleSearch = () => {
 const suspendUser = async (id, username) => {
     if (await confirmDialog({
         title: 'Suspend User',
-        message: `Are you sure you want to suspend principal '${username}'? Their virtual hosts will be deactivated.`,
+        message: `Are you sure you want to suspend user '${username}'? Their virtual hosts will be deactivated.`,
         confirmText: 'Suspend',
         variant: 'warning',
     })) {
@@ -56,7 +56,7 @@ const unsuspendUser = (id, username) => {
 const deleteUser = async (id, username) => {
     if (await confirmDialog({
         title: 'Terminate User',
-        message: `Terminate user principal '${username}'? ALL vhosts, schemas, and storage volumes will be permanently purged!`,
+        message: `Terminate user '${username}'? ALL vhosts, schemas, and storage volumes will be permanently purged!`,
         confirmText: 'Terminate',
         variant: 'danger',
     })) {
@@ -67,7 +67,7 @@ const deleteUser = async (id, username) => {
 const impersonateUser = async (id, username) => {
     if (await confirmDialog({
         title: 'Impersonate User',
-        message: `Assume security context as principal '${username}'?`,
+        message: `Impersonate as "${username}"?`,
         confirmText: 'Impersonate',
     })) {
         router.post(`/users/${id}/impersonate`);
@@ -130,7 +130,7 @@ const copySshCommand = (username) => {
 };
 
 const tableHeaders = [
-    { label: 'Principal Identity' },
+    { label: 'User Identity' },
     { label: 'Quota Plan' },
     { label: 'Active Ingress' },
     { label: 'Relational DBs' },
@@ -141,11 +141,11 @@ const tableHeaders = [
 </script>
 
 <template>
-    <Head :title="__('Identity & Principals - LiteControl')" />
+    <Head :title="__('Identity & Users - LiteControl')" />
 
     <div class="space-y-6">
         <UiPageHeader
-            :title="__('Principals & Tenant Accounts')"
+            :title="__('Users & Tenant Accounts')"
             subtitle="Access Security // AUTH_IDENTITY_REGISTRY"
         >
             <template #actions>
@@ -166,7 +166,7 @@ const tableHeaders = [
                     v-model="search"
                     @keyup.enter="handleSearch"
                     type="text"
-                    :placeholder="__('FILTER_PRINCIPALS: USERNAME, EMAIL, IDENTITY_SPEC...')"
+                    :placeholder="__('FILTER_USERS: USERNAME, EMAIL, IDENTITY_SPEC...')"
                     class="w-full pl-9 pr-4 py-1.5 bg-theme-bg-surface border border-theme-border rounded text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:border-theme-accent transition-colors"
                 />
             </div>
@@ -183,7 +183,7 @@ const tableHeaders = [
         <UiDataTable
             :headers="tableHeaders"
             :items-count="users.data?.length || 0"
-            empty-message="NO PRINCIPALS MATCHING SPECIFICATION"
+            empty-message="NO USERS MATCHING SPECIFICATION"
         >
             <tr
                 v-for="user in users.data"
@@ -255,16 +255,16 @@ const tableHeaders = [
                         <!-- Impersonate Button -->
                         <button
                             @click="impersonateUser(user.id, user.username)"
-                            :title="__('Assume Context')"
+                            :title="`Impersonate as &quot;${user.username}&quot;`"
                             class="text-theme-text-muted hover:text-theme-accent transition-colors p-1"
                         >
                             <LogIn class="w-4 h-4" />
                         </button>
 
-                        <!-- Edit Principal -->
+                        <!-- Edit User -->
                         <button
                             @click="openEditModal(user)"
-                            :title="__('Edit Principal')"
+                            :title="__('Edit User')"
                             class="text-theme-text-muted hover:text-emerald-400 transition-colors p-1"
                         >
                             <Pencil class="w-4 h-4" />
@@ -291,7 +291,7 @@ const tableHeaders = [
                         <!-- Delete -->
                         <button
                             @click="deleteUser(user.id, user.username)"
-                            :title="__('Terminate Principal')"
+                            :title="__('Terminate User')"
                             class="text-theme-text-muted hover:text-rose-400 transition-colors p-1"
                         >
                             <Trash2 class="w-4 h-4" />
@@ -304,7 +304,7 @@ const tableHeaders = [
         <!-- Edit User Modal -->
         <UiModal
             :show="showEditModal"
-            :title="`Edit Principal: ${editingUser?.username}`"
+            :title="`Edit User: ${editingUser?.username}`"
             max-width="md"
             @close="showEditModal = false"
         >

@@ -57,7 +57,7 @@ const tableHeaders = computed(() => {
         { label: 'Target Host FQDN' },
     ];
     if (isAdmin) {
-        headers.push({ label: 'Assigned Principal' });
+        headers.push({ label: 'Assigned User' });
     }
     headers.push(
         { label: 'Routing Topology' },
@@ -396,7 +396,7 @@ const copySshCommand = (username) => {
                     <UiSelect
                         id="user_id"
                         v-model="form.user_id"
-                        :label="__('Target Principal')"
+                        :label="__('Target User')"
                         :options="userOptions"
                         required
                     />
