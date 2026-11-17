@@ -200,22 +200,10 @@ const uninstallPackage = async (extName: string) => {
                                     {{ __('Not Installed') }}
                                 </span>
                                 <span
-                                    v-else-if="row.name === 'common'"
+                                    v-else
                                     class="px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
                                 >
                                     {{ __('Installed') }}
-                                </span>
-                                <span
-                                    v-else-if="row.enabled"
-                                    class="px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
-                                >
-                                    {{ __('Installed · Enabled') }}
-                                </span>
-                                <span
-                                    v-else
-                                    class="px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-amber-500/10 text-amber-300 border-amber-500/20"
-                                >
-                                    {{ __('Installed · Disabled') }}
                                 </span>
                             </td>
                             <td v-if="isAdmin" class="px-5 py-3 text-right">
