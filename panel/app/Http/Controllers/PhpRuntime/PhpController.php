@@ -8,6 +8,7 @@ use App\Domains\PhpRuntime\Actions\InstallPhpVersionAction;
 use App\Domains\PhpRuntime\Actions\RemovePhpVersionAction;
 use App\Domains\PhpRuntime\Actions\UninstallPhpExtensionAction;
 use App\Domains\PhpRuntime\Actions\UpdatePhpIniAction;
+use App\Domains\PhpRuntime\Actions\UpdatePhpRawIniAction;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\ValueObjects\PhpExtensionName;
 use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
@@ -82,6 +83,65 @@ class PhpController extends Controller
             return back()->with('success', "PHP {$ver} configuration directives updated successfully.");
         } catch (LcCliException $e) {
             return back()->with('error', 'Failed updating PHP configuration: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Fetch raw php.ini content for Advanced Mode.
+     */
+    public function rawIni(Request $request)
+    {
+        if (! Auth::user()->isAdmin()) {
+            abort(403, 'Administrator privileges required to view raw PHP INI configuration.');
+        }
+
+        $validated = $request->validate([
+            'version' => ['required', 'string', Rule::in(PhpVersion::SUPPORTED)],
+        ]);
+
+        try {
+            $data = $this->phpCli->getRawIni(new PhpVersion($validated['version']));
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $data,
+            ]);
+        } catch (LcCliException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * Validate and save raw php.ini content for Advanced Mode.
+     */
+    public function updateRawIni(Request $request, UpdatePhpRawIniAction $updatePhpRawIniAction)
+    {
+        if (! Auth::user()->isAdmin()) {
+            abort(403, 'Administrator privileges required to modify PHP INI configuration.');
+        }
+
+        $validated = $request->validate([
+            'version' => ['required', 'string', Rule::in(PhpVersion::SUPPORTED)],
+            'content' => ['required', 'string'],
+        ]);
+
+        $ver = $validated['version'];
+
+        try {
+            $updatePhpRawIniAction->handle(new PhpVersion($ver), $validated['content'], Auth::user(), $request->ip());
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "PHP {$ver} php.ini validated and saved successfully.",
+            ]);
+        } catch (LcCliException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 422);
         }
     }
 

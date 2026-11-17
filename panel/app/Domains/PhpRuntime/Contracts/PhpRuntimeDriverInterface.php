@@ -28,6 +28,16 @@ interface PhpRuntimeDriverInterface
     /**
      * @throws LcCliException
      */
+    public function getRawIni(PhpVersion $version): array;
+
+    /**
+     * @throws LcCliException
+     */
+    public function setRawIni(PhpVersion $version, string $content): array;
+
+    /**
+     * @throws LcCliException
+     */
     public function listExtensions(PhpVersion $version): array;
 
     /**

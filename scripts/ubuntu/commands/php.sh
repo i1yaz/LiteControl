@@ -280,6 +280,73 @@ cmd_php_ini_set() {
     emit_success "Updated '${key} = ${val}' in lsphp${ver}." "${data_json}"
 }
 
+cmd_php_ini_raw_get() {
+    local ver
+    ver=$(normalize_ver "${1:-}")
+
+    local ini_file
+    ini_file=$(get_ini_path "${ver}")
+    if [[ ! -f "${ini_file}" ]]; then
+        emit_error "php.ini not found at ${ini_file}."
+    fi
+
+    local content_b64
+    content_b64=$(base64 -w0 "${ini_file}" 2>/dev/null || base64 "${ini_file}" | tr -d '\n')
+
+    local data_json
+    data_json=$(printf '{"version":"%s","ini_path":"%s","content_b64":"%s"}' \
+        "${ver}" \
+        "$(json_escape "${ini_file}")" \
+        "${content_b64}")
+
+    emit_success "Raw php.ini retrieved for lsphp${ver}." "${data_json}"
+}
+
+cmd_php_ini_raw_set() {
+    local ver
+    ver=$(normalize_ver "${1:-}")
+    local content_b64="${2:-}"
+
+    if [[ -z "${content_b64}" ]]; then
+        emit_error "PHP INI content is required."
+    fi
+
+    local ini_file
+    ini_file=$(get_ini_path "${ver}")
+    if [[ ! -f "${ini_file}" ]]; then
+        emit_error "php.ini not found at ${ini_file}."
+    fi
+
+    local tmp_ini
+    tmp_ini=$(mktemp /tmp/lc-php-ini.XXXXXX)
+    if ! printf '%s' "${content_b64}" | base64 -d > "${tmp_ini}" 2>/dev/null; then
+        rm -f "${tmp_ini}"
+        emit_error "Invalid base64-encoded php.ini content."
+    fi
+
+    local php_bin="${OLS_DIR}/lsphp${ver}/bin/php"
+    if [[ -x "${php_bin}" ]]; then
+        local syntax_out
+        if ! syntax_out=$("${php_bin}" -c "${tmp_ini}" -r 'exit(0);' 2>&1); then
+            rm -f "${tmp_ini}"
+            emit_error "PHP INI syntax error: ${syntax_out}"
+        fi
+        if printf '%s' "${syntax_out}" | grep -qiE "syntax error|parse error|fatal error"; then
+            rm -f "${tmp_ini}"
+            emit_error "PHP INI syntax error: ${syntax_out}"
+        fi
+    fi
+
+    cp -f "${ini_file}" "${ini_file}.bak" 2>/dev/null || true
+    mv -f "${tmp_ini}" "${ini_file}"
+    chmod 644 "${ini_file}"
+
+    local data_json
+    data_json=$(printf '{"version":"%s","ini_path":"%s"}' \
+        "${ver}" "$(json_escape "${ini_file}")")
+    emit_success "Updated raw php.ini for lsphp${ver}." "${data_json}"
+}
+
 cmd_php_ext_list() {
     local ver
     ver=$(normalize_ver "${1:-}")
@@ -519,6 +586,12 @@ case "${SUBCOMMAND}" in
         ;;
     ini-set)
         cmd_php_ini_set "$@"
+        ;;
+    ini-raw-get)
+        cmd_php_ini_raw_get "$@"
+        ;;
+    ini-raw-set)
+        cmd_php_ini_raw_set "$@"
         ;;
     ext-list|modules)
         cmd_php_ext_list "$@"

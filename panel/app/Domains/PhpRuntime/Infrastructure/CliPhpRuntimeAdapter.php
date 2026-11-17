@@ -31,6 +31,26 @@ class CliPhpRuntimeAdapter implements PhpRuntimeDriverInterface
         return $this->runPhp(['ini-set', $version->value, $key, $value], "Failed to set PHP INI {$key} for version {$version->value}.");
     }
 
+    public function getRawIni(PhpVersion $version): array
+    {
+        $data = $this->runPhp(['ini-raw-get', $version->value], "Failed to read raw php.ini for version {$version->value}.");
+        $decoded = base64_decode((string) ($data['content_b64'] ?? ''), true);
+
+        return [
+            'version' => $data['version'] ?? $version->value,
+            'ini_path' => $data['ini_path'] ?? '',
+            'content' => $decoded !== false ? $decoded : '',
+        ];
+    }
+
+    public function setRawIni(PhpVersion $version, string $content): array
+    {
+        return $this->runPhp(
+            ['ini-raw-set', $version->value, base64_encode($content)],
+            "Failed to update raw php.ini for version {$version->value}."
+        );
+    }
+
     public function listExtensions(PhpVersion $version): array
     {
         $data = $this->runPhp(['ext-list', $version->value], "Failed to list PHP extensions for version {$version->value}.");
