@@ -45,10 +45,12 @@ install_primary_lsphp() {
     fi
 
     # Install per-user / per-directory PHP CLI shim at /usr/local/bin/php
-    rm -f /usr/local/bin/php
-    cp "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" /usr/local/bin/php
-    sed -i 's/\r$//' /usr/local/bin/php
-    chmod 0755 /usr/local/bin/php
+    if [[ -f "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" ]]; then
+        rm -f /usr/local/bin/php
+        cp "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" /usr/local/bin/php
+        sed -i 's/\r$//' /usr/local/bin/php
+        chmod 0755 /usr/local/bin/php
+    fi
 
     # Locate and tune php.ini
     local ini_file="${OLS_DIR}/lsphp${ver}/etc/php/${dotted_ver}/litespeed/php.ini"
