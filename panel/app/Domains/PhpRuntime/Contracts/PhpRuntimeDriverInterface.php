@@ -49,4 +49,19 @@ interface PhpRuntimeDriverInterface
      * @throws LcCliException
      */
     public function listLoadedModules(PhpVersion $version): array;
+
+    /**
+     * @throws LcCliException
+     */
+    public function listAvailablePackages(PhpVersion $version): array;
+
+    /**
+     * @throws LcCliException
+     */
+    public function installExtensionPackage(PhpVersion $version, PhpExtensionName $extension): array;
+
+    /**
+     * @throws LcCliException
+     */
+    public function uninstallExtensionPackage(PhpVersion $version, PhpExtensionName $extension): array;
 }

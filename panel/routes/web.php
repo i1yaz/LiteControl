@@ -65,7 +65,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/php/ini', [PhpController::class, 'ini'])->name('php.ini');
     Route::get('/php/manager', [PhpController::class, 'manager'])->name('php.manager');
     Route::get('/php/extensions', [PhpController::class, 'extensions'])->name('php.extensions');
-    Route::get('/php/modules', [PhpController::class, 'modules'])->name('php.modules');
 
     // MySQL Databases
     Route::get('/databases', [DatabaseController::class, 'index'])->name('databases.index');
@@ -127,6 +126,8 @@ Route::middleware('auth')->group(function () {
         // Admin PHP Actions
         Route::post('/php/ini', [PhpController::class, 'updateIni'])->name('php.ini.update');
         Route::post('/php/extensions/toggle', [PhpController::class, 'toggleExtension'])->name('php.extensions.toggle');
+        Route::post('/php/extensions/install', [PhpController::class, 'installExtension'])->name('php.extensions.install');
+        Route::post('/php/extensions/uninstall', [PhpController::class, 'uninstallExtension'])->name('php.extensions.uninstall');
         Route::get('/php/versions', [PhpController::class, 'versions'])->name('php.versions');
         Route::post('/php/versions/install', [PhpController::class, 'installVersion'])->name('php.versions.install');
         Route::get('/php/versions/install-status', [PhpController::class, 'installStatus'])->name('php.versions.install-status');

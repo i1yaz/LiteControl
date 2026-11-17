@@ -63,7 +63,6 @@ export const PANEL_NAVIGATION = [
             { id: 'php.ini', label: 'INI Directives', route: '/php/ini' },
             { id: 'php.extensions', label: 'Extensions', route: '/php/extensions' },
             { id: 'php.versions', label: 'PHP Version', route: '/php/versions', adminOnly: true },
-            { id: 'php.modules', label: 'PHP Modules', route: '/php/modules' },
         ],
     },
     {

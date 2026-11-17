@@ -67,6 +67,21 @@ class CliPhpRuntimeAdapter implements PhpRuntimeDriverInterface
         return $this->runPhp(['modules', $version->value], "Failed to list loaded PHP modules for version {$version->value}.");
     }
 
+    public function listAvailablePackages(PhpVersion $version): array
+    {
+        return $this->runPhp(['pkg-list', $version->value], "Failed to list available PHP packages for version {$version->value}.");
+    }
+
+    public function installExtensionPackage(PhpVersion $version, PhpExtensionName $extension): array
+    {
+        return $this->runPhp(['ext-install', $version->value, $extension->value], "Failed to install extension {$extension->value} for PHP {$version->value}.");
+    }
+
+    public function uninstallExtensionPackage(PhpVersion $version, PhpExtensionName $extension): array
+    {
+        return $this->runPhp(['ext-uninstall', $version->value, $extension->value], "Failed to uninstall extension {$extension->value} for PHP {$version->value}.");
+    }
+
     /**
      * @throws LcCliException
      */

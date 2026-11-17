@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\PhpRuntime;
 
+use App\Domains\PhpRuntime\Actions\InstallPhpExtensionAction;
 use App\Domains\PhpRuntime\Actions\InstallPhpVersionAction;
 use App\Domains\PhpRuntime\Actions\RemovePhpVersionAction;
 use App\Domains\PhpRuntime\Actions\TogglePhpExtensionAction;
+use App\Domains\PhpRuntime\Actions\UninstallPhpExtensionAction;
 use App\Domains\PhpRuntime\Actions\UpdatePhpIniAction;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\ValueObjects\PhpExtensionName;
@@ -12,8 +14,11 @@ use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
 use App\Domains\WebServer\Models\Domain;
 use App\Exceptions\System\LcCliException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PhpRuntime\ManagePhpExtensionPackageRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -136,9 +141,23 @@ class PhpController extends Controller
             $installedVersions = [];
         }
 
+        try {
+            $loadedModules = $this->phpCli->listLoadedModules(new PhpVersion($version));
+        } catch (LcCliException $e) {
+            $loadedModules = [];
+        }
+
+        try {
+            $packages = $this->phpCli->listAvailablePackages(new PhpVersion($version));
+        } catch (LcCliException $e) {
+            $packages = [];
+        }
+
         return Inertia::render('PhpRuntime/Extensions', [
             'currentVersion' => $version,
             'extensionsData' => $extensionsData,
+            'loadedModules' => $loadedModules,
+            'packages' => $packages,
             'installedVersions' => array_values($installedVersions),
         ]);
     }
@@ -174,6 +193,38 @@ class PhpController extends Controller
     }
 
     /**
+     * Install a PHP extension package via apt/dnf.
+     */
+    public function installExtension(ManagePhpExtensionPackageRequest $request, InstallPhpExtensionAction $action)
+    {
+        $validated = $request->validated();
+
+        try {
+            $action->handle($validated['version'], $validated['extension'], Auth::user());
+
+            return back()->with('success', "Extension '{$validated['extension']}' for PHP {$validated['version']} installed.");
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Extension installation failed: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Uninstall a PHP extension package via apt/dnf.
+     */
+    public function uninstallExtension(ManagePhpExtensionPackageRequest $request, UninstallPhpExtensionAction $action)
+    {
+        $validated = $request->validated();
+
+        try {
+            $action->handle($validated['version'], $validated['extension'], Auth::user());
+
+            return back()->with('success', "Extension '{$validated['extension']}' for PHP {$validated['version']} uninstalled.");
+        } catch (LcCliException $e) {
+            return back()->with('error', 'Extension removal failed: '.$e->getMessage());
+        }
+    }
+
+    /**
      * PHP Versions management (lsphp74 - lsphp85).
      */
     public function versions(): Response
@@ -202,7 +253,7 @@ class PhpController extends Controller
             abort(403, 'Administrator privileges required.');
         }
 
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'version' => ['required', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
         ]);
 
@@ -226,12 +277,12 @@ class PhpController extends Controller
      */
     public function installStatus()
     {
-        $version = \Illuminate\Support\Facades\Cache::get('php_install_current_version');
+        $version = Cache::get('php_install_current_version');
         if (! $version) {
             return response()->json(['version' => null, 'status' => null]);
         }
 
-        $rawStatus = \Illuminate\Support\Facades\Cache::get("php_install_{$version}");
+        $rawStatus = Cache::get("php_install_{$version}");
         $status = match ($rawStatus) {
             'pending', 'provisioning' => 'installing',
             'active' => 'installed',
@@ -250,11 +301,11 @@ class PhpController extends Controller
      */
     public function dismissInstallStatus()
     {
-        $version = \Illuminate\Support\Facades\Cache::get('php_install_current_version');
+        $version = Cache::get('php_install_current_version');
         if ($version) {
-            \Illuminate\Support\Facades\Cache::forget("php_install_{$version}");
+            Cache::forget("php_install_{$version}");
         }
-        \Illuminate\Support\Facades\Cache::forget('php_install_current_version');
+        Cache::forget('php_install_current_version');
 
         return response()->json(['ok' => true]);
     }
@@ -283,35 +334,5 @@ class PhpController extends Controller
         } catch (LcCliException $e) {
             return back()->with('error', 'Removal failed: '.$e->getMessage());
         }
-    }
-
-    /**
-     * View loaded PHP modules (`php -m`).
-     */
-    public function modules(Request $request): Response
-    {
-        $version = $request->input('version', '83');
-
-        try {
-            $modules = $this->phpCli->listLoadedModules(new PhpVersion($version));
-        } catch (LcCliException $e) {
-            $modules = [];
-        }
-
-        try {
-            $versions = $this->phpCli->listVersions();
-            $installedVersions = array_filter(
-                $versions,
-                fn ($v) => ! empty($v['installed'])
-            );
-        } catch (LcCliException $e) {
-            $installedVersions = [];
-        }
-
-        return Inertia::render('PhpRuntime/Modules', [
-            'currentVersion' => $version,
-            'modules' => $modules,
-            'installedVersions' => array_values($installedVersions),
-        ]);
     }
 }
