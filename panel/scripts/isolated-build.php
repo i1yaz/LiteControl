@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 $baseDir = dirname(__DIR__);
-$nodeDir = $baseDir.DIRECTORY_SEPARATOR.'.node-bin';
+$parentDir = dirname($baseDir);
+$nodeDir = (is_writable($parentDir) ? $parentDir : $baseDir).DIRECTORY_SEPARATOR.'.node-bin';
 $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 
 $os = $isWindows ? 'win' : (PHP_OS_FAMILY === 'Darwin' ? 'darwin' : 'linux');
