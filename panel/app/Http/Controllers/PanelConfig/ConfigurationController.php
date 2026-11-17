@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\PanelConfig;
 
-use App\Domains\PanelConfig\Actions\UpdatePhpLimitsAction;
 use App\Domains\PanelConfig\Actions\UpdateSettingsAction;
 use App\Domains\PanelConfig\Actions\UpdateTuningAction;
 use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
@@ -103,71 +102,6 @@ class ConfigurationController extends Controller
             $action->handle($validated, $request->user(), $request->ip());
 
             return redirect()->back()->with('success', 'LiteSpeed tuning parameters updated and applied successfully.');
-        } catch (LcCliException $e) {
-            return redirect()->back()->with('error', $e->getMessage());
-        }
-    }
-
-    /**
-     * Global PHP Limits Configuration across versions.
-     */
-    public function phpLimit(Request $request): Response
-    {
-        $version = $request->input('version', '83');
-
-        $directives = [];
-        try {
-            $iniRes = $this->phpCli->getIni($version);
-            $directives = $iniRes['directives'] ?? [];
-        } catch (\Throwable) {
-            // Fallback for missing/invalid PHP INI
-        }
-
-        $installedVersions = [];
-        try {
-            $listRes = $this->phpCli->listVersions();
-            $installedVersions = array_filter(
-                $listRes,
-                fn ($v) => ! empty($v['installed'])
-            );
-        } catch (\Throwable) {
-            // Fallback for list failure
-        }
-
-        return Inertia::render('PanelConfig/PhpLimit', [
-            'currentVersion' => $version,
-            'installedVersions' => array_values($installedVersions),
-            'limits' => [
-                'memory_limit' => $directives['memory_limit'] ?? '256M',
-                'max_execution_time' => $directives['max_execution_time'] ?? '300',
-                'upload_max_filesize' => $directives['upload_max_filesize'] ?? '64M',
-                'post_max_size' => $directives['post_max_size'] ?? '64M',
-                'max_input_vars' => $directives['max_input_vars'] ?? '3000',
-            ],
-        ]);
-    }
-
-    /**
-     * Update PHP Limits for a specific version.
-     */
-    public function updatePhpLimit(Request $request, UpdatePhpLimitsAction $action): RedirectResponse
-    {
-        $validated = $request->validate([
-            'version' => ['required', 'string', 'in:74,80,81,82,83,84,85'],
-            'memory_limit' => ['required', 'string', 'regex:/^[0-9]+[M|G]$/i'],
-            'max_execution_time' => ['required', 'integer', 'min:10', 'max:86400'],
-            'upload_max_filesize' => ['required', 'string', 'regex:/^[0-9]+[M|G]$/i'],
-            'post_max_size' => ['required', 'string', 'regex:/^[0-9]+[M|G]$/i'],
-            'max_input_vars' => ['required', 'integer', 'min:100', 'max:50000'],
-        ]);
-
-        $version = $validated['version'];
-        unset($validated['version']);
-
-        try {
-            $action->handle($version, $validated, $request->user(), $request->ip());
-
-            return redirect()->back()->with('success', "PHP {$version} resource limits updated successfully.");
         } catch (LcCliException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

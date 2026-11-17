@@ -141,8 +141,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/configuration/settings', [ConfigurationController::class, 'updateSettings'])->name('configuration.settings.update');
         Route::get('/configuration/tuning', [ConfigurationController::class, 'tuning'])->name('configuration.tuning');
         Route::post('/configuration/tuning', [ConfigurationController::class, 'updateTuning'])->name('configuration.tuning.update');
-        Route::get('/configuration/php-limit', [ConfigurationController::class, 'phpLimit'])->name('configuration.php-limit');
-        Route::post('/configuration/php-limit', [ConfigurationController::class, 'updatePhpLimit'])->name('configuration.php-limit.update');
         Route::get('/configuration/error-logs', [ConfigurationController::class, 'errorLogs'])->name('configuration.error-logs');
 
         // Server Management (Admin Only)

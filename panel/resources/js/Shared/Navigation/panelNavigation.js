@@ -74,7 +74,6 @@ export const PANEL_NAVIGATION = [
         children: [
             { id: 'configuration.settings', label: 'Core Settings', route: '/configuration/settings' },
             { id: 'configuration.tuning', label: 'Tuning & Workers', route: '/configuration/tuning' },
-            { id: 'configuration.php-limit', label: 'PHP Limit', route: '/configuration/php-limit' },
             { id: 'configuration.error-logs', label: 'Audit Log', route: '/configuration/error-logs' },
         ],
     },

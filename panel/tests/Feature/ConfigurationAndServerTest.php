@@ -119,30 +119,6 @@ class ConfigurationAndServerTest extends TestCase
         $response->assertSessionHasErrors(['maxConnections', 'maxReqBodySize', 'enableGzipCompress', 'gzipCompressLevel']);
     }
 
-    public function test_admin_can_view_and_update_php_limit(): void
-    {
-        $admin = User::where('role', 'admin')->first();
-
-        $response = $this->actingAs($admin)->get('/configuration/php-limit?version=83');
-        $response->assertStatus(200);
-        $response->assertInertia(fn (Assert $page) => $page
-            ->component('PanelConfig/PhpLimit')
-            ->has('limits.memory_limit')
-        );
-
-        $updateRes = $this->actingAs($admin)->post('/configuration/php-limit', [
-            'version' => '83',
-            'memory_limit' => '512M',
-            'max_execution_time' => 600,
-            'upload_max_filesize' => '128M',
-            'post_max_size' => '128M',
-            'max_input_vars' => 5000,
-        ]);
-
-        $updateRes->assertRedirect();
-        $updateRes->assertSessionHas('success');
-    }
-
     public function test_admin_can_view_error_logs(): void
     {
         $admin = User::where('role', 'admin')->first();

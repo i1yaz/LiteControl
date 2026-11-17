@@ -3,7 +3,6 @@
 namespace Tests\Feature\Actions\Configuration;
 
 use App\Domains\Identity\Models\User;
-use App\Domains\PanelConfig\Actions\UpdatePhpLimitsAction;
 use App\Domains\PanelConfig\Actions\UpdateSettingsAction;
 use App\Domains\PanelConfig\Actions\UpdateTuningAction;
 use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
@@ -122,49 +121,5 @@ class ConfigurationActionsTest extends TestCase
         $this->expectException(LcCliException::class);
 
         $action->handle(['maxConnections' => 5], $this->admin);
-    }
-
-    public function test_update_php_limits_action_success(): void
-    {
-        $phpMock = Mockery::mock(PhpRuntimeDriverInterface::class);
-        $phpMock->shouldReceive('setIni')
-            ->once()
-            ->with('83', 'memory_limit', '512M')
-            ->andReturn([]);
-        $phpMock->shouldReceive('setIni')
-            ->once()
-            ->with('83', 'max_execution_time', '600')
-            ->andReturn([]);
-
-        $action = new UpdatePhpLimitsAction($phpMock);
-        $directives = [
-            'memory_limit' => '512M',
-            'max_execution_time' => 600,
-        ];
-
-        $action->handle('83', $directives, $this->admin, '172.16.0.5');
-
-        $this->assertDatabaseHas('audit_logs', [
-            'user_id' => $this->admin->id,
-            'action' => 'update_php_limits',
-            'command' => 'lc-cli php ini-set 83',
-            'status' => 'success',
-            'ip_address' => '172.16.0.5',
-        ]);
-    }
-
-    public function test_update_php_limits_action_throws_on_failure(): void
-    {
-        $phpMock = Mockery::mock(PhpRuntimeDriverInterface::class);
-        $phpMock->shouldReceive('setIni')
-            ->once()
-            ->with('83', 'memory_limit', '99999M')
-            ->andThrow(new LcCliException('Failed to set INI directive', 'php', ['ini-set']));
-
-        $action = new UpdatePhpLimitsAction($phpMock);
-
-        $this->expectException(LcCliException::class);
-
-        $action->handle('83', ['memory_limit' => '99999M'], $this->admin);
     }
 }
