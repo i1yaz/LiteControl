@@ -316,17 +316,50 @@ cmd_php_ext_toggle() {
         emit_error "Invalid extension name '${ext}'."
     fi
 
+    local ini_dirs=(
+        "/usr/local/lsws/lsphp${ver}/etc/php.d"
+        "/usr/local/lsws/lsphp${ver}/etc/php"/*/mods-available
+    )
+
     if [[ "${action}" == "enable" ]]; then
         if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
-            apt_install "lsphp${ver}-${ext}"
+            local found=0
+            local dir f
+            for dir in "${ini_dirs[@]}"; do
+                [[ -d "${dir}" ]] || continue
+                for f in "${dir}"/*"${ext}".ini.disabled; do
+                    [[ -e "${f}" ]] || continue
+                    mv "${f}" "${f%.disabled}"
+                    found=1
+                done
+            done
+            if [[ "${found}" -eq 0 ]]; then
+                # Check if already enabled
+                for dir in "${ini_dirs[@]}"; do
+                    [[ -d "${dir}" ]] || continue
+                    for f in "${dir}"/*"${ext}".ini; do
+                        [[ -e "${f}" ]] && found=1
+                    done
+                done
+            fi
+            if [[ "${found}" -eq 0 ]]; then
+                emit_error "Extension '${ext}' is not installed for PHP ${ver}."
+            fi
+            ols_safe_reload || true
         fi
-        mark_module_installed "lsphp${ver}-${ext}"
         emit_success "Enabled extension lsphp${ver}-${ext}." "{\"version\":\"${ver}\",\"extension\":\"${ext}\",\"enabled\":true}"
     else
         if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
-            DEBIAN_FRONTEND=noninteractive apt-get remove -y -qq "lsphp${ver}-${ext}" 2>/dev/null || true
+            local dir f
+            for dir in "${ini_dirs[@]}"; do
+                [[ -d "${dir}" ]] || continue
+                for f in "${dir}"/*"${ext}".ini; do
+                    [[ -e "${f}" ]] || continue
+                    mv "${f}" "${f}.disabled"
+                done
+            done
+            ols_safe_reload || true
         fi
-        mark_module_removed "lsphp${ver}-${ext}"
         emit_success "Disabled extension lsphp${ver}-${ext}." "{\"version\":\"${ver}\",\"extension\":\"${ext}\",\"enabled\":false}"
     fi
 }

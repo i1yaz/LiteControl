@@ -227,7 +227,13 @@ const uninstallPackage = async (extName: string) => {
                                 </span>
                             </td>
                             <td v-if="isAdmin" class="px-5 py-3 text-right">
-                                <div class="inline-flex items-center gap-2">
+                                <span
+                                    v-if="row.name === 'common'"
+                                    class="px-2.5 py-1 rounded-lg bg-slate-800/70 text-slate-400 border border-slate-700/60 text-xs font-medium"
+                                >
+                                    {{ __('Core · Readonly') }}
+                                </span>
+                                <div v-else class="inline-flex items-center gap-2">
                                     <button
                                         v-if="!row.installed"
                                         type="button"
