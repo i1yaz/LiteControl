@@ -67,12 +67,21 @@ const dismiss = async () => {
     }
 };
 
+let removeInertiaSuccessListener: (() => void) | null = null;
+
 onMounted(() => {
     fetchStatus();
+    removeInertiaSuccessListener = router.on('success', (event) => {
+        const successMsg = (event.detail.page.props as { flash?: { success?: string } })?.flash?.success;
+        if (typeof successMsg === 'string' && successMsg.includes('installation queued')) {
+            fetchStatus();
+        }
+    });
 });
 
 onUnmounted(() => {
     stopPolling();
+    removeInertiaSuccessListener?.();
 });
 </script>
 

@@ -64,7 +64,6 @@ Route::middleware('auth')->group(function () {
     // PHP Management
     Route::get('/php/ini', [PhpController::class, 'ini'])->name('php.ini');
     Route::get('/php/manager', [PhpController::class, 'manager'])->name('php.manager');
-    Route::post('/php/manager', [PhpController::class, 'batchSwitch'])->name('php.manager.batch');
     Route::get('/php/extensions', [PhpController::class, 'extensions'])->name('php.extensions');
     Route::get('/php/modules', [PhpController::class, 'modules'])->name('php.modules');
 

@@ -9,7 +9,6 @@ use App\Domains\PhpRuntime\Actions\UpdatePhpIniAction;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\ValueObjects\PhpExtensionName;
 use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
-use App\Domains\WebServer\Actions\BatchSwitchPhpVersionAction;
 use App\Domains\WebServer\Models\Domain;
 use App\Exceptions\System\LcCliException;
 use App\Http\Controllers\Controller;
@@ -22,8 +21,7 @@ use Inertia\Response;
 class PhpController extends Controller
 {
     public function __construct(
-        protected PhpRuntimeDriverInterface $phpCli,
-        protected BatchSwitchPhpVersionAction $batchSwitchPhpVersion
+        protected PhpRuntimeDriverInterface $phpCli
     ) {}
 
     /**
@@ -110,33 +108,6 @@ class PhpController extends Controller
             'domains' => $domains,
             'installedVersions' => array_values($installedVersions),
         ]);
-    }
-
-    /**
-     * Switch PHP version for multiple domains in batch.
-     */
-    public function batchSwitch(Request $request)
-    {
-        $validated = $request->validate([
-            'domain_ids' => ['required', 'array'],
-            'domain_ids.*' => ['exists:domains,id'],
-            'php_version' => ['required', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
-        ]);
-
-        $user = Auth::user();
-        $domains = Domain::whereIn('id', $validated['domain_ids']);
-
-        if (! $user->isAdmin()) {
-            $domains->where('user_id', $user->id);
-        }
-
-        $count = $this->batchSwitchPhpVersion->handle(
-            $domains->get(),
-            $validated['php_version'],
-            $user
-        );
-
-        return back()->with('success', "Updated PHP version to {$validated['php_version']} for {$count} domain(s).");
     }
 
     /**

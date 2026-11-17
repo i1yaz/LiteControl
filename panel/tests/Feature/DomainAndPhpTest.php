@@ -194,22 +194,6 @@ class DomainAndPhpTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_multiphp_manager_batch_switching(): void
-    {
-        $admin = User::where('role', 'admin')->first();
-        $domains = Domain::take(2)->get();
-
-        $response = $this->actingAs($admin)->post('/php/manager', [
-            'domain_ids' => $domains->pluck('id')->toArray(),
-            'php_version' => '81',
-        ]);
-
-        $response->assertStatus(302);
-        foreach ($domains as $d) {
-            $this->assertEquals('81', $d->fresh()->php_version);
-        }
-    }
-
     public function test_admin_can_toggle_php_extension(): void
     {
         $admin = User::where('role', 'admin')->first();
