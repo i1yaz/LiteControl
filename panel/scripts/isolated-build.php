@@ -5,7 +5,7 @@ declare(strict_types=1);
 $baseDir = dirname(__DIR__);
 $parentDir = dirname($baseDir);
 $homeDir = getenv('HOME') ?: '';
-if (is_writable($parentDir)) {
+if (is_writable($parentDir.DIRECTORY_SEPARATOR.'.node-bin') || is_writable($parentDir)) {
     $nodeDir = $parentDir.DIRECTORY_SEPARATOR.'.node-bin';
 } elseif ($homeDir !== '' && is_dir($homeDir) && is_writable($homeDir)) {
     $nodeDir = $homeDir.DIRECTORY_SEPARATOR.'.node-bin';
