@@ -117,6 +117,18 @@ class ConfigurationController extends Controller
     }
 
     /**
+     * Fetch Per-Site LSAPI Worker & PHP Runtime Tuning.
+     */
+    public function showSiteTuning(Domain $domain): \Illuminate\Http\JsonResponse
+    {
+        $tuning = $domain->tuning;
+
+        return response()->json([
+            'tuning' => $tuning ? $tuning->toArray() : SiteTuningConfig::defaults()->toArray(),
+        ]);
+    }
+
+    /**
      * Update Per-Site LSAPI Worker & PHP Runtime Tuning.
      */
     public function updateSiteTuning(

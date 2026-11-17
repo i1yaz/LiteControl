@@ -98,11 +98,14 @@ class CliVhostAdapter implements VhostDriverInterface
     {
         $phpVersionClean = str_replace('.', '', $phpVersion);
         $fragment = $config->renderOlsFragment($unixUser, $phpVersionClean);
+        $currentConf = $this->getConf($domain);
 
-        return $this->runVhost(
-            ['apply-tuning', $domain, base64_encode($fragment)],
-            'Failed to apply per-site tuning configuration.'
-        );
+        // Remove existing extprocessor and phpIniOverride blocks before appending updated fragment
+        $cleaned = preg_replace('/\bextprocessor\s+' . preg_quote($unixUser, '/') . '\s*\{[^}]*\}\s*/s', '', $currentConf) ?? $currentConf;
+        $cleaned = preg_replace('/\bphpIniOverride\s*\{[^}]*\}\s*/s', '', $cleaned) ?? $cleaned;
+        $updatedConf = rtrim($cleaned) . "\n\n" . $fragment . "\n";
+
+        return $this->setConf($domain, $updatedConf);
     }
 
     /**

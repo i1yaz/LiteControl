@@ -78,8 +78,7 @@ const siteForm = useForm({
     php_display_errors: false,
 });
 
-const syncSiteForm = (domain: DomainItem | null) => {
-    const t = domain?.tuning;
+const syncSiteForm = (t?: Partial<SiteTuningRecord> | null) => {
     siteForm.max_conns = t?.max_conns ?? 10;
     siteForm.init_timeout = t?.init_timeout ?? 60;
     siteForm.persist_conn = t?.persist_conn ?? true;
@@ -98,7 +97,34 @@ const syncSiteForm = (domain: DomainItem | null) => {
     siteForm.clearErrors();
 };
 
-watch(selectedDomain, (dom) => syncSiteForm(dom), { immediate: true });
+const loadingSiteTuning = ref(false);
+
+const fetchSiteTuning = async (domain: DomainItem | null) => {
+    if (!domain) {
+        syncSiteForm(null);
+        return;
+    }
+    loadingSiteTuning.value = true;
+    try {
+        const res = await fetch(`/configuration/tuning/site/${domain.id}`, {
+            headers: { Accept: 'application/json' },
+        });
+        if (res.ok) {
+            const data = await res.json();
+            syncSiteForm(data.tuning ?? domain.tuning);
+        } else {
+            syncSiteForm(domain.tuning);
+        }
+    } catch {
+        syncSiteForm(domain.tuning);
+    } finally {
+        loadingSiteTuning.value = false;
+    }
+};
+
+watch(selectedDomain, (dom) => {
+    fetchSiteTuning(dom);
+}, { immediate: true });
 
 const memoryInvariantError = computed(() => {
     const minHard = siteForm.php_memory_limit_mb + 64;
