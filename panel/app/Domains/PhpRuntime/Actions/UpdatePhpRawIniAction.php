@@ -20,17 +20,17 @@ class UpdatePhpRawIniAction
     {
         $result = $this->phpRuntime->setRawIni($version, $content);
 
-        $this->auditLogger->log(
-            'php.ini.raw_updated',
-            'php',
-            "lsphp{$version->value}",
-            [
-                'command' => "lc-cli php ini-raw-set {$version->value}",
+        $this->auditLogger->log([
+            'user_id' => $actor->id,
+            'action' => 'php.ini_raw_update',
+            'command' => "lc-cli php ini-raw-set {$version->value}",
+            'status' => 'success',
+            'ip_address' => $ipAddress,
+            'details' => [
+                'version' => $version->value,
                 'bytes' => strlen($content),
             ],
-            $actor->id,
-            $ipAddress
-        );
+        ]);
 
         return $result;
     }
