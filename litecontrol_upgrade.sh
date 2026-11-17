@@ -251,6 +251,15 @@ sync_core_files_and_sudoers() {
     find "${LC_BASE_DIR}/scripts" -type f -name "*.sh" -exec chmod 750 {} +
     ln -sf "${LC_BASE_DIR}/bin/lc-cli" /usr/local/bin/lc-cli
 
+    # Install per-user PHP CLI setter and bootstrap Go shim if Go is available
+    install -d -m 0755 -o root -g root /usr/local/lib/lc-panel
+    if [[ -f "${LC_BASE_DIR}/scripts/set-user-php-cli.sh" ]]; then
+        install -m 0750 -o root -g root "${LC_BASE_DIR}/scripts/set-user-php-cli.sh" /usr/local/lib/lc-panel/set-user-php-cli.sh
+    fi
+    if command -v go >/dev/null 2>&1 && [[ -f "${LC_BASE_DIR}/scripts/bootstrap-lc-php-shim.sh" ]]; then
+        (cd "${LC_BASE_DIR}" && bash "${LC_BASE_DIR}/scripts/bootstrap-lc-php-shim.sh")
+    fi
+
     # Update sudoers rule safely
     local sudoers_tpl="${LC_BASE_DIR}/templates/system/sudoers.litecontrol"
     local sudoers_dest="/etc/sudoers.d/litecontrol"
