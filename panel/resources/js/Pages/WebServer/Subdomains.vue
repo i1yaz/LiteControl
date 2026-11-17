@@ -29,7 +29,9 @@ const selectedParentDomain = computed(() => {
     return props.baseDomains?.find((d) => d.id === form.parent_domain_id) || null;
 });
 
-const { phpOptions } = usePhpVersions(() => props.phpVersions);
+const { phpOptions } = usePhpVersions(() =>
+    Array.isArray(props.phpVersions) ? props.phpVersions.filter((v) => v?.installed) : []
+);
 
 const docRootPreview = computed(() => {
     const username = selectedParentDomain.value?.user?.username || 'user';

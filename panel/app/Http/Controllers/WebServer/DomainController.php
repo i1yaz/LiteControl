@@ -197,7 +197,7 @@ class DomainController extends Controller
         }
 
         $validated = $request->validate([
-            'php_version' => ['required', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
+            'php_version' => ['required', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85', '86'])],
         ]);
 
         try {
@@ -205,6 +205,10 @@ class DomainController extends Controller
 
             return back()->with('success', "Domain '{$domain->domain}' switched to PHP {$validated['php_version']}.");
         } catch (\Throwable $e) {
+            if ($user->isAdmin() && preg_match('/PHP version lsphp(\d+) is not installed/i', $e->getMessage(), $matches)) {
+                return back()->with('missing_php_version', $matches[1]);
+            }
+
             return back()->with('error', 'Failed to switch PHP version: '.$e->getMessage());
         }
     }

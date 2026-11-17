@@ -152,7 +152,7 @@ const tableHeaders = [
                 <Link href="/users/create">
                     <UiButton variant="primary">
                         <UserPlus class="w-4 h-4 mr-1.5 inline" />
-                        Provision Principal
+                        Create User
                     </UiButton>
                 </Link>
             </template>

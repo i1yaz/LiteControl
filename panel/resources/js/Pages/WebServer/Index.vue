@@ -18,6 +18,9 @@ const props = defineProps({
 });
 
 const { phpOptions } = usePhpVersions(() => props.phpVersions);
+const { phpOptions: installedPhpOptions } = usePhpVersions(() =>
+    Array.isArray(props.phpVersions) ? props.phpVersions.filter((v) => v?.installed) : []
+);
 
 const page = usePage();
 const isAdmin = page.props.auth?.user?.role === 'admin';
@@ -139,6 +142,9 @@ const changePhp = (domainId, newVer) => {
 };
 
 const missingPhpVersion = computed(() => {
+    if (page.props.flash?.missing_php_version) {
+        return String(page.props.flash.missing_php_version);
+    }
     const err = page.props.flash?.error || '';
     const match = err.match(/PHP version lsphp(\d+) is not installed/i);
     return match ? match[1] : null;
@@ -421,7 +427,7 @@ const copySshCommand = (username) => {
                         id="php_version"
                         v-model="form.php_version"
                         :label="__('PHP Runtime')"
-                        :options="phpOptions"
+                        :options="installedPhpOptions"
                     />
                 </div>
 
