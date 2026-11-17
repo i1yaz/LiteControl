@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Domains\Identity\Infrastructure;
 
 use App\Domains\Identity\Contracts\UserDriverInterface;
+use App\Domains\Identity\Exceptions\PhpCliUpdateFailedException;
 use App\Domains\Identity\ValueObjects\LinuxUsername;
+use App\Domains\Identity\ValueObjects\PhpCliVersion;
 use App\Exceptions\System\LcCliException;
 use App\Support\Cli\LcCliService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 
 class CliUserAdapter implements UserDriverInterface
 {
@@ -101,5 +105,34 @@ class CliUserAdapter implements UserDriverInterface
         }
 
         return $res['data'] ?? [];
+    }
+
+    public function setPhpCliVersion(LinuxUsername $username, PhpCliVersion $version): void
+    {
+        $result = Process::timeout(5)->run([
+            '/usr/local/lib/lc-panel/set-user-php-cli.sh',
+            $username->value,
+            $version->value,
+        ]);
+
+        if (! $result->successful()) {
+            Log::error('Failed to set user PHP CLI version', [
+                'username' => $username->value,
+                'requested_version' => $version->value,
+                'exit_code' => $result->exitCode(),
+                'stderr' => trim($result->errorOutput()),
+            ]);
+
+            throw new PhpCliUpdateFailedException('Could not switch PHP CLI version on the host.');
+        }
+    }
+
+    public function removePhpCliConfig(LinuxUsername $username): void
+    {
+        $path = '/etc/lc-panel/php-cli/users/'.$username->value;
+
+        if (is_file($path)) {
+            @unlink($path);
+        }
     }
 }

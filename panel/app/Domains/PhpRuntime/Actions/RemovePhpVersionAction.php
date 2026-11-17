@@ -8,6 +8,7 @@ use App\Domains\Identity\Models\User;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
+use InvalidArgumentException;
 
 class RemovePhpVersionAction
 {
@@ -18,6 +19,14 @@ class RemovePhpVersionAction
 
     public function handle(PhpVersion $version, User $actor, ?string $ipAddress = null): array
     {
+        $dottedVersion = strlen($version->value) === 2
+            ? $version->value[0].'.'.$version->value[1]
+            : $version->value;
+
+        if (User::where('php_cli_version', $dottedVersion)->exists()) {
+            throw new InvalidArgumentException("Cannot remove PHP {$dottedVersion}: one or more users still have it assigned as their PHP CLI version.");
+        }
+
         $result = $this->phpRuntime->removeVersion($version);
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([

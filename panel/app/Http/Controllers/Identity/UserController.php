@@ -5,14 +5,18 @@ namespace App\Http\Controllers\Identity;
 use App\Domains\HostingPlans\Models\Package;
 use App\Domains\Identity\Actions\CreateUserAction;
 use App\Domains\Identity\Actions\DeleteUserAction;
+use App\Domains\Identity\Actions\SetUserPhpCliVersionAction;
 use App\Domains\Identity\Actions\SuspendUserAction;
 use App\Domains\Identity\Actions\UnsuspendUserAction;
 use App\Domains\Identity\Actions\UpdateUserAction;
 use App\Domains\Identity\Contracts\UserDriverInterface;
+use App\Domains\Identity\Exceptions\PhpCliUpdateFailedException;
 use App\Domains\Identity\Models\User;
-use App\Exceptions\System\LcCliException;
+use App\Domains\Identity\ValueObjects\PhpCliVersion;
 use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
+use App\Exceptions\System\LcCliException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Identity\UpdatePhpCliVersionRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -237,5 +241,23 @@ class UserController extends Controller
         Auth::login($admin);
 
         return redirect()->route('users.index')->with('success', 'Returned to administrator account.');
+    }
+
+    /**
+     * Update a user's default PHP CLI version.
+     */
+    public function updatePhpCliVersion(
+        UpdatePhpCliVersionRequest $request,
+        User $user,
+        SetUserPhpCliVersionAction $action
+    ) {
+        try {
+            $version = new PhpCliVersion((string) $request->validated('version'));
+            $action->execute($user, $version, Auth::user());
+
+            return back()->with('success', "PHP CLI version updated to {$version->value} for '{$user->username}'.");
+        } catch (PhpCliUpdateFailedException $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 }

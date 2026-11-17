@@ -37,6 +37,7 @@ class DeleteUserAction
 
         // 1. Remove linux user and home files via driver
         $this->userDriver->deleteUser($username, true);
+        $this->userDriver->removePhpCliConfig($username);
 
         // 2. Delete user record and audit log; cross-domain records are cleaned up via UserDeleted listeners
         DB::transaction(function () use ($user, $username, $actor, $ipAddress) {

@@ -283,6 +283,8 @@ class UserActionsTest extends TestCase
             ->once()
             ->with('deleteme', true)
             ->andReturn([]);
+        $cliMock->shouldReceive('removePhpCliConfig')
+            ->once();
 
         $action = new DeleteUserAction($cliMock);
         $action->handle($user, $this->admin, '127.0.0.1');

@@ -40,6 +40,7 @@ class User extends Authenticatable
         'avatar',
         'theme',
         'ssh_public_key',
+        'php_cli_version',
     ];
 
     protected $hidden = [

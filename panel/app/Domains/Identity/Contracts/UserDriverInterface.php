@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domains\Identity\Contracts;
 
+use App\Domains\Identity\Exceptions\PhpCliUpdateFailedException;
 use App\Domains\Identity\ValueObjects\LinuxUsername;
+use App\Domains\Identity\ValueObjects\PhpCliVersion;
 use App\Exceptions\System\LcCliException;
 
 interface UserDriverInterface
@@ -57,4 +59,16 @@ interface UserDriverInterface
      * @throws LcCliException
      */
     public function deleteUser(LinuxUsername $username, bool $removeHome = true): array;
+
+    /**
+     * Set the per-user PHP CLI version on the host.
+     *
+     * @throws PhpCliUpdateFailedException
+     */
+    public function setPhpCliVersion(LinuxUsername $username, PhpCliVersion $version): void;
+
+    /**
+     * Remove the per-user PHP CLI configuration file on the host.
+     */
+    public function removePhpCliConfig(LinuxUsername $username): void;
 }
