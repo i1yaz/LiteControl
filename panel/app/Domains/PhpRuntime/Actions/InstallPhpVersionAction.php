@@ -21,6 +21,7 @@ class InstallPhpVersionAction
     public function handle(PhpVersion $version, User $actor, ?string $ipAddress = null): array
     {
         Cache::put("php_install_{$version->value}", 'pending', now()->addMinutes(30));
+        Cache::put('php_install_current_version', $version->value, now()->addMinutes(30));
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,

@@ -231,17 +231,61 @@ class PhpController extends Controller
             abort(403, 'Administrator privileges required.');
         }
 
-        $validated = $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'version' => ['required', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
         ]);
+
+        if ($validator->fails()) {
+            return back()->with('error', $validator->errors()->first('version') ?: 'Invalid PHP version.');
+        }
+
+        $validated = $validator->validated();
 
         try {
             $installPhpVersionAction->handle(new PhpVersion($validated['version']), Auth::user(), $request->ip());
 
-            return back()->with('success', "PHP {$validated['version']} installed successfully.");
+            return back()->with('success', "PHP {$validated['version']} installation queued.");
         } catch (LcCliException $e) {
             return back()->with('error', 'Installation failed: '.$e->getMessage());
         }
+    }
+
+    /**
+     * Get the current background PHP installation status.
+     */
+    public function installStatus()
+    {
+        $version = \Illuminate\Support\Facades\Cache::get('php_install_current_version');
+        if (! $version) {
+            return response()->json(['version' => null, 'status' => null]);
+        }
+
+        $rawStatus = \Illuminate\Support\Facades\Cache::get("php_install_{$version}");
+        $status = match ($rawStatus) {
+            'pending', 'provisioning' => 'installing',
+            'active' => 'installed',
+            'failed' => 'failed',
+            default => null,
+        };
+
+        return response()->json([
+            'version' => $version,
+            'status' => $status,
+        ]);
+    }
+
+    /**
+     * Dismiss the PHP installation status bar permanently.
+     */
+    public function dismissInstallStatus()
+    {
+        $version = \Illuminate\Support\Facades\Cache::get('php_install_current_version');
+        if ($version) {
+            \Illuminate\Support\Facades\Cache::forget("php_install_{$version}");
+        }
+        \Illuminate\Support\Facades\Cache::forget('php_install_current_version');
+
+        return response()->json(['ok' => true]);
     }
 
     /**

@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useTheme } from '@shared/Composables/useTheme';
 import UiConfirmDialog from '@shared/Ui/UiConfirmDialog.vue';
+import PhpInstallStatusBar from '@shared/Components/PhpInstallStatusBar.vue';
 
 const props = defineProps({
     isAuth: {
@@ -21,6 +22,7 @@ const layoutComponent = computed(() => {
 </script>
 
 <template>
+    <PhpInstallStatusBar v-if="!isAuth" />
     <component :is="layoutComponent" v-if="layoutComponent">
         <slot />
     </component>

@@ -216,7 +216,11 @@ const copySshCommand = (username) => {
             </template>
         </UiPageHeader>
 
-        <!-- Flash Notice / Warning if present -->
+        <!-- Flash Notice / Warning / Error if present -->
+        <div v-if="$page.props.flash?.error" class="p-3 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-300 flex items-start gap-2.5">
+            <span class="font-bold shrink-0">{{ __('[ERROR]:') }}</span>
+            <span>{{ $page.props.flash.error }}</span>
+        </div>
         <div v-if="$page.props.flash?.warning" class="p-3 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-300 flex items-start gap-2.5">
             <span class="font-bold shrink-0">{{ __('[WARN]:') }}</span>
             <span>{{ $page.props.flash.warning }}</span>
@@ -224,9 +228,14 @@ const copySshCommand = (username) => {
 
         <!-- Quick Install Missing PHP Version (Admin Only) -->
         <div v-if="isAdmin && missingPhpVersion" class="p-3 bg-purple-500/10 border border-purple-500/20 rounded text-xs text-purple-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <span>
-                PHP <strong>{{ formatPhpVersion(missingPhpVersion) }}</strong> (<code>lsphp{{ missingPhpVersion }}</code>) is not installed on this server.
-            </span>
+            <div class="space-y-1">
+                <div>
+                    PHP <strong>{{ formatPhpVersion(missingPhpVersion) }}</strong> (<code>lsphp{{ missingPhpVersion }}</code>) is not installed on this server.
+                </div>
+                <div class="text-[11px] text-purple-300/80">
+                    Or install via CLI: <code class="px-1.5 py-0.5 rounded bg-black/30 text-purple-100 select-all">sudo lc-cli php install {{ missingPhpVersion }}</code>
+                </div>
+            </div>
             <UiButton
                 @click="installPhpVersion(missingPhpVersion)"
                 :disabled="installingPhp"

@@ -130,6 +130,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/php/extensions/toggle', [PhpController::class, 'toggleExtension'])->name('php.extensions.toggle');
         Route::get('/php/versions', [PhpController::class, 'versions'])->name('php.versions');
         Route::post('/php/versions/install', [PhpController::class, 'installVersion'])->name('php.versions.install');
+        Route::get('/php/versions/install-status', [PhpController::class, 'installStatus'])->name('php.versions.install-status');
+        Route::post('/php/versions/install-status/dismiss', [PhpController::class, 'dismissInstallStatus'])->name('php.versions.install-status.dismiss');
         Route::post('/php/versions/remove', [PhpController::class, 'removeVersion'])->name('php.versions.remove');
 
         // Configuration (Admin Only)
