@@ -126,7 +126,6 @@ Route::middleware('auth')->group(function () {
 
         // Admin PHP Actions
         Route::post('/php/ini', [PhpController::class, 'updateIni'])->name('php.ini.update');
-        Route::post('/php/extensions/toggle', [PhpController::class, 'toggleExtension'])->name('php.extensions.toggle');
         Route::post('/php/extensions/install', [PhpController::class, 'installExtension'])->name('php.extensions.install');
         Route::post('/php/extensions/uninstall', [PhpController::class, 'uninstallExtension'])->name('php.extensions.uninstall');
         Route::get('/php/versions', [PhpController::class, 'versions'])->name('php.versions');

@@ -41,17 +41,6 @@ class CliPhpRuntimeAdapter implements PhpRuntimeDriverInterface
         ];
     }
 
-    public function toggleExtension(PhpVersion $version, PhpExtensionName $extension, string $action): array
-    {
-        if (! in_array($action, ['enable', 'disable'], true)) {
-            throw new \InvalidArgumentException("Invalid extension action: {$action}");
-        }
-
-        $sub = $action === 'enable' ? 'ext-enable' : 'ext-disable';
-
-        return $this->runPhp([$sub, $version->value, $extension->value], "Failed to {$action} extension {$extension->value} for PHP {$version->value}.");
-    }
-
     public function installVersion(PhpVersion $version): array
     {
         return $this->runPhp(['install', $version->value], "Failed to install PHP {$version->value}.");

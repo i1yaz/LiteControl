@@ -532,17 +532,11 @@ case "${SUBCOMMAND}" in
     ext-uninstall)
         cmd_php_ext_uninstall "$@"
         ;;
-    ext-enable)
-        cmd_php_ext_toggle "enable" "$@"
-        ;;
-    ext-disable)
-        cmd_php_ext_toggle "disable" "$@"
-        ;;
     limits)
         cmd_php_limits "$@"
         ;;
     *)
-        emit_error "Usage: lc-cli php <list|install|remove|ini-get|ini-set|ext-list|pkg-list|ext-install|ext-uninstall|ext-enable|ext-disable|limits> [args...]"
+        emit_error "Usage: lc-cli php <list|install|remove|ini-get|ini-set|ext-list|pkg-list|ext-install|ext-uninstall|limits> [args...]"
         ;;
 esac
 

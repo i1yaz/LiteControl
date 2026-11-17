@@ -5,7 +5,6 @@ namespace Tests\Feature\Actions\Php;
 use App\Domains\Identity\Models\User;
 use App\Domains\PhpRuntime\Actions\InstallPhpVersionAction;
 use App\Domains\PhpRuntime\Actions\RemovePhpVersionAction;
-use App\Domains\PhpRuntime\Actions\TogglePhpExtensionAction;
 use App\Domains\PhpRuntime\Actions\UpdatePhpIniAction;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
 use App\Domains\PhpRuntime\ValueObjects\PhpExtensionName;
@@ -74,50 +73,6 @@ class PhpActionsTest extends TestCase
         $this->expectExceptionMessage('Failed setting directive');
 
         $action->handle(new PhpVersion('83'), ['bad' => 'val'], $this->admin);
-    }
-
-    public function test_toggle_php_extension_action_enable(): void
-    {
-        $phpMock = Mockery::mock(PhpRuntimeDriverInterface::class);
-        $phpMock->shouldReceive('toggleExtension')
-            ->once()
-            ->with(Mockery::on(fn ($v) => $v instanceof PhpVersion && $v->value === '83'), Mockery::on(fn ($e) => $e instanceof PhpExtensionName && $e->value === 'redis'), 'enable')
-            ->andReturn(['enabled' => true]);
-
-        $action = new TogglePhpExtensionAction($phpMock);
-        $result = $action->handle(new PhpVersion('83'), new PhpExtensionName('redis'), 'enable', $this->admin, '10.0.0.2');
-
-        $this->assertEquals(['enabled' => true], $result);
-
-        $this->assertDatabaseHas('audit_logs', [
-            'user_id' => $this->admin->id,
-            'action' => 'php.extension_enable',
-            'command' => 'lc-cli php ext-enable 83 redis',
-            'status' => 'success',
-            'ip_address' => '10.0.0.2',
-        ]);
-    }
-
-    public function test_toggle_php_extension_action_disable(): void
-    {
-        $phpMock = Mockery::mock(PhpRuntimeDriverInterface::class);
-        $phpMock->shouldReceive('toggleExtension')
-            ->once()
-            ->with(Mockery::on(fn ($v) => $v instanceof PhpVersion && $v->value === '82'), Mockery::on(fn ($e) => $e instanceof PhpExtensionName && $e->value === 'xdebug'), 'disable')
-            ->andReturn(['enabled' => false]);
-
-        $action = new TogglePhpExtensionAction($phpMock);
-        $result = $action->handle(new PhpVersion('82'), new PhpExtensionName('xdebug'), 'disable', $this->admin, '10.0.0.3');
-
-        $this->assertEquals(['enabled' => false], $result);
-
-        $this->assertDatabaseHas('audit_logs', [
-            'user_id' => $this->admin->id,
-            'action' => 'php.extension_disable',
-            'command' => 'lc-cli php ext-disable 82 xdebug',
-            'status' => 'success',
-            'ip_address' => '10.0.0.3',
-        ]);
     }
 
     public function test_install_php_version_action(): void

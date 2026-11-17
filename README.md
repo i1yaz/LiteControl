@@ -378,10 +378,10 @@ lc-cli php ini-get 83 memory_limit
 lc-cli php ini-set 83 memory_limit 512M
 lc-cli php ini-set 83 upload_max_filesize 128M
 
-# Install / enable / disable PHP extensions
+# Install / uninstall PHP extensions
 lc-cli php ext-list 83
-lc-cli php ext-enable 83 imagick
-lc-cli php ext-disable 83 xdebug
+lc-cli php ext-install 83 imagick
+lc-cli php ext-uninstall 83 xdebug
 ```
 
 ### Database Management

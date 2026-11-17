@@ -178,9 +178,6 @@ assert_contains "${php_ini_set}" '"value":"512M"' "php ini-set updates memory_li
 php_ini_get=$(bash "${CLI}" --json php ini-get 82)
 assert_contains "${php_ini_get}" '"memory_limit":"512M"' "php ini-get reads updated memory_limit 512M"
 
-php_ext_en=$(bash "${CLI}" --json php ext-enable 82 imagick)
-assert_contains "${php_ext_en}" '"enabled":true' "php ext-enable enables lsphp82-imagick"
-
 php_ext_list=$(bash "${CLI}" --json php ext-list 82)
 assert_contains "${php_ext_list}" '"extension":"imagick","package":"lsphp82-imagick","enabled":true' "php ext-list reflects enabled imagick"
 

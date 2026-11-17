@@ -33,11 +33,6 @@ interface PhpRuntimeDriverInterface
     /**
      * @throws LcCliException
      */
-    public function toggleExtension(PhpVersion $version, PhpExtensionName $extension, string $action): array;
-
-    /**
-     * @throws LcCliException
-     */
     public function installVersion(PhpVersion $version): array;
 
     /**

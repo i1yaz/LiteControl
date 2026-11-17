@@ -27,24 +27,12 @@ class CliPhpRuntimeAdapterTest extends TestCase
 
         $adapter = app(CliPhpRuntimeAdapter::class);
         $version = new PhpVersion('8.3');
-        $ext = new PhpExtensionName('redis');
 
         $adapter->listVersions();
         $adapter->setIni($version, 'memory_limit', '256M');
-        $adapter->toggleExtension($version, $ext, 'enable');
 
         Process::assertRan(fn ($process) => is_array($process->command) && array_slice($process->command, -2) === ['php', 'list']);
         Process::assertRan(fn ($process) => is_array($process->command) && array_slice($process->command, -4) === ['php', 'ini-set', '8.3', 'memory_limit=256M']);
-        Process::assertRan(fn ($process) => is_array($process->command) && array_slice($process->command, -4) === ['php', 'ext-enable', '8.3', 'redis']);
-    }
-
-    public function test_rejects_invalid_extension_action(): void
-    {
-        $adapter = app(CliPhpRuntimeAdapter::class);
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $adapter->toggleExtension(new PhpVersion('8.3'), new PhpExtensionName('redis'), 'purge');
     }
 
     public function test_throws_lc_cli_exception_when_php_command_fails(): void

@@ -82,20 +82,6 @@ const switchVersion = (ver: string) => {
     router.get('/php/extensions', { version: ver });
 };
 
-const toggleExt = (ext: string, currentEnabled: boolean) => {
-    if (!isAdmin) return;
-    processingExt.value = ext;
-    router.post('/php/extensions/toggle', {
-        version: props.currentVersion,
-        extension: ext,
-        action: currentEnabled ? 'disable' : 'enable',
-    }, {
-        onFinish: () => {
-            processingExt.value = null;
-        },
-    });
-};
-
 const installPackage = async (extName: string) => {
     if (!isAdmin) return;
     if (await confirmDialog({
@@ -148,7 +134,7 @@ const uninstallPackage = async (extName: string) => {
                     <span>{{ __('PHP Extensions') }}</span>
                 </h1>
                 <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                    Install, uninstall, enable, or disable PHP extensions for PHP {{ currentVersion }}.
+                    Install or uninstall PHP extensions for PHP {{ currentVersion }}.
                 </p>
             </div>
 
@@ -251,19 +237,6 @@ const uninstallPackage = async (extName: string) => {
                                         <span>{{ processingExt === row.name ? __('Installing...') : __('Install') }}</span>
                                     </button>
                                     <template v-else>
-                                        <button
-                                            type="button"
-                                            @click="toggleExt(row.name, row.enabled)"
-                                            :disabled="processingExt === row.name"
-                                            :class="[
-                                                'px-3 py-1 rounded-lg text-xs font-semibold border transition-colors cursor-pointer disabled:opacity-50',
-                                                row.enabled
-                                                    ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/20'
-                                                    : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/20'
-                                            ]"
-                                        >
-                                            {{ row.enabled ? __('Disable') : __('Enable') }}
-                                        </button>
                                         <button
                                             type="button"
                                             @click="uninstallPackage(row.name)"

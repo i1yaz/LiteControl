@@ -6,7 +6,6 @@ use App\Domains\PhpRuntime\Actions\InstallPhpExtensionAction;
 use App\Domains\Identity\Models\User;
 use App\Domains\PhpRuntime\Actions\InstallPhpVersionAction;
 use App\Domains\PhpRuntime\Actions\RemovePhpVersionAction;
-use App\Domains\PhpRuntime\Actions\TogglePhpExtensionAction;
 use App\Domains\PhpRuntime\Actions\UninstallPhpExtensionAction;
 use App\Domains\PhpRuntime\Actions\UpdatePhpIniAction;
 use App\Domains\PhpRuntime\Contracts\PhpRuntimeDriverInterface;
@@ -154,36 +153,6 @@ class PhpController extends Controller
             'packages' => $packages,
             'installedVersions' => array_values($installedVersions),
         ]);
-    }
-
-    /**
-     * Toggle PHP extension (enable/disable).
-     */
-    public function toggleExtension(Request $request, TogglePhpExtensionAction $togglePhpExtensionAction)
-    {
-        if (! Auth::user()->isAdmin()) {
-            abort(403, 'Administrator privileges required.');
-        }
-
-        $validated = $request->validate([
-            'version' => ['required', 'string', Rule::in(PhpVersion::SUPPORTED)],
-            'extension' => ['required', 'string', 'alpha_dash'],
-            'action' => ['required', 'in:enable,disable'],
-        ]);
-
-        try {
-            $togglePhpExtensionAction->handle(
-                new PhpVersion($validated['version']),
-                new PhpExtensionName($validated['extension']),
-                $validated['action'],
-                Auth::user(),
-                $request->ip()
-            );
-
-            return back()->with('success', "Extension '{$validated['extension']}' for PHP {$validated['version']} has been {$validated['action']}d.");
-        } catch (LcCliException $e) {
-            return back()->with('error', 'Extension operation failed: '.$e->getMessage());
-        }
     }
 
     /**
