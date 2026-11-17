@@ -388,6 +388,74 @@ cmd_php_limits() {
     fi
 }
 
+cmd_php_pkg_list() {
+    local ver="${1:-}"
+    if ! [[ "${ver}" =~ ^(74|80|81|82|83|84|85|86)$ ]]; then
+        emit_error "Invalid PHP version: ${ver}"
+    fi
+
+    local prefix="lsphp${ver}-"
+    local items=""
+    while IFS= read -r line; do
+        local pkg_full="${line%%/*}"
+        if [[ "${pkg_full}" != "${prefix}"* ]]; then
+            continue
+        fi
+        local ext_name="${pkg_full#"${prefix}"}"
+        local is_installed="false"
+        if [[ "${line}" == *"[installed"* ]]; then
+            is_installed="true"
+        fi
+        local entry
+        entry=$(printf '{"name":"%s","package":"%s","installed":%s}' "${ext_name}" "${pkg_full}" "${is_installed}")
+        if [[ -z "${items}" ]]; then
+            items="${entry}"
+        else
+            items="${items},${entry}"
+        fi
+    done < <(apt list 2>/dev/null | grep "^${prefix}" || true)
+
+    emit_success "PHP ${ver} packages listed." "[${items}]"
+}
+
+cmd_php_ext_install() {
+    local ver="${1:-}"
+    local ext="${2:-}"
+    if ! [[ "${ver}" =~ ^(74|80|81|82|83|84|85|86)$ ]]; then
+        emit_error "Invalid PHP version: ${ver}"
+    fi
+    if ! [[ "${ext}" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        emit_error "Invalid extension name: ${ext}"
+    fi
+
+    local pkg="lsphp${ver}-${ext}"
+    if ! DEBIAN_FRONTEND=noninteractive apt-get install -y "${pkg}" >/dev/null 2>&1; then
+        emit_error "Failed to install package ${pkg}."
+    fi
+
+    systemctl restart lsws 2>/dev/null || /usr/local/lsws/bin/lswsctrl restart 2>/dev/null || true
+    emit_success "Installed ${pkg}." "{\"installed\":\"${ext}\"}"
+}
+
+cmd_php_ext_uninstall() {
+    local ver="${1:-}"
+    local ext="${2:-}"
+    if ! [[ "${ver}" =~ ^(74|80|81|82|83|84|85|86)$ ]]; then
+        emit_error "Invalid PHP version: ${ver}"
+    fi
+    if ! [[ "${ext}" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        emit_error "Invalid extension name: ${ext}"
+    fi
+
+    local pkg="lsphp${ver}-${ext}"
+    if ! DEBIAN_FRONTEND=noninteractive apt-get remove -y "${pkg}" >/dev/null 2>&1; then
+        emit_error "Failed to uninstall package ${pkg}."
+    fi
+
+    systemctl restart lsws 2>/dev/null || /usr/local/lsws/bin/lswsctrl restart 2>/dev/null || true
+    emit_success "Uninstalled ${pkg}." "{\"uninstalled\":\"${ext}\"}"
+}
+
 SUBCOMMAND="${1:-}"
 shift || true
 
@@ -410,6 +478,15 @@ case "${SUBCOMMAND}" in
     ext-list|modules)
         cmd_php_ext_list "$@"
         ;;
+    pkg-list)
+        cmd_php_pkg_list "$@"
+        ;;
+    ext-install)
+        cmd_php_ext_install "$@"
+        ;;
+    ext-uninstall)
+        cmd_php_ext_uninstall "$@"
+        ;;
     ext-enable)
         cmd_php_ext_toggle "enable" "$@"
         ;;
@@ -420,7 +497,7 @@ case "${SUBCOMMAND}" in
         cmd_php_limits "$@"
         ;;
     *)
-        emit_error "Usage: lc-cli php <list|install|remove|ini-get|ini-set|ext-list|ext-enable|ext-disable|limits> [args...]"
+        emit_error "Usage: lc-cli php <list|install|remove|ini-get|ini-set|ext-list|pkg-list|ext-install|ext-uninstall|ext-enable|ext-disable|limits> [args...]"
         ;;
 esac
 

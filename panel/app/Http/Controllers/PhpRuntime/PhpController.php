@@ -142,12 +142,6 @@ class PhpController extends Controller
         }
 
         try {
-            $loadedModules = $this->phpCli->listLoadedModules(new PhpVersion($version));
-        } catch (LcCliException $e) {
-            $loadedModules = [];
-        }
-
-        try {
             $packages = $this->phpCli->listAvailablePackages(new PhpVersion($version));
         } catch (LcCliException $e) {
             $packages = [];
@@ -156,7 +150,6 @@ class PhpController extends Controller
         return Inertia::render('PhpRuntime/Extensions', [
             'currentVersion' => $version,
             'extensionsData' => $extensionsData,
-            'loadedModules' => $loadedModules,
             'packages' => $packages,
             'installedVersions' => array_values($installedVersions),
         ]);
