@@ -435,6 +435,12 @@ cmd_php_pkg_list() {
     validate_php_version "${ver}"
 
     local prefix="lsphp${ver}-"
+    local php_bin="${OLS_DIR}/lsphp${ver}/bin/php"
+    local loaded_modules=""
+    if [[ -x "${php_bin}" ]]; then
+        loaded_modules=$("${php_bin}" -m 2>/dev/null | tr '[:upper:]' '[:lower:]' || true)
+    fi
+
     local items=""
     while IFS= read -r line; do
         local pkg_full="${line%%/*}"
@@ -442,8 +448,11 @@ cmd_php_pkg_list() {
             continue
         fi
         local ext_name="${pkg_full#"${prefix}"}"
+        local ext_lower="${ext_name,,}"
         local is_installed="false"
         if [[ "${line}" == *"[installed"* ]]; then
+            is_installed="true"
+        elif [[ -n "${loaded_modules}" ]] && printf '%s\n' "${loaded_modules}" | grep -qxF "${ext_lower}"; then
             is_installed="true"
         fi
         local entry
