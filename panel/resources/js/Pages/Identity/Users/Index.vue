@@ -8,7 +8,6 @@ import UiModal from '@shared/Ui/UiModal.vue';
 import UiInput from '@shared/Ui/UiInput.vue';
 import UiSelect from '@shared/Ui/UiSelect.vue';
 import UiDataTable from '@shared/Ui/UiDataTable.vue';
-import PhpCliVersionCard from '../../../Domains/Identity/Components/PhpCliVersionCard.vue';
 import {
     UserPlus,
     Search,
@@ -90,6 +89,10 @@ const editForm = useForm({
     ssh_public_key: '',
 });
 
+const phpCliForm = useForm({
+    version: '8.3',
+});
+
 const packageOptions = computed(() => {
     return (props.packages || []).map(pkg => ({
         value: pkg.id,
@@ -105,6 +108,8 @@ const openEditModal = (user) => {
     editForm.package_id = user.package_id || props.packages?.[0]?.id || '';
     editForm.ssh_public_key = user.ssh_public_key || '';
     editForm.clearErrors();
+    phpCliForm.version = user.php_cli_version || '8.3';
+    phpCliForm.clearErrors();
     showEditModal.value = true;
 };
 
@@ -114,6 +119,20 @@ const submitEdit = () => {
         onSuccess: () => {
             showEditModal.value = false;
             editingUser.value = null;
+        },
+    });
+};
+
+const phpCliError = computed(() => phpCliForm.errors.version || page.props.flash?.error || null);
+
+const submitPhpCliVersion = () => {
+    if (!editingUser.value) return;
+    phpCliForm.patch(`/users/${editingUser.value.id}/php-cli-version`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            if (editingUser.value) {
+                editingUser.value.php_cli_version = phpCliForm.version;
+            }
         },
     });
 };
@@ -407,12 +426,66 @@ const tableHeaders = [
                 </div>
             </form>
 
-            <PhpCliVersionCard
-                v-if="editingUser"
-                :user="editingUser"
-                :installed-versions="installedPhpVersions"
-                class="mt-6"
-            />
+            <div v-if="editingUser" class="mt-6 pt-4 border-t border-theme-border space-y-3">
+                <div>
+                    <label
+                        for="php-cli-version"
+                        class="block text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-1"
+                    >
+                        Default PHP CLI Version
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <select
+                            id="php-cli-version"
+                            v-model="phpCliForm.version"
+                            :aria-invalid="Boolean(phpCliError)"
+                            :aria-describedby="phpCliError ? 'php-cli-version-error' : 'php-cli-version-help'"
+                            class="w-48 px-3 py-2 bg-theme-bg-surface border border-theme-border rounded text-sm text-theme-text-primary focus:outline-none focus:border-theme-accent transition-colors"
+                        >
+                            <option
+                                v-for="ver in installedPhpVersions"
+                                :key="ver"
+                                :value="ver"
+                            >
+                                PHP {{ ver }}
+                            </option>
+                        </select>
+
+                        <UiButton
+                            type="button"
+                            variant="primary"
+                            :loading="phpCliForm.processing"
+                            :disabled="phpCliForm.processing || phpCliForm.version === (editingUser.php_cli_version ?? '8.3')"
+                            @click="submitPhpCliVersion"
+                        >
+                            {{ phpCliForm.processing ? 'Saving...' : 'Save CLI' }}
+                        </UiButton>
+                    </div>
+                    <p
+                        v-if="phpCliError"
+                        id="php-cli-version-error"
+                        role="alert"
+                        class="mt-1.5 text-xs text-rose-400"
+                    >
+                        {{ phpCliError }}
+                    </p>
+                </div>
+
+                <div id="php-cli-version-help" class="space-y-1.5 rounded bg-theme-bg-surface p-3 text-xs text-theme-text-muted border border-theme-border">
+                    <p>
+                        <strong>Immediate Effect:</strong>
+                        Applies immediately to SSH sessions and Composer (<code>/usr/local/bin/php</code>).
+                    </p>
+                    <p>
+                        <strong>Per-Directory Override:</strong>
+                        Place a <code>.php-version</code> file (e.g. <code>8.2</code>) in a project root to override this default.
+                    </p>
+                    <p>
+                        <strong>Shared INI &amp; Workers:</strong>
+                        Shares <code>php.ini</code> with the <code>lsphp</code> web handler; restart Supervisor/queue workers to use the new binary.
+                    </p>
+                </div>
+            </div>
         </UiModal>
     </div>
 </template>
