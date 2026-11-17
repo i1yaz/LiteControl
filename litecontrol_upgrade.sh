@@ -282,6 +282,14 @@ sync_core_files_and_sudoers() {
         chmod 755 /etc/profile.d/litecontrol.sh
     fi
 
+    # Install/refresh per-user / per-directory PHP CLI shim at /usr/local/bin/php
+    if [[ -f "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" ]]; then
+        rm -f /usr/local/bin/php
+        cp "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" /usr/local/bin/php
+        sed -i 's/\r$//' /usr/local/bin/php
+        chmod 0755 /usr/local/bin/php
+    fi
+
     log_ok "CLI engine, scripts, and templates updated."
 }
 
