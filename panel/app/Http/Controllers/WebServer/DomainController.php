@@ -92,7 +92,7 @@ class DomainController extends Controller
                 'regex:/^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/',
                 'unique:domains,domain',
             ],
-            'php_version' => ['nullable', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
+            'php_version' => ['nullable', 'string', 'regex:/^\d{2}$/'],
             'type' => ['nullable', 'string', Rule::in(['primary', 'addon', 'subdomain'])],
             'public_path' => ['nullable', 'string', 'max:255'],
             'ssl_enabled' => ['nullable', 'boolean'],
@@ -149,7 +149,7 @@ class DomainController extends Controller
         }
 
         $validated = $request->validate([
-            'php_version' => ['nullable', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
+            'php_version' => ['nullable', 'string', 'regex:/^\d{2}$/'],
             'public_path' => ['nullable', 'string', 'max:255'],
             'ssl_enabled' => ['nullable', 'boolean'],
         ]);
@@ -197,7 +197,7 @@ class DomainController extends Controller
         }
 
         $validated = $request->validate([
-            'php_version' => ['required', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85', '86'])],
+            'php_version' => ['required', 'string', 'regex:/^\d{2}$/'],
         ]);
 
         try {
@@ -635,7 +635,7 @@ class DomainController extends Controller
         $validated = $request->validate([
             'subdomain_prefix' => ['required', 'string', 'regex:/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/'],
             'parent_domain_id' => ['required', 'exists:domains,id'],
-            'php_version' => ['nullable', 'string', Rule::in(['74', '80', '81', '82', '83', '84', '85'])],
+            'php_version' => ['nullable', 'string', 'regex:/^\d{2}$/'],
             'public_path' => ['nullable', 'string', 'max:255', 'not_regex:/\.\./'],
             'ssl_enabled' => ['nullable', 'boolean'],
         ]);
