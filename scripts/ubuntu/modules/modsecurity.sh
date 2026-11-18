@@ -52,8 +52,9 @@ EOF
         cat >> "${OLS_CONF}" <<EOF
 
 module mod_security {
-  mod_security.so
-  modsec_rules            \`
+  ls_enabled              1
+  modsecurity             on
+  modsecurity_rules       \`
 SecRuleEngine On
 SecRequestBodyAccess On
 SecResponseBodyAccess Off
