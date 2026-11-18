@@ -17,7 +17,7 @@ interface FirewallDriverInterface
      *
      * @throws LcCliException
      */
-    public function addRule(string $action, string $port, string $protocol = 'tcp', ?string $sourceIp = null): array;
+    public function addRule(string $action, string $port, string $protocol = 'tcp', ?string $sourceIp = null, ?string $comment = null): array;
 
     /**
      * Delete a UFW firewall rule by rule spec or rule number.

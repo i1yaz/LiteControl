@@ -26,7 +26,8 @@ class AddFirewallRuleAction
             action: $data['action'],
             port: (string) $data['port'],
             protocol: $data['protocol'] ?? 'tcp',
-            sourceIp: ! empty($data['source_ip']) ? $data['source_ip'] : null
+            sourceIp: ! empty($data['source_ip']) ? $data['source_ip'] : null,
+            comment: ! empty($data['name']) ? $data['name'] : null
         );
 
         return DB::transaction(function () use ($data, $actor, $ipAddress) {

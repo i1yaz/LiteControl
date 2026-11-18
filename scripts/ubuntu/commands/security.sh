@@ -122,6 +122,7 @@ cmd_ufw_allow() {
     local port="$1"
     local proto="${2:-tcp}"
     local source_ip="${3:-}"
+    local comment="${4:-}"
 
     if [[ "${port}" =~ ^[0-9]+$ ]]; then
         validate_port "${port}" 1 65535
@@ -131,10 +132,14 @@ cmd_ufw_allow() {
         mkdir -p "$(dirname "${UFW_MOCK_RULES}")"
         echo "${port}/${proto}|ALLOW IN|${source_ip:-Anywhere}" >> "${UFW_MOCK_RULES}"
     else
+        local comment_args=()
+        if [[ -n "${comment}" ]]; then
+            comment_args=(comment "${comment}")
+        fi
         if [[ -n "${source_ip}" ]]; then
-            ufw allow from "${source_ip}" to any port "${port}" proto "${proto}"
+            ufw allow from "${source_ip}" to any port "${port}" proto "${proto}" "${comment_args[@]}"
         else
-            ufw allow "${port}/${proto}"
+            ufw allow "${port}/${proto}" "${comment_args[@]}"
         fi
     fi
 
@@ -150,6 +155,7 @@ cmd_ufw_deny() {
     local port="$1"
     local proto="${2:-tcp}"
     local source_ip="${3:-}"
+    local comment="${4:-}"
 
     if [[ "${port}" =~ ^[0-9]+$ ]]; then
         validate_port "${port}" 1 65535
@@ -159,10 +165,14 @@ cmd_ufw_deny() {
         mkdir -p "$(dirname "${UFW_MOCK_RULES}")"
         echo "${port}/${proto}|DENY IN|${source_ip:-Anywhere}" >> "${UFW_MOCK_RULES}"
     else
+        local comment_args=()
+        if [[ -n "${comment}" ]]; then
+            comment_args=(comment "${comment}")
+        fi
         if [[ -n "${source_ip}" ]]; then
-            ufw deny from "${source_ip}" to any port "${port}" proto "${proto}"
+            ufw deny from "${source_ip}" to any port "${port}" proto "${proto}" "${comment_args[@]}"
         else
-            ufw deny "${port}/${proto}"
+            ufw deny "${port}/${proto}" "${comment_args[@]}"
         fi
     fi
 
