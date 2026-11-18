@@ -4,8 +4,9 @@ namespace App\Domains\ServerOps\Actions;
 
 use App\Domains\Identity\Models\User;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
+use App\Domains\ServerOps\Jobs\InstallModuleJob;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
-use App\Exceptions\System\LcCliException;
+use Illuminate\Support\Facades\Cache;
 
 class InstallModuleAction
 {
@@ -15,13 +16,12 @@ class InstallModuleAction
     ) {}
 
     /**
-     * Install an optional module.
-     *
-     * @throws LcCliException
+     * Queue an optional module installation.
      */
     public function handle(string $module, User $actor, ?string $ipAddress = null): array
     {
-        $result = $this->moduleDriver->installModule($module);
+        Cache::put("module_install_{$module}", 'pending', now()->addMinutes(30));
+        Cache::put('module_install_current', $module, now()->addMinutes(30));
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,
@@ -32,6 +32,8 @@ class InstallModuleAction
             'details' => json_encode(['module' => $module]),
         ]);
 
-        return $result;
+        InstallModuleJob::dispatch($module);
+
+        return ['status' => 'queued', 'module' => $module];
     }
 }

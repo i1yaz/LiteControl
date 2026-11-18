@@ -9,6 +9,7 @@ use App\Exceptions\System\LcCliException;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -43,10 +44,48 @@ class ModuleController extends Controller
         try {
             $installModuleAction->handle($module, Auth::user(), $request->ip());
 
-            return redirect()->back()->with('success', "Module '$module' installation completed successfully.");
+            return redirect()->back()->with('success', "Module '$module' installation queued.");
         } catch (LcCliException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Get the current background module installation status.
+     */
+    public function installStatus()
+    {
+        $module = Cache::get('module_install_current');
+        if (! $module) {
+            return response()->json(['module' => null, 'status' => null]);
+        }
+
+        $rawStatus = Cache::get("module_install_{$module}");
+        $status = match ($rawStatus) {
+            'pending', 'provisioning' => 'installing',
+            'active' => 'installed',
+            'failed' => 'failed',
+            default => null,
+        };
+
+        return response()->json([
+            'module' => $module,
+            'status' => $status,
+        ]);
+    }
+
+    /**
+     * Dismiss the module installation status bar permanently.
+     */
+    public function dismissInstallStatus()
+    {
+        $module = Cache::get('module_install_current');
+        if ($module) {
+            Cache::forget("module_install_{$module}");
+        }
+        Cache::forget('module_install_current');
+
+        return response()->json(['ok' => true]);
     }
 
     /**

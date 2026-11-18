@@ -178,6 +178,8 @@ Route::middleware('auth')->group(function () {
 
         // Module Manager (Admin Only)
         Route::get('/modules', [ModuleController::class, 'index'])->name('modules.index');
+        Route::get('/modules/install-status', [ModuleController::class, 'installStatus'])->name('modules.install-status');
+        Route::post('/modules/install-status/dismiss', [ModuleController::class, 'dismissInstallStatus'])->name('modules.install-status.dismiss');
         Route::post('/modules/{module}/install', [ModuleController::class, 'install'])->name('modules.install');
         Route::post('/modules/{module}/remove', [ModuleController::class, 'remove'])->name('modules.remove');
     });
