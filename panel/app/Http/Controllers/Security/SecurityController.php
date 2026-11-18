@@ -135,6 +135,10 @@ class SecurityController extends Controller
         $rules = $ufwData['rules'] ?? [];
         $active = $ufwData['active'] ?? true;
 
+        if ($active && ! empty($rules)) {
+            $this->syncDbRulesWithUfw($rules);
+        }
+
         $dbRules = FirewallRule::latest()->get();
 
         return Inertia::render('Security/UfwFirewall', [
@@ -142,6 +146,32 @@ class SecurityController extends Controller
             'systemRules' => $rules,
             'rules' => $dbRules,
         ]);
+    }
+
+    /**
+     * Remove stale DB firewall rules that no longer exist in UFW.
+     */
+    protected function syncDbRulesWithUfw(array $ufwRules): void
+    {
+        FirewallRule::all()->each(function (FirewallRule $dbRule) use ($ufwRules) {
+            $proto = ($dbRule->protocol && $dbRule->protocol !== 'any') ? $dbRule->protocol : 'tcp';
+            $expectedTo = "{$dbRule->port}/{$proto}";
+            $expectedAction = strtoupper($dbRule->action);
+
+            $existsInUfw = collect($ufwRules)->contains(function (array $r) use ($dbRule, $expectedTo, $expectedAction) {
+                $to = (string) ($r['to'] ?? '');
+                $action = strtoupper((string) ($r['action'] ?? ''));
+
+                $portMatches = $to === $expectedTo || $to === (string) $dbRule->port || str_starts_with($to, "{$expectedTo} ");
+                $actionMatches = str_contains($action, $expectedAction);
+
+                return $portMatches && $actionMatches;
+            });
+
+            if (! $existsInUfw) {
+                $dbRule->delete();
+            }
+        });
     }
 
     /**
