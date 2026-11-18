@@ -54,7 +54,9 @@ class LcCliService
             // Fallback for non-JSON or command execution error
             return [
                 'status' => $result->successful() ? 'success' : 'error',
-                'message' => $result->successful() ? 'Command executed successfully.' : ($result->errorOutput() ?: 'Command failed with exit code '.$result->exitCode()),
+                'message' => $result->successful()
+                    ? 'Command executed successfully.'
+                    : (trim($result->errorOutput()) ?: trim($result->output()) ?: 'Command failed with exit code '.$result->exitCode()),
                 'data' => [
                     'raw_output' => $output,
                     'exit_code' => $result->exitCode(),
