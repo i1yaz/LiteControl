@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Backup\BackupController;
 use App\Http\Controllers\Database\DatabaseController;
+use App\Http\Controllers\Deployment\DomainDeploymentController;
+use App\Http\Controllers\Deployment\DomainDeploymentEnvController;
+use App\Http\Controllers\Deployment\DomainDeploymentHookController;
 use App\Http\Controllers\FileManager\FileManagerController;
 use App\Http\Controllers\HostingPlans\PackageController;
 use App\Http\Controllers\Identity\AuthController;
@@ -60,6 +63,18 @@ Route::middleware('auth')->group(function () {
     Route::post('/domains/{domain}/open-basedir', [DomainController::class, 'toggleOpenBasedir'])->name('domains.open-basedir');
     Route::get('/subdomains', [DomainController::class, 'subdomains'])->name('subdomains.index');
     Route::post('/subdomains', [DomainController::class, 'storeSubdomain'])->name('subdomains.store');
+
+    // Domain Zero-Downtime Deployment
+    Route::get('/domains/{domain}/deploy', [DomainDeploymentController::class, 'show'])->name('domains.deploy.show');
+    Route::put('/domains/{domain}/deploy/config', [DomainDeploymentController::class, 'updateConfig'])->name('domains.deploy.config');
+    Route::post('/domains/{domain}/deploy/run', [DomainDeploymentController::class, 'deploy'])->name('domains.deploy.run');
+    Route::post('/domains/{domain}/deploy/rollback/{deployment}', [DomainDeploymentController::class, 'rollback'])->name('domains.deploy.rollback');
+    Route::get('/domains/{domain}/deploy/logs/{deployment}', [DomainDeploymentController::class, 'log'])->name('domains.deploy.log');
+    Route::get('/domains/{domain}/deploy/env', [DomainDeploymentEnvController::class, 'show'])->name('domains.deploy.env.show');
+    Route::put('/domains/{domain}/deploy/env', [DomainDeploymentEnvController::class, 'update'])->name('domains.deploy.env.update');
+    Route::post('/domains/{domain}/deploy/hooks', [DomainDeploymentHookController::class, 'store'])->name('domains.deploy.hooks.store');
+    Route::put('/domains/{domain}/deploy/hooks/{hook}', [DomainDeploymentHookController::class, 'update'])->name('domains.deploy.hooks.update');
+    Route::delete('/domains/{domain}/deploy/hooks/{hook}', [DomainDeploymentHookController::class, 'destroy'])->name('domains.deploy.hooks.destroy');
 
     // PHP Management
     Route::get('/php/ini', [PhpController::class, 'ini'])->name('php.ini');
