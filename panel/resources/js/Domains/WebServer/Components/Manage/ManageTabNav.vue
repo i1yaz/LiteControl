@@ -7,7 +7,8 @@ import {
     FileText,
     SlidersHorizontal,
     Lock,
-    Folder
+    Folder,
+    Rocket
 } from '@lucide/vue';
 
 const props = defineProps({
@@ -30,6 +31,7 @@ const iconMap = {
     SlidersHorizontal,
     Lock,
     Folder,
+    Rocket,
 };
 
 const resolvedTabs = computed(() =>

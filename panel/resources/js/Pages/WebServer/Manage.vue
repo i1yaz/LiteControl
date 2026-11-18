@@ -80,6 +80,12 @@ const tabActions = computed(() => {
 });
 
 const selectTab = (tabId) => {
+    const tab = WEBSITE_MANAGE_TABS.find((t) => t.id === tabId);
+    if (tab?.route) {
+        router.visit(tab.route(props.domain));
+        return;
+    }
+
     currentTab.value = tabId;
     activeAction.value = null;
 
