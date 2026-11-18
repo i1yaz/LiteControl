@@ -427,4 +427,41 @@ panel_safe_reload() {
     return 0
 }
 
+# ------------------------------------------------------------------------------
+# OpenLiteSpeed Health Verification
+# ------------------------------------------------------------------------------
+verify_openlitespeed_health() {
+    if [[ "${LC_TEST_MODE:-0}" == "1" ]]; then
+        return 0
+    fi
+
+    local lswsctrl="/usr/local/lsws/bin/lswsctrl"
+
+    if [[ ! -x "${lswsctrl}" ]]; then
+        log_warn "OpenLiteSpeed binary missing at ${lswsctrl}. Attempting reinstall..."
+        if ! (apt_update && apt_install --reinstall openlitespeed) || [[ ! -x "${lswsctrl}" ]]; then
+            log_error "OpenLiteSpeed (lswsctrl) could not be restored. Run: apt-get update && apt-get install --reinstall -y openlitespeed"
+            return 1
+        fi
+    fi
+
+    if ! "${lswsctrl}" status >/dev/null 2>&1 && ! systemctl is-active --quiet lshttpd 2>/dev/null; then
+        log_warn "OpenLiteSpeed is not running. Attempting to start lshttpd..."
+        systemctl start lshttpd >/dev/null 2>&1 || "${lswsctrl}" start >/dev/null 2>&1 || true
+        sleep 1
+    fi
+
+    if "${lswsctrl}" status >/dev/null 2>&1 || systemctl is-active --quiet lshttpd 2>/dev/null; then
+        log_ok "OpenLiteSpeed (lswsctrl) is installed and running."
+        return 0
+    fi
+
+    log_error "OpenLiteSpeed failed to start. Recent logs:"
+    if [[ -f /usr/local/lsws/logs/error.log ]]; then
+        tail -n 20 /usr/local/lsws/logs/error.log >&2 || true
+    fi
+    journalctl -u lshttpd -n 20 --no-pager >&2 2>/dev/null || true
+    return 1
+}
+
 

@@ -194,6 +194,8 @@ main() {
         done
     fi
 
+    verify_openlitespeed_health
+
     display_completion_summary
 }
 

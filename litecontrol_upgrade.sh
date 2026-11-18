@@ -509,6 +509,7 @@ main() {
     sync_core_files_and_sudoers
     upgrade_laravel_panel
     reconcile_panel_services
+    verify_openlitespeed_health
 
     panel_port=$(get_panel_port)
     srv_ip=$(get_server_ip)
