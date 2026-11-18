@@ -271,6 +271,25 @@ class SecurityAndModuleTest extends TestCase
         );
     }
 
+    public function test_modsecurity_reads_status_key_from_cli_output(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+
+        $mock = $this->mock(\App\Domains\ServerOps\Contracts\ModuleDriverInterface::class);
+        $mock->shouldReceive('getModuleStatus')
+            ->with('modsecurity')
+            ->once()
+            ->andReturn(['installed' => true, 'status' => 'active']);
+
+        $res = $this->actingAs($admin)->get('/security/modsecurity');
+        $res->assertStatus(200);
+        $res->assertInertia(fn (Assert $page) => $page
+            ->component('Security/ModSecurity')
+            ->where('installed', true)
+            ->where('status', 'active')
+        );
+    }
+
     public function test_admin_can_view_and_manage_modules(): void
     {
         $admin = User::where('role', 'admin')->first();
