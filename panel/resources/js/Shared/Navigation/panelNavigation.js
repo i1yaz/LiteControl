@@ -99,7 +99,6 @@ export const PANEL_NAVIGATION = [
         adminOnly: false,
         children: [
             { id: 'security.ssl', label: 'SSL Certificates', route: '/security/ssl' },
-            { id: 'security.csf', label: 'CSF Firewall', route: '/security/csf', adminOnly: true },
             { id: 'security.ufw', label: 'UFW Packet Filter', route: '/security/ufw', adminOnly: true },
             { id: 'security.port', label: 'Port Firewall', route: '/security/port', adminOnly: true },
             { id: 'security.modsecurity', label: 'ModSecurity WAF', route: '/security/modsecurity', adminOnly: true },

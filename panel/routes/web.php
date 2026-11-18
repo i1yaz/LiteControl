@@ -172,7 +172,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/security/ssh-port', [SecurityController::class, 'updateSshPort'])->name('security.ssh-port.update');
         Route::get('/security/panel-ssl', [SecurityController::class, 'panelSsl'])->name('security.panel-ssl');
         Route::post('/security/panel-ssl', [SecurityController::class, 'updatePanelSsl'])->name('security.panel-ssl.update');
-        Route::get('/security/csf', [SecurityController::class, 'csf'])->name('security.csf');
         Route::get('/security/modsecurity', [SecurityController::class, 'modSecurity'])->name('security.modsecurity');
         Route::get('/security/imunifyav', [SecurityController::class, 'imunifyAv'])->name('security.imunifyav');
 

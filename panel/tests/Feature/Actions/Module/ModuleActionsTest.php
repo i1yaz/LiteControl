@@ -76,14 +76,14 @@ class ModuleActionsTest extends TestCase
 
     public function test_module_install_status_and_dismiss_endpoints(): void
     {
-        Cache::put('module_install_current', 'csf', now()->addMinutes(30));
-        Cache::put('module_install_csf', 'provisioning', now()->addMinutes(30));
+        Cache::put('module_install_current', 'ftp', now()->addMinutes(30));
+        Cache::put('module_install_ftp', 'provisioning', now()->addMinutes(30));
 
         $this->actingAs($this->admin)
             ->getJson('/modules/install-status')
             ->assertOk()
             ->assertJson([
-                'module' => 'csf',
+                'module' => 'ftp',
                 'status' => 'installing',
             ]);
 
@@ -106,18 +106,18 @@ class ModuleActionsTest extends TestCase
         $moduleMock = Mockery::mock(ModuleDriverInterface::class);
         $moduleMock->shouldReceive('removeModule')
             ->once()
-            ->with('csf')
-            ->andReturn(['module' => 'csf', 'installed' => false]);
+            ->with('ftp')
+            ->andReturn(['module' => 'ftp', 'installed' => false]);
 
         $action = new RemoveModuleAction($moduleMock);
-        $result = $action->handle('csf', $this->admin, '10.0.0.2');
+        $result = $action->handle('ftp', $this->admin, '10.0.0.2');
 
-        $this->assertEquals(['module' => 'csf', 'installed' => false], $result);
+        $this->assertEquals(['module' => 'ftp', 'installed' => false], $result);
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $this->admin->id,
             'action' => 'remove_module',
-            'command' => 'lc-cli module remove csf',
+            'command' => 'lc-cli module remove ftp',
             'status' => 'success',
             'ip_address' => '10.0.0.2',
         ]);

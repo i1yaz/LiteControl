@@ -376,7 +376,7 @@ cmd_server_webadmin_enable() {
     chmod 644 "${enable_file}" 2>/dev/null || true
     chown lsadm:lsadm "${enable_file}" 2>/dev/null || true
 
-    # Synchronize firewall rules (UFW and CSF if installed)
+    # Synchronize firewall rules (UFW)
     if [[ "${LC_TEST_MODE:-0}" == "1" ]]; then
         local mock_rules="${LC_CONF_DIR}/mock_ufw_rules.conf"
         mkdir -p "$(dirname "${mock_rules}")"
@@ -397,15 +397,6 @@ cmd_server_webadmin_enable() {
             ufw reload >/dev/null 2>&1 || true
         fi
 
-        # Sync CSF if installed
-        if [[ -f /etc/csf/csf.conf && -x /usr/sbin/csf ]]; then
-            local tcp_in
-            tcp_in=$(grep '^TCP_IN =' /etc/csf/csf.conf | tr -d '"' | awk -F= '{print $2}' | tr -d ' ')
-            if [[ ",${tcp_in}," != *",${admin_port},"* ]]; then
-                sed -i "s/^TCP_IN = .*/TCP_IN = \"${tcp_in},${admin_port}\"/" /etc/csf/csf.conf
-                csf -r >/dev/null 2>&1 || true
-            fi
-        fi
     fi
 
     # Reload OLS safely
@@ -450,10 +441,6 @@ cmd_server_webadmin_disable() {
             ufw reload >/dev/null 2>&1 || true
         fi
 
-        if [[ -f /etc/csf/csf.conf && -x /usr/sbin/csf ]]; then
-            sed -i "s/,${admin_port}//g; s/${admin_port},//g" /etc/csf/csf.conf
-            csf -r >/dev/null 2>&1 || true
-        fi
     fi
 
     # Reload OLS safely

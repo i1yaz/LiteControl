@@ -16,7 +16,7 @@ source "${SCRIPT_DIR}/../lib/common.sh"
 
 MODULES_INSTALLERS_DIR="${SCRIPT_DIR}/../modules"
 
-SUPPORTED_MODULES=("ftp" "dns" "mail" "csf" "modsecurity" "imunifyav")
+SUPPORTED_MODULES=("ftp" "dns" "mail" "modsecurity" "imunifyav")
 
 emit_error() {
     local msg="$1"
@@ -53,7 +53,6 @@ get_module_title() {
         ftp) echo "Pure-FTPd" ;;
         dns) echo "PowerDNS Server" ;;
         mail) echo "Mail Stack (Postfix & Dovecot)" ;;
-        csf) echo "ConfigServer Firewall (CSF)" ;;
         modsecurity) echo "OpenLiteSpeed ModSecurity & OWASP CRS" ;;
         imunifyav) echo "ImunifyAV Malware Scanner" ;;
         *) echo "$1" ;;
@@ -65,7 +64,6 @@ get_module_desc() {
         ftp) echo "Secure FTP server with MySQL virtual accounts and passive port range (40110-40210)." ;;
         dns) echo "Authoritative DNS nameserver powered by PowerDNS with MySQL backend and DNSSEC." ;;
         mail) echo "Complete email server with Postfix, Dovecot IMAP/POP3, OpenDKIM signing, and MySQL virtual mailboxes." ;;
-        csf) echo "Stateful packet inspection firewall, login failure daemon (LFD), and intrusion detection." ;;
         modsecurity) echo "Web Application Firewall (WAF) integrated into OpenLiteSpeed with OWASP Core Rule Set." ;;
         imunifyav) echo "Automated Linux malware detector and web hosting security scanner." ;;
         *) echo "LiteControl extension module." ;;
@@ -77,7 +75,6 @@ get_module_service() {
         ftp) echo "pure-ftpd-mysql" ;;
         dns) echo "pdns" ;;
         mail) echo "postfix" ;;
-        csf) echo "csf" ;;
         modsecurity) echo "openlitespeed" ;;
         imunifyav) echo "imunify-antivirus" ;;
         *) echo "$1" ;;
@@ -266,7 +263,7 @@ Commands:
   remove  <module_name>          Disable or remove an optional module
 
 Supported Modules:
-  ftp, dns, mail, csf, modsecurity, imunifyav
+  ftp, dns, mail, modsecurity, imunifyav
 EOF
         ;;
     *)

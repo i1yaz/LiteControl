@@ -431,19 +431,6 @@ class SecurityController extends Controller
     }
 
     /**
-     * CSF Firewall View.
-     */
-    public function csf(): Response
-    {
-        $data = $this->moduleCli->getModuleStatus('csf');
-
-        return Inertia::render('Security/CsfFirewall', [
-            'installed' => ! empty($data['installed']),
-            'status' => $data['state'] ?? 'not_installed',
-        ]);
-    }
-
-    /**
      * ModSecurity View.
      */
     public function modSecurity(): Response

@@ -243,10 +243,6 @@ class SecurityAndModuleTest extends TestCase
     {
         $admin = User::where('role', 'admin')->first();
 
-        $csfRes = $this->actingAs($admin)->get('/security/csf');
-        $csfRes->assertStatus(200);
-        $csfRes->assertInertia(fn (Assert $page) => $page->component('Security/CsfFirewall'));
-
         $modSecRes = $this->actingAs($admin)->get('/security/modsecurity');
         $modSecRes->assertStatus(200);
         $modSecRes->assertInertia(fn (Assert $page) => $page->component('Security/ModSecurity'));
@@ -267,7 +263,7 @@ class SecurityAndModuleTest extends TestCase
             ->has('modules')
         );
 
-        $installRes = $this->actingAs($admin)->post('/modules/csf/install');
+        $installRes = $this->actingAs($admin)->post('/modules/ftp/install');
         $installRes->assertRedirect();
         $installRes->assertSessionHas('success');
 
@@ -276,7 +272,7 @@ class SecurityAndModuleTest extends TestCase
             'action' => 'install_module',
         ]);
 
-        $removeRes = $this->actingAs($admin)->post('/modules/csf/remove');
+        $removeRes = $this->actingAs($admin)->post('/modules/ftp/remove');
         $removeRes->assertRedirect();
         $removeRes->assertSessionHas('success');
     }

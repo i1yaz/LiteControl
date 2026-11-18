@@ -40,7 +40,7 @@ class ModuleController extends Controller
      */
     public function install(Request $request, string $module, InstallModuleAction $installModuleAction)
     {
-        $allowed = ['ftp', 'dns', 'mail', 'csf', 'modsecurity', 'imunifyav'];
+        $allowed = ['ftp', 'dns', 'mail', 'modsecurity', 'imunifyav'];
         if (! in_array($module, $allowed)) {
             return redirect()->back()->with('error', "Unsupported module '$module'.");
         }
@@ -99,7 +99,7 @@ class ModuleController extends Controller
      */
     public function remove(Request $request, string $module, RemoveModuleAction $removeModuleAction)
     {
-        $allowed = ['ftp', 'dns', 'mail', 'csf', 'modsecurity', 'imunifyav'];
+        $allowed = ['ftp', 'dns', 'mail', 'modsecurity', 'imunifyav'];
         if (! in_array($module, $allowed)) {
             return redirect()->back()->with('error', "Unsupported module '$module'.");
         }

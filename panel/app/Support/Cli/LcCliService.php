@@ -528,7 +528,6 @@ class LcCliService
                         ['name' => 'ftp', 'title' => 'Pure-FTPd', 'installed' => false, 'description' => 'FTP server with MySQL backend'],
                         ['name' => 'dns', 'title' => 'PowerDNS', 'installed' => false, 'description' => 'Authoritative DNS server with MySQL backend'],
                         ['name' => 'mail', 'title' => 'Postfix & Dovecot', 'installed' => false, 'description' => 'Full mail server with DKIM and Webmail support'],
-                        ['name' => 'csf', 'title' => 'CSF / LFD', 'installed' => false, 'description' => 'ConfigServer Security & Firewall with Login Failure Daemon'],
                         ['name' => 'modsecurity', 'title' => 'ModSecurity + OWASP CRS', 'installed' => false, 'description' => 'Web Application Firewall for OpenLiteSpeed'],
                         ['name' => 'imunifyav', 'title' => 'ImunifyAV Antivirus', 'installed' => false, 'description' => 'Free malware and virus scanner for hosted files'],
                     ],
