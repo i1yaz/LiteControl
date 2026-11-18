@@ -22,13 +22,17 @@ class InstallModuleJob implements ShouldQueue
     public function handle(ModuleDriverInterface $moduleDriver): void
     {
         $cacheKey = "module_install_{$this->module}";
+        $errorKey = "module_install_{$this->module}_error";
         Cache::put($cacheKey, 'provisioning', now()->addMinutes(30));
+        Cache::forget($errorKey);
 
         try {
             $moduleDriver->installModule($this->module);
             Cache::put($cacheKey, 'active', now()->addMinutes(30));
+            Cache::forget($errorKey);
         } catch (\Throwable $e) {
             Cache::put($cacheKey, 'failed', now()->addMinutes(30));
+            Cache::put($errorKey, $e->getMessage(), now()->addMinutes(30));
             throw $e;
         }
     }

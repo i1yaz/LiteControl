@@ -25,9 +25,13 @@ class ModuleController extends Controller
     public function index(): Response
     {
         $modules = $this->moduleCli->listModules();
+        $current = Cache::get('module_install_current');
+        $rawStatus = $current ? Cache::get("module_install_{$current}") : null;
+        $installingModule = in_array($rawStatus, ['pending', 'provisioning'], true) ? $current : null;
 
         return Inertia::render('ServerOps/Modules', [
             'modules' => $modules,
+            'installingModule' => $installingModule,
         ]);
     }
 
@@ -71,6 +75,7 @@ class ModuleController extends Controller
         return response()->json([
             'module' => $module,
             'status' => $status,
+            'error' => $status === 'failed' ? Cache::get("module_install_{$module}_error") : null,
         ]);
     }
 
@@ -82,6 +87,7 @@ class ModuleController extends Controller
         $module = Cache::get('module_install_current');
         if ($module) {
             Cache::forget("module_install_{$module}");
+            Cache::forget("module_install_{$module}_error");
         }
         Cache::forget('module_install_current');
 

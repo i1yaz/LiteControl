@@ -22,6 +22,7 @@ class InstallModuleAction
     {
         Cache::put("module_install_{$module}", 'pending', now()->addMinutes(30));
         Cache::put('module_install_current', $module, now()->addMinutes(30));
+        Cache::forget("module_install_{$module}_error");
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,

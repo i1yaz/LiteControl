@@ -4,6 +4,7 @@ import { router } from '@inertiajs/vue3';
 
 const moduleName = ref<string | null>(null);
 const status = ref<'installing' | 'installed' | 'failed' | null>(null);
+const errorMessage = ref<string | null>(null);
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 const fetchStatus = async () => {
@@ -17,6 +18,7 @@ const fetchStatus = async () => {
         const prevStatus = status.value;
         moduleName.value = data.module;
         status.value = data.status;
+        errorMessage.value = data.error || null;
 
         if (data.status === 'installing') {
             startPolling();
@@ -47,6 +49,7 @@ const dismiss = async () => {
     stopPolling();
     status.value = null;
     moduleName.value = null;
+    errorMessage.value = null;
     const csrf = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
     try {
         await fetch('/modules/install-status/dismiss', {
@@ -97,6 +100,9 @@ onUnmounted(() => {
             <span>
                 Module <strong>{{ moduleName }}</strong>:
                 <strong class="uppercase">{{ status }}</strong>
+                <span v-if="status === 'failed' && errorMessage" class="ml-2 opacity-90 break-all">
+                    — {{ errorMessage }}
+                </span>
             </span>
         </div>
         <button

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import { Layers, Download, Trash2 } from '@lucide/vue';
 import { confirmDialog } from '@shared/Composables/useDialog';
@@ -9,7 +10,17 @@ import UiButton from '@shared/Ui/UiButton.vue';
 
 const props = defineProps({
     modules: Array,
+    installingModule: {
+        type: String,
+        default: null,
+    },
 });
+
+const localInstalling = ref<string | null>(props.installingModule);
+watch(() => props.installingModule, (val) => {
+    localInstalling.value = val;
+});
+const activeInstalling = computed(() => localInstalling.value || props.installingModule);
 
 const installModule = async (mod) => {
     if (await confirmDialog({
@@ -17,7 +28,13 @@ const installModule = async (mod) => {
         message: `Install optional module '${mod.title || mod.name}'? This will download packages and configure system services.`,
         confirmText: 'Install',
     })) {
-        router.post(`/modules/${mod.name}/install`);
+        localInstalling.value = mod.name;
+        router.post(`/modules/${mod.name}/install`, {}, {
+            preserveScroll: true,
+            onError: () => {
+                localInstalling.value = null;
+            },
+        });
     }
 };
 
@@ -80,10 +97,12 @@ const removeModule = async (mod) => {
                             v-if="!mod.installed"
                             variant="primary"
                             size="sm"
+                            :loading="activeInstalling === mod.name"
+                            :disabled="Boolean(activeInstalling)"
                             @click="installModule(mod)"
                         >
-                            <Download class="w-3.5 h-3.5" />
-                            <span>{{ __('Install') }}</span>
+                            <Download v-if="activeInstalling !== mod.name" class="w-3.5 h-3.5" />
+                            <span>{{ activeInstalling === mod.name ? __('Installing...') : __('Install') }}</span>
                         </UiButton>
                         <UiButton
                             v-else
