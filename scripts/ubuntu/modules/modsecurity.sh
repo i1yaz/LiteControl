@@ -15,6 +15,17 @@ MODSEC_DIR="${OLS_DIR}/conf/modsec"
 do_install() {
     log_info "Enabling OpenLiteSpeed ModSecurity Web Application Firewall..."
 
+    if [[ "${LC_TEST_MODE:-0}" != "1" ]] && [[ ! -f "${OLS_DIR}/modules/mod_security.so" ]]; then
+        log_info "Installing ols-modsecurity package..."
+        apt-get update -qq
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ols-modsecurity
+    fi
+
+    if [[ "${LC_TEST_MODE:-0}" != "1" ]] && [[ ! -f "${OLS_DIR}/modules/mod_security.so" ]]; then
+        log_error "mod_security.so not found at ${OLS_DIR}/modules/mod_security.so after installing ols-modsecurity."
+        exit 1
+    fi
+
     mkdir -p "${MODSEC_DIR}/rules"
 
     # Setup base CRS configuration
