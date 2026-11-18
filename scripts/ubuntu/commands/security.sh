@@ -79,11 +79,11 @@ cmd_ufw_status() {
 
         # Parse numbered rules: [ 1] 80/tcp ALLOW IN Anywhere
         while IFS= read -r line; do
-            if [[ "${line}" =~ ^\[[[:space:]]*([0-9]+)\][[:space:]]+([^[:space:]]+)[[:space:]]+(ALLOW|DENY|REJECT)[[:space:]]+IN[[:space:]]+(.*)$ ]]; then
+            if [[ "${line}" =~ ^\[[[:space:]]*([0-9]+)\][[:space:]]+([^[:space:]]+([[:space:]]+\(v6\))?)[[:space:]]+(ALLOW|DENY|REJECT)[[:space:]]+IN[[:space:]]+(.*)$ ]]; then
                 local num="${BASH_REMATCH[1]}"
                 local to="${BASH_REMATCH[2]}"
-                local act="${BASH_REMATCH[3]} IN"
-                local from="${BASH_REMATCH[4]}"
+                local act="${BASH_REMATCH[4]} IN"
+                local from="${BASH_REMATCH[5]}"
                 rules+=("$(printf '{"id":%d,"to":"%s","action":"%s","from":"%s"}' \
                     "${num}" \
                     "$(json_escape "${to}")" \
