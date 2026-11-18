@@ -111,7 +111,9 @@ check_unit_state() {
         fi
         return 0
     fi
-    systemctl is-active "${svc}" 2>/dev/null || printf "inactive"
+    local state
+    state=$(systemctl is-active "${svc}" 2>/dev/null | head -n1 | tr -d '\r\n') || true
+    printf "%s" "${state:-inactive}"
 }
 
 cmd_server_services() {
