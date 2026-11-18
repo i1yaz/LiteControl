@@ -252,6 +252,25 @@ class SecurityAndModuleTest extends TestCase
         $imunifyRes->assertInertia(fn (Assert $page) => $page->component('Security/ImunifyAv'));
     }
 
+    public function test_modsecurity_is_not_marked_installed_when_state_is_not_installed(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+
+        $mock = $this->mock(\App\Domains\ServerOps\Contracts\ModuleDriverInterface::class);
+        $mock->shouldReceive('getModuleStatus')
+            ->with('modsecurity')
+            ->once()
+            ->andReturn(['installed' => true, 'state' => 'not_installed']);
+
+        $res = $this->actingAs($admin)->get('/security/modsecurity');
+        $res->assertStatus(200);
+        $res->assertInertia(fn (Assert $page) => $page
+            ->component('Security/ModSecurity')
+            ->where('installed', false)
+            ->where('status', 'not_installed')
+        );
+    }
+
     public function test_admin_can_view_and_manage_modules(): void
     {
         $admin = User::where('role', 'admin')->first();

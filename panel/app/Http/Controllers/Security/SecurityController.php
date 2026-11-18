@@ -466,10 +466,11 @@ class SecurityController extends Controller
     public function modSecurity(): Response
     {
         $data = $this->moduleCli->getModuleStatus('modsecurity');
+        $status = $data['state'] ?? 'not_installed';
 
         return Inertia::render('Security/ModSecurity', [
-            'installed' => ! empty($data['installed']),
-            'status' => $data['state'] ?? 'not_installed',
+            'installed' => ! empty($data['installed']) && $status !== 'not_installed',
+            'status' => $status,
         ]);
     }
 
