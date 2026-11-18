@@ -1,0 +1,70 @@
+/* Cobalt Precision Theme Tokens (Light Mode) */
+html[data-theme="cobalt"] {
+    color-scheme: light;
+
+    /* Surface Hierarchy */
+    --theme-bg-body: #f8f9ff;
+    --theme-bg-main: #f8f9ff;
+    --theme-bg-header: #ffffff;
+    --theme-bg-sidebar: #eff4ff;
+    --theme-bg-card: #ffffff;
+    --theme-bg-surface: #e5eeff;
+    --theme-bg-input: #ffffff;
+    --theme-bg-elevated: #ffffff;
+    --theme-bg-overlay: rgba(11, 28, 48, 0.45);
+
+    /* Borders & Dividers */
+    --theme-border: #c3c6d7;
+    --theme-border-subtle: rgba(195, 198, 215, 0.6);
+    --theme-border-strong: #9ca3b8;
+    --theme-border-hover: #737686;
+
+    /* Typography Colors */
+    --theme-text-primary: #0b1c30;
+    --theme-text-secondary: #434655;
+    --theme-text-muted: #737686;
+    --theme-text-on-accent: #ffffff;
+
+    /* Primary Brand Accent (Cobalt) */
+    --theme-accent: #004ac6;
+    --theme-accent-hover: #2563eb;
+    --theme-accent-subtle: rgba(0, 74, 198, 0.08);
+    --theme-accent-border: rgba(0, 74, 198, 0.25);
+    --theme-accent-text: #003ea8;
+
+    /* Semantic Status Colors (Light-mode high contrast) */
+    --theme-success: #059669;
+    --theme-success-hover: #047857;
+    --theme-success-bg: #ecfdf5;
+    --theme-success-border: #a7f3d0;
+    --theme-success-text: #065f46;
+
+    --theme-warning: #d97706;
+    --theme-warning-hover: #b45309;
+    --theme-warning-bg: #fffbeb;
+    --theme-warning-border: #fde68a;
+    --theme-warning-text: #92400e;
+
+    --theme-danger: #ba1a1a;
+    --theme-danger-hover: #93000a;
+    --theme-danger-bg: #ffdad6;
+    --theme-danger-border: #fca5a5;
+    --theme-danger-text: #93000a;
+
+    --theme-info: #0053db;
+    --theme-info-hover: #004ac6;
+    --theme-info-bg: #eff4ff;
+    --theme-info-border: #b4c5ff;
+    --theme-info-text: #003ea8;
+
+    /* Typography & Geometry */
+    --theme-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --theme-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --theme-font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --theme-radius-sm: 0.125rem;
+    --theme-radius-md: 0.25rem;
+    --theme-radius-lg: 0.5rem;
+    --theme-radius-badge: 0.75rem;
+    --theme-button-transform: none;
+    --theme-button-tracking: normal;
+}

@@ -1,0 +1,13 @@
+{
+  "id": "cobalt",
+  "name": "Cobalt Precision",
+  "description": "Crisp light-mode enterprise theme with cool ice-blue surfaces, cobalt primary accents, and JetBrains Mono telemetry.",
+  "version": "1.0.0",
+  "author": "LiteControl",
+  "layout_type": "vertical-sidebar",
+  "color_scheme": "light",
+  "progress_color": "#004ac6",
+  "fonts": [
+    "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+  ]
+}
