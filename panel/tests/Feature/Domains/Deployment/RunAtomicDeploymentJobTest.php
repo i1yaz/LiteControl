@@ -1,0 +1,124 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Domains\Deployment\Actions\BuildDeploymentPayloadAction;
+use App\Domains\Deployment\Jobs\RunAtomicDeploymentJob;
+use App\Domains\Deployment\Models\DomainDeployment;
+use App\Domains\Deployment\Models\DomainDeploymentConfig;
+use App\Domains\Identity\Models\User;
+use App\Domains\WebServer\Models\Domain;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Process;
+use Tests\TestCase;
+
+uses(TestCase::class, RefreshDatabase::class);
+
+function makeDeploymentFixture(): array
+{
+    $user = User::factory()->create(['username' => 'client1']);
+    $domain = Domain::create([
+        'user_id' => $user->id,
+        'domain' => 'example.com',
+        'document_root' => '/home/client1/example.com/public_html',
+        'php_version' => '8.3',
+    ]);
+
+    $config = DomainDeploymentConfig::create([
+        'domain_id' => $domain->id,
+        'mode' => 'atomic',
+        'preset' => 'laravel',
+        'repo_url' => 'git@github.com:org/repo.git',
+        'branch' => 'main',
+        'fetch_driver' => 'shallow_git',
+        'webhook_token' => 'token-123',
+    ]);
+
+    $previous = DomainDeployment::create([
+        'domain_id' => $domain->id,
+        'release_id' => '20261119_010000_prev',
+        'trigger_type' => 'manual',
+        'status' => 'active',
+    ]);
+
+    $current = DomainDeployment::create([
+        'domain_id' => $domain->id,
+        'release_id' => '20261119_020000_curr',
+        'trigger_type' => 'manual',
+        'status' => 'queued',
+    ]);
+
+    return [$domain, $config, $previous, $current];
+}
+
+it('marks deployment active and supersedes previous active release on exit code 0', function () {
+    [$domain, $config, $previous, $current] = makeDeploymentFixture();
+
+    $builder = Mockery::mock(BuildDeploymentPayloadAction::class);
+    $builder->shouldReceive('execute')
+        ->once()
+        ->andReturn(['domain_root' => '/home/client1/example.com']);
+
+    Process::fake([
+        '*' => Process::result(
+            output: json_encode([
+                'commit_sha' => 'a1b2c3d',
+                'commit_message' => 'feat: deploy',
+                'commit_author' => 'Jane Doe',
+            ]),
+            exitCode: 0,
+        ),
+    ]);
+
+    (new RunAtomicDeploymentJob($config, $current))->handle($builder);
+
+    expect($previous->fresh()->status)->toBe('superseded');
+    expect($current->fresh())
+        ->status->toBe('active')
+        ->commit_sha->toBe('a1b2c3d')
+        ->commit_message->toBe('feat: deploy')
+        ->commit_author->toBe('Jane Doe')
+        ->finished_at->not->toBeNull();
+});
+
+it('marks deployment rolled_back on exit code 2', function () {
+    [$domain, $config, $previous, $current] = makeDeploymentFixture();
+
+    $builder = Mockery::mock(BuildDeploymentPayloadAction::class);
+    $builder->shouldReceive('execute')
+        ->once()
+        ->andReturn(['domain_root' => '/home/client1/example.com']);
+
+    Process::fake([
+        '*' => Process::result(output: '', errorOutput: 'Health check 500', exitCode: 2),
+    ]);
+
+    (new RunAtomicDeploymentJob($config, $current))->handle($builder);
+
+    expect($previous->fresh()->status)->toBe('active');
+    expect($current->fresh())
+        ->status->toBe('rolled_back')
+        ->error_summary->toBe('HTTP health check failed (5xx); auto-rolled back to previous release.')
+        ->finished_at->not->toBeNull();
+});
+
+it('marks deployment failed on other non-zero exit codes', function () {
+    [$domain, $config, $previous, $current] = makeDeploymentFixture();
+
+    $builder = Mockery::mock(BuildDeploymentPayloadAction::class);
+    $builder->shouldReceive('execute')
+        ->once()
+        ->andReturn(['domain_root' => '/home/client1/example.com']);
+
+    Process::fake([
+        '*' => Process::result(output: '', errorOutput: 'composer install failed', exitCode: 1),
+    ]);
+
+    (new RunAtomicDeploymentJob($config, $current))->handle($builder);
+
+    expect($previous->fresh()->status)->toBe('active');
+    expect($current->fresh())
+        ->status->toBe('failed')
+        ->error_summary->toBe('composer install failed')
+        ->finished_at->not->toBeNull();
+});
