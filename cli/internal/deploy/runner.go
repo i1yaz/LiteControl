@@ -73,6 +73,8 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 	if err := LinkSharedPaths(spec, releaseDir, uid, gid); err != nil {
 		return DeployResult{}, fmt.Errorf("link shared paths: %w", err)
 	}
+	restoreContextBestEffort(releaseDir, logWriter)
+	restoreContextBestEffort(filepath.Join(spec.DomainRoot, "shared"), logWriter)
 	if err := RunHooks(ctx, "after_clone", spec.Hooks.AfterClone, spec, releaseDir, meta, logWriter); err != nil {
 		return DeployResult{}, err
 	}
@@ -98,6 +100,8 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 	if err := ensurePublicHTMLSymlink(spec.DomainRoot, spec.WebSubpath, uid, gid); err != nil {
 		return DeployResult{}, fmt.Errorf("ensure public_html symlink: %w", err)
 	}
+	restoreContextBestEffort(filepath.Join(spec.DomainRoot, "public_html"), logWriter)
+	restoreContextBestEffort(currentLink, logWriter)
 	if err := resetLsphpWorkers(ctx, spec.LinuxUser); err != nil {
 		return DeployResult{}, err
 	}
@@ -157,6 +161,12 @@ func ensurePublicHTMLSymlink(domainRoot, webSubpath string, uid, gid int) error 
 	}
 
 	return AtomicSymlink(webTarget, publicHTMLPath, uid, gid)
+}
+
+func restoreContextBestEffort(targetPath string, logWriter io.Writer) {
+	if err := RestoreContext(targetPath); err != nil && logWriter != nil {
+		_, _ = fmt.Fprintf(logWriter, "[selinux] warning: %v\n", err)
+	}
 }
 
 func resetLsphpWorkers(ctx context.Context, linuxUser string) error {
