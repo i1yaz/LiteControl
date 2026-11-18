@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import { UserPlus, Check, X } from '@lucide/vue';
+import UiButton from '@shared/Ui/UiButton.vue';
+import UiInput from '@shared/Ui/UiInput.vue';
 
 const props = defineProps({
     domain: {
@@ -30,11 +32,11 @@ const submitFtp = () => {
 </script>
 
 <template>
-    <div class="bg-theme-bg-card border border-theme-border rounded-xl p-5 shadow-sm space-y-5">
+    <div class="bg-theme-bg-card border border-theme-border rounded-theme-lg p-5 shadow-xs space-y-5">
         <div class="flex items-center justify-between border-b border-theme-border pb-3">
             <div class="flex items-center gap-2">
-                <UserPlus class="w-4 h-4 text-cyan-400" />
-                <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary">
+                <UserPlus class="w-4 h-4 text-theme-info-text" />
+                <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary theme-ui-control">
                     Create Pure-FTPd Account for {{ domain.domain }}
                 </h3>
             </div>
@@ -46,11 +48,11 @@ const submitFtp = () => {
 
         <form @submit.prevent="submitFtp" class="space-y-4 max-w-lg">
             <div>
-                <label class="block text-xs font-bold uppercase text-theme-text-secondary mb-1">
-                    FTP Username
+                <label class="block text-xs font-medium text-theme-text-secondary theme-ui-control mb-1.5">
+                    FTP Username <span class="text-theme-accent">*</span>
                 </label>
                 <div class="flex items-center">
-                    <span class="px-3 py-2 bg-theme-bg-surface border border-r-0 border-theme-border rounded-l-lg text-xs font-mono text-theme-text-muted">
+                    <span class="px-3 py-2 bg-theme-bg-surface border border-r-0 border-theme-border rounded-l-theme-md text-xs font-mono text-theme-text-muted">
                         {{ domain.user?.username }}_
                     </span>
                     <input
@@ -58,72 +60,65 @@ const submitFtp = () => {
                         type="text"
                         required
                         :placeholder="__('webuser')"
-                        class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded-r-lg text-xs text-theme-text-primary focus:outline-none focus:border-blue-500"
+                        class="w-full px-3 py-2 bg-theme-bg-input border border-theme-border rounded-r-theme-md text-xs text-theme-text-primary focus:outline-none focus:border-theme-accent"
                     />
                 </div>
-                <span v-if="form.errors.username" class="text-rose-400 text-[11px] mt-1 block">
+                <span v-if="form.errors.username" class="text-theme-danger-text text-[11px] mt-1 block">
                     {{ form.errors.username }}
                 </span>
             </div>
 
             <div>
-                <label class="block text-xs font-bold uppercase text-theme-text-secondary mb-1">
-                    FTP Password
-                </label>
-                <input
+                <UiInput
+                    id="ftp_password"
                     v-model="form.password"
                     type="password"
-                    required
+                    label="FTP Password"
                     placeholder="••••••••••••"
-                    class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded-lg text-xs text-theme-text-primary focus:outline-none focus:border-blue-500"
+                    :error="form.errors.password"
+                    required
                 />
-                <span v-if="form.errors.password" class="text-rose-400 text-[11px] mt-1 block">
-                    {{ form.errors.password }}
-                </span>
             </div>
 
             <div>
-                <label class="block text-xs font-bold uppercase text-theme-text-secondary mb-1">
-                    Home Directory (Relative to Website Root)
-                </label>
-                <input
+                <UiInput
+                    id="ftp_dir"
                     v-model="form.dir"
                     type="text"
+                    label="Home Directory (Relative to Website Root)"
                     :placeholder="__('public_html (or leave blank for default)')"
-                    class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded-lg text-xs text-theme-text-primary focus:outline-none focus:border-blue-500"
                 />
             </div>
 
             <div>
-                <label class="block text-xs font-bold uppercase text-theme-text-secondary mb-1">
-                    Disk Quota (MB)
-                </label>
-                <input
+                <UiInput
+                    id="ftp_quota"
                     v-model="form.quota_mb"
                     type="number"
                     min="0"
+                    label="Disk Quota (MB)"
                     :placeholder="__('0 for unlimited')"
-                    class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded-lg text-xs text-theme-text-primary focus:outline-none focus:border-blue-500"
                 />
             </div>
 
             <div class="flex items-center gap-3 pt-2">
-                <button
+                <UiButton
                     type="submit"
+                    variant="primary"
                     :disabled="form.processing"
-                    class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow-sm shadow-blue-600/30 transition-all disabled:opacity-50"
+                    :loading="form.processing"
                 >
-                    <Check class="w-3.5 h-3.5" />
+                    <Check v-if="!form.processing" class="w-3.5 h-3.5" />
                     <span>{{ form.processing ? 'Creating...' : 'Create Account' }}</span>
-                </button>
+                </UiButton>
 
-                <button
+                <UiButton
                     type="button"
+                    variant="secondary"
                     @click="emit('close')"
-                    class="px-4 py-2 rounded-lg bg-theme-bg-surface hover:bg-theme-border text-xs font-semibold text-theme-text-secondary hover:text-theme-text-primary border border-theme-border transition-colors"
                 >
                     Cancel
-                </button>
+                </UiButton>
             </div>
         </form>
     </div>

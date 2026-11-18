@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import UiTabs from '@shared/Ui/UiTabs.vue';
 import {
     LayoutGrid,
     GitFork,
@@ -30,26 +31,20 @@ const iconMap = {
     Lock,
     Folder,
 };
+
+const resolvedTabs = computed(() =>
+    (props.tabs as any[]).map((tab) => ({
+        ...tab,
+        icon: iconMap[tab.icon] || LayoutGrid,
+    }))
+);
 </script>
 
 <template>
-    <div class="bg-theme-bg-card border border-theme-border rounded-xl p-2 shadow-sm">
-        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-            <button
-                v-for="tab in tabs"
-                :key="tab.id"
-                @click="emit('select', tab.id)"
-                :class="[
-                    'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all',
-                    activeTab === tab.id
-                        ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30 font-bold'
-                        : 'text-theme-text-secondary hover:text-theme-text-primary hover:bg-theme-bg-surface'
-                ]"
-            >
-                <component :is="iconMap[tab.icon] || LayoutGrid" class="w-4 h-4 shrink-0" />
-                <span>{{ tab.label }}</span>
-            </button>
-        </div>
-    </div>
+    <UiTabs
+        :model-value="activeTab"
+        :tabs="resolvedTabs"
+        @select="emit('select', $event)"
+    />
 </template>
 

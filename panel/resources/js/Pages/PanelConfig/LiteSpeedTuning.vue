@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { Sliders, Save, Cpu, Zap, Shield, RefreshCw, Globe, AlertTriangle } from '@lucide/vue';
+import { Sliders, Save, Cpu, Zap, Shield, RefreshCw, Globe } from '@lucide/vue';
+import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
+import UiTabs from '@shared/Ui/UiTabs.vue';
+import UiCard from '@shared/Ui/UiCard.vue';
+import UiInput from '@shared/Ui/UiInput.vue';
+import UiSelect from '@shared/Ui/UiSelect.vue';
+import UiButton from '@shared/Ui/UiButton.vue';
+import UiAlert from '@shared/Ui/UiAlert.vue';
 
 interface SiteTuningRecord {
     max_conns: number;
@@ -38,6 +45,11 @@ const props = defineProps<{
 }>();
 
 const activeTab = ref<'general' | 'per-site'>('general');
+
+const tuningTabs = [
+    { id: 'general', label: 'General', icon: Sliders },
+    { id: 'per-site', label: 'Per-Site Tuning', icon: Globe },
+];
 
 const form = useForm({
     maxConnections: props.tuning?.maxConnections ?? 10000,
@@ -127,8 +139,8 @@ watch(selectedDomain, (dom) => {
 }, { immediate: true });
 
 const memoryInvariantError = computed(() => {
-    const minHard = siteForm.php_memory_limit_mb + 64;
-    if (siteForm.mem_hard_limit_mb < minHard) {
+    const minHard = Number(siteForm.php_memory_limit_mb) + 64;
+    if (Number(siteForm.mem_hard_limit_mb) < minHard) {
         return `OS Memory Hard Limit (${siteForm.mem_hard_limit_mb} MB) must be at least PHP memory_limit + 64 MB (${minHard} MB).`;
     }
     return null;
@@ -143,209 +155,167 @@ const submitSiteTuning = () => {
 </script>
 
 <template>
-            <Head :title="__('LiteSpeed Tuning')" />
+    <Head :title="__('LiteSpeed Tuning')" />
 
-        <div class="max-w-4xl mx-auto space-y-6">
-            <!-- Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
-                        <Zap class="w-6 h-6 text-amber-400" />
-                        <span>{{ __('OpenLiteSpeed Tuning') }}</span>
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                        High-concurrency connection limits, keep-alive parameters, body size buffers, and per-site LSAPI/PHP tuning.
-                    </p>
-                </div>
-            </div>
+    <div class="max-w-4xl mx-auto space-y-6">
+        <!-- Header -->
+        <UiPageHeader
+            :title="__('OpenLiteSpeed Tuning')"
+            subtitle="High-concurrency connection limits, keep-alive parameters, body size buffers, and per-site LSAPI/PHP tuning."
+        >
+            <template #icon>
+                <Zap class="w-6 h-6 text-theme-warning" />
+            </template>
+        </UiPageHeader>
 
-            <!-- Tabs -->
-            <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
-                <button
-                    type="button"
-                    @click="activeTab = 'general'"
-                    :class="[
-                        'px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2',
-                        activeTab === 'general'
-                            ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20'
-                            : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800',
-                    ]"
-                >
-                    <Sliders class="w-4 h-4" />
-                    <span>{{ __('General') }}</span>
-                </button>
-                <button
-                    type="button"
-                    @click="activeTab = 'per-site'"
-                    :class="[
-                        'px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2',
-                        activeTab === 'per-site'
-                            ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20'
-                            : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800',
-                    ]"
-                >
-                    <Globe class="w-4 h-4" />
-                    <span>{{ __('Per-Site Tuning') }}</span>
-                </button>
-            </div>
+        <!-- Tabs -->
+        <UiTabs
+            v-model="activeTab"
+            :tabs="tuningTabs"
+        />
 
-            <!-- General Form -->
-            <form v-if="activeTab === 'general'" @submit.prevent="submit" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
+        <!-- General Form -->
+        <UiCard v-if="activeTab === 'general'">
+            <form @submit.prevent="submit" class="space-y-6">
                 <!-- Section 1: Connection Capacity -->
                 <div>
-                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider text-slate-300">{{ __('Connection Capacity') }}</h2>
-                    <p class="text-xs text-slate-400 mt-0.5">{{ __('Configure simultaneous concurrent worker connection thresholds.') }}</p>
+                    <h2 class="text-sm font-semibold text-theme-text-primary uppercase tracking-wider">{{ __('Connection Capacity') }}</h2>
+                    <p class="text-xs text-theme-text-secondary mt-0.5">{{ __('Configure simultaneous concurrent worker connection thresholds.') }}</p>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Max Connections') }}</label>
-                        <input
-                            v-model.number="form.maxConnections"
-                            type="number"
-                            min="10"
-                            max="100000"
-                            required
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                        />
-                        <p class="text-[11px] text-slate-500 mt-1">{{ __('Maximum concurrent connections allowed (default: 10000).') }}</p>
-                    </div>
+                    <UiInput
+                        :model-value="form.maxConnections"
+                        @update:model-value="form.maxConnections = Number($event)"
+                        :label="__('Max Connections')"
+                        :hint="__('Maximum concurrent connections allowed (default: 10000).')"
+                        type="number"
+                        min="10"
+                        max="100000"
+                        required
+                    />
 
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Max SSL Connections') }}</label>
-                        <input
-                            v-model.number="form.maxSSLConnections"
-                            type="number"
-                            min="10"
-                            max="100000"
-                            required
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                        />
-                        <p class="text-[11px] text-slate-500 mt-1">{{ __('Maximum concurrent TLS/HTTPS connections (default: 8000).') }}</p>
-                    </div>
+                    <UiInput
+                        :model-value="form.maxSSLConnections"
+                        @update:model-value="form.maxSSLConnections = Number($event)"
+                        :label="__('Max SSL Connections')"
+                        :hint="__('Maximum concurrent TLS/HTTPS connections (default: 8000).')"
+                        type="number"
+                        min="10"
+                        max="100000"
+                        required
+                    />
 
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Connection Timeout (seconds)') }}</label>
-                        <input
-                            v-model.number="form.connTimeout"
-                            type="number"
-                            min="5"
-                            max="3600"
-                            required
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                        />
-                        <p class="text-[11px] text-slate-500 mt-1">{{ __('Idle socket close timeout.') }}</p>
-                    </div>
+                    <UiInput
+                        :model-value="form.connTimeout"
+                        @update:model-value="form.connTimeout = Number($event)"
+                        :label="__('Connection Timeout (seconds)')"
+                        :hint="__('Idle socket close timeout.')"
+                        type="number"
+                        min="5"
+                        max="3600"
+                        required
+                    />
 
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Max Request Body Size') }}</label>
-                        <input
-                            v-model="form.maxReqBodySize"
-                            type="text"
-                            required
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                        />
-                        <p class="text-[11px] text-slate-500 mt-1">{{ __('E.g. 500M or 2047M maximum HTTP POST buffer.') }}</p>
-                    </div>
+                    <UiInput
+                        v-model="form.maxReqBodySize"
+                        :label="__('Max Request Body Size')"
+                        :hint="__('E.g. 500M or 2047M maximum HTTP POST buffer.')"
+                        type="text"
+                        required
+                    />
                 </div>
 
                 <!-- Section 2: Keep-Alive -->
-                <div class="pt-4 border-t border-slate-800">
-                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider text-slate-300">{{ __('Keep-Alive Optimization') }}</h2>
+                <div class="pt-4 border-t border-theme-border-subtle">
+                    <h2 class="text-sm font-semibold text-theme-text-primary uppercase tracking-wider">{{ __('Keep-Alive Optimization') }}</h2>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Max Keep-Alive Requests') }}</label>
-                        <input
-                            v-model.number="form.maxKeepAliveReq"
-                            type="number"
-                            min="1"
-                            max="50000"
-                            required
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                        />
-                    </div>
+                    <UiInput
+                        :model-value="form.maxKeepAliveReq"
+                        @update:model-value="form.maxKeepAliveReq = Number($event)"
+                        :label="__('Max Keep-Alive Requests')"
+                        type="number"
+                        min="1"
+                        max="50000"
+                        required
+                    />
 
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Keep-Alive Timeout (seconds)') }}</label>
-                        <input
-                            v-model.number="form.keepAliveTimeout"
-                            type="number"
-                            min="1"
-                            max="60"
-                            required
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                        />
-                    </div>
+                    <UiInput
+                        :model-value="form.keepAliveTimeout"
+                        @update:model-value="form.keepAliveTimeout = Number($event)"
+                        :label="__('Keep-Alive Timeout (seconds)')"
+                        type="number"
+                        min="1"
+                        max="60"
+                        required
+                    />
                 </div>
 
                 <!-- Section 3: Compression & Protocols -->
-                <div class="pt-4 border-t border-slate-800">
-                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider text-slate-300">{{ __('Compression & HTTP/3 (QUIC)') }}</h2>
+                <div class="pt-4 border-t border-theme-border-subtle">
+                    <h2 class="text-sm font-semibold text-theme-text-primary uppercase tracking-wider">{{ __('Compression & HTTP/3 (QUIC)') }}</h2>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('GZIP Compression') }}</label>
-                        <select
-                            v-model="form.enableGzipCompress"
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
-                        >
-                            <option :value="1">{{ __('Enabled') }}</option>
-                            <option :value="0">{{ __('Disabled') }}</option>
-                        </select>
-                    </div>
+                    <UiSelect
+                        :model-value="form.enableGzipCompress"
+                        @update:model-value="form.enableGzipCompress = Number($event)"
+                        :label="__('GZIP Compression')"
+                    >
+                        <option :value="1">{{ __('Enabled') }}</option>
+                        <option :value="0">{{ __('Disabled') }}</option>
+                    </UiSelect>
 
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('GZIP Compression Level') }}</label>
-                        <select
-                            v-model="form.gzipCompressLevel"
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
-                        >
-                            <option v-for="lvl in 9" :key="lvl" :value="lvl">Level {{ lvl }}</option>
-                        </select>
-                    </div>
+                    <UiSelect
+                        :model-value="form.gzipCompressLevel"
+                        @update:model-value="form.gzipCompressLevel = Number($event)"
+                        :label="__('GZIP Compression Level')"
+                    >
+                        <option v-for="lvl in 9" :key="lvl" :value="lvl">Level {{ lvl }}</option>
+                    </UiSelect>
 
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('HTTP/3 & QUIC Support') }}</label>
-                        <select
-                            v-model="form.quicEnable"
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
-                        >
-                            <option :value="1">{{ __('Enabled') }}</option>
-                            <option :value="0">{{ __('Disabled') }}</option>
-                        </select>
-                    </div>
+                    <UiSelect
+                        :model-value="form.quicEnable"
+                        @update:model-value="form.quicEnable = Number($event)"
+                        :label="__('HTTP/3 & QUIC Support')"
+                    >
+                        <option :value="1">{{ __('Enabled') }}</option>
+                        <option :value="0">{{ __('Disabled') }}</option>
+                    </UiSelect>
                 </div>
 
                 <!-- Footer Action -->
-                <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
-                    <span class="text-xs text-slate-400 flex items-center gap-1.5">
-                        <RefreshCw class="w-3.5 h-3.5 text-emerald-400" />
+                <div class="pt-4 border-t border-theme-border-subtle flex items-center justify-between">
+                    <span class="text-xs text-theme-text-secondary flex items-center gap-1.5">
+                        <RefreshCw class="w-3.5 h-3.5 text-theme-success" />
                         Safe reload with automatic rollback is applied on save.
                     </span>
-                    <button
+                    <UiButton
                         type="submit"
+                        variant="primary"
                         :disabled="form.processing"
-                        class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-medium text-sm flex items-center gap-2 shadow-lg shadow-amber-600/20 disabled:opacity-50 transition-colors"
+                        :loading="form.processing"
                     >
-                        <Save class="w-4 h-4" />
+                        <Save v-if="!form.processing" class="w-4 h-4" />
                         <span>{{ form.processing ? 'Applying...' : 'Apply Tuning' }}</span>
-                    </button>
+                    </UiButton>
                 </div>
             </form>
+        </UiCard>
 
-            <!-- Per-Site Tuning Form -->
-            <div v-else class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-800">
+        <!-- Per-Site Tuning Form -->
+        <UiCard v-else>
+            <div class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-theme-border-subtle">
                     <div>
-                        <h2 class="text-sm font-semibold text-white uppercase tracking-wider">{{ __('Select Site') }}</h2>
-                        <p class="text-xs text-slate-400 mt-0.5">{{ __('Configure isolated LSAPI worker pool limits and PHP runtime directives per site.') }}</p>
+                        <h2 class="text-sm font-semibold text-theme-text-primary uppercase tracking-wider">{{ __('Select Site') }}</h2>
+                        <p class="text-xs text-theme-text-secondary mt-0.5">{{ __('Configure isolated LSAPI worker pool limits and PHP runtime directives per site.') }}</p>
                     </div>
                     <select
                         v-model="selectedDomainId"
-                        class="bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-amber-500 min-w-[240px]"
+                        class="bg-theme-bg-input border border-theme-border rounded-theme-md px-3.5 py-2 text-sm text-theme-text-primary focus:outline-none focus:border-theme-accent min-w-[240px]"
                     >
                         <option v-if="!domains || domains.length === 0" :value="null">{{ __('No sites available') }}</option>
                         <option v-for="dom in domains" :key="dom.id" :value="dom.id">
@@ -356,103 +326,169 @@ const submitSiteTuning = () => {
 
                 <form v-if="selectedDomain" @submit.prevent="submitSiteTuning" class="space-y-6">
                     <!-- Cross-layer memory invariant warning -->
-                    <div v-if="memoryInvariantError" class="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-                        <AlertTriangle class="w-4 h-4 shrink-0" />
-                        <span>{{ memoryInvariantError }}</span>
-                    </div>
+                    <UiAlert v-if="memoryInvariantError" variant="danger">
+                        {{ memoryInvariantError }}
+                    </UiAlert>
 
                     <!-- Layer 1: LSAPI Worker Pool Limits -->
                     <div>
-                        <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                            <Cpu class="w-4 h-4 text-amber-400" />
+                        <h3 class="text-sm font-semibold text-theme-text-primary uppercase tracking-wider flex items-center gap-2">
+                            <Cpu class="w-4 h-4 text-theme-warning" />
                             <span>{{ __('Layer 1: LSAPI Worker Pool Limits') }}</span>
                         </h3>
-                        <p class="text-xs text-slate-400 mt-0.5">{{ __('Enforced by OpenLiteSpeed & Linux Kernel (RLIMIT) on extprocessor.') }}</p>
+                        <p class="text-xs text-theme-text-secondary mt-0.5">{{ __('Enforced by OpenLiteSpeed & Linux Kernel (RLIMIT) on extprocessor.') }}</p>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">Max Conns (LSAPI_CHILDREN)</label>
-                            <input v-model.number="siteForm.max_conns" type="number" min="1" max="500" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">Init Timeout (s)</label>
-                            <input v-model.number="siteForm.init_timeout" type="number" min="5" max="3600" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">Persist Connection</label>
-                            <select v-model="siteForm.persist_conn" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-                                <option :value="true">Enabled (1)</option>
-                                <option :value="false">Disabled (0)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">Keep-Alive Timeout (s)</label>
-                            <input v-model.number="siteForm.pc_keep_alive_timeout" type="number" min="0" max="3600" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">Memory Soft Limit (MB)</label>
-                            <input v-model.number="siteForm.mem_soft_limit_mb" type="number" min="64" max="65536" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">Memory Hard Limit (MB)</label>
-                            <input v-model.number="siteForm.mem_hard_limit_mb" type="number" min="64" max="65536" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">Process Soft Limit</label>
-                            <input v-model.number="siteForm.proc_soft_limit" type="number" min="10" max="4096" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">Process Hard Limit</label>
-                            <input v-model.number="siteForm.proc_hard_limit" type="number" min="10" max="4096" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-                        </div>
+                        <UiInput
+                            :model-value="siteForm.max_conns"
+                            @update:model-value="siteForm.max_conns = Number($event)"
+                            label="Max Conns (LSAPI_CHILDREN)"
+                            type="number"
+                            min="1"
+                            max="500"
+                            required
+                        />
+                        <UiInput
+                            :model-value="siteForm.init_timeout"
+                            @update:model-value="siteForm.init_timeout = Number($event)"
+                            label="Init Timeout (s)"
+                            type="number"
+                            min="5"
+                            max="3600"
+                            required
+                        />
+                        <UiSelect
+                            :model-value="String(siteForm.persist_conn)"
+                            @update:model-value="siteForm.persist_conn = $event === 'true' || $event === true"
+                            label="Persist Connection"
+                        >
+                            <option value="true">Enabled (1)</option>
+                            <option value="false">Disabled (0)</option>
+                        </UiSelect>
+                        <UiInput
+                            :model-value="siteForm.pc_keep_alive_timeout"
+                            @update:model-value="siteForm.pc_keep_alive_timeout = Number($event)"
+                            label="Keep-Alive Timeout (s)"
+                            type="number"
+                            min="0"
+                            max="3600"
+                            required
+                        />
+                        <UiInput
+                            :model-value="siteForm.mem_soft_limit_mb"
+                            @update:model-value="siteForm.mem_soft_limit_mb = Number($event)"
+                            label="Memory Soft Limit (MB)"
+                            type="number"
+                            min="64"
+                            max="65536"
+                            required
+                        />
+                        <UiInput
+                            :model-value="siteForm.mem_hard_limit_mb"
+                            @update:model-value="siteForm.mem_hard_limit_mb = Number($event)"
+                            label="Memory Hard Limit (MB)"
+                            type="number"
+                            min="64"
+                            max="65536"
+                            required
+                        />
+                        <UiInput
+                            :model-value="siteForm.proc_soft_limit"
+                            @update:model-value="siteForm.proc_soft_limit = Number($event)"
+                            label="Process Soft Limit"
+                            type="number"
+                            min="10"
+                            max="4096"
+                            required
+                        />
+                        <UiInput
+                            :model-value="siteForm.proc_hard_limit"
+                            @update:model-value="siteForm.proc_hard_limit = Number($event)"
+                            label="Process Hard Limit"
+                            type="number"
+                            min="10"
+                            max="4096"
+                            required
+                        />
                     </div>
 
                     <!-- Layer 2: PHP Runtime Directives -->
-                    <div class="pt-4 border-t border-slate-800">
-                        <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                            <Shield class="w-4 h-4 text-emerald-400" />
+                    <div class="pt-4 border-t border-theme-border-subtle">
+                        <h3 class="text-sm font-semibold text-theme-text-primary uppercase tracking-wider flex items-center gap-2">
+                            <Shield class="w-4 h-4 text-theme-success" />
                             <span>{{ __('Layer 2: PHP Runtime Directives (phpIniOverride)') }}</span>
                         </h3>
-                        <p class="text-xs text-slate-400 mt-0.5">{{ __('Enforced via php_admin_value / php_admin_flag so tenant scripts cannot override limits.') }}</p>
+                        <p class="text-xs text-theme-text-secondary mt-0.5">{{ __('Enforced via php_admin_value / php_admin_flag so tenant scripts cannot override limits.') }}</p>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">memory_limit (MB)</label>
-                            <input v-model.number="siteForm.php_memory_limit_mb" type="number" min="32" max="32768" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">max_execution_time (s)</label>
-                            <input v-model.number="siteForm.php_max_execution_time" type="number" min="1" max="3600" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">max_input_time (s)</label>
-                            <input v-model.number="siteForm.php_max_input_time" type="number" min="1" max="3600" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">upload_max_filesize (MB)</label>
-                            <input v-model.number="siteForm.php_upload_max_filesize_mb" type="number" min="1" max="10240" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">post_max_size (MB)</label>
-                            <input v-model.number="siteForm.php_post_max_size_mb" type="number" min="1" max="10240" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">max_input_vars</label>
-                            <input v-model.number="siteForm.php_max_input_vars" type="number" min="100" max="100000" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">display_errors</label>
-                            <select v-model="siteForm.php_display_errors" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
-                                <option :value="false">Off</option>
-                                <option :value="true">On</option>
-                            </select>
-                        </div>
+                        <UiInput
+                            :model-value="siteForm.php_memory_limit_mb"
+                            @update:model-value="siteForm.php_memory_limit_mb = Number($event)"
+                            label="memory_limit (MB)"
+                            type="number"
+                            min="32"
+                            max="32768"
+                            required
+                        />
+                        <UiInput
+                            :model-value="siteForm.php_max_execution_time"
+                            @update:model-value="siteForm.php_max_execution_time = Number($event)"
+                            label="max_execution_time (s)"
+                            type="number"
+                            min="1"
+                            max="3600"
+                            required
+                        />
+                        <UiInput
+                            :model-value="siteForm.php_max_input_time"
+                            @update:model-value="siteForm.php_max_input_time = Number($event)"
+                            label="max_input_time (s)"
+                            type="number"
+                            min="1"
+                            max="3600"
+                            required
+                        />
+                        <UiInput
+                            :model-value="siteForm.php_upload_max_filesize_mb"
+                            @update:model-value="siteForm.php_upload_max_filesize_mb = Number($event)"
+                            label="upload_max_filesize (MB)"
+                            type="number"
+                            min="1"
+                            max="10240"
+                            required
+                        />
+                        <UiInput
+                            :model-value="siteForm.php_post_max_size_mb"
+                            @update:model-value="siteForm.php_post_max_size_mb = Number($event)"
+                            label="post_max_size (MB)"
+                            type="number"
+                            min="1"
+                            max="10240"
+                            required
+                        />
+                        <UiInput
+                            :model-value="siteForm.php_max_input_vars"
+                            @update:model-value="siteForm.php_max_input_vars = Number($event)"
+                            label="max_input_vars"
+                            type="number"
+                            min="100"
+                            max="100000"
+                            required
+                        />
+                        <UiSelect
+                            :model-value="String(siteForm.php_display_errors)"
+                            @update:model-value="siteForm.php_display_errors = $event === 'true' || $event === true"
+                            label="display_errors"
+                        >
+                            <option value="false">Off</option>
+                            <option value="true">On</option>
+                        </UiSelect>
                     </div>
 
-                    <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
-                        <span class="text-xs text-slate-400">
+                    <div class="pt-4 border-t border-theme-border-subtle flex items-center justify-between">
+                        <span class="text-xs text-theme-text-secondary">
                             <template v-if="selectedDomain.tuning?.sync_status === 'applied'">
                                 Last applied: {{ selectedDomain.tuning.applied_at }}
                             </template>
@@ -460,17 +496,20 @@ const submitSiteTuning = () => {
                                 Using default per-site tuning profile.
                             </template>
                         </span>
-                        <button
+                        <UiButton
                             type="submit"
+                            variant="primary"
                             :disabled="siteForm.processing || !!memoryInvariantError"
-                            class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-medium text-sm flex items-center gap-2 shadow-lg shadow-amber-600/20 disabled:opacity-50 transition-colors"
+                            :loading="siteForm.processing"
                         >
-                            <Save class="w-4 h-4" />
+                            <Save v-if="!siteForm.processing" class="w-4 h-4" />
                             <span>{{ siteForm.processing ? 'Applying...' : 'Apply Per-Site Tuning' }}</span>
-                        </button>
+                        </UiButton>
                     </div>
                 </form>
             </div>
-        </div>
+        </UiCard>
+    </div>
 </template>
+
 

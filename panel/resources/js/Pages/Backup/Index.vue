@@ -2,6 +2,12 @@
 import { shallowRef } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { confirmDialog } from '@shared/Composables/useDialog';
+import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
+import UiButton from '@shared/Ui/UiButton.vue';
+import UiDataTable from '@shared/Ui/UiDataTable.vue';
+import UiBadge from '@shared/Ui/UiBadge.vue';
+import UiInput from '@shared/Ui/UiInput.vue';
+import UiSelect from '@shared/Ui/UiSelect.vue';
 import UiModal from '@shared/Ui/UiModal.vue';
 import {
     FolderTree,
@@ -86,229 +92,209 @@ const deleteSchedule = async (id) => {
     <Head :title="__('Backup & Restore')" />
 
     <div class="space-y-8">
-            <!-- Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
-                        <FolderTree class="w-6 h-6 text-cyan-400" />
-                        <span>{{ __('Backup & Restore') }}</span>
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                        Create full account `.tar.gz` snapshots containing website files, MySQL databases, and virtual host configurations.
-                    </p>
-                </div>
+        <UiPageHeader
+            :title="__('Backup & Restore')"
+            subtitle="Create full account `.tar.gz` snapshots containing website files, MySQL databases, and virtual host configurations."
+        >
+            <template #icon>
+                <FolderTree class="w-6 h-6 text-theme-accent" />
+            </template>
+            <template #actions>
+                <UiButton
+                    variant="secondary"
+                    @click="showScheduleModal = true"
+                >
+                    <Calendar class="w-3.5 h-3.5 text-theme-info" />
+                    <span>{{ __('Schedule Backups') }}</span>
+                </UiButton>
 
-                <div class="flex items-center gap-3">
-                    <button
-                        @click="showScheduleModal = true"
-                        class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors border border-slate-700"
-                    >
-                        <Calendar class="w-3.5 h-3.5 text-indigo-400" />
-                        <span>{{ __('Schedule Backups') }}</span>
-                    </button>
+                <UiButton
+                    variant="primary"
+                    :disabled="backupForm.processing"
+                    :loading="backupForm.processing"
+                    @click="triggerBackup"
+                >
+                    <Plus class="w-4 h-4" />
+                    <span>{{ backupForm.processing ? 'Generating Snapshot...' : 'Create Backup Now' }}</span>
+                </UiButton>
+            </template>
+        </UiPageHeader>
 
-                    <button
-                        @click="triggerBackup"
-                        :disabled="backupForm.processing"
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white text-sm font-semibold transition-colors shadow-sm shadow-cyan-600/30"
-                    >
-                        <Plus class="w-4 h-4" />
-                        <span>{{ backupForm.processing ? 'Generating Snapshot...' : 'Create Backup Now' }}</span>
-                    </button>
-                </div>
-            </div>
+        <!-- Backups List Table -->
+        <div class="space-y-4">
+            <h2 class="text-sm font-semibold text-theme-text-secondary uppercase tracking-wider flex items-center gap-2">
+                <HardDrive class="w-4 h-4 text-theme-accent" />
+                <span>Available Backup Archives ({{ backups.length }})</span>
+            </h2>
 
-            <!-- Backups List Table -->
-            <div class="space-y-4">
-                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <HardDrive class="w-4 h-4 text-cyan-400" />
-                    <span>Available Backup Archives ({{ backups.length }})</span>
-                </h2>
+            <UiDataTable
+                :headers="[
+                    __('Archive File'),
+                    ...(isAdmin ? [__('User')] : []),
+                    __('Size'),
+                    __('Type'),
+                    __('Created'),
+                    { label: __('Actions'), class: 'text-right' },
+                ]"
+                :items-count="backups?.length || 0"
+                empty-message="No backups created yet. Click &quot;Create Backup Now&quot; to generate a snapshot."
+            >
+                <tr v-for="b in backups" :key="b.id" class="hover:bg-theme-bg-surface/40 transition-colors font-mono text-xs">
+                    <td class="px-5 py-3.5 font-semibold text-theme-text-primary flex items-center gap-2">
+                        <HardDrive class="w-4 h-4 text-theme-accent" />
+                        <span>{{ b.filename }}</span>
+                    </td>
+                    <td v-if="isAdmin" class="px-5 py-3.5 text-theme-text-secondary">
+                        {{ b.user?.username || '—' }}
+                    </td>
+                    <td class="px-5 py-3.5 text-theme-text-secondary">
+                        {{ Math.round((b.size_bytes || 0) / 1024 / 1024) }} MB
+                    </td>
+                    <td class="px-5 py-3.5">
+                        <UiBadge variant="neutral" class="uppercase">
+                            {{ b.type }}
+                        </UiBadge>
+                    </td>
+                    <td class="px-5 py-3.5 text-theme-text-secondary">
+                        {{ b.created_at ? new Date(b.created_at).toLocaleString() : '—' }}
+                    </td>
+                    <td class="px-5 py-3.5 text-right font-sans">
+                        <div class="flex items-center justify-end gap-2">
+                            <UiButton
+                                variant="secondary"
+                                size="xs"
+                                @click="triggerRestore(b.path, b.filename)"
+                                :title="__('Restore Backup')"
+                            >
+                                <RotateCcw class="w-3.5 h-3.5 text-theme-accent" />
+                                <span>{{ __('Restore') }}</span>
+                            </UiButton>
 
-                <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm text-slate-300">
-                            <thead class="bg-slate-950/50 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
-                                <tr>
-                                    <th class="px-5 py-3">{{ __('Archive File') }}</th>
-                                    <th v-if="isAdmin" class="px-5 py-3">{{ __('User') }}</th>
-                                    <th class="px-5 py-3">{{ __('Size') }}</th>
-                                    <th class="px-5 py-3">{{ __('Type') }}</th>
-                                    <th class="px-5 py-3">{{ __('Created') }}</th>
-                                    <th class="px-5 py-3 text-right">{{ __('Actions') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
-                                <tr v-for="b in backups" :key="b.id" class="hover:bg-slate-800/40 transition-colors">
-                                    <td class="px-5 py-3.5 font-semibold text-white flex items-center gap-2">
-                                        <HardDrive class="w-4 h-4 text-cyan-400" />
-                                        <span>{{ b.filename }}</span>
-                                    </td>
-                                    <td v-if="isAdmin" class="px-5 py-3.5 text-slate-400">
-                                        {{ b.user?.username || '—' }}
-                                    </td>
-                                    <td class="px-5 py-3.5 text-slate-400">
-                                        {{ Math.round((b.size_bytes || 0) / 1024 / 1024) }} MB
-                                    </td>
-                                    <td class="px-5 py-3.5">
-                                        <span class="px-2 py-0.5 rounded text-[11px] font-semibold uppercase bg-slate-800 text-slate-300 border border-slate-700">
-                                            {{ b.type }}
-                                        </span>
-                                    </td>
-                                    <td class="px-5 py-3.5 text-slate-400">
-                                        {{ b.created_at ? new Date(b.created_at).toLocaleString() : '—' }}
-                                    </td>
-                                    <td class="px-5 py-3.5 text-right font-sans">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <button
-                                                @click="triggerRestore(b.path, b.filename)"
-                                                :title="__('Restore Backup')"
-                                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-600/20 text-cyan-300 hover:bg-cyan-600/30 text-xs font-semibold transition-colors"
-                                            >
-                                                <RotateCcw class="w-3.5 h-3.5" />
-                                                <span>{{ __('Restore') }}</span>
-                                            </button>
-
-                                            <button
-                                                @click="deleteBackup(b.id, b.filename)"
-                                                :title="__('Delete')"
-                                                class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-400 transition-colors"
-                                            >
-                                                <Trash2 class="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr v-if="!backups || backups.length === 0">
-                                    <td :colspan="isAdmin ? 6 : 5" class="px-5 py-8 text-center text-slate-500 text-sm font-sans">
-                                        No backups created yet. Click "Create Backup Now" to generate a snapshot.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Schedules Table -->
-            <div class="space-y-4 pt-4 border-t border-slate-800">
-                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <Calendar class="w-4 h-4 text-indigo-400" />
-                    <span>Automated Backup Schedules ({{ schedules.length }})</span>
-                </h2>
-
-                <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm text-slate-300">
-                            <thead class="bg-slate-950/50 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
-                                <tr>
-                                    <th class="px-5 py-3">{{ __('Frequency') }}</th>
-                                    <th v-if="isAdmin" class="px-5 py-3">{{ __('User') }}</th>
-                                    <th class="px-5 py-3">{{ __('Retention') }}</th>
-                                    <th class="px-5 py-3">{{ __('Destination') }}</th>
-                                    <th class="px-5 py-3">{{ __('Status') }}</th>
-                                    <th class="px-5 py-3 text-right">{{ __('Actions') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-800/60 text-xs">
-                                <tr v-for="s in schedules" :key="s.id" class="hover:bg-slate-800/40 transition-colors">
-                                    <td class="px-5 py-3.5 font-semibold text-white capitalize flex items-center gap-2">
-                                        <Clock class="w-3.5 h-3.5 text-indigo-400" />
-                                        <span>{{ s.frequency }}</span>
-                                    </td>
-                                    <td v-if="isAdmin" class="px-5 py-3.5 text-slate-400">
-                                        {{ s.user?.username || '—' }}
-                                    </td>
-                                    <td class="px-5 py-3.5 text-slate-400">
-                                        Keep last {{ s.retention_count }} backups
-                                    </td>
-                                    <td class="px-5 py-3.5 text-slate-300 font-mono text-[11px] uppercase">
-                                        {{ s.destination }}
-                                    </td>
-                                    <td class="px-5 py-3.5">
-                                        <span class="inline-flex items-center gap-1 text-emerald-400 font-semibold">
-                                            <CheckCircle2 class="w-3.5 h-3.5" />
-                                            Active
-                                        </span>
-                                    </td>
-                                    <td class="px-5 py-3.5 text-right">
-                                        <button
-                                            @click="deleteSchedule(s.id)"
-                                            class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-400 transition-colors"
-                                        >
-                                            <Trash2 class="w-3.5 h-3.5" />
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr v-if="!schedules || schedules.length === 0">
-                                    <td :colspan="isAdmin ? 6 : 5" class="px-5 py-8 text-center text-slate-500 text-sm">
-                                        No automated backup schedules configured.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Schedule Modal -->
-            <UiModal :show="showScheduleModal" :title="__('Configure Automated Backups')" max-width="md" @close="showScheduleModal = false">
-                <form @submit.prevent="submitSchedule" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Frequency') }}</label>
-                        <select
-                            v-model="scheduleForm.frequency"
-                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
-                        >
-                            <option value="daily">{{ __('Daily') }}</option>
-                            <option value="weekly">{{ __('Weekly') }}</option>
-                            <option value="monthly">{{ __('Monthly') }}</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Retention Count') }}</label>
-                        <input
-                            v-model="scheduleForm.retention_count"
-                            type="number"
-                            min="1"
-                            max="30"
-                            required
-                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
-                        />
-                        <p class="text-[11px] text-slate-500 mt-1">{{ __('Older archives beyond this limit are automatically pruned.') }}</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Storage Destination') }}</label>
-                        <select
-                            v-model="scheduleForm.destination"
-                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-cyan-500"
-                        >
-                            <option value="local">{{ __('Local (/home/user/backups)') }}</option>
-                            <option value="sftp">{{ __('Remote SFTP') }}</option>
-                            <option value="s3">{{ __('Amazon S3 / S3-Compatible') }}</option>
-                        </select>
-                    </div>
-
-                    <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
-                        <button
-                            type="button"
-                            @click="showScheduleModal = false"
-                            class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-medium text-slate-300"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            :disabled="scheduleForm.processing"
-                            class="px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-sm font-medium text-white shadow-sm"
-                        >
-                            Save Schedule
-                        </button>
-                    </div>
-                </form>
-            </UiModal>
+                            <button
+                                @click="deleteBackup(b.id, b.filename)"
+                                :title="__('Delete')"
+                                class="p-1.5 rounded-theme-md bg-theme-bg-surface hover:bg-theme-danger-bg text-theme-danger border border-theme-border hover:border-theme-danger-border transition-colors"
+                            >
+                                <Trash2 class="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </UiDataTable>
         </div>
+
+        <!-- Schedules Table -->
+        <div class="space-y-4 pt-4 border-t border-theme-border">
+            <h2 class="text-sm font-semibold text-theme-text-secondary uppercase tracking-wider flex items-center gap-2">
+                <Calendar class="w-4 h-4 text-theme-info" />
+                <span>Automated Backup Schedules ({{ schedules.length }})</span>
+            </h2>
+
+            <UiDataTable
+                :headers="[
+                    __('Frequency'),
+                    ...(isAdmin ? [__('User')] : []),
+                    __('Retention'),
+                    __('Destination'),
+                    __('Status'),
+                    { label: __('Actions'), class: 'text-right' },
+                ]"
+                :items-count="schedules?.length || 0"
+                empty-message="No automated backup schedules configured."
+            >
+                <tr v-for="s in schedules" :key="s.id" class="hover:bg-theme-bg-surface/40 transition-colors text-xs">
+                    <td class="px-5 py-3.5 font-semibold text-theme-text-primary capitalize flex items-center gap-2">
+                        <Clock class="w-3.5 h-3.5 text-theme-info" />
+                        <span>{{ s.frequency }}</span>
+                    </td>
+                    <td v-if="isAdmin" class="px-5 py-3.5 text-theme-text-secondary">
+                        {{ s.user?.username || '—' }}
+                    </td>
+                    <td class="px-5 py-3.5 text-theme-text-secondary">
+                        Keep last {{ s.retention_count }} backups
+                    </td>
+                    <td class="px-5 py-3.5 text-theme-text-secondary font-mono text-[11px] uppercase">
+                        {{ s.destination }}
+                    </td>
+                    <td class="px-5 py-3.5">
+                        <UiBadge variant="success">
+                            <CheckCircle2 class="w-3.5 h-3.5" />
+                            <span>Active</span>
+                        </UiBadge>
+                    </td>
+                    <td class="px-5 py-3.5 text-right">
+                        <button
+                            @click="deleteSchedule(s.id)"
+                            class="p-1.5 rounded-theme-md bg-theme-bg-surface hover:bg-theme-danger-bg text-theme-danger border border-theme-border hover:border-theme-danger-border transition-colors"
+                        >
+                            <Trash2 class="w-3.5 h-3.5" />
+                        </button>
+                    </td>
+                </tr>
+            </UiDataTable>
+        </div>
+
+        <!-- Schedule Modal -->
+        <UiModal :show="showScheduleModal" :title="__('Configure Automated Backups')" max-width="md" @close="showScheduleModal = false">
+            <form @submit.prevent="submitSchedule" class="space-y-4">
+                <div>
+                    <UiSelect
+                        id="schedule_frequency"
+                        v-model="scheduleForm.frequency"
+                        :label="__('Frequency')"
+                        :options="[
+                            { value: 'daily', label: __('Daily') },
+                            { value: 'weekly', label: __('Weekly') },
+                            { value: 'monthly', label: __('Monthly') },
+                        ]"
+                    />
+                </div>
+
+                <div>
+                    <UiInput
+                        id="schedule_retention"
+                        v-model="scheduleForm.retention_count"
+                        type="number"
+                        min="1"
+                        max="30"
+                        required
+                        :label="__('Retention Count')"
+                        :hint="__('Older archives beyond this limit are automatically pruned.')"
+                    />
+                </div>
+
+                <div>
+                    <UiSelect
+                        id="schedule_destination"
+                        v-model="scheduleForm.destination"
+                        :label="__('Storage Destination')"
+                        :options="[
+                            { value: 'local', label: __('Local (/home/user/backups)') },
+                            { value: 'sftp', label: __('Remote SFTP') },
+                            { value: 's3', label: __('Amazon S3 / S3-Compatible') },
+                        ]"
+                    />
+                </div>
+
+                <div class="pt-4 flex items-center justify-end gap-3 border-t border-theme-border">
+                    <UiButton
+                        type="button"
+                        variant="secondary"
+                        @click="showScheduleModal = false"
+                    >
+                        Cancel
+                    </UiButton>
+                    <UiButton
+                        type="submit"
+                        variant="primary"
+                        :disabled="scheduleForm.processing"
+                        :loading="scheduleForm.processing"
+                    >
+                        Save Schedule
+                    </UiButton>
+                </div>
+            </form>
+        </UiModal>
+    </div>
 </template>
 

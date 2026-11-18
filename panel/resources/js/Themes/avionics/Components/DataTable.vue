@@ -2,7 +2,7 @@
 defineProps({
     headers: {
         type: Array,
-        default: () => [], // ['Domain', 'Document Root', 'PHP', 'Actions'] or [{ key, label, class }]
+        default: () => [],
     },
     emptyMessage: {
         type: String,
@@ -16,10 +16,13 @@ defineProps({
 </script>
 
 <template>
-    <div class="border border-[#1e2634] rounded-sm bg-[#0c1017] overflow-hidden">
+    <div class="border border-theme-border rounded-theme-lg bg-theme-bg-card overflow-hidden">
+        <div v-if="$slots.toolbar" class="px-4 py-2.5 border-b border-theme-border bg-theme-bg-surface/60 flex items-center justify-between font-mono text-xs">
+            <slot name="toolbar" />
+        </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left font-mono text-xs">
-                <thead class="bg-[#10151e] border-b border-[#1e2634] text-[#8e9cae] uppercase tracking-wider text-[11px]">
+                <thead class="bg-theme-bg-surface/80 border-b border-theme-border text-theme-text-secondary uppercase tracking-wider text-[11px]">
                     <tr>
                         <slot name="header">
                             <th
@@ -35,10 +38,10 @@ defineProps({
                         </slot>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-[#18202c] text-[#d6dce7]">
+                <tbody class="divide-y divide-theme-border-subtle text-theme-text-primary">
                     <slot />
                     <tr v-if="itemsCount === 0">
-                        <td :colspan="headers.length || 10" class="py-8 text-center text-[#586477]">
+                        <td :colspan="headers.length || 10" class="py-8 text-center text-theme-text-muted">
                             <slot name="empty">
                                 {{ emptyMessage }}
                             </slot>
@@ -47,7 +50,7 @@ defineProps({
                 </tbody>
             </table>
         </div>
-        <div v-if="$slots.footer" class="p-3 border-t border-[#1e2634] bg-[#0d1219]">
+        <div v-if="$slots.footer" class="p-3 border-t border-theme-border bg-theme-bg-surface/40">
             <slot name="footer" />
         </div>
     </div>

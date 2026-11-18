@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { shallowRef, onMounted, watch } from 'vue';
 import { FileText, RefreshCw, ChevronLeft, ChevronRight, X } from '@lucide/vue';
+import UiButton from '@shared/Ui/UiButton.vue';
 
 const props = defineProps({
     domain: {
@@ -53,11 +54,11 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="bg-theme-bg-card border border-theme-border rounded-xl p-5 shadow-sm space-y-4">
+    <div class="bg-theme-bg-card border border-theme-border rounded-theme-lg p-5 shadow-xs space-y-4">
         <div class="flex items-center justify-between border-b border-theme-border pb-3">
             <div class="flex items-center gap-2">
-                <FileText class="w-4 h-4 text-cyan-400" />
-                <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary">
+                <FileText class="w-4 h-4 text-theme-info-text" />
+                <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary theme-ui-control">
                     {{ actionProps.title || (logType === 'error' ? 'Web Server Error Log' : 'HTTP Access Log') }}
                 </h3>
                 <span class="text-[11px] text-theme-text-muted font-mono">
@@ -66,15 +67,16 @@ onMounted(() => {
             </div>
 
             <div class="flex items-center gap-2">
-                <button
+                <UiButton
+                    size="xs"
+                    variant="secondary"
                     @click="loadLogs(page)"
                     :disabled="loading"
-                    class="p-1.5 rounded-lg bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary border border-theme-border transition-colors text-xs flex items-center gap-1.5"
                     :title="__('Refresh Log Stream')"
                 >
                     <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" />
                     <span class="hidden sm:inline">{{ __('Refresh') }}</span>
-                </button>
+                </UiButton>
                 <button @click="emit('close')" class="text-theme-text-muted hover:text-theme-text-primary p-1">
                     <X class="w-4 h-4" />
                 </button>
@@ -82,18 +84,18 @@ onMounted(() => {
         </div>
 
         <!-- Monospace Console Log Terminal -->
-        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-[11px] text-slate-300 h-96 overflow-y-auto leading-relaxed divide-y divide-slate-900/60">
-            <div v-if="loading && lines.length === 0" class="flex items-center justify-center h-full text-slate-500">
+        <div class="bg-theme-bg-input border border-theme-border rounded-theme-md p-3 font-mono text-[11px] text-theme-text-secondary h-96 overflow-y-auto leading-relaxed divide-y divide-theme-border-subtle">
+            <div v-if="loading && lines.length === 0" class="flex items-center justify-center h-full text-theme-text-muted">
                 Loading log stream...
             </div>
-            <div v-else-if="lines.length === 0" class="flex items-center justify-center h-full text-slate-500 italic">
+            <div v-else-if="lines.length === 0" class="flex items-center justify-center h-full text-theme-text-muted italic">
                 Log stream is currently empty.
             </div>
             <div
                 v-else
                 v-for="(line, idx) in lines"
                 :key="idx"
-                class="py-1 hover:bg-slate-900/70 whitespace-pre-wrap break-all"
+                class="py-1 hover:bg-theme-bg-surface/70 whitespace-pre-wrap break-all"
             >
                 {{ line }}
             </div>
@@ -106,23 +108,25 @@ onMounted(() => {
             </span>
 
             <div class="flex items-center gap-2">
-                <button
+                <UiButton
+                    size="sm"
+                    variant="secondary"
                     @click="loadLogs(page - 1)"
                     :disabled="!hasPrev || loading"
-                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-theme-bg-surface border border-theme-border text-xs font-semibold text-theme-text-secondary hover:text-theme-text-primary disabled:opacity-40 transition-colors"
                 >
                     <ChevronLeft class="w-3.5 h-3.5" />
                     <span>{{ __('Previous') }}</span>
-                </button>
+                </UiButton>
 
-                <button
+                <UiButton
+                    size="sm"
+                    variant="secondary"
                     @click="loadLogs(page + 1)"
                     :disabled="!hasNext || loading"
-                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-theme-bg-surface border border-theme-border text-xs font-semibold text-theme-text-secondary hover:text-theme-text-primary disabled:opacity-40 transition-colors"
                 >
                     <span>{{ __('Next') }}</span>
                     <ChevronRight class="w-3.5 h-3.5" />
-                </button>
+                </UiButton>
             </div>
         </div>
     </div>

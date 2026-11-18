@@ -7,6 +7,8 @@ import UiButton from '@shared/Ui/UiButton.vue';
 import UiModal from '@shared/Ui/UiModal.vue';
 import UiInput from '@shared/Ui/UiInput.vue';
 import UiSelect from '@shared/Ui/UiSelect.vue';
+import UiTextarea from '@shared/Ui/UiTextarea.vue';
+import UiBadge from '@shared/Ui/UiBadge.vue';
 import UiDataTable from '@shared/Ui/UiDataTable.vue';
 import {
     UserPlus,
@@ -196,7 +198,7 @@ const tableHeaders = [
         </UiPageHeader>
 
         <!-- Filter / Search Bar -->
-        <div class="flex items-center gap-3 bg-theme-bg-card border border-theme-border rounded p-2.5 shadow-sm">
+        <div class="flex items-center gap-3 bg-theme-bg-card border border-theme-border rounded-theme-lg p-2.5 shadow-xs">
             <div class="relative flex-1">
                 <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" />
                 <input
@@ -204,7 +206,7 @@ const tableHeaders = [
                     @keyup.enter="handleSearch"
                     type="text"
                     :placeholder="__('FILTER_USERS: USERNAME, EMAIL, IDENTITY_SPEC...')"
-                    class="w-full pl-9 pr-4 py-1.5 bg-theme-bg-surface border border-theme-border rounded text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:border-theme-accent transition-colors"
+                    class="w-full pl-9 pr-4 py-1.5 bg-theme-bg-surface border border-theme-border rounded-theme-md text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:border-theme-accent transition-colors"
                 />
             </div>
             <UiButton
@@ -229,7 +231,7 @@ const tableHeaders = [
             >
                 <td class="py-3.5 px-4">
                     <div class="flex items-center gap-2.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-theme-accent"></span>
+                        <span class="w-1.5 h-1.5 rounded-theme-badge bg-theme-accent"></span>
                         <div>
                             <div class="font-bold text-theme-text-primary flex items-center gap-1.5">
                                 <span>{{ user.username }}</span>
@@ -239,10 +241,10 @@ const tableHeaders = [
                     </div>
                 </td>
                 <td class="py-3.5 px-4">
-                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-theme-bg-surface text-theme-text-secondary border border-theme-border">
+                    <UiBadge variant="neutral">
                         <PackageIcon class="w-3.5 h-3.5 text-theme-accent" />
-                        {{ user.package?.name || 'DEFAULT' }}
-                    </span>
+                        <span>{{ user.package?.name || 'DEFAULT' }}</span>
+                    </UiBadge>
                 </td>
                 <td class="py-3.5 px-4">
                     <select
@@ -250,7 +252,7 @@ const tableHeaders = [
                         :disabled="updatingCliUserId === user.id"
                         :aria-label="`PHP CLI version for ${user.username}`"
                         @change="updateUserPhpCli(user, ($event.target as HTMLSelectElement).value)"
-                        class="px-2 py-1 bg-theme-bg-surface border border-theme-border rounded text-xs font-mono text-theme-text-primary focus:outline-none focus:border-theme-accent disabled:opacity-50"
+                        class="px-2 py-1 bg-theme-bg-surface border border-theme-border rounded-theme-md text-xs font-mono text-theme-text-primary focus:outline-none focus:border-theme-accent disabled:opacity-50"
                     >
                         <option
                             v-for="ver in installedPhpVersions"
@@ -269,13 +271,13 @@ const tableHeaders = [
                 </td>
                 <td class="py-3.5 px-4">
                     <span class="inline-flex items-center gap-1.5 text-theme-text-primary">
-                        <Database class="w-3.5 h-3.5 text-emerald-400" />
+                        <Database class="w-3.5 h-3.5 text-theme-success" />
                         {{ user.databases_count || 0 }}
                     </span>
                 </td>
                 <td class="py-3.5 px-4">
                     <div class="flex items-center gap-1.5 text-theme-text-primary">
-                        <HardDrive class="w-3.5 h-3.5 text-emerald-400" />
+                        <HardDrive class="w-3.5 h-3.5 text-theme-success" />
                         <span>{{ diskUsageMap[user.username]?.disk_usage_human || '—' }}</span>
                     </div>
                     <div class="text-[10px] text-theme-text-muted">
@@ -283,16 +285,12 @@ const tableHeaders = [
                     </div>
                 </td>
                 <td class="py-3.5 px-4">
-                    <span
-                        :class="[
-                            'inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase tracking-wider',
-                            user.status === 'active'
-                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                                : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                        ]"
+                    <UiBadge
+                        :variant="user.status === 'active' ? 'success' : 'danger'"
+                        class="uppercase"
                     >
                         {{ user.status }}
-                    </span>
+                    </UiBadge>
                 </td>
                 <td class="py-3.5 px-4 text-right">
                     <div class="flex items-center justify-end gap-1.5">
@@ -302,7 +300,7 @@ const tableHeaders = [
                             :title="copiedUser === user.username ? 'Copied SSH command!' : `Copy SSH command (ssh ${user.username}@${$page.props.panel?.server_ip || 'ip'})`"
                             class="text-theme-text-muted hover:text-theme-accent transition-colors p-1"
                         >
-                            <Check v-if="copiedUser === user.username" class="w-4 h-4 text-emerald-400" />
+                            <Check v-if="copiedUser === user.username" class="w-4 h-4 text-theme-success" />
                             <Terminal v-else class="w-4 h-4" />
                         </button>
 
@@ -319,7 +317,7 @@ const tableHeaders = [
                         <button
                             @click="openEditModal(user)"
                             :title="__('Edit User')"
-                            class="text-theme-text-muted hover:text-emerald-400 transition-colors p-1"
+                            class="text-theme-text-muted hover:text-theme-success transition-colors p-1"
                         >
                             <Pencil class="w-4 h-4" />
                         </button>
@@ -329,7 +327,7 @@ const tableHeaders = [
                             v-if="user.status === 'active'"
                             @click="suspendUser(user.id, user.username)"
                             :title="__('Suspend Context')"
-                            class="text-theme-text-muted hover:text-amber-400 transition-colors p-1"
+                            class="text-theme-text-muted hover:text-theme-warning transition-colors p-1"
                         >
                             <Lock class="w-4 h-4" />
                         </button>
@@ -337,7 +335,7 @@ const tableHeaders = [
                             v-else
                             @click="unsuspendUser(user.id, user.username)"
                             :title="__('Restore Context')"
-                            class="text-theme-text-muted hover:text-emerald-400 transition-colors p-1"
+                            class="text-theme-text-muted hover:text-theme-success transition-colors p-1"
                         >
                             <Unlock class="w-4 h-4" />
                         </button>
@@ -346,7 +344,7 @@ const tableHeaders = [
                         <button
                             @click="deleteUser(user.id, user.username)"
                             :title="__('Terminate User')"
-                            class="text-theme-text-muted hover:text-rose-400 transition-colors p-1"
+                            class="text-theme-text-muted hover:text-theme-danger transition-colors p-1"
                         >
                             <Trash2 class="w-4 h-4" />
                         </button>
@@ -413,20 +411,18 @@ const tableHeaders = [
 
                 <!-- SSH Public Key -->
                 <div>
-                    <label class="block text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-1 flex items-center justify-between">
-                        <span class="flex items-center gap-1.5">
-                            <Key class="w-3.5 h-3.5 text-theme-accent" />
-                            <span>{{ __('SSH Public Key') }}</span>
-                        </span>
-                        <span class="text-theme-text-muted font-normal lowercase">{{ __('Stored in ~/.ssh/authorized_keys') }}</span>
-                    </label>
-                    <textarea
+                    <UiTextarea
+                        id="ssh_public_key"
                         v-model="editForm.ssh_public_key"
                         rows="3"
+                        :label="__('SSH Public Key')"
                         :placeholder="__('ssh-ed25519 AAAAC3... or leave empty to clear')"
-                        class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded text-xs font-mono text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:border-theme-accent transition-colors"
-                    ></textarea>
-                    <p v-if="editForm.errors.ssh_public_key" class="text-xs text-rose-400 mt-1">{{ editForm.errors.ssh_public_key }}</p>
+                        :error="editForm.errors.ssh_public_key"
+                    >
+                        <template #label-right>
+                            <span class="text-xs text-theme-text-muted font-normal lowercase">{{ __('Stored in ~/.ssh/authorized_keys') }}</span>
+                        </template>
+                    </UiTextarea>
                 </div>
 
                 <!-- Action Buttons -->
@@ -463,7 +459,7 @@ const tableHeaders = [
                             v-model="phpCliForm.version"
                             :aria-invalid="Boolean(phpCliError)"
                             :aria-describedby="phpCliError ? 'php-cli-version-error' : 'php-cli-version-help'"
-                            class="w-48 px-3 py-2 bg-theme-bg-surface border border-theme-border rounded text-sm text-theme-text-primary focus:outline-none focus:border-theme-accent transition-colors"
+                            class="w-48 px-3 py-2 bg-theme-bg-surface border border-theme-border rounded-theme-md text-sm text-theme-text-primary focus:outline-none focus:border-theme-accent transition-colors"
                         >
                             <option
                                 v-for="ver in installedPhpVersions"
@@ -488,13 +484,13 @@ const tableHeaders = [
                         v-if="phpCliError"
                         id="php-cli-version-error"
                         role="alert"
-                        class="mt-1.5 text-xs text-rose-400"
+                        class="mt-1.5 text-xs text-theme-danger-text"
                     >
                         {{ phpCliError }}
                     </p>
                 </div>
 
-                <div id="php-cli-version-help" class="space-y-1.5 rounded bg-theme-bg-surface p-3 text-xs text-theme-text-muted border border-theme-border">
+                <div id="php-cli-version-help" class="space-y-1.5 rounded-theme-md bg-theme-bg-surface p-3 text-xs text-theme-text-muted border border-theme-border">
                     <p>
                         <strong>Immediate Effect:</strong>
                         Applies immediately to SSH sessions and Composer (<code>/usr/local/bin/php</code>).

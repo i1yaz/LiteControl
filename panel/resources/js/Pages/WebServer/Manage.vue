@@ -2,6 +2,9 @@
 import { shallowRef, computed, onMounted } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import { confirmDialog } from '@shared/Composables/useDialog';
+import UiBadge from '@shared/Ui/UiBadge.vue';
+import UiButton from '@shared/Ui/UiButton.vue';
+import UiToggle from '@shared/Ui/UiToggle.vue';
 import {
     Globe,
     Folder,
@@ -160,7 +163,7 @@ onMounted(() => {
             <div class="flex items-center gap-3">
                 <a
                     href="/domains"
-                    class="p-2 rounded-lg bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary border border-theme-border transition-colors"
+                    class="p-2 rounded-theme-md bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary border border-theme-border transition-colors"
                     :title="__('Return to Domains Registry')"
                 >
                     <ChevronLeft class="w-4 h-4" />
@@ -171,28 +174,20 @@ onMounted(() => {
                         <h1 class="text-xl sm:text-2xl font-extrabold text-theme-text-primary tracking-tight">
                             {{ domain.domain }}
                         </h1>
-                        <span
-                            :class="[
-                                'px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border',
-                                domain.status === 'suspended'
-                                    ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-                                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            ]"
+                        <UiBadge
+                            :variant="domain.status === 'suspended' ? 'warning' : 'success'"
+                            class="uppercase tracking-wider"
                         >
                             {{ domain.status }}
-                        </span>
-                        <span
-                            :class="[
-                                'px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1',
-                                domain.ssl_enabled
-                                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-                                    : 'bg-slate-500/10 text-slate-400 border-slate-500/30'
-                            ]"
+                        </UiBadge>
+                        <UiBadge
+                            :variant="domain.ssl_enabled ? 'info' : 'neutral'"
+                            class="uppercase tracking-wider"
                         >
-                            <ShieldCheck v-if="domain.ssl_enabled" class="w-3 h-3 text-blue-400" />
-                            <ShieldAlert v-else class="w-3 h-3 text-slate-400" />
+                            <ShieldCheck v-if="domain.ssl_enabled" class="w-3 h-3" />
+                            <ShieldAlert v-else class="w-3 h-3" />
                             {{ domain.ssl_enabled ? 'SECURE_TLS' : 'INSECURE' }}
-                        </span>
+                        </UiBadge>
                     </div>
 
                     <p class="text-xs text-theme-text-secondary mt-1 flex items-center gap-2">
@@ -210,7 +205,7 @@ onMounted(() => {
                 <a
                     :href="'http://' + domain.domain"
                     target="_blank"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-semibold border border-theme-border transition-colors"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-theme-md bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-semibold border border-theme-border transition-colors"
                 >
                     <span>{{ __('Visit Site') }}</span>
                     <ExternalLink class="w-3.5 h-3.5 text-theme-text-muted" />
@@ -218,28 +213,30 @@ onMounted(() => {
 
                 <a
                     :href="`/files?domain_id=${domain.id}`"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600/10 hover:bg-cyan-600/20 text-cyan-400 text-xs font-semibold border border-cyan-500/30 transition-colors"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-theme-md bg-theme-info-bg hover:bg-theme-info/20 text-theme-info-text text-xs font-semibold border border-theme-info-border transition-colors"
                 >
                     <Folder class="w-3.5 h-3.5" />
                     <span>{{ __('File Manager') }}</span>
                 </a>
 
-                <button
+                <UiButton
+                    size="sm"
+                    variant="secondary"
                     @click="toggleSuspend"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-semibold border border-theme-border transition-colors"
                 >
-                    <PlayCircle v-if="domain.status === 'suspended'" class="w-3.5 h-3.5 text-amber-400" />
-                    <PauseCircle v-else class="w-3.5 h-3.5 text-amber-400" />
+                    <PlayCircle v-if="domain.status === 'suspended'" class="w-3.5 h-3.5 text-theme-warning-text" />
+                    <PauseCircle v-else class="w-3.5 h-3.5 text-theme-warning-text" />
                     <span>{{ domain.status === 'suspended' ? 'Activate' : 'Suspend' }}</span>
-                </button>
+                </UiButton>
 
-                <button
+                <UiButton
+                    size="sm"
+                    variant="danger-soft"
                     @click="deleteDomain"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold border border-rose-500/30 transition-colors"
                 >
                     <Trash2 class="w-3.5 h-3.5" />
                     <span>{{ __('Delete') }}</span>
-                </button>
+                </UiButton>
             </div>
         </div>
 
@@ -264,22 +261,13 @@ onMounted(() => {
             <!-- Other Tabs: Action Buttons Grid -->
             <div v-else class="space-y-6">
                 <!-- open_basedir Protection Toggle (Files Tab) -->
-                <div v-if="currentTab === 'files'" class="bg-theme-bg-surface border border-theme-border rounded-xl p-4 flex items-center justify-between">
-                    <div>
-                        <h3 class="text-sm font-semibold text-theme-text-primary">{{ __('PHP open_basedir Protection') }}</h3>
-                        <p class="text-xs text-theme-text-muted mt-0.5">
-                            Restrict PHP file access to this domain's root directory and /tmp. Default: OFF.
-                        </p>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input
-                            type="checkbox"
-                            :checked="domain.open_basedir_enabled"
-                            @change="toggleOpenBasedir"
-                            class="sr-only peer"
-                        />
-                        <div class="w-10 h-5 bg-theme-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                    </label>
+                <div v-if="currentTab === 'files'" class="bg-theme-bg-card border border-theme-border rounded-theme-lg p-4">
+                    <UiToggle
+                        :model-value="!!domain.open_basedir_enabled"
+                        @update:model-value="toggleOpenBasedir"
+                        :label="__('PHP open_basedir Protection')"
+                        description="Restrict PHP file access to this domain's root directory and /tmp. Default: OFF."
+                    />
                 </div>
 
                 <ManageActionGrid

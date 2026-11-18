@@ -62,18 +62,18 @@ const handleActionClick = (action) => {
             :key="action.id"
             @click="handleActionClick(action)"
             :class="[
-                'p-4 rounded-xl border transition-all cursor-pointer flex items-center gap-3.5 group',
+                'p-4 rounded-theme-lg border transition-all cursor-pointer flex items-center gap-3.5 group',
                 activeAction?.id === action.id
-                    ? 'bg-blue-600/10 border-blue-500 shadow-sm shadow-blue-500/20'
+                    ? 'bg-theme-accent-subtle border-theme-accent shadow-xs'
                     : 'bg-theme-bg-card border-theme-border hover:border-theme-border-hover hover:bg-theme-bg-surface/60'
             ]"
         >
             <div
                 :class="[
-                    'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border transition-colors',
+                    'w-10 h-10 rounded-theme-md flex items-center justify-center shrink-0 border transition-colors',
                     activeAction?.id === action.id
-                        ? 'bg-blue-600 text-white border-blue-500'
-                        : 'bg-theme-bg-surface text-theme-accent border-theme-border group-hover:border-theme-accent/50'
+                        ? 'bg-theme-accent text-theme-text-on-accent border-theme-accent'
+                        : 'bg-theme-bg-surface text-theme-accent border-theme-border group-hover:border-theme-accent-border'
                 ]"
             >
                 <component :is="iconMap[action.icon] || Globe" class="w-5 h-5" />

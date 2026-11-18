@@ -17,17 +17,18 @@ const ThemeOverride = computed(() => resolveComponent('Badge'));
 const variantClasses = computed(() => {
     switch (props.variant) {
         case 'success':
-            return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+            return 'bg-theme-success-bg text-theme-success-text border-theme-success-border';
         case 'warning':
-            return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+            return 'bg-theme-warning-bg text-theme-warning-text border-theme-warning-border';
         case 'danger':
-            return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+            return 'bg-theme-danger-bg text-theme-danger-text border-theme-danger-border';
         case 'info':
+            return 'bg-theme-info-bg text-theme-info-text border-theme-info-border';
         case 'primary':
-            return 'bg-sky-500/10 text-sky-400 border-sky-500/20';
+            return 'bg-theme-accent-subtle text-theme-accent-text border-theme-accent-border';
         case 'neutral':
         default:
-            return 'bg-slate-800 text-slate-300 border-slate-700/60';
+            return 'bg-theme-bg-surface text-theme-text-secondary border-theme-border';
     }
 });
 </script>
@@ -38,7 +39,7 @@ const variantClasses = computed(() => {
             <slot :name="slot" v-bind="slotProps" />
         </template>
     </component>
-    <span v-else v-bind="$attrs" :class="['inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border', variantClasses]">
+    <span v-else v-bind="$attrs" :class="['inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-theme-badge text-[11px] font-semibold theme-ui-control border', variantClasses]">
         <slot />
     </span>
 </template>

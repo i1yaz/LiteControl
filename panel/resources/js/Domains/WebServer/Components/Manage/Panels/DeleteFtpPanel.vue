@@ -2,6 +2,8 @@
 import { router } from '@inertiajs/vue3';
 import { UserMinus, Trash2, X, Folder } from '@lucide/vue';
 import { confirmDialog } from '@shared/Composables/useDialog';
+import UiButton from '@shared/Ui/UiButton.vue';
+import UiBadge from '@shared/Ui/UiBadge.vue';
 
 const props = defineProps({
     domain: {
@@ -27,11 +29,11 @@ const deleteFtp = async (acc) => {
 </script>
 
 <template>
-    <div class="bg-theme-bg-card border border-theme-border rounded-xl p-5 shadow-sm space-y-5">
+    <div class="bg-theme-bg-card border border-theme-border rounded-theme-lg p-5 shadow-xs space-y-5">
         <div class="flex items-center justify-between border-b border-theme-border pb-3">
             <div class="flex items-center gap-2">
-                <UserMinus class="w-4 h-4 text-rose-400" />
-                <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary">
+                <UserMinus class="w-4 h-4 text-theme-danger-text" />
+                <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary theme-ui-control">
                     Manage & Delete FTP Accounts ({{ domain.ftp_accounts?.length || 0 }})
                 </h3>
             </div>
@@ -41,7 +43,7 @@ const deleteFtp = async (acc) => {
             </button>
         </div>
 
-        <div v-if="domain.ftp_accounts && domain.ftp_accounts.length > 0" class="divide-y divide-theme-border border border-theme-border rounded-lg overflow-hidden">
+        <div v-if="domain.ftp_accounts && domain.ftp_accounts.length > 0" class="divide-y divide-theme-border border border-theme-border rounded-theme-md overflow-hidden">
             <div
                 v-for="acc in domain.ftp_accounts"
                 :key="acc.id"
@@ -49,11 +51,11 @@ const deleteFtp = async (acc) => {
             >
                 <div class="space-y-1">
                     <div class="flex items-center gap-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-theme-success"></span>
                         <strong class="font-mono text-theme-text-primary text-sm">{{ acc.username }}</strong>
-                        <span class="px-1.5 py-0.5 rounded text-[10px] bg-theme-bg-surface border border-theme-border text-theme-text-muted">
+                        <UiBadge variant="neutral">
                             {{ acc.quota_mb > 0 ? `${acc.quota_mb} MB Quota` : 'Unlimited Quota' }}
-                        </span>
+                        </UiBadge>
                     </div>
 
                     <div class="flex items-center gap-1.5 text-theme-text-secondary text-[11px] font-mono">
@@ -62,14 +64,15 @@ const deleteFtp = async (acc) => {
                     </div>
                 </div>
 
-                <button
+                <UiButton
+                    size="sm"
+                    variant="danger-soft"
                     @click="deleteFtp(acc)"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold rounded-lg border border-rose-500/30 transition-colors"
                     :title="__('Delete FTP Account')"
                 >
                     <Trash2 class="w-3.5 h-3.5" />
                     <span>{{ __('Delete') }}</span>
-                </button>
+                </UiButton>
             </div>
         </div>
 

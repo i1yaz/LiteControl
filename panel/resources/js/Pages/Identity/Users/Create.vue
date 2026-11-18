@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { shallowRef, computed } from 'vue';
 import { useForm, Head, Link } from '@inertiajs/vue3';
+import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
+import UiCard from '@shared/Ui/UiCard.vue';
+import UiInput from '@shared/Ui/UiInput.vue';
+import UiSelect from '@shared/Ui/UiSelect.vue';
+import UiTextarea from '@shared/Ui/UiTextarea.vue';
+import UiToggle from '@shared/Ui/UiToggle.vue';
+import UiBadge from '@shared/Ui/UiBadge.vue';
+import UiButton from '@shared/Ui/UiButton.vue';
 import { UserPlus, ArrowLeft, Key, Globe, ShieldCheck, ChevronDown, ChevronRight } from '@lucide/vue';
 
 const props = defineProps({
@@ -45,238 +53,216 @@ const submit = () => {
 
     <div class="max-w-2xl mx-auto space-y-6">
         <!-- Header -->
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <Link
-                    href="/users"
-                    class="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors"
-                >
-                    <ArrowLeft class="w-4 h-4" />
+        <UiPageHeader
+            :title="__('Create Hosting Account')"
+            :subtitle="__('Add a new Linux tenant account, configure quotas, SSH credentials, and optional domain.')"
+        >
+            <template #icon>
+                <UserPlus class="w-5 h-5 text-theme-accent" />
+            </template>
+            <template #actions>
+                <Link href="/users">
+                    <UiButton variant="secondary" size="sm">
+                        <ArrowLeft class="w-4 h-4" />
+                        <span>{{ __('Back to Users') }}</span>
+                    </UiButton>
                 </Link>
-                <div>
-                    <h1 class="text-xl font-bold text-white flex items-center gap-2">
-                        <UserPlus class="w-5 h-5 text-indigo-400" />
-                        <span>{{ __('Create Hosting Account') }}</span>
-                    </h1>
-                    <p class="text-xs text-slate-400">{{ __('Add a new Linux tenant account, configure quotas, SSH credentials, and optional domain.') }}</p>
-                </div>
-            </div>
-        </div>
+            </template>
+        </UiPageHeader>
 
         <!-- Form Card -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+        <UiCard>
             <form @submit.prevent="submit" class="space-y-5">
                 <!-- User Credentials -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <!-- Username -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                            Username <span class="text-rose-400">*</span>
-                        </label>
-                        <input
+                        <UiInput
+                            id="username"
                             v-model="form.username"
                             type="text"
+                            :label="__('Username')"
                             :placeholder="__('e.g. john')"
+                            :error="form.errors.username"
                             required
-                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500 font-mono"
+                            class="font-mono"
                         />
-                        <p v-if="form.errors.username" class="text-xs text-rose-400 mt-1">{{ form.errors.username }}</p>
                     </div>
 
                     <!-- Full Name -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                            Full Name <span class="text-rose-400">*</span>
-                        </label>
-                        <input
+                        <UiInput
+                            id="name"
                             v-model="form.name"
                             type="text"
+                            :label="__('Full Name')"
                             :placeholder="__('e.g. John Doe')"
+                            :error="form.errors.name"
                             required
-                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
                         />
-                        <p v-if="form.errors.name" class="text-xs text-rose-400 mt-1">{{ form.errors.name }}</p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <!-- Email -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                            Email Address <span class="text-rose-400">*</span>
-                        </label>
-                        <input
+                        <UiInput
+                            id="email"
                             v-model="form.email"
                             type="email"
+                            :label="__('Email Address')"
                             :placeholder="__('john@example.com')"
+                            :error="form.errors.email"
                             required
-                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
                         />
-                        <p v-if="form.errors.email" class="text-xs text-rose-400 mt-1">{{ form.errors.email }}</p>
                     </div>
 
                     <!-- Password -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                            Password <span class="text-rose-400">*</span>
-                        </label>
-                        <input
+                        <UiInput
+                            id="password"
                             v-model="form.password"
                             type="password"
+                            :label="__('Password')"
                             placeholder="••••••••••••"
+                            :error="form.errors.password"
                             required
-                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
                         />
-                        <p v-if="form.errors.password" class="text-xs text-rose-400 mt-1">{{ form.errors.password }}</p>
                     </div>
                 </div>
 
                 <!-- Hosting Package -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                        Hosting Package <span class="text-rose-400">*</span>
-                    </label>
-                    <select
+                    <UiSelect
+                        id="package_id"
                         v-model="form.package_id"
+                        :label="__('Hosting Package')"
+                        :options="(packages || []).map(pkg => ({
+                            value: pkg.id,
+                            label: `${pkg.name} (${pkg.disk_quota_mb ? `${pkg.disk_quota_mb} MB` : 'Unlimited'})`,
+                        }))"
+                        :error="form.errors.package_id"
                         required
-                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                    >
-                        <option v-for="pkg in packages" :key="pkg.id" :value="pkg.id">
-                            {{ pkg.name }} ({{ pkg.disk_quota_mb ? `${pkg.disk_quota_mb} MB` : 'Unlimited' }})
-                        </option>
-                    </select>
-                    <p v-if="form.errors.package_id" class="text-xs text-rose-400 mt-1">{{ form.errors.package_id }}</p>
+                    />
                 </div>
 
                 <!-- SSH Public Key Section -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
-                        <span class="flex items-center gap-1.5">
-                            <Key class="w-3.5 h-3.5 text-indigo-400" />
-                            <span>{{ __('SSH Public Key') }}</span>
-                        </span>
-                        <span class="text-[10px] text-slate-500 font-normal">{{ __('Optional (for terminal / SFTP access)') }}</span>
-                    </label>
-                    <textarea
+                    <UiTextarea
+                        id="ssh_public_key"
                         v-model="form.ssh_public_key"
                         rows="3"
+                        :label="__('SSH Public Key')"
                         :placeholder="__('ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... or ssh-rsa AAAA...')"
-                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
-                    ></textarea>
-                    <p class="text-[11px] text-slate-500 mt-0.5">{{ __('Key will be saved to') }} <code class="text-slate-400 font-mono">{{ __('~/.ssh/authorized_keys') }}</code> {{ __('with strict 0600 permissions.') }}</p>
-                    <p v-if="form.errors.ssh_public_key" class="text-xs text-rose-400 mt-1">{{ form.errors.ssh_public_key }}</p>
+                        :hint="`${__('Key will be saved to')} ~/.ssh/authorized_keys ${__('with strict 0600 permissions.')}`"
+                        :error="form.errors.ssh_public_key"
+                    >
+                        <template #label-right>
+                            <span class="text-[10px] text-theme-text-muted font-normal">{{ __('Optional (for terminal / SFTP access)') }}</span>
+                        </template>
+                    </UiTextarea>
                 </div>
 
                 <!-- Optional Primary Domain Toggle Header -->
-                <div class="pt-2 border-t border-slate-800">
+                <div class="pt-2 border-t border-theme-border">
                     <button
                         type="button"
                         @click="showDomainSection = !showDomainSection"
                         class="flex items-center justify-between w-full py-2 text-left group"
                     >
                         <div class="flex items-center gap-2">
-                            <Globe class="w-4 h-4 text-emerald-400" />
-                            <span class="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">
+                            <Globe class="w-4 h-4 text-theme-success" />
+                            <span class="text-sm font-semibold text-theme-text-primary group-hover:text-theme-accent transition-colors">
                                 Provision Primary Domain Now
                             </span>
-                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-medium">{{ __('Optional') }}</span>
+                            <UiBadge variant="neutral">{{ __('Optional') }}</UiBadge>
                         </div>
-                        <component :is="showDomainSection ? ChevronDown : ChevronRight" class="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+                        <component :is="showDomainSection ? ChevronDown : ChevronRight" class="w-4 h-4 text-theme-text-muted group-hover:text-theme-text-primary transition-colors" />
                     </button>
-                    <p class="text-[11px] text-slate-500">{{ __('You can also leave this blank and add domains later anytime from the Domains page.') }}</p>
+                    <p class="text-[11px] text-theme-text-muted">{{ __('You can also leave this blank and add domains later anytime from the Domains page.') }}</p>
                 </div>
 
                 <!-- Collapsible Primary Domain Fields -->
-                <div v-if="showDomainSection" class="p-4 bg-slate-950 border border-slate-800/80 rounded-xl space-y-4">
+                <div v-if="showDomainSection" class="p-4 bg-theme-bg-surface border border-theme-border rounded-theme-lg space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <!-- Domain Name -->
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                                Domain Name <span class="text-emerald-400">*</span>
-                            </label>
-                            <input
+                            <UiInput
+                                id="domain"
                                 v-model="form.domain"
                                 type="text"
+                                :label="__('Domain Name')"
                                 :placeholder="__('example.com')"
                                 :required="showDomainSection"
-                                class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
+                                :error="form.errors.domain"
+                                class="font-mono"
                             />
-                            <p v-if="form.errors.domain" class="text-xs text-rose-400 mt-1">{{ form.errors.domain }}</p>
                         </div>
 
                         <!-- PHP Version -->
                         <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                                Initial PHP Engine
-                            </label>
-                            <select
+                            <UiSelect
+                                id="php_version"
                                 v-model="form.php_version"
-                                class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
-                            >
-                                <option value="83">{{ __('PHP 8.3 (Default Recommended)') }}</option>
-                                <option value="82">{{ __('PHP 8.2') }}</option>
-                                <option value="81">{{ __('PHP 8.1') }}</option>
-                                <option value="80">{{ __('PHP 8.0') }}</option>
-                                <option value="74">{{ __('PHP 7.4') }}</option>
-                            </select>
+                                :label="__('Initial PHP Engine')"
+                                :options="[
+                                    { value: '83', label: __('PHP 8.3 (Default Recommended)') },
+                                    { value: '82', label: __('PHP 8.2') },
+                                    { value: '81', label: __('PHP 8.1') },
+                                    { value: '80', label: __('PHP 8.0') },
+                                    { value: '74', label: __('PHP 7.4') },
+                                ]"
+                            />
                         </div>
                     </div>
 
                     <!-- Web Root Pointing Location (Subpath) -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
-                            <span>{{ __('Web Root Subpath (Pointing Target)') }}</span>
-                            <span class="text-[10px] text-slate-500 font-normal">{{ __('e.g. "public" for Laravel') }}</span>
-                        </label>
-                        <input
+                        <UiInput
+                            id="public_path"
                             v-model="form.public_path"
                             type="text"
+                            :label="__('Web Root Subpath (Pointing Target)')"
                             :placeholder="__('public (leave empty for standard public_html root)')"
-                            class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500"
-                        />
-                        <div class="mt-1.5 text-[11px] text-slate-500 flex items-center gap-1 font-mono">
+                            class="font-mono"
+                        >
+                            <template #label-right>
+                                <span class="text-[10px] text-theme-text-muted font-normal">{{ __('e.g. "public" for Laravel') }}</span>
+                            </template>
+                        </UiInput>
+                        <div class="mt-1.5 text-[11px] text-theme-text-muted flex items-center gap-1 font-mono">
                             <span>{{ __('Active VirtualHost docRoot:') }}</span>
-                            <span class="text-emerald-400/90 break-all">{{ calculatedDocRoot }}</span>
+                            <span class="text-theme-success break-all">{{ calculatedDocRoot }}</span>
                         </div>
                     </div>
 
                     <!-- SSL Certificate Generation Toggle -->
-                    <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between">
-                        <div class="flex items-center gap-2.5">
-                            <ShieldCheck class="w-4 h-4 text-emerald-400" />
-                            <div>
-                                <span class="text-xs font-semibold text-slate-200 block">{{ __('Issue Let\'s Encrypt SSL Certificate') }}</span>
-                                <span class="text-[10px] text-slate-500">{{ __('Requires DNS A-record to point to this server. Non-blocking if pending.') }}</span>
-                            </div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input
-                                v-model="form.ssl_enabled"
-                                type="checkbox"
-                                class="sr-only peer"
-                            />
-                            <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
-                        </label>
+                    <div class="pt-2 border-t border-theme-border-subtle">
+                        <UiToggle
+                            v-model="form.ssl_enabled"
+                            :label="__('Issue Let\'s Encrypt SSL Certificate')"
+                            :description="__('Requires DNS A-record to point to this server. Non-blocking if pending.')"
+                        />
                     </div>
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
-                    <Link
-                        href="/users"
-                        class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-medium text-slate-300 transition-colors"
-                    >
-                        Cancel
+                <div class="pt-4 flex items-center justify-end gap-3 border-t border-theme-border">
+                    <Link href="/users">
+                        <UiButton type="button" variant="secondary">
+                            Cancel
+                        </UiButton>
                     </Link>
-                    <button
+                    <UiButton
                         type="submit"
+                        variant="primary"
                         :disabled="form.processing"
-                        class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-sm font-medium text-white transition-colors shadow-sm shadow-indigo-600/30"
+                        :loading="form.processing"
                     >
                         {{ form.processing ? 'Provisioning...' : 'Create Account' }}
-                    </button>
+                    </UiButton>
                 </div>
             </form>
-        </div>
+        </UiCard>
     </div>
 </template>

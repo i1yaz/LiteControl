@@ -2,6 +2,10 @@
 import { shallowRef } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { confirmDialog, alertDialog } from '@shared/Composables/useDialog';
+import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
+import UiButton from '@shared/Ui/UiButton.vue';
+import UiCard from '@shared/Ui/UiCard.vue';
+import UiInput from '@shared/Ui/UiInput.vue';
 import UiModal from '@shared/Ui/UiModal.vue';
 import { Package, Plus, Edit2, Trash2, Users, HardDrive, Activity, Globe, Database, Mail } from '@lucide/vue';
 
@@ -85,193 +89,191 @@ const deletePackage = async (id, name, usersCount) => {
     <Head :title="__('Hosting Packages')" />
 
     <div class="space-y-6">
-            <!-- Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
-                        <Package class="w-6 h-6 text-indigo-400" />
-                        <span>{{ __('Hosting Packages') }}</span>
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                        Define disk quotas, bandwidth limits, and resource allocations for customer accounts.
-                    </p>
-                </div>
-
-                <button
+        <UiPageHeader
+            :title="__('Hosting Packages')"
+            subtitle="Define disk quotas, bandwidth limits, and resource allocations for customer accounts."
+        >
+            <template #icon>
+                <Package class="w-6 h-6 text-theme-accent" />
+            </template>
+            <template #actions>
+                <UiButton
+                    variant="primary"
                     @click="openCreateModal"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors shadow-sm shadow-indigo-600/30"
                 >
                     <Plus class="w-4 h-4" />
                     <span>{{ __('Create Package') }}</span>
-                </button>
-            </div>
+                </UiButton>
+            </template>
+        </UiPageHeader>
 
-            <!-- Packages Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div
-                    v-for="pkg in packages"
-                    :key="pkg.id"
-                    class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 hover:border-slate-700 transition-colors shadow-sm"
-                >
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
-                                <Package class="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h3 class="text-base font-bold text-white">{{ pkg.name }}</h3>
-                                <span class="text-xs text-slate-400 flex items-center gap-1">
-                                    <Users class="w-3 h-3 text-slate-500" />
-                                    {{ pkg.users_count || 0 }} Users Assigned
-                                </span>
-                            </div>
+        <!-- Packages Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <UiCard
+                v-for="pkg in packages"
+                :key="pkg.id"
+                class="space-y-4 hover:border-theme-border-hover transition-colors"
+            >
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-theme-md bg-theme-accent-subtle border border-theme-accent-border text-theme-accent flex items-center justify-center">
+                            <Package class="w-5 h-5" />
                         </div>
-
-                        <div class="flex items-center gap-1">
-                            <button
-                                @click="openEditModal(pkg)"
-                                class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
-                            >
-                                <Edit2 class="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                                @click="deletePackage(pkg.id, pkg.name, pkg.users_count)"
-                                class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-400 transition-colors"
-                            >
-                                <Trash2 class="w-3.5 h-3.5" />
-                            </button>
+                        <div>
+                            <h3 class="text-base font-bold text-theme-text-primary">{{ pkg.name }}</h3>
+                            <span class="text-xs text-theme-text-secondary flex items-center gap-1">
+                                <Users class="w-3 h-3 text-theme-text-muted" />
+                                {{ pkg.users_count || 0 }} Users Assigned
+                            </span>
                         </div>
                     </div>
 
-                    <!-- Limits List -->
-                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-xs">
-                        <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/60">
-                            <HardDrive class="w-4 h-4 text-cyan-400" />
-                            <div>
-                                <span class="text-slate-400 text-[10px] uppercase block">{{ __('Disk Quota') }}</span>
-                                <span class="font-semibold text-white">{{ pkg.disk_quota_mb }} MB</span>
-                            </div>
-                        </div>
+                    <div class="flex items-center gap-1">
+                        <button
+                            @click="openEditModal(pkg)"
+                            class="p-1.5 rounded-theme-md bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary border border-theme-border transition-colors"
+                        >
+                            <Edit2 class="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                            @click="deletePackage(pkg.id, pkg.name, pkg.users_count)"
+                            class="p-1.5 rounded-theme-md bg-theme-bg-surface hover:bg-theme-danger-bg text-theme-danger border border-theme-border hover:border-theme-danger-border transition-colors"
+                        >
+                            <Trash2 class="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                </div>
 
-                        <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/60">
-                            <Activity class="w-4 h-4 text-emerald-400" />
-                            <div>
-                                <span class="text-slate-400 text-[10px] uppercase block">{{ __('Bandwidth') }}</span>
-                                <span class="font-semibold text-white">{{ pkg.bandwidth_mb }} MB</span>
-                            </div>
+                <!-- Limits List -->
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-theme-border-subtle text-xs">
+                    <div class="flex items-center gap-2 p-2 rounded-theme-md bg-theme-bg-surface border border-theme-border-subtle">
+                        <HardDrive class="w-4 h-4 text-theme-accent" />
+                        <div>
+                            <span class="text-theme-text-muted text-[10px] uppercase block">{{ __('Disk Quota') }}</span>
+                            <span class="font-semibold text-theme-text-primary">{{ pkg.disk_quota_mb }} MB</span>
                         </div>
+                    </div>
 
-                        <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/60">
-                            <Globe class="w-4 h-4 text-indigo-400" />
-                            <div>
-                                <span class="text-slate-400 text-[10px] uppercase block">{{ __('Domains') }}</span>
-                                <span class="font-semibold text-white">{{ pkg.max_domains }}</span>
-                            </div>
+                    <div class="flex items-center gap-2 p-2 rounded-theme-md bg-theme-bg-surface border border-theme-border-subtle">
+                        <Activity class="w-4 h-4 text-theme-success" />
+                        <div>
+                            <span class="text-theme-text-muted text-[10px] uppercase block">{{ __('Bandwidth') }}</span>
+                            <span class="font-semibold text-theme-text-primary">{{ pkg.bandwidth_mb }} MB</span>
                         </div>
+                    </div>
 
-                        <div class="flex items-center gap-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/60">
-                            <Database class="w-4 h-4 text-amber-400" />
-                            <div>
-                                <span class="text-slate-400 text-[10px] uppercase block">{{ __('Databases') }}</span>
-                                <span class="font-semibold text-white">{{ pkg.max_databases }}</span>
-                            </div>
+                    <div class="flex items-center gap-2 p-2 rounded-theme-md bg-theme-bg-surface border border-theme-border-subtle">
+                        <Globe class="w-4 h-4 text-theme-info" />
+                        <div>
+                            <span class="text-theme-text-muted text-[10px] uppercase block">{{ __('Domains') }}</span>
+                            <span class="font-semibold text-theme-text-primary">{{ pkg.max_domains }}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 p-2 rounded-theme-md bg-theme-bg-surface border border-theme-border-subtle">
+                        <Database class="w-4 h-4 text-theme-warning" />
+                        <div>
+                            <span class="text-theme-text-muted text-[10px] uppercase block">{{ __('Databases') }}</span>
+                            <span class="font-semibold text-theme-text-primary">{{ pkg.max_databases }}</span>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Create / Edit Modal -->
-            <UiModal :show="showModal" :title="isEditing ? 'Edit Package' : 'Create Hosting Package'" max-width="lg" @close="showModal = false">
-                <form @submit.prevent="submit" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Package Name') }}</label>
-                        <input
-                            v-model="form.name"
-                            type="text"
-                            :placeholder="__('e.g. Standard 5GB')"
-                            required
-                            class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                        />
-                        <p v-if="form.errors.name" class="text-xs text-rose-400 mt-1">{{ form.errors.name }}</p>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Disk Quota (MB)') }}</label>
-                            <input
-                                v-model="form.disk_quota_mb"
-                                type="number"
-                                min="100"
-                                required
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Bandwidth (MB)') }}</label>
-                            <input
-                                v-model="form.bandwidth_mb"
-                                type="number"
-                                min="100"
-                                required
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Max Domains') }}</label>
-                            <input
-                                v-model="form.max_domains"
-                                type="number"
-                                min="1"
-                                required
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Subdomains') }}</label>
-                            <input
-                                v-model="form.max_subdomains"
-                                type="number"
-                                min="0"
-                                required
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">{{ __('Databases') }}</label>
-                            <input
-                                v-model="form.max_databases"
-                                type="number"
-                                min="0"
-                                required
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
-                        <button
-                            type="button"
-                            @click="showModal = false"
-                            class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-medium text-slate-300"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            :disabled="form.processing"
-                            class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-sm font-medium text-white shadow-sm"
-                        >
-                            {{ isEditing ? 'Save Changes' : 'Create Package' }}
-                        </button>
-                    </div>
-                </form>
-            </UiModal>
+            </UiCard>
         </div>
+
+        <!-- Create / Edit Modal -->
+        <UiModal :show="showModal" :title="isEditing ? 'Edit Package' : 'Create Hosting Package'" max-width="lg" @close="showModal = false">
+            <form @submit.prevent="submit" class="space-y-4">
+                <div>
+                    <UiInput
+                        id="pkg_name"
+                        v-model="form.name"
+                        type="text"
+                        :label="__('Package Name')"
+                        :placeholder="__('e.g. Standard 5GB')"
+                        :error="form.errors.name"
+                        required
+                    />
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <UiInput
+                            id="pkg_disk_quota"
+                            v-model="form.disk_quota_mb"
+                            type="number"
+                            min="100"
+                            required
+                            :label="__('Disk Quota (MB)')"
+                        />
+                    </div>
+
+                    <div>
+                        <UiInput
+                            id="pkg_bandwidth"
+                            v-model="form.bandwidth_mb"
+                            type="number"
+                            min="100"
+                            required
+                            :label="__('Bandwidth (MB)')"
+                        />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <UiInput
+                            id="pkg_max_domains"
+                            v-model="form.max_domains"
+                            type="number"
+                            min="1"
+                            required
+                            :label="__('Max Domains')"
+                        />
+                    </div>
+
+                    <div>
+                        <UiInput
+                            id="pkg_max_subdomains"
+                            v-model="form.max_subdomains"
+                            type="number"
+                            min="0"
+                            required
+                            :label="__('Subdomains')"
+                        />
+                    </div>
+
+                    <div>
+                        <UiInput
+                            id="pkg_max_databases"
+                            v-model="form.max_databases"
+                            type="number"
+                            min="0"
+                            required
+                            :label="__('Databases')"
+                        />
+                    </div>
+                </div>
+
+                <div class="pt-4 flex items-center justify-end gap-3 border-t border-theme-border">
+                    <UiButton
+                        type="button"
+                        variant="secondary"
+                        @click="showModal = false"
+                    >
+                        Cancel
+                    </UiButton>
+                    <UiButton
+                        type="submit"
+                        variant="primary"
+                        :disabled="form.processing"
+                        :loading="form.processing"
+                    >
+                        {{ isEditing ? 'Save Changes' : 'Create Package' }}
+                    </UiButton>
+                </div>
+            </form>
+        </UiModal>
+    </div>
 </template>
 

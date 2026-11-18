@@ -90,9 +90,9 @@ onUnmounted(() => {
         v-if="status && version"
         class="w-full px-4 py-2 text-xs font-mono flex items-center justify-between gap-3 border-b"
         :class="{
-            'bg-amber-500/15 border-amber-500/30 text-amber-200': status === 'installing',
-            'bg-emerald-500/15 border-emerald-500/30 text-emerald-200': status === 'installed',
-            'bg-red-500/15 border-red-500/30 text-red-200': status === 'failed',
+            'bg-theme-warning-bg border-theme-warning-border text-theme-warning-text': status === 'installing',
+            'bg-theme-success-bg border-theme-success-border text-theme-success-text': status === 'installed',
+            'bg-theme-danger-bg border-theme-danger-border text-theme-danger-text': status === 'failed',
         }"
     >
         <div class="flex items-center gap-2">
@@ -107,7 +107,7 @@ onUnmounted(() => {
         <button
             type="button"
             @click="dismiss"
-            class="p-1 rounded hover:bg-white/10 transition-colors cursor-pointer"
+            class="p-1 rounded-theme-sm hover:bg-theme-bg-surface/40 transition-colors cursor-pointer"
             title="Dismiss"
             aria-label="Dismiss"
         >

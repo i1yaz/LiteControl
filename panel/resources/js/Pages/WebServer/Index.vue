@@ -9,6 +9,9 @@ import UiModal from '@shared/Ui/UiModal.vue';
 import UiInput from '@shared/Ui/UiInput.vue';
 import UiSelect from '@shared/Ui/UiSelect.vue';
 import UiDataTable from '@shared/Ui/UiDataTable.vue';
+import UiBadge from '@shared/Ui/UiBadge.vue';
+import UiAlert from '@shared/Ui/UiAlert.vue';
+import UiToggle from '@shared/Ui/UiToggle.vue';
 import { Globe, Plus, ShieldCheck, ShieldAlert, Folder, Trash2, Pencil, Terminal, Check, LayoutGrid, FolderOpen, PauseCircle, PlayCircle, Download } from '@lucide/vue';
 
 const props = defineProps({
@@ -217,23 +220,23 @@ const copySshCommand = (username) => {
         </UiPageHeader>
 
         <!-- Flash Notice / Warning / Error if present -->
-        <div v-if="$page.props.flash?.error" class="p-3 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-300 flex items-start gap-2.5">
-            <span class="font-bold shrink-0">{{ __('[ERROR]:') }}</span>
+        <UiAlert v-if="$page.props.flash?.error" variant="danger">
+            <span class="font-bold mr-1.5">{{ __('[ERROR]:') }}</span>
             <span>{{ $page.props.flash.error }}</span>
-        </div>
-        <div v-if="$page.props.flash?.warning" class="p-3 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-300 flex items-start gap-2.5">
-            <span class="font-bold shrink-0">{{ __('[WARN]:') }}</span>
+        </UiAlert>
+        <UiAlert v-if="$page.props.flash?.warning" variant="warning">
+            <span class="font-bold mr-1.5">{{ __('[WARN]:') }}</span>
             <span>{{ $page.props.flash.warning }}</span>
-        </div>
+        </UiAlert>
 
         <!-- Quick Install Missing PHP Version (Admin Only) -->
-        <div v-if="isAdmin && missingPhpVersion" class="p-3 bg-purple-500/10 border border-purple-500/20 rounded text-xs text-purple-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div v-if="isAdmin && missingPhpVersion" class="p-3 bg-theme-info-bg border border-theme-info-border rounded-theme-md text-xs text-theme-info-text flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="space-y-1">
                 <div>
                     PHP <strong>{{ formatPhpVersion(missingPhpVersion) }}</strong> (<code>lsphp{{ missingPhpVersion }}</code>) is not installed on this server.
                 </div>
-                <div class="text-[11px] text-purple-300/80">
-                    Or install via CLI: <code class="px-1.5 py-0.5 rounded bg-black/30 text-purple-100 select-all">sudo lc-cli php install {{ missingPhpVersion }}</code>
+                <div class="text-[11px] text-theme-text-secondary">
+                    Or install via CLI: <code class="px-1.5 py-0.5 rounded-theme-sm bg-theme-bg-input text-theme-text-primary border border-theme-border select-all">sudo lc-cli php install {{ missingPhpVersion }}</code>
                 </div>
             </div>
             <UiButton
@@ -272,29 +275,23 @@ const copySshCommand = (username) => {
                     {{ dom.user?.username || '—' }}
                 </td>
                 <td class="py-3.5 px-4">
-                    <span class="px-1.5 py-0.5 rounded text-[10px] uppercase bg-theme-bg-surface text-theme-text-secondary border border-theme-border">
+                    <UiBadge variant="neutral" class="uppercase">
                         {{ dom.type }}
-                    </span>
+                    </UiBadge>
                 </td>
                 <td class="py-3.5 px-4">
-                    <span
-                        v-if="dom.ssl_enabled"
-                        class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                    >
+                    <UiBadge v-if="dom.ssl_enabled" variant="success">
                         <ShieldCheck class="w-3.5 h-3.5" /> SECURE_TLS
-                    </span>
-                    <span
-                        v-else
-                        class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-rose-500/10 text-rose-400 border border-rose-500/30"
-                    >
+                    </UiBadge>
+                    <UiBadge v-else variant="danger">
                         <ShieldAlert class="w-3.5 h-3.5" /> INSECURE_PLAINTEXT
-                    </span>
+                    </UiBadge>
                 </td>
                 <td class="py-3.5 px-4">
                     <select
                         :value="dom.php_version"
                         @change="changePhp(dom.id, $event.target.value)"
-                        class="px-2 py-1 bg-theme-bg-surface border border-theme-border text-theme-text-secondary rounded text-xs focus:outline-none focus:border-theme-accent"
+                        class="px-2 py-1 bg-theme-bg-surface border border-theme-border text-theme-text-secondary rounded-theme-sm text-xs focus:outline-none focus:border-theme-accent"
                     >
                         <option v-for="opt in phpOptions" :key="opt.value" :value="opt.value">
                             {{ opt.label }}
@@ -305,17 +302,17 @@ const copySshCommand = (username) => {
                     <span class="flex items-center gap-1.5">
                         <Folder class="w-3.5 h-3.5 text-theme-text-muted shrink-0" />
                         <span>{{ dom.document_root }}</span>
-                        <span v-if="dom.public_path" class="text-[10px] px-1 py-0.2 bg-theme-accent/10 text-theme-accent rounded border border-theme-accent/20">
+                        <span v-if="dom.public_path" class="text-[10px] px-1 py-0.2 bg-theme-accent-subtle text-theme-accent-text rounded-theme-sm border border-theme-accent-border">
                             /{{ dom.public_path }}
                         </span>
                     </span>
                 </td>
                 <td class="py-3.5 px-4 text-right">
                     <div class="flex items-center justify-end gap-1.5 flex-wrap">
-                        <!-- Manage Button (Primary Blue) -->
+                        <!-- Manage Button -->
                         <a
                             :href="`/domains/${dom.id}/manage`"
-                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-sm transition-colors"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-theme-sm bg-theme-accent hover:bg-theme-accent-hover text-theme-text-on-accent text-xs font-semibold shadow-xs transition-colors"
                             :title="__('Manage Website')"
                         >
                             <LayoutGrid class="w-3.5 h-3.5" />
@@ -325,60 +322,59 @@ const copySshCommand = (username) => {
                         <!-- Filemanager Button -->
                         <a
                             :href="`/files?domain_id=${dom.id}`"
-                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-medium border border-theme-border transition-colors"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-theme-sm bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-medium border border-theme-border transition-colors"
                             :title="__('Open File Manager')"
                         >
-                            <FolderOpen class="w-3.5 h-3.5 text-cyan-400" />
+                            <FolderOpen class="w-3.5 h-3.5 text-theme-info-text" />
                             <span>{{ __('Filemanager') }}</span>
                         </a>
 
                         <!-- Copy SSH Command Button -->
-                        <button
+                        <UiButton
                             v-if="dom.user?.username || currentUsername"
+                            size="xs"
+                            variant="secondary"
                             @click="copySshCommand(dom.user?.username || currentUsername)"
-                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-medium border border-theme-border transition-colors"
                             :title="copiedUser === (dom.user?.username || currentUsername) ? 'Copied SSH command!' : `Copy SSH command (ssh ${(dom.user?.username || currentUsername)}@${$page.props.panel?.server_ip || 'ip'})`"
                         >
-                            <Check v-if="copiedUser === (dom.user?.username || currentUsername)" class="w-3.5 h-3.5 text-emerald-400" />
+                            <Check v-if="copiedUser === (dom.user?.username || currentUsername)" class="w-3.5 h-3.5 text-theme-success-text" />
                             <Terminal v-else class="w-3.5 h-3.5 text-theme-accent" />
                             <span>{{ copiedUser === (dom.user?.username || currentUsername) ? 'Copied!' : 'SSH' }}</span>
-                        </button>
+                        </UiButton>
 
                         <!-- Modify (Quick Edit Modal) -->
-                        <button
+                        <UiButton
+                            size="xs"
+                            variant="secondary"
                             @click="openEditModal(dom)"
-                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs font-medium border border-theme-border transition-colors"
                             :title="__('Quick Modify Domain')"
                         >
-                            <Pencil class="w-3.5 h-3.5 text-emerald-400" />
+                            <Pencil class="w-3.5 h-3.5 text-theme-success-text" />
                             <span>{{ __('Modify') }}</span>
-                        </button>
+                        </UiButton>
 
                         <!-- Suspend / Unsuspend Button -->
-                        <button
+                        <UiButton
+                            size="xs"
+                            :variant="dom.status === 'suspended' ? 'warning' : 'secondary'"
                             @click="toggleSuspend(dom)"
-                            :class="[
-                                'inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border transition-colors',
-                                dom.status === 'suspended'
-                                    ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30'
-                                    : 'bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary border-theme-border'
-                            ]"
                             :title="dom.status === 'suspended' ? 'Activate / Unsuspend Domain' : 'Suspend Domain'"
                         >
-                            <PlayCircle v-if="dom.status === 'suspended'" class="w-3.5 h-3.5 text-amber-400" />
-                            <PauseCircle v-else class="w-3.5 h-3.5 text-amber-400" />
+                            <PlayCircle v-if="dom.status === 'suspended'" class="w-3.5 h-3.5 text-theme-warning-text" />
+                            <PauseCircle v-else class="w-3.5 h-3.5 text-theme-warning-text" />
                             <span>{{ dom.status === 'suspended' ? 'Unsuspend' : 'Suspend' }}</span>
-                        </button>
+                        </UiButton>
 
                         <!-- Delete Button (Danger Tinted) -->
-                        <button
+                        <UiButton
+                            size="xs"
+                            variant="danger-soft"
                             @click="deleteDomain(dom.id, dom.domain)"
-                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-medium border border-rose-500/30 transition-colors"
                             :title="__('Terminate VHost')"
                         >
                             <Trash2 class="w-3.5 h-3.5" />
                             <span>{{ __('Delete') }}</span>
-                        </button>
+                        </UiButton>
                     </div>
                 </td>
             </tr>
@@ -416,16 +412,17 @@ const copySshCommand = (username) => {
 
                 <!-- Web Root Subpath (Pointing Target) -->
                 <div>
-                    <label class="block text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-1 flex items-center justify-between">
-                        <span>{{ __('Web Root Subpath (Pointing Target)') }}</span>
-                        <span class="text-theme-text-muted font-normal lowercase">{{ __('e.g. "public" for Laravel') }}</span>
-                    </label>
-                    <input
+                    <UiInput
+                        id="public_path"
                         v-model="form.public_path"
                         type="text"
+                        :label="__('Web Root Subpath (Pointing Target)')"
                         :placeholder="__('public (leave empty for standard public_html)')"
-                        class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:border-theme-accent transition-colors"
-                    />
+                    >
+                        <template #label-right>
+                            <span class="text-xs text-theme-text-muted font-normal lowercase">{{ __('e.g. "public" for Laravel') }}</span>
+                        </template>
+                    </UiInput>
                     <p class="text-[11px] text-theme-text-muted mt-1">
                         Target DocRoot: <span class="text-theme-accent">{{ addDocRootPreview }}</span>
                     </p>
@@ -441,20 +438,12 @@ const copySshCommand = (username) => {
                 </div>
 
                 <!-- Issue SSL Toggle (Default ON) -->
-                <div class="pt-2 border-t border-theme-border flex items-center justify-between">
-                    <div>
-                        <span class="text-xs text-theme-text-primary block font-medium">{{ __('Generate Let\'s Encrypt SSL') }}</span>
-                        <span class="text-[11px] text-theme-text-muted">{{ __('Default: ON (Requires DNS A-record pointed)') }}</span>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input
-                            v-model="form.ssl_enabled"
-                            type="checkbox"
-                            class="sr-only peer"
-                        />
-                        <div class="w-8 h-4 bg-theme-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
-                    </label>
-                </div>
+                <UiToggle
+                    v-model="form.ssl_enabled"
+                    :label="__('Generate Let\'s Encrypt SSL')"
+                    :description="__('Default: ON (Requires DNS A-record pointed)')"
+                    class="pt-2 border-t border-theme-border"
+                />
 
                 <div class="pt-4 flex items-center justify-end gap-3 border-t border-theme-border">
                     <UiButton
@@ -485,26 +474,26 @@ const copySshCommand = (username) => {
         >
             <form @submit.prevent="submitEdit" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-1">{{ __('Target FQDN (Read-Only)') }}</label>
-                    <input
-                        :value="editingDomain?.domain"
+                    <UiInput
+                        :model-value="editingDomain?.domain"
+                        :label="__('Target FQDN (Read-Only)')"
                         disabled
-                        class="w-full px-3 py-2 bg-theme-bg-surface/50 border border-theme-border rounded text-xs text-theme-text-muted cursor-not-allowed"
                     />
                 </div>
 
                 <!-- Web Root Subpath (Pointing Target) -->
                 <div>
-                    <label class="block text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-1 flex items-center justify-between">
-                        <span>{{ __('Web Root Subpath (Pointing Target)') }}</span>
-                        <span class="text-theme-text-muted font-normal lowercase">{{ __('e.g. "public" for Laravel') }}</span>
-                    </label>
-                    <input
+                    <UiInput
+                        id="edit_public_path"
                         v-model="editForm.public_path"
                         type="text"
+                        :label="__('Web Root Subpath (Pointing Target)')"
                         :placeholder="__('public (leave empty for standard public_html)')"
-                        class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:border-theme-accent transition-colors"
-                    />
+                    >
+                        <template #label-right>
+                            <span class="text-xs text-theme-text-muted font-normal lowercase">{{ __('e.g. "public" for Laravel') }}</span>
+                        </template>
+                    </UiInput>
                     <p class="text-[11px] text-theme-text-muted mt-1">
                         Updated DocRoot: <span class="text-theme-accent">{{ editDocRootPreview }}</span>
                     </p>
@@ -520,23 +509,13 @@ const copySshCommand = (username) => {
                 </div>
 
                 <!-- SSL Certificate Status & Issue Toggle -->
-                <div class="pt-2 border-t border-theme-border flex items-center justify-between">
-                    <div>
-                        <span class="text-xs text-theme-text-primary block font-medium">{{ __('TLS / SSL Encryption') }}</span>
-                        <span class="text-[11px] text-theme-text-muted">
-                            {{ editingDomain?.ssl_enabled ? 'Active Let\'s Encrypt Certificate' : 'Disabled (toggle ON to request SSL)' }}
-                        </span>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input
-                            v-model="editForm.ssl_enabled"
-                            type="checkbox"
-                            :disabled="editingDomain?.ssl_enabled"
-                            class="sr-only peer"
-                        />
-                        <div class="w-8 h-4 bg-theme-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500 peer-disabled:opacity-60"></div>
-                    </label>
-                </div>
+                <UiToggle
+                    v-model="editForm.ssl_enabled"
+                    :disabled="editingDomain?.ssl_enabled"
+                    :label="__('TLS / SSL Encryption')"
+                    :description="editingDomain?.ssl_enabled ? 'Active Let\'s Encrypt Certificate' : 'Disabled (toggle ON to request SSL)'"
+                    class="pt-2 border-t border-theme-border"
+                />
 
                 <div class="pt-4 flex items-center justify-end gap-3 border-t border-theme-border">
                     <UiButton

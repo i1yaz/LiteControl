@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { Head, useForm, router } from '@inertiajs/vue3';
-import { ShieldCheck, ShieldAlert, Lock, Unlock, Server } from '@lucide/vue';
+import { Head, router } from '@inertiajs/vue3';
+import { ShieldCheck, ShieldAlert, Server } from '@lucide/vue';
 import { confirmDialog } from '@shared/Composables/useDialog';
+import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
+import UiCard from '@shared/Ui/UiCard.vue';
+import UiButton from '@shared/Ui/UiButton.vue';
 
 const props = defineProps({
     standardPorts: Array,
@@ -39,60 +42,52 @@ const togglePort = async (item) => {
 </script>
 
 <template>
-            <Head :title="__('Port Firewall')" />
+    <Head :title="__('Port Firewall')" />
 
-        <div class="max-w-4xl mx-auto space-y-6">
-            <!-- Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
-                        <Server class="w-6 h-6 text-rose-400" />
-                        <span>{{ __('Port Firewall (Service Presets)') }}</span>
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                        Quick 1-click firewall control for standard web hosting protocols and ports.
-                    </p>
-                </div>
-            </div>
+    <div class="max-w-4xl mx-auto space-y-6">
+        <UiPageHeader
+            :title="__('Port Firewall (Service Presets)')"
+            subtitle="Quick 1-click firewall control for standard web hosting protocols and ports."
+        >
+            <template #icon>
+                <Server class="w-6 h-6 text-theme-accent" />
+            </template>
+        </UiPageHeader>
 
-            <!-- Ports Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div
-                    v-for="p in standardPorts"
-                    :key="p.port"
-                    class="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between shadow-lg"
-                >
+        <!-- Ports Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <UiCard
+                v-for="p in standardPorts"
+                :key="p.port"
+            >
+                <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3.5">
                         <div
                             :class="[
-                                'p-2.5 rounded-xl border',
+                                'p-2.5 rounded-theme-md border',
                                 isPortOpen(p.port)
-                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                    : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                                    ? 'bg-theme-success-bg text-theme-success-text border-theme-success-border'
+                                    : 'bg-theme-danger-bg text-theme-danger-text border-theme-danger-border'
                             ]"
                         >
                             <ShieldCheck v-if="isPortOpen(p.port)" class="w-5 h-5" />
                             <ShieldAlert v-else class="w-5 h-5" />
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-white">{{ p.name }}</p>
-                            <p class="text-xs text-slate-400 font-mono">Port {{ p.port }}/{{ p.protocol }}</p>
+                            <p class="text-sm font-bold text-theme-text-primary">{{ p.name }}</p>
+                            <p class="text-xs text-theme-text-secondary font-mono">Port {{ p.port }}/{{ p.protocol }}</p>
                         </div>
                     </div>
 
-                    <button
+                    <UiButton
+                        size="sm"
+                        :variant="isPortOpen(p.port) ? 'danger-soft' : 'primary'"
                         @click="togglePort(p)"
-                        :class="[
-                            'px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors border',
-                            isPortOpen(p.port)
-                                ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20'
-                                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
-                        ]"
                     >
                         {{ isPortOpen(p.port) ? 'Close Port' : 'Open Port' }}
-                    </button>
+                    </UiButton>
                 </div>
-            </div>
+            </UiCard>
         </div>
+    </div>
 </template>
-

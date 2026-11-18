@@ -4,11 +4,11 @@ import { computed } from 'vue';
 const props = defineProps({
     variant: {
         type: String,
-        default: 'primary', // primary | secondary | danger | ghost
+        default: 'primary', // primary | secondary | danger | danger-soft | warning | success | ghost
     },
     size: {
         type: String,
-        default: 'md', // sm | md | lg
+        default: 'md', // xs | sm | md | lg
     },
     type: {
         type: String,
@@ -41,14 +41,20 @@ const sizeClasses = computed(() => {
 const variantClasses = computed(() => {
     switch (props.variant) {
         case 'secondary':
-            return 'bg-[#151921] hover:bg-[#1c222d] border border-[#262f3e] text-[#d6dce7] hover:text-white';
+            return 'bg-theme-bg-surface hover:bg-theme-border border border-theme-border-strong text-theme-text-primary';
         case 'danger':
-            return 'bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-300';
+            return 'bg-theme-danger hover:bg-theme-danger-hover border border-theme-danger text-white font-bold';
+        case 'danger-soft':
+            return 'bg-theme-danger-bg hover:bg-theme-danger/25 border border-theme-danger-border text-theme-danger-text';
+        case 'warning':
+            return 'bg-theme-warning-bg hover:bg-theme-warning/25 border border-theme-warning-border text-theme-warning-text';
+        case 'success':
+            return 'bg-theme-success hover:bg-theme-success-hover border border-theme-success text-black font-bold';
         case 'ghost':
-            return 'bg-transparent hover:bg-[#151921] text-[#98a6b8] hover:text-white';
+            return 'bg-transparent hover:bg-theme-bg-surface text-theme-text-secondary hover:text-theme-text-primary border border-transparent';
         case 'primary':
         default:
-            return 'bg-[#ff6b35] hover:bg-[#ff8252] text-black font-bold border border-[#ff6b35]';
+            return 'bg-theme-accent hover:bg-theme-accent-hover text-theme-text-on-accent font-bold border border-theme-accent';
     }
 });
 </script>
@@ -58,7 +64,7 @@ const variantClasses = computed(() => {
         :type="type"
         :disabled="disabled || loading"
         :class="[
-            'inline-flex items-center justify-center gap-2 rounded-sm font-mono uppercase tracking-wider transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer',
+            'inline-flex items-center justify-center gap-2 rounded-theme-md font-mono uppercase tracking-wider transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer',
             sizeClasses,
             variantClasses
         ]"

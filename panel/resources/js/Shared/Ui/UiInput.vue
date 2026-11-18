@@ -17,6 +17,10 @@ defineProps({
         type: String,
         default: '',
     },
+    hint: {
+        type: String,
+        default: '',
+    },
     type: {
         type: String,
         default: 'text',
@@ -56,28 +60,35 @@ const ThemeOverride = computed(() => resolveComponent('Input'));
             <slot :name="slot" v-bind="slotProps" />
         </template>
     </component>
-    <div v-else v-bind="$attrs" class="space-y-1.5">
-        <label v-if="label" :for="id" class="block text-xs font-medium text-slate-300">
-            {{ label }} <span v-if="required" class="text-sky-400">*</span>
-        </label>
+    <div v-else class="space-y-1.5">
+        <div v-if="label || $slots['label-Right']" class="flex items-center justify-between">
+            <label v-if="label" :for="id" class="block text-xs font-medium text-theme-text-secondary theme-ui-control">
+                {{ label }} <span v-if="required" class="text-theme-accent">*</span>
+            </label>
+            <slot name="label-right" />
+        </div>
         <div class="relative">
             <input
+                v-bind="$attrs"
                 :id="id"
                 :type="type"
                 :value="modelValue"
                 :placeholder="placeholder"
                 :disabled="disabled"
                 :required="required"
-                @input="emit('update:modelValue', $event.target.value)"
+                @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
                 :class="[
-                    'w-full px-3.5 py-2.5 bg-slate-950 border rounded-lg text-sm text-slate-100 placeholder-slate-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50',
+                    'w-full px-3.5 py-2 bg-theme-bg-input border rounded-theme-md text-xs sm:text-sm text-theme-text-primary placeholder-theme-text-muted transition-colors focus:outline-none focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed',
                     error
-                        ? 'border-rose-500/80 focus:border-rose-500 focus:ring-rose-500/20'
-                        : 'border-slate-800 focus:border-sky-500 focus:ring-sky-500/20'
+                        ? 'border-theme-danger focus:border-theme-danger focus:ring-theme-danger/30'
+                        : 'border-theme-border focus:border-theme-accent focus:ring-theme-accent/30'
                 ]"
             />
         </div>
-        <p v-if="error" class="text-xs text-rose-400 mt-1">
+        <p v-if="hint && !error" class="text-[11px] text-theme-text-muted mt-1">
+            {{ hint }}
+        </p>
+        <p v-if="error" class="text-xs text-theme-danger-text mt-1">
             {{ error }}
         </p>
     </div>

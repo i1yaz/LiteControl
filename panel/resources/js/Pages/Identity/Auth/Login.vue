@@ -51,11 +51,11 @@ const submit = () => {
         />
 
         <div class="flex items-center justify-between text-xs">
-            <label class="flex items-center gap-2 cursor-pointer select-none">
+            <label class="flex items-center gap-2 cursor-pointer select-none text-theme-text-secondary">
                 <input
                     v-model="form.remember"
                     type="checkbox"
-                    class="rounded"
+                    class="rounded-theme-sm border-theme-border bg-theme-bg-input text-theme-accent focus:ring-0"
                 />
                 <span>{{ __('Remember me') }}</span>
             </label>

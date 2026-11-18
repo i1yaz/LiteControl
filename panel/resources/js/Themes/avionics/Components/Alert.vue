@@ -12,14 +12,14 @@ const props = defineProps({
 const variantClasses = computed(() => {
     switch (props.variant) {
         case 'success':
-            return 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300';
+            return 'bg-theme-success-bg border-theme-success-border text-theme-success-text';
         case 'warning':
-            return 'bg-amber-950/40 border-amber-500/30 text-amber-300';
+            return 'bg-theme-warning-bg border-theme-warning-border text-theme-warning-text';
         case 'danger':
-            return 'bg-rose-950/40 border-rose-500/30 text-rose-300';
+            return 'bg-theme-danger-bg border-theme-danger-border text-theme-danger-text';
         case 'info':
         default:
-            return 'bg-cyan-950/40 border-cyan-500/30 text-cyan-300';
+            return 'bg-theme-info-bg border-theme-info-border text-theme-info-text';
     }
 });
 
@@ -39,8 +39,8 @@ const iconComponent = computed(() => {
 </script>
 
 <template>
-    <div :class="['p-3.5 rounded-sm border font-mono text-xs flex items-center gap-3', variantClasses]">
-        <component :is="iconComponent" class="w-4 h-4 flex-shrink-0" />
+    <div :class="['p-3.5 rounded-theme-md border font-mono text-xs flex items-start gap-3', variantClasses]">
+        <component :is="iconComponent" class="w-4 h-4 shrink-0 mt-0.5" />
         <div class="flex-1">
             <slot />
         </div>

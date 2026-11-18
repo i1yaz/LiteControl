@@ -10,12 +10,38 @@ const activeThemeModule = shallowRef(null);
 const loadedThemes = new Map();
 
 /**
+ * Synchronize DOM attributes, color-scheme, and Google Fonts for the active theme
+ */
+function applyThemeDomEffects(themeId, themeExport) {
+    if (typeof document === 'undefined') return;
+
+    const resolvedId = themeExport?.id || themeId;
+    document.documentElement.setAttribute('data-theme', resolvedId);
+
+    const colorScheme = themeExport?.color_scheme || 'dark';
+    document.documentElement.style.colorScheme = colorScheme;
+
+    if (Array.isArray(themeExport?.fonts)) {
+        for (const fontUrl of themeExport.fonts) {
+            if (fontUrl && !document.head.querySelector(`link[href="${fontUrl}"]`)) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = fontUrl;
+                document.head.appendChild(link);
+            }
+        }
+    }
+}
+
+/**
  * Load and activate a theme module by ID
  */
 export async function loadThemeModule(themeId = 'avionics') {
     if (loadedThemes.has(themeId)) {
-        activeThemeModule.value = loadedThemes.get(themeId);
+        const cached = loadedThemes.get(themeId);
+        activeThemeModule.value = cached;
         activeThemeId.value = themeId;
+        applyThemeDomEffects(themeId, cached);
         return activeThemeModule.value;
     }
 
@@ -34,6 +60,7 @@ export async function loadThemeModule(themeId = 'avionics') {
         loadedThemes.set(themeId, themeExport);
         activeThemeModule.value = themeExport;
         activeThemeId.value = themeId;
+        applyThemeDomEffects(themeId, themeExport);
         return themeExport;
     } catch (err) {
         console.error(`[LiteControl Themes] Failed to load theme "${themeId}":`, err);
@@ -43,6 +70,7 @@ export async function loadThemeModule(themeId = 'avionics') {
             loadedThemes.set('avionics', fallbackExport);
             activeThemeModule.value = fallbackExport;
             activeThemeId.value = 'avionics';
+            applyThemeDomEffects('avionics', fallbackExport);
             return fallbackExport;
         }
         return null;
@@ -65,9 +93,6 @@ export function useTheme() {
             preserveScroll: true,
             preserveState: false,
             onSuccess: () => {
-                if (typeof document !== 'undefined') {
-                    document.documentElement.setAttribute('data-theme', themeId);
-                }
                 loadThemeModule(themeId).then(() => {
                     // Reload the Inertia page so dynamic page components re-resolve for the new theme
                     router.reload({ preserveScroll: true });

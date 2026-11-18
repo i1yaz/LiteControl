@@ -3,6 +3,8 @@ import { shallowRef, onMounted } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { FileEdit, Save, RefreshCw, X } from '@lucide/vue';
 import { REWRITE_TEMPLATES } from '@domains/WebServer/Config/websiteManageConfig';
+import UiButton from '@shared/Ui/UiButton.vue';
+import UiTextarea from '@shared/Ui/UiTextarea.vue';
 
 const props = defineProps({
     domain: {
@@ -65,12 +67,12 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="bg-theme-bg-card border border-theme-border rounded-xl p-5 shadow-sm space-y-5">
-        <!-- Header matching user screenshot -->
+    <div class="bg-theme-bg-card border border-theme-border rounded-theme-lg p-5 shadow-xs space-y-5">
+        <!-- Header -->
         <div class="flex items-center justify-between border-b border-theme-border pb-3">
             <div>
-                <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary flex items-center gap-2">
-                    <FileEdit class="w-4 h-4 text-purple-400" />
+                <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary theme-ui-control flex items-center gap-2">
+                    <FileEdit class="w-4 h-4 text-theme-accent" />
                     <span>{{ __('Rewrite Rules (.htaccess)') }}</span>
                 </h3>
                 <span class="text-[11px] text-theme-text-secondary font-mono mt-0.5 block">
@@ -83,9 +85,9 @@ onMounted(() => {
             </button>
         </div>
 
-        <!-- Select Template Dropdown (Exact match to uploaded reference) -->
-        <div class="bg-theme-bg-surface/50 border border-theme-border rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <label class="text-xs font-bold text-theme-text-primary uppercase tracking-wider whitespace-nowrap">
+        <!-- Select Template Dropdown -->
+        <div class="bg-theme-bg-surface/50 border border-theme-border rounded-theme-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <label class="text-xs font-bold text-theme-text-primary uppercase tracking-wider theme-ui-control whitespace-nowrap">
                 Select Template
             </label>
 
@@ -93,7 +95,7 @@ onMounted(() => {
                 <select
                     v-model="selectedTemplate"
                     @change="applyTemplate"
-                    class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded-lg text-xs text-theme-text-primary focus:outline-none focus:border-blue-500 transition-colors"
+                    class="w-full px-3 py-2 bg-theme-bg-input border border-theme-border rounded-theme-md text-xs text-theme-text-primary focus:outline-none focus:border-theme-accent transition-colors"
                 >
                     <option value="" disabled>{{ __('-- Choose Rewrite Template --') }}</option>
                     <option
@@ -107,29 +109,30 @@ onMounted(() => {
             </div>
         </div>
 
-        <!-- Editable Code Box (Matching uploaded reference) -->
+        <!-- Editable Code Box -->
         <div class="space-y-3">
-            <textarea
+            <UiTextarea
                 v-model="saveForm.content"
-                rows="14"
-                class="w-full p-4 bg-slate-950 border border-blue-500/50 rounded-xl font-mono text-xs text-blue-300 leading-relaxed focus:outline-none focus:border-blue-500 shadow-inner resize-y selection:bg-blue-600/40"
+                :rows="14"
+                mono
                 placeholder="# Enter OpenLiteSpeed rewrite rules or insert from dropdown above"
                 spellcheck="false"
-            ></textarea>
+            />
 
             <div class="flex items-center justify-between">
                 <span class="text-[11px] text-theme-text-muted">
                     OpenLiteSpeed supports standard Apache mod_rewrite directives.
                 </span>
 
-                <button
+                <UiButton
+                    variant="primary"
                     @click="saveHtaccess"
                     :disabled="saveForm.processing"
-                    class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow-sm shadow-blue-600/30 transition-all disabled:opacity-50"
+                    :loading="saveForm.processing"
                 >
-                    <Save class="w-3.5 h-3.5" />
+                    <Save v-if="!saveForm.processing" class="w-3.5 h-3.5" />
                     <span>{{ saveForm.processing ? 'Saving...' : 'Save Rewrite Rules' }}</span>
-                </button>
+                </UiButton>
             </div>
         </div>
     </div>

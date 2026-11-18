@@ -18,14 +18,14 @@ const ThemeOverride = computed(() => resolveComponent('Alert'));
 const variantClasses = computed(() => {
     switch (props.variant) {
         case 'success':
-            return 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300';
+            return 'bg-theme-success-bg border-theme-success-border text-theme-success-text';
         case 'warning':
-            return 'bg-amber-500/10 border-amber-500/20 text-amber-300';
+            return 'bg-theme-warning-bg border-theme-warning-border text-theme-warning-text';
         case 'danger':
-            return 'bg-rose-500/10 border-rose-500/20 text-rose-300';
+            return 'bg-theme-danger-bg border-theme-danger-border text-theme-danger-text';
         case 'info':
         default:
-            return 'bg-sky-500/10 border-sky-500/20 text-sky-300';
+            return 'bg-theme-info-bg border-theme-info-border text-theme-info-text';
     }
 });
 
@@ -50,8 +50,8 @@ const iconComponent = computed(() => {
             <slot :name="slot" v-bind="slotProps" />
         </template>
     </component>
-    <div v-else v-bind="$attrs" :class="['p-4 rounded-xl border text-sm flex items-center gap-3.5', variantClasses]">
-        <component :is="iconComponent" class="w-5 h-5 flex-shrink-0" />
+    <div v-else v-bind="$attrs" :class="['p-4 rounded-theme-lg border text-xs sm:text-sm flex items-start gap-3', variantClasses]">
+        <component :is="iconComponent" class="w-4 h-4 sm:w-5 sm:h-5 shrink-0 mt-0.5" />
         <div class="flex-1">
             <slot />
         </div>

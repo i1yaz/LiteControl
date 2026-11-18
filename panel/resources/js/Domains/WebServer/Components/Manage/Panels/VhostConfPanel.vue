@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { shallowRef, ref, onMounted } from 'vue';
-import { FileCode, RefreshCw, Save, AlertTriangle, CheckCircle2 } from '@lucide/vue';
+import { FileCode, RefreshCw, Save } from '@lucide/vue';
 import axios from 'axios';
+import UiButton from '@shared/Ui/UiButton.vue';
+import UiAlert from '@shared/Ui/UiAlert.vue';
+import UiTextarea from '@shared/Ui/UiTextarea.vue';
 
 const props = defineProps({
     domain: {
@@ -61,12 +64,12 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="bg-theme-bg-card border border-theme-border rounded-xl p-5 shadow-sm space-y-4">
+    <div class="bg-theme-bg-card border border-theme-border rounded-theme-lg p-5 shadow-xs space-y-4">
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-theme-border pb-3">
             <div>
-                <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary flex items-center gap-2">
-                    <FileCode class="w-4 h-4 text-blue-500" />
+                <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary theme-ui-control flex items-center gap-2">
+                    <FileCode class="w-4 h-4 text-theme-accent" />
                     <span>{{ __('Virtual Host Configuration') }}</span>
                 </h3>
                 <span class="text-[11px] text-theme-text-secondary font-mono mt-0.5 block">
@@ -75,55 +78,54 @@ onMounted(() => {
             </div>
 
             <div class="flex items-center gap-2">
-                <button
+                <UiButton
+                    size="xs"
+                    variant="secondary"
                     @click="loadConf"
                     :disabled="loading || saving"
-                    class="p-1.5 rounded-lg bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary border border-theme-border transition-colors text-xs flex items-center gap-1.5"
                     :title="__('Reload Configuration')"
                 >
                     <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" />
-                </button>
+                </UiButton>
 
-                <button
+                <UiButton
+                    size="xs"
+                    variant="secondary"
                     @click="emit('close')"
-                    class="px-3 py-1.5 rounded-lg bg-theme-bg-surface hover:bg-theme-border text-xs font-semibold text-theme-text-secondary hover:text-theme-text-primary border border-theme-border transition-colors"
                 >
                     Close
-                </button>
+                </UiButton>
             </div>
         </div>
 
         <!-- Status notice / info banner -->
-        <div class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-xs text-blue-300 flex items-start gap-2">
-            <CheckCircle2 class="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+        <UiAlert variant="info">
             <div class="leading-relaxed">
                 <span class="font-semibold">{{ __('Syntax Validation & Auto-Rollback Guard:') }}</span>
-                Changes are tested with <code class="px-1 py-0.5 rounded bg-blue-900/40 text-blue-200 font-mono">{{ __('openlitespeed -t') }}</code> before reloading. If syntax errors occur, changes are automatically aborted with zero downtime.
+                Changes are tested with <code class="px-1 py-0.5 rounded-theme-sm bg-theme-bg-surface border border-theme-border text-theme-text-primary font-mono">{{ __('openlitespeed -t') }}</code> before reloading. If syntax errors occur, changes are automatically aborted with zero downtime.
             </div>
-        </div>
+        </UiAlert>
 
         <!-- Success Message -->
-        <div v-if="successMsg" class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-400 flex items-center gap-2">
-            <CheckCircle2 class="w-4 h-4 shrink-0" />
+        <UiAlert v-if="successMsg" variant="success">
             <span>{{ successMsg }}</span>
-        </div>
+        </UiAlert>
 
         <!-- Error Message -->
-        <div v-if="errorMsg" class="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-xs text-rose-300 flex items-start gap-2 whitespace-pre-wrap font-mono">
-            <AlertTriangle class="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-            <div class="leading-relaxed">{{ errorMsg }}</div>
-        </div>
+        <UiAlert v-if="errorMsg" variant="danger">
+            <div class="leading-relaxed whitespace-pre-wrap font-mono">{{ errorMsg }}</div>
+        </UiAlert>
 
         <!-- Editable Directive Box -->
         <div class="space-y-3">
-            <textarea
+            <UiTextarea
                 v-model="conf"
                 :disabled="loading || saving"
-                rows="16"
-                class="w-full p-4 bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-lg font-mono text-xs text-slate-200 leading-relaxed focus:outline-none resize-y selection:bg-blue-600/30 disabled:opacity-60 transition-colors"
+                :rows="16"
+                mono
                 placeholder="# Loading VirtualHost directives..."
                 spellcheck="false"
-            ></textarea>
+            />
 
             <div class="flex items-center justify-between">
                 <span class="text-[11px] text-theme-text-muted">
@@ -131,24 +133,26 @@ onMounted(() => {
                 </span>
 
                 <div class="flex items-center gap-2">
-                    <button
+                    <UiButton
                         v-if="conf !== initialConf"
+                        size="sm"
+                        variant="secondary"
                         @click="conf = initialConf"
                         :disabled="saving"
-                        class="px-3 py-2 rounded-lg bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary text-xs font-medium border border-theme-border transition-colors"
                     >
                         Reset Changes
-                    </button>
+                    </UiButton>
 
-                    <button
+                    <UiButton
+                        size="sm"
+                        variant="primary"
                         @click="saveConf"
                         :disabled="saving || loading || !conf"
-                        class="inline-flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow-sm shadow-blue-600/30 transition-all disabled:opacity-50"
                     >
                         <Save v-if="!saving" class="w-3.5 h-3.5" />
                         <RefreshCw v-else class="w-3.5 h-3.5 animate-spin" />
                         <span>{{ saving ? 'Testing & Applying...' : 'Save & Reload' }}</span>
-                    </button>
+                    </UiButton>
                 </div>
             </div>
         </div>

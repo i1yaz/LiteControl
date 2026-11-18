@@ -79,7 +79,7 @@ watch(() => props.show, (val) => {
                     leave-to-class="opacity-0"
                 >
                     <div v-show="show" class="fixed inset-0 transform transition-all" @click="close">
-                        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" />
+                        <div class="absolute inset-0 bg-theme-bg-overlay backdrop-blur-sm" />
                     </div>
                 </Transition>
 
@@ -94,13 +94,13 @@ watch(() => props.show, (val) => {
                     <div
                         v-show="show"
                         :class="[
-                            'relative bg-slate-900 border border-slate-800 rounded-2xl text-slate-100 shadow-2xl transform transition-all w-full p-6 z-10 font-sans backdrop-blur-md',
+                            'relative bg-theme-bg-elevated border border-theme-border rounded-theme-lg text-theme-text-primary shadow-2xl transform transition-all w-full p-6 z-10 font-sans',
                             maxWidthClass
                         ]"
                     >
-                        <div v-if="title || $slots.header || closeable" class="flex items-center justify-between pb-4 mb-5 border-b border-slate-800">
+                        <div v-if="title || $slots.header || closeable" class="flex items-center justify-between pb-4 mb-5 border-b border-theme-border-subtle">
                             <div>
-                                <h3 v-if="title" class="text-base font-semibold text-white">
+                                <h3 v-if="title" class="text-base font-semibold text-theme-text-primary theme-ui-control">
                                     {{ title }}
                                 </h3>
                                 <div v-if="$slots.header">
@@ -110,7 +110,7 @@ watch(() => props.show, (val) => {
                             <button
                                 v-if="closeable"
                                 @click="close"
-                                class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                                class="p-1.5 rounded-theme-sm text-theme-text-muted hover:text-theme-text-primary hover:bg-theme-bg-surface transition-colors cursor-pointer"
                             >
                                 <X class="w-4 h-4" />
                             </button>
@@ -118,7 +118,7 @@ watch(() => props.show, (val) => {
 
                         <slot />
 
-                        <div v-if="$slots.footer" class="mt-6 pt-4 border-t border-slate-800 flex justify-end gap-3">
+                        <div v-if="$slots.footer" class="mt-6 pt-4 border-t border-theme-border-subtle flex justify-end gap-3">
                             <slot name="footer" />
                         </div>
                     </div>

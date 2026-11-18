@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { useTheme } from '@shared/Composables/useTheme';
-import { Sliders, Save, Server, Globe, Mail, Clock, ShieldCheck, CheckCircle2 } from '@lucide/vue';
+import { Sliders, Save, Server, Globe, ShieldCheck } from '@lucide/vue';
+import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
+import UiStatCard from '@shared/Ui/UiStatCard.vue';
+import UiCard from '@shared/Ui/UiCard.vue';
+import UiInput from '@shared/Ui/UiInput.vue';
+import UiSelect from '@shared/Ui/UiSelect.vue';
+import UiButton from '@shared/Ui/UiButton.vue';
 
 const props = defineProps({
     settings: Object,
@@ -11,10 +17,10 @@ const props = defineProps({
 const { availableThemes, activeThemeId, switchTheme } = useTheme();
 
 const form = useForm({
-    panel_name: props.settings.panel_name || 'LiteControl',
-    admin_email: props.settings.admin_email || '',
-    timezone: props.settings.timezone || 'UTC',
-    default_php: props.settings.default_php || '83',
+    panel_name: props.settings?.panel_name || 'LiteControl',
+    admin_email: props.settings?.admin_email || '',
+    timezone: props.settings?.timezone || 'UTC',
+    default_php: props.settings?.default_php || '83',
 });
 
 const submit = () => {
@@ -26,139 +32,111 @@ const submit = () => {
     <Head :title="__('Panel Settings')" />
 
     <div class="max-w-4xl mx-auto space-y-6">
-            <!-- Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
-                        <Sliders class="w-6 h-6 text-sky-400" />
-                        <span>{{ __('System & Panel Settings') }}</span>
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                        Global configuration parameters for LiteControl and OpenLiteSpeed web server.
-                    </p>
-                </div>
-            </div>
+        <!-- Header -->
+        <UiPageHeader
+            :title="__('System & Panel Settings')"
+            subtitle="Global configuration parameters for LiteControl and OpenLiteSpeed web server."
+        >
+            <template #icon>
+                <Sliders class="w-6 h-6 text-theme-accent" />
+            </template>
+        </UiPageHeader>
 
-            <!-- Server Quick Info Bar -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-3">
-                    <div class="p-2.5 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                        <Server class="w-5 h-5" />
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{{ __('Server IP') }}</p>
-                        <p class="text-sm font-semibold text-white">{{ settings.server_ip }}</p>
-                    </div>
-                </div>
+        <!-- Server Quick Info Bar -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <UiStatCard :label="__('Server IP')" :value="settings?.server_ip" variant="info">
+                <template #icon>
+                    <Server class="w-5 h-5" />
+                </template>
+            </UiStatCard>
 
-                <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-3">
-                    <div class="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <Globe class="w-5 h-5" />
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{{ __('Hostname') }}</p>
-                        <p class="text-sm font-semibold text-white">{{ settings.hostname }}</p>
-                    </div>
-                </div>
+            <UiStatCard :label="__('Hostname')" :value="settings?.hostname" variant="success">
+                <template #icon>
+                    <Globe class="w-5 h-5" />
+                </template>
+            </UiStatCard>
 
-                <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-3">
-                    <div class="p-2.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                        <ShieldCheck class="w-5 h-5" />
-                    </div>
-                    <div>
-                        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{{ __('OpenLiteSpeed') }}</p>
-                        <p class="text-sm font-semibold text-white">{{ settings.ols_version }}</p>
-                    </div>
-                </div>
-            </div>
+            <UiStatCard :label="__('OpenLiteSpeed')" :value="settings?.ols_version" variant="primary">
+                <template #icon>
+                    <ShieldCheck class="w-5 h-5" />
+                </template>
+            </UiStatCard>
+        </div>
 
-            <!-- Settings Form Card -->
-            <form @submit.prevent="submit" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
-                <div class="border-b border-slate-800 pb-4">
-                    <h2 class="text-base font-semibold text-white">{{ __('General Information') }}</h2>
-                    <p class="text-xs text-slate-400 mt-0.5">{{ __('Control panel branding and administrator contact details.') }}</p>
-                </div>
-
+        <!-- Settings Form Card -->
+        <UiCard
+            :title="__('General Information')"
+            :subtitle="__('Control panel branding and administrator contact details.')"
+        >
+            <form @submit.prevent="submit" class="space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Control Panel Name') }}</label>
-                        <input
-                            v-model="form.panel_name"
-                            type="text"
-                            required
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
-                        />
-                        <p v-if="form.errors.panel_name" class="text-xs text-rose-400 mt-1">{{ form.errors.panel_name }}</p>
-                    </div>
+                    <UiInput
+                        v-model="form.panel_name"
+                        :label="__('Control Panel Name')"
+                        type="text"
+                        required
+                        :error="form.errors.panel_name"
+                    />
 
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Administrator Email') }}</label>
-                        <input
-                            v-model="form.admin_email"
-                            type="email"
-                            required
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
-                        />
-                        <p v-if="form.errors.admin_email" class="text-xs text-rose-400 mt-1">{{ form.errors.admin_email }}</p>
-                    </div>
+                    <UiInput
+                        v-model="form.admin_email"
+                        :label="__('Administrator Email')"
+                        type="email"
+                        required
+                        :error="form.errors.admin_email"
+                    />
 
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('System Timezone') }}</label>
-                        <input
-                            v-model="form.timezone"
-                            type="text"
-                            required
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
-                        />
-                        <p v-if="form.errors.timezone" class="text-xs text-rose-400 mt-1">{{ form.errors.timezone }}</p>
-                    </div>
+                    <UiInput
+                        v-model="form.timezone"
+                        :label="__('System Timezone')"
+                        type="text"
+                        required
+                        :error="form.errors.timezone"
+                    />
 
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Default PHP Version') }}</label>
-                        <select
-                            v-model="form.default_php"
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
+                    <UiSelect
+                        v-model="form.default_php"
+                        :label="__('Default PHP Version')"
+                        :error="form.errors.default_php"
+                    >
+                        <option value="74">{{ __('PHP 7.4 (Legacy)') }}</option>
+                        <option value="80">{{ __('PHP 8.0') }}</option>
+                        <option value="81">{{ __('PHP 8.1') }}</option>
+                        <option value="82">{{ __('PHP 8.2') }}</option>
+                        <option value="83">{{ __('PHP 8.3 (Recommended Core)') }}</option>
+                        <option value="84">{{ __('PHP 8.4') }}</option>
+                        <option value="85">{{ __('PHP 8.5 (Latest)') }}</option>
+                    </UiSelect>
+
+                    <UiSelect
+                        :model-value="activeThemeId"
+                        @update:model-value="switchTheme(String($event))"
+                        :label="__('Default Interface Theme')"
+                    >
+                        <option
+                            v-for="t in availableThemes"
+                            :key="t.id"
+                            :value="t.id"
                         >
-                            <option value="74">{{ __('PHP 7.4 (Legacy)') }}</option>
-                            <option value="80">{{ __('PHP 8.0') }}</option>
-                            <option value="81">{{ __('PHP 8.1') }}</option>
-                            <option value="82">{{ __('PHP 8.2') }}</option>
-                            <option value="83">{{ __('PHP 8.3 (Recommended Core)') }}</option>
-                            <option value="84">{{ __('PHP 8.4') }}</option>
-                            <option value="85">{{ __('PHP 8.5 (Latest)') }}</option>
-                        </select>
-                        <p v-if="form.errors.default_php" class="text-xs text-rose-400 mt-1">{{ form.errors.default_php }}</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">{{ __('Default Interface Theme') }}</label>
-                        <select
-                            :value="activeThemeId"
-                            @change="switchTheme(($event.target as HTMLSelectElement).value)"
-                            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
-                        >
-                            <option
-                                v-for="t in availableThemes"
-                                :key="t.id"
-                                :value="t.id"
-                            >
-                                {{ t.name }} ({{ t.layout_type }})
-                            </option>
-                        </select>
-                    </div>
+                            {{ t.name }} ({{ t.layout_type }})
+                        </option>
+                    </UiSelect>
                 </div>
 
-                <div class="pt-4 border-t border-slate-800 flex items-center justify-end">
-                    <button
+                <div class="pt-4 border-t border-theme-border-subtle flex items-center justify-end">
+                    <UiButton
                         type="submit"
+                        variant="primary"
                         :disabled="form.processing"
-                        class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-medium text-sm flex items-center gap-2 shadow-lg shadow-sky-600/20 disabled:opacity-50 transition-colors"
+                        :loading="form.processing"
                     >
-                        <Save class="w-4 h-4" />
+                        <Save v-if="!form.processing" class="w-4 h-4" />
                         <span>{{ form.processing ? 'Saving...' : 'Save Settings' }}</span>
-                    </button>
+                    </UiButton>
                 </div>
             </form>
-        </div>
+        </UiCard>
+    </div>
 </template>
+
 

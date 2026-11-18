@@ -29,10 +29,13 @@ const ThemeOverride = computed(() => resolveComponent('DataTable'));
             <slot :name="slot" v-bind="slotProps" />
         </template>
     </component>
-    <div v-else v-bind="$attrs" class="border border-slate-800 rounded-xl bg-slate-900/60 overflow-hidden shadow-sm backdrop-blur">
+    <div v-else v-bind="$attrs" class="border border-theme-border rounded-theme-lg bg-theme-bg-card overflow-hidden shadow-xs">
+        <div v-if="$slots.toolbar" class="px-5 py-3 border-b border-theme-border bg-theme-bg-surface/50 flex items-center justify-between">
+            <slot name="toolbar" />
+        </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-                <thead class="bg-slate-900/90 border-b border-slate-800 text-slate-400 font-medium text-xs">
+            <table class="w-full text-left text-xs sm:text-sm">
+                <thead class="bg-theme-bg-surface/60 border-b border-theme-border text-theme-text-secondary font-semibold text-xs uppercase tracking-wider theme-ui-control">
                     <tr>
                         <slot name="header">
                             <th
@@ -48,10 +51,10 @@ const ThemeOverride = computed(() => resolveComponent('DataTable'));
                         </slot>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-800/80 text-slate-200">
+                <tbody class="divide-y divide-theme-border-subtle text-theme-text-primary">
                     <slot />
                     <tr v-if="itemsCount === 0">
-                        <td :colspan="headers.length || 10" class="py-10 text-center text-slate-500">
+                        <td :colspan="headers.length || 10" class="py-10 text-center text-theme-text-muted text-xs sm:text-sm">
                             <slot name="empty">
                                 {{ emptyMessage }}
                             </slot>
@@ -60,7 +63,7 @@ const ThemeOverride = computed(() => resolveComponent('DataTable'));
                 </tbody>
             </table>
         </div>
-        <div v-if="$slots.footer" class="p-4 border-t border-slate-800 bg-slate-900/80">
+        <div v-if="$slots.footer" class="p-4 border-t border-theme-border bg-theme-bg-surface/40">
             <slot name="footer" />
         </div>
     </div>

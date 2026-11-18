@@ -2,6 +2,8 @@
 import { useForm } from '@inertiajs/vue3';
 import { Cpu, Check, X } from '@lucide/vue';
 import { usePhpVersions } from '@shared/Composables/usePhpVersions';
+import UiButton from '@shared/Ui/UiButton.vue';
+import UiSelect from '@shared/Ui/UiSelect.vue';
 
 const props = defineProps({
     domain: {
@@ -33,11 +35,11 @@ const submitChange = () => {
 </script>
 
 <template>
-    <div class="bg-theme-bg-card border border-theme-border rounded-xl p-5 shadow-sm space-y-5">
+    <div class="bg-theme-bg-card border border-theme-border rounded-theme-lg p-5 shadow-xs space-y-5">
         <div class="flex items-center justify-between border-b border-theme-border pb-3">
             <div class="flex items-center gap-2">
-                <Cpu class="w-4 h-4 text-emerald-400" />
-                <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary">
+                <Cpu class="w-4 h-4 text-theme-success-text" />
+                <h3 class="text-xs font-bold uppercase tracking-wider text-theme-text-primary theme-ui-control">
                     Switch PHP Runtime for {{ domain.domain }}
                 </h3>
             </div>
@@ -49,13 +51,11 @@ const submitChange = () => {
 
         <form @submit.prevent="submitChange" class="space-y-4 max-w-md">
             <div>
-                <label class="block text-xs font-bold uppercase text-theme-text-secondary mb-1.5">
-                    Select PHP Version
-                </label>
-
-                <select
+                <UiSelect
+                    id="php_version"
                     v-model="form.php_version"
-                    class="w-full px-3 py-2 bg-theme-bg-surface border border-theme-border rounded-lg text-xs text-theme-text-primary focus:outline-none focus:border-blue-500 transition-colors"
+                    label="Select PHP Version"
+                    :error="form.errors.php_version"
                 >
                     <option
                         v-for="opt in phpOptions"
@@ -64,10 +64,7 @@ const submitChange = () => {
                     >
                         {{ opt.label }} (lsphp{{ opt.value }})
                     </option>
-                </select>
-                <span v-if="form.errors.php_version" class="text-rose-400 text-[11px] mt-1 block">
-                    {{ form.errors.php_version }}
-                </span>
+                </UiSelect>
             </div>
 
             <p class="text-xs text-theme-text-secondary">
@@ -75,22 +72,23 @@ const submitChange = () => {
             </p>
 
             <div class="flex items-center gap-3 pt-2">
-                <button
+                <UiButton
                     type="submit"
+                    variant="primary"
                     :disabled="form.processing"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors disabled:opacity-50"
+                    :loading="form.processing"
                 >
-                    <Check class="w-3.5 h-3.5" />
+                    <Check v-if="!form.processing" class="w-3.5 h-3.5" />
                     <span>{{ form.processing ? 'Switching...' : 'Apply PHP Version' }}</span>
-                </button>
+                </UiButton>
 
-                <button
+                <UiButton
                     type="button"
+                    variant="secondary"
                     @click="emit('close')"
-                    class="px-4 py-2 rounded-lg bg-theme-bg-surface hover:bg-theme-border text-xs font-semibold text-theme-text-secondary hover:text-theme-text-primary border border-theme-border transition-colors"
                 >
                     Cancel
-                </button>
+                </UiButton>
             </div>
         </form>
     </div>

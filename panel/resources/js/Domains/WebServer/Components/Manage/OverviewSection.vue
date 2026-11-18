@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import UiBadge from '@shared/Ui/UiBadge.vue';
 import {
     HardDrive,
     Database,
@@ -56,15 +57,15 @@ const sslStatus = computed(() => {
 
 <template>
     <div class="space-y-6">
-        <!-- Metric Cards Grid matching Screenshot 2026-11-09 132331.png -->
+        <!-- Metric Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <!-- 1. Total Website Size -->
-            <div class="bg-theme-bg-card border border-theme-border rounded-xl p-5 shadow-sm space-y-3">
+            <div class="bg-theme-bg-card border border-theme-border rounded-theme-lg p-5 shadow-xs space-y-3">
                 <div class="flex items-center justify-between">
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-theme-text-secondary">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-theme-text-secondary theme-ui-control">
                         WEBSITE STORAGE
                     </span>
-                    <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                    <div class="w-8 h-8 rounded-theme-md bg-theme-accent-subtle text-theme-accent-text flex items-center justify-center border border-theme-accent-border">
                         <HardDrive class="w-4 h-4" />
                     </div>
                 </div>
@@ -74,17 +75,17 @@ const sslStatus = computed(() => {
                 </div>
 
                 <p class="text-xs text-theme-text-secondary">
-                    Total disk footprint inside <code class="text-theme-text-primary font-mono text-[11px] px-1 py-0.5 rounded bg-theme-bg-surface border border-theme-border">/home/{{ domain.user?.username }}/{{ domain.domain }}</code>
+                    Total disk footprint inside <code class="text-theme-text-primary font-mono text-[11px] px-1 py-0.5 rounded-theme-sm bg-theme-bg-surface border border-theme-border">/home/{{ domain.user?.username }}/{{ domain.domain }}</code>
                 </p>
             </div>
 
             <!-- 2. Associated Database Count -->
-            <div class="bg-theme-bg-card border border-theme-border rounded-xl p-5 shadow-sm space-y-3">
+            <div class="bg-theme-bg-card border border-theme-border rounded-theme-lg p-5 shadow-xs space-y-3">
                 <div class="flex items-center justify-between">
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-theme-text-secondary">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-theme-text-secondary theme-ui-control">
                         ASSOCIATED DATABASES
                     </span>
-                    <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
+                    <div class="w-8 h-8 rounded-theme-md bg-theme-info-bg text-theme-info-text flex items-center justify-center border border-theme-info-border">
                         <Database class="w-4 h-4" />
                     </div>
                 </div>
@@ -104,18 +105,18 @@ const sslStatus = computed(() => {
             </div>
         </div>
 
-        <!-- 3. SSL Certificate Summary Banner matching Screenshot -->
-        <div class="bg-theme-bg-card border border-theme-border rounded-xl p-5 shadow-sm space-y-3">
+        <!-- 3. SSL Certificate Summary Banner -->
+        <div class="bg-theme-bg-card border border-theme-border rounded-theme-lg p-5 shadow-xs space-y-3">
             <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-theme-text-secondary">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-theme-text-secondary theme-ui-control">
                     SSL CERTIFICATE
                 </span>
                 <div
                     :class="[
-                        'w-8 h-8 rounded-lg flex items-center justify-center border',
+                        'w-8 h-8 rounded-theme-md flex items-center justify-center border',
                         sslStatus.status === 'secure'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                            : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                            ? 'bg-theme-success-bg text-theme-success-text border-theme-success-border'
+                            : 'bg-theme-danger-bg text-theme-danger-text border-theme-danger-border'
                     ]"
                 >
                     <Lock class="w-4 h-4" />
@@ -123,25 +124,18 @@ const sslStatus = computed(() => {
             </div>
 
             <div class="flex items-center gap-2.5">
-                <ShieldCheck v-if="sslStatus.status === 'secure'" class="w-5 h-5 text-emerald-400 shrink-0" />
-                <ShieldAlert v-else class="w-5 h-5 text-rose-400 shrink-0" />
+                <ShieldCheck v-if="sslStatus.status === 'secure'" class="w-5 h-5 text-theme-success-text shrink-0" />
+                <ShieldAlert v-else class="w-5 h-5 text-theme-danger-text shrink-0" />
                 <h3 class="text-base font-bold text-theme-text-primary">
                     {{ sslStatus.label }}
                 </h3>
             </div>
 
             <div class="flex items-center gap-2 pt-1">
-                <span
-                    :class="[
-                        'px-2 py-0.5 rounded text-[11px] font-semibold border flex items-center gap-1',
-                        sslStatus.status === 'secure'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                    ]"
-                >
-                    <span class="w-1.5 h-1.5 rounded-full" :class="sslStatus.status === 'secure' ? 'bg-emerald-400' : 'bg-rose-400'"></span>
+                <UiBadge :variant="sslStatus.status === 'secure' ? 'success' : 'danger'">
+                    <span class="w-1.5 h-1.5 rounded-full" :class="sslStatus.status === 'secure' ? 'bg-theme-success' : 'bg-theme-danger'"></span>
                     {{ sslStatus.badge }}
-                </span>
+                </UiBadge>
                 <span class="text-xs text-theme-text-secondary">
                     • {{ sslStatus.detail }}
                 </span>

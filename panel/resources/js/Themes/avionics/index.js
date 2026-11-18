@@ -1,4 +1,5 @@
 import './theme.css';
+import manifest from './theme.json';
 import { defineAsyncComponent } from 'vue';
 import AppLayout from './Layouts/AppLayout.vue';
 import AuthLayout from './Layouts/AuthLayout.vue';
@@ -10,8 +11,7 @@ import {
 } from '@lucide/vue';
 
 export default {
-    id: 'avionics',
-    name: 'Avionics Telemetry',
+    ...manifest,
     layouts: {
         default: AppLayout,
         auth: AuthLayout,

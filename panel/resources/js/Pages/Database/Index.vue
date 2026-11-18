@@ -4,6 +4,8 @@ import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { confirmDialog } from '@shared/Composables/useDialog';
 import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
 import UiButton from '@shared/Ui/UiButton.vue';
+import UiDataTable from '@shared/Ui/UiDataTable.vue';
+import UiBadge from '@shared/Ui/UiBadge.vue';
 import UiModal from '@shared/Ui/UiModal.vue';
 import UiInput from '@shared/Ui/UiInput.vue';
 import UiSelect from '@shared/Ui/UiSelect.vue';
@@ -183,7 +185,7 @@ const deleteDbUser = async (id, name) => {
                 <a
                     href="/phpmyadmin/"
                     target="_blank"
-                    class="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs transition-colors border border-theme-border"
+                    class="inline-flex items-center gap-2 px-3 py-1.5 rounded-theme-md bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary text-xs transition-colors border border-theme-border"
                 >
                     <span>{{ __('phpMyAdmin GUI') }}</span>
                     <ExternalLink class="w-3.5 h-3.5 text-theme-text-muted" />
@@ -198,77 +200,67 @@ const deleteDbUser = async (id, name) => {
 
         <!-- Databases Section -->
         <div class="space-y-3">
-            <div class="bg-theme-bg-card border border-theme-border rounded overflow-hidden">
-                <div class="px-5 py-3 border-b border-theme-border bg-theme-bg-surface/50 flex items-center justify-between">
+            <UiDataTable
+                :headers="[
+                    __('Schema Identifier'),
+                    ...(isAdmin ? [__('Assigned User')] : []),
+                    __('Associated Domain'),
+                    __('Authorized Users'),
+                    __('Allocated Footprint'),
+                    { label: __('Operations'), class: 'text-right' },
+                ]"
+                :items-count="databases?.length || 0"
+                empty-message="NO RELATIONAL SCHEMAS PROVISIONED"
+            >
+                <template #toolbar>
                     <span class="text-xs font-semibold uppercase text-theme-text-secondary tracking-wider">
                         Active Relational Instances ({{ databases.length }})
                     </span>
-                    <span class="text-xs text-emerald-400">{{ __('DAEMON: MARIADB_LIVE') }}</span>
-                </div>
+                    <span class="text-xs text-theme-success">{{ __('DAEMON: MARIADB_LIVE') }}</span>
+                </template>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs text-theme-text-primary">
-                        <thead class="bg-theme-bg-surface/30 text-[10px] font-semibold text-theme-text-muted uppercase tracking-widest border-b border-theme-border">
-                            <tr>
-                                <th class="px-5 py-3.5">{{ __('Schema Identifier') }}</th>
-                                <th v-if="isAdmin" class="px-5 py-3.5">{{ __('Assigned User') }}</th>
-                                <th class="px-5 py-3.5">{{ __('Associated Domain') }}</th>
-                                <th class="px-5 py-3.5">{{ __('Authorized Users') }}</th>
-                                <th class="px-5 py-3.5">{{ __('Allocated Footprint') }}</th>
-                                <th class="px-5 py-3.5 text-right">{{ __('Operations') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-theme-border">
-                            <tr v-for="db in databases" :key="db.id" class="hover:bg-theme-bg-surface/50 transition-colors group">
-                                <td class="px-5 py-3.5 font-bold text-theme-text-primary flex items-center gap-2">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-theme-accent"></span>
-                                    <span>{{ db.db_name }}</span>
-                                </td>
-                                <td v-if="isAdmin" class="px-5 py-3.5 text-theme-text-secondary">
-                                    {{ db.user?.username || '—' }}
-                                </td>
-                                <td class="px-5 py-3.5 text-theme-text-secondary">
-                                    {{ db.domain?.domain || '—' }}
-                                </td>
-                                <td class="px-5 py-3.5 text-theme-text-secondary">
-                                    <div class="flex flex-wrap gap-1.5">
-                                        <span
-                                            v-for="u in db.users"
-                                            :key="u.id"
-                                            class="px-2 py-0.5 rounded bg-theme-bg-surface text-theme-text-secondary border border-theme-border text-[10px]"
-                                        >
-                                            {{ u.db_username }}
-                                        </span>
-                                        <span v-if="!db.users || db.users.length === 0" class="text-theme-text-muted">
-                                            NONE
-                                        </span>
-                                    </div>
-                                </td>
-                                <td class="px-5 py-3.5 text-theme-text-secondary">
-                                    <span class="flex items-center gap-1.5">
-                                        <HardDrive class="w-3.5 h-3.5 text-emerald-400" />
-                                        {{ liveDbMap[db.db_name]?.size_human || '—' }}
-                                    </span>
-                                </td>
-                                <td class="px-5 py-3.5 text-right">
-                                    <button
-                                        @click="deleteDb(db.id, db.db_name)"
-                                        :title="__('Terminate Schema')"
-                                        class="text-theme-text-muted hover:text-rose-400 transition-colors p-1"
-                                    >
-                                        <Trash2 class="w-4 h-4" />
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr v-if="!databases || databases.length === 0">
-                                <td :colspan="isAdmin ? 6 : 5" class="px-5 py-8 text-center text-theme-text-muted text-xs">
-                                    NO RELATIONAL SCHEMAS PROVISIONED
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                <tr v-for="db in databases" :key="db.id" class="hover:bg-theme-bg-surface/50 transition-colors group text-xs">
+                    <td class="px-5 py-3.5 font-bold text-theme-text-primary flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-theme-badge bg-theme-accent"></span>
+                        <span>{{ db.db_name }}</span>
+                    </td>
+                    <td v-if="isAdmin" class="px-5 py-3.5 text-theme-text-secondary">
+                        {{ db.user?.username || '—' }}
+                    </td>
+                    <td class="px-5 py-3.5 text-theme-text-secondary">
+                        {{ db.domain?.domain || '—' }}
+                    </td>
+                    <td class="px-5 py-3.5 text-theme-text-secondary">
+                        <div class="flex flex-wrap gap-1.5">
+                            <UiBadge
+                                v-for="u in db.users"
+                                :key="u.id"
+                                variant="neutral"
+                            >
+                                {{ u.db_username }}
+                            </UiBadge>
+                            <span v-if="!db.users || db.users.length === 0" class="text-theme-text-muted">
+                                NONE
+                            </span>
+                        </div>
+                    </td>
+                    <td class="px-5 py-3.5 text-theme-text-secondary">
+                        <span class="flex items-center gap-1.5">
+                            <HardDrive class="w-3.5 h-3.5 text-theme-success" />
+                            {{ liveDbMap[db.db_name]?.size_human || '—' }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3.5 text-right">
+                        <button
+                            @click="deleteDb(db.id, db.db_name)"
+                            :title="__('Terminate Schema')"
+                            class="text-theme-text-muted hover:text-theme-danger transition-colors p-1"
+                        >
+                            <Trash2 class="w-4 h-4" />
+                        </button>
+                    </td>
+                </tr>
+            </UiDataTable>
         </div>
 
         <!-- Database Users Section -->
@@ -288,78 +280,68 @@ const deleteDbUser = async (id, name) => {
                 </UiButton>
             </div>
 
-            <div class="bg-theme-bg-card border border-theme-border rounded overflow-hidden">
-                <div class="px-5 py-3 border-b border-theme-border bg-theme-bg-surface/50 flex items-center justify-between">
+            <UiDataTable
+                :headers="[
+                    __('User Identity'),
+                    ...(isAdmin ? [__('Owner Context')] : []),
+                    __('Linked Schema'),
+                    __('Host Bind'),
+                    { label: __('Operations'), class: 'text-right' },
+                ]"
+                :items-count="dbUsers?.length || 0"
+                empty-message="NO DATABASE USERS REGISTERED"
+            >
+                <template #toolbar>
                     <span class="text-xs font-semibold uppercase text-theme-text-secondary tracking-wider">
                         Registered DB Users ({{ dbUsers.length }})
                     </span>
                     <span class="text-xs text-theme-text-muted">{{ __('ACL_AUTH_LAYER') }}</span>
-                </div>
+                </template>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs text-theme-text-primary">
-                        <thead class="bg-theme-bg-surface/30 text-[10px] font-semibold text-theme-text-muted uppercase tracking-widest border-b border-theme-border">
-                            <tr>
-                                <th class="px-5 py-3.5">{{ __('User Identity') }}</th>
-                                <th v-if="isAdmin" class="px-5 py-3.5">{{ __('Owner Context') }}</th>
-                                <th class="px-5 py-3.5">{{ __('Linked Schema') }}</th>
-                                <th class="px-5 py-3.5">{{ __('Host Bind') }}</th>
-                                <th class="px-5 py-3.5 text-right">{{ __('Operations') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-theme-border">
-                            <tr v-for="u in dbUsers" :key="u.id" class="hover:bg-theme-bg-surface/50 transition-colors group">
-                                <td class="px-5 py-3.5 font-bold text-theme-text-primary flex items-center gap-2">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                                    {{ u.db_username }}
-                                </td>
-                                <td v-if="isAdmin" class="px-5 py-3.5 text-theme-text-secondary">
-                                    {{ u.user?.username || '—' }}
-                                </td>
-                                <td class="px-5 py-3.5 text-theme-text-primary">
-                                    <span v-if="u.database?.db_name" class="px-2 py-0.5 bg-theme-bg-surface border border-theme-border text-theme-text-secondary rounded text-[10px]">
-                                        {{ u.database.db_name }}
-                                    </span>
-                                    <span v-else class="text-theme-text-muted">{{ __('NONE') }}</span>
-                                </td>
-                                <td class="px-5 py-3.5 text-theme-text-muted">
-                                    {{ u.host || 'localhost' }}
-                                </td>
-                                <td class="px-5 py-3.5 text-right">
-                                    <div class="flex items-center justify-end gap-1.5">
-                                        <button
-                                            @click="openGrantModal(u)"
-                                            :title="__('Assign Schema Privileges')"
-                                            class="text-theme-text-muted hover:text-emerald-400 transition-colors p-1"
-                                        >
-                                            <Shield class="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            @click="openPasswordModal(u)"
-                                            :title="__('Rotate Credentials')"
-                                            class="text-theme-text-muted hover:text-theme-accent transition-colors p-1"
-                                        >
-                                            <Key class="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            @click="deleteDbUser(u.id, u.db_username)"
-                                            :title="__('Terminate User')"
-                                            class="text-theme-text-muted hover:text-rose-400 transition-colors p-1"
-                                        >
-                                            <Trash2 class="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr v-if="!dbUsers || dbUsers.length === 0">
-                                <td :colspan="isAdmin ? 5 : 4" class="px-5 py-8 text-center text-theme-text-muted text-xs">
-                                    NO DATABASE USERS REGISTERED
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                <tr v-for="u in dbUsers" :key="u.id" class="hover:bg-theme-bg-surface/50 transition-colors group text-xs">
+                    <td class="px-5 py-3.5 font-bold text-theme-text-primary flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-theme-badge bg-theme-success"></span>
+                        {{ u.db_username }}
+                    </td>
+                    <td v-if="isAdmin" class="px-5 py-3.5 text-theme-text-secondary">
+                        {{ u.user?.username || '—' }}
+                    </td>
+                    <td class="px-5 py-3.5 text-theme-text-primary">
+                        <UiBadge v-if="u.database?.db_name" variant="neutral">
+                            {{ u.database.db_name }}
+                        </UiBadge>
+                        <span v-else class="text-theme-text-muted">{{ __('NONE') }}</span>
+                    </td>
+                    <td class="px-5 py-3.5 text-theme-text-muted">
+                        {{ u.host || 'localhost' }}
+                    </td>
+                    <td class="px-5 py-3.5 text-right">
+                        <div class="flex items-center justify-end gap-1.5">
+                            <button
+                                @click="openGrantModal(u)"
+                                :title="__('Assign Schema Privileges')"
+                                class="text-theme-text-muted hover:text-theme-success transition-colors p-1"
+                            >
+                                <Shield class="w-4 h-4" />
+                            </button>
+                            <button
+                                @click="openPasswordModal(u)"
+                                :title="__('Rotate Credentials')"
+                                class="text-theme-text-muted hover:text-theme-accent transition-colors p-1"
+                            >
+                                <Key class="w-4 h-4" />
+                            </button>
+                            <button
+                                @click="deleteDbUser(u.id, u.db_username)"
+                                :title="__('Terminate User')"
+                                class="text-theme-text-muted hover:text-theme-danger transition-colors p-1"
+                            >
+                                <Trash2 class="w-4 h-4" />
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </UiDataTable>
         </div>
 
         <!-- Create DB Modal -->

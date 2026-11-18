@@ -21,11 +21,11 @@ const iconComponent = computed(() => {
 const iconClasses = computed(() => {
     switch (dialogState.variant) {
         case 'danger':
-            return 'text-red-400 bg-red-500/10 border-red-500/20';
+            return 'text-theme-danger-text bg-theme-danger-bg border-theme-danger-border';
         case 'warning':
-            return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+            return 'text-theme-warning-text bg-theme-warning-bg border-theme-warning-border';
         default:
-            return 'text-sky-400 bg-sky-500/10 border-sky-500/20';
+            return 'text-theme-accent-text bg-theme-accent-subtle border-theme-accent-border';
     }
 });
 
@@ -51,17 +51,17 @@ const handleCancel = () => {
     >
         <div class="flex items-start gap-3.5">
             <div
-                class="shrink-0 w-9 h-9 rounded-lg border flex items-center justify-center"
+                class="shrink-0 w-9 h-9 rounded-theme-md border flex items-center justify-center"
                 :class="iconClasses"
             >
                 <component :is="iconComponent" class="w-4.5 h-4.5" />
             </div>
-            <p class="text-sm leading-relaxed opacity-90 whitespace-pre-line pt-0.5">
+            <p class="text-sm text-theme-text-secondary leading-relaxed whitespace-pre-line pt-0.5">
                 {{ dialogState.message }}
             </p>
         </div>
 
-        <div class="flex items-center justify-end gap-2.5 mt-6 pt-4 border-t border-current/10">
+        <div class="flex items-center justify-end gap-2.5 mt-6 pt-4 border-t border-theme-border-subtle">
             <UiButton
                 v-if="dialogState.mode === 'confirm'"
                 variant="secondary"
@@ -80,4 +80,3 @@ const handleCancel = () => {
         </div>
     </UiModal>
 </template>
-

@@ -7,7 +7,7 @@ defineOptions({ inheritAttrs: false });
 const props = defineProps({
     variant: {
         type: String,
-        default: 'primary', // primary | secondary | danger | ghost
+        default: 'primary', // primary | secondary | danger | warning | success | ghost
     },
     size: {
         type: String,
@@ -37,24 +37,30 @@ const sizeClasses = computed(() => {
         case 'sm':
             return 'px-3 py-1.5 text-xs';
         case 'lg':
-            return 'px-5 py-2.5 text-base';
+            return 'px-5 py-2.5 text-sm';
         case 'md':
         default:
-            return 'px-4 py-2 text-sm';
+            return 'px-4 py-2 text-xs sm:text-sm';
     }
 });
 
 const variantClasses = computed(() => {
     switch (props.variant) {
         case 'secondary':
-            return 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 hover:text-white shadow-sm';
+            return 'bg-theme-bg-surface hover:bg-theme-border text-theme-text-secondary hover:text-theme-text-primary border border-theme-border';
         case 'danger':
-            return 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm';
+            return 'bg-theme-danger hover:bg-theme-danger-hover text-white border border-theme-danger';
+        case 'danger-soft':
+            return 'bg-theme-danger-bg hover:bg-theme-danger/20 text-theme-danger-text border border-theme-danger-border';
+        case 'warning':
+            return 'bg-theme-warning-bg hover:bg-theme-warning/20 text-theme-warning-text border border-theme-warning-border';
+        case 'success':
+            return 'bg-theme-success hover:bg-theme-success-hover text-white border border-theme-success';
         case 'ghost':
-            return 'bg-transparent hover:bg-slate-800 text-slate-400 hover:text-white';
+            return 'bg-transparent hover:bg-theme-bg-surface text-theme-text-secondary hover:text-theme-text-primary border border-transparent';
         case 'primary':
         default:
-            return 'bg-sky-600 hover:bg-sky-500 text-white font-medium shadow-sm shadow-sky-500/20';
+            return 'bg-theme-accent hover:bg-theme-accent-hover text-theme-text-on-accent font-semibold border border-theme-accent shadow-xs';
     }
 });
 </script>
@@ -71,7 +77,7 @@ const variantClasses = computed(() => {
         :type="type"
         :disabled="disabled || loading"
         :class="[
-            'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer',
+            'inline-flex items-center justify-center gap-2 rounded-theme-md font-medium theme-ui-control transition-all focus:outline-none focus:ring-2 focus:ring-theme-accent/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer',
             sizeClasses,
             variantClasses
         ]"

@@ -11,24 +11,24 @@ const props = defineProps({
 const variantClasses = computed(() => {
     switch (props.variant) {
         case 'success':
-            return 'bg-emerald-950/40 text-emerald-400 border-emerald-500/30';
+            return 'bg-theme-success-bg text-theme-success-text border-theme-success-border';
         case 'warning':
-            return 'bg-amber-950/40 text-amber-400 border-amber-500/30';
+            return 'bg-theme-warning-bg text-theme-warning-text border-theme-warning-border';
         case 'danger':
-            return 'bg-rose-950/40 text-rose-400 border-rose-500/30';
+            return 'bg-theme-danger-bg text-theme-danger-text border-theme-danger-border';
         case 'info':
-            return 'bg-cyan-950/40 text-cyan-400 border-cyan-500/30';
+            return 'bg-theme-info-bg text-theme-info-text border-theme-info-border';
         case 'primary':
-            return 'bg-[#ff6b35]/15 text-[#ff8e62] border-[#ff6b35]/30';
+            return 'bg-theme-accent-subtle text-theme-accent-text border-theme-accent-border';
         case 'neutral':
         default:
-            return 'bg-[#151921] text-[#98a6b8] border-[#242c3b]';
+            return 'bg-theme-bg-surface text-theme-text-secondary border-theme-border-strong';
     }
 });
 </script>
 
 <template>
-    <span :class="['inline-flex items-center px-2 py-0.5 rounded-xs text-[10px] font-mono font-bold uppercase tracking-wider border', variantClasses]">
+    <span :class="['inline-flex items-center gap-1.5 px-2 py-0.5 rounded-theme-badge text-[10px] font-mono font-bold uppercase tracking-wider border', variantClasses]">
         <slot />
     </span>
 </template>

@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { shallowRef, computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import { Cpu, RefreshCw, XCircle, Search, AlertCircle } from '@lucide/vue';
+import { Cpu, RefreshCw } from '@lucide/vue';
 import { confirmDialog } from '@shared/Composables/useDialog';
+import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
+import UiInput from '@shared/Ui/UiInput.vue';
+import UiButton from '@shared/Ui/UiButton.vue';
+import UiDataTable from '@shared/Ui/UiDataTable.vue';
 
 const props = defineProps({
     processes: Array,
@@ -37,86 +41,67 @@ const refresh = () => {
 </script>
 
 <template>
-            <Head :title="__('Process Manager')" />
+    <Head :title="__('Process Manager')" />
 
-        <div class="space-y-6">
-            <!-- Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
-                        <Cpu class="w-6 h-6 text-blue-400" />
-                        <span>{{ __('Process Manager') }}</span>
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                        Active Linux server processes sorted by CPU and memory consumption.
-                    </p>
-                </div>
+    <div class="space-y-6">
+        <UiPageHeader
+            :title="__('Process Manager')"
+            subtitle="Active Linux server processes sorted by CPU and memory consumption."
+        >
+            <template #icon>
+                <Cpu class="w-6 h-6 text-theme-accent" />
+            </template>
+            <template #actions>
+                <UiInput
+                    v-model="search"
+                    type="text"
+                    :placeholder="__('Filter processes...')"
+                />
+                <UiButton
+                    variant="secondary"
+                    @click="refresh"
+                    :title="__('Refresh')"
+                >
+                    <RefreshCw class="w-4 h-4" />
+                </UiButton>
+            </template>
+        </UiPageHeader>
 
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                            v-model="search"
-                            type="text"
-                            :placeholder="__('Filter processes...')"
-                            class="pl-9 pr-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                        />
-                    </div>
-                    <button
-                        @click="refresh"
-                        class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-                        :title="__('Refresh')"
+        <!-- Process Table -->
+        <UiDataTable
+            :headers="[
+                __('PID'),
+                __('User'),
+                __('CPU %'),
+                __('Mem %'),
+                __('Command'),
+                { label: __('Actions'), class: 'text-right' }
+            ]"
+            :items-count="filteredProcesses.length"
+            empty-message="No processes found matching your filter."
+        >
+            <tr v-for="p in filteredProcesses" :key="p.pid" class="hover:bg-theme-bg-surface/40 transition-colors font-mono text-xs">
+                <td class="px-4 py-3 text-theme-info font-semibold">{{ p.pid }}</td>
+                <td class="px-4 py-3 text-theme-text-secondary font-sans">{{ p.user }}</td>
+                <td class="px-4 py-3">
+                    <span :class="Number(p.cpu) > 10 ? 'text-theme-warning-text font-bold' : 'text-theme-text-secondary'">
+                        {{ p.cpu }}%
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-theme-text-secondary">{{ p.mem }}%</td>
+                <td class="px-4 py-3 max-w-md truncate text-theme-text-primary" :title="p.command">
+                    {{ p.command }}
+                </td>
+                <td class="px-4 py-3 text-right font-sans">
+                    <UiButton
+                        size="xs"
+                        variant="danger-soft"
+                        @click="killProcess(p.pid)"
                     >
-                        <RefreshCw class="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
-
-            <!-- Process Table -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-slate-800/80 bg-slate-950/40 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                                <th class="px-5 py-3.5">{{ __('PID') }}</th>
-                                <th class="px-5 py-3.5">{{ __('User') }}</th>
-                                <th class="px-5 py-3.5">{{ __('CPU %') }}</th>
-                                <th class="px-5 py-3.5">{{ __('Mem %') }}</th>
-                                <th class="px-5 py-3.5">{{ __('Command') }}</th>
-                                <th class="px-5 py-3.5 text-right">{{ __('Actions') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-800/60 font-mono text-xs text-slate-300">
-                            <tr v-for="p in filteredProcesses" :key="p.pid" class="hover:bg-slate-800/30 transition-colors">
-                                <td class="px-5 py-3 text-sky-400 font-semibold">{{ p.pid }}</td>
-                                <td class="px-5 py-3 text-slate-300 font-sans">{{ p.user }}</td>
-                                <td class="px-5 py-3">
-                                    <span :class="Number(p.cpu) > 10 ? 'text-amber-400 font-bold' : 'text-slate-300'">
-                                        {{ p.cpu }}%
-                                    </span>
-                                </td>
-                                <td class="px-5 py-3 text-slate-300">{{ p.mem }}%</td>
-                                <td class="px-5 py-3 max-w-md truncate text-slate-200" :title="p.command">
-                                    {{ p.command }}
-                                </td>
-                                <td class="px-5 py-3 text-right">
-                                    <button
-                                        @click="killProcess(p.pid)"
-                                        class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-[11px] font-sans font-semibold transition-colors"
-                                    >
-                                        Kill
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr v-if="filteredProcesses.length === 0">
-                                <td colspan="6" class="px-5 py-8 text-center text-slate-500 font-sans text-xs">
-                                    No processes found matching your filter.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+                        Kill
+                    </UiButton>
+                </td>
+            </tr>
+        </UiDataTable>
+    </div>
 </template>
-

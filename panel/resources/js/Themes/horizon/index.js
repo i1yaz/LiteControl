@@ -1,4 +1,5 @@
 import './theme.css';
+import manifest from './theme.json';
 import AppLayout from './Layouts/AppLayout.vue';
 import AuthLayout from './Layouts/AuthLayout.vue';
 import {
@@ -9,8 +10,7 @@ import {
 } from '@lucide/vue';
 
 export default {
-    id: 'horizon',
-    name: 'Horizon Modern',
+    ...manifest,
     layouts: {
         default: AppLayout,
         auth: AuthLayout,

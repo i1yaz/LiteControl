@@ -1,59 +1,70 @@
-/* Avionics Theme Specific Styles */
+/* Avionics Telemetry Theme Tokens */
 html[data-theme="avionics"] {
+    color-scheme: dark;
+
+    /* Surface Hierarchy */
     --theme-bg-body: #080a0e;
     --theme-bg-main: #090b0e;
     --theme-bg-header: #0d1015;
     --theme-bg-sidebar: #0a0d12;
     --theme-bg-card: #0c1017;
-    --theme-bg-surface: #0e1217;
+    --theme-bg-surface: #121721;
+    --theme-bg-input: #080a0e;
+    --theme-bg-elevated: #0e1217;
+    --theme-bg-overlay: rgba(6, 8, 11, 0.82);
+
+    /* Borders & Dividers */
     --theme-border: #1e2634;
-    --theme-border-subtle: #191f2a;
-    --theme-accent: #ff6b35;
-    --theme-accent-hover: #ff8252;
+    --theme-border-subtle: #181f2c;
+    --theme-border-strong: #262f3e;
+    --theme-border-hover: #313d52;
+
+    /* Typography Colors */
     --theme-text-primary: #f1f5f9;
     --theme-text-secondary: #98a6b8;
     --theme-text-muted: #586477;
+    --theme-text-on-accent: #000000;
+
+    /* Primary Brand Accent (Tactical Plasma Orange) */
+    --theme-accent: #ff6b35;
+    --theme-accent-hover: #ff8252;
+    --theme-accent-subtle: rgba(255, 107, 53, 0.12);
+    --theme-accent-border: rgba(255, 107, 53, 0.30);
+    --theme-accent-text: #ff8e62;
+
+    /* Semantic Status Colors */
+    --theme-success: #10b981;
+    --theme-success-hover: #059669;
+    --theme-success-bg: rgba(6, 78, 59, 0.40);
+    --theme-success-border: rgba(16, 185, 129, 0.30);
+    --theme-success-text: #34d399;
+
+    --theme-warning: #f59e0b;
+    --theme-warning-hover: #d97706;
+    --theme-warning-bg: rgba(120, 53, 15, 0.40);
+    --theme-warning-border: rgba(245, 158, 11, 0.30);
+    --theme-warning-text: #fbbf24;
+
+    --theme-danger: #f43f5e;
+    --theme-danger-hover: #e11d48;
+    --theme-danger-bg: rgba(136, 19, 55, 0.40);
+    --theme-danger-border: rgba(244, 63, 94, 0.30);
+    --theme-danger-text: #fb7185;
+
+    --theme-info: #06b6d4;
+    --theme-info-hover: #0891b2;
+    --theme-info-bg: rgba(22, 78, 99, 0.40);
+    --theme-info-border: rgba(6, 182, 212, 0.30);
+    --theme-info-text: #22d3ee;
+
+    /* Typography & Geometry */
     --theme-font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
     --theme-font-mono: 'JetBrains Mono', monospace;
-
-    /* Theme color mappings for slate/indigo palette compatibility across all pages */
-    --color-slate-950: #06080b;
-    --color-slate-900: #0c1017;
-    --color-slate-800: #1e2634;
-    --color-slate-700: #263143;
-    --color-slate-600: #3a475d;
-    --color-slate-500: #586477;
-    --color-slate-400: #98a6b8;
-    --color-slate-300: #cbd5e1;
-    --color-slate-200: #e2e8f0;
-    --color-slate-100: #f1f5f9;
-
-    --color-indigo-600: #ff6b35;
-    --color-indigo-500: #ff8252;
-    --color-indigo-400: #ff9970;
-}
-
-html[data-theme="avionics"] body,
-html[data-theme="avionics"] .theme-body {
-    background-color: #080a0e;
-    color: #d6dce7;
-    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-html[data-theme="avionics"] ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-
-html[data-theme="avionics"] ::-webkit-scrollbar-track {
-    background: #0a0d12;
-}
-
-html[data-theme="avionics"] ::-webkit-scrollbar-thumb {
-    background: #1e2634;
-    border-radius: 2px;
-}
-
-html[data-theme="avionics"] ::-webkit-scrollbar-thumb:hover {
-    background: #ff6b35;
+    --theme-font-ui: 'JetBrains Mono', monospace;
+    --theme-radius-sm: 2px;
+    --theme-radius-md: 2px;
+    --theme-radius-lg: 2px;
+    --theme-radius-badge: 2px;
+    --theme-button-transform: uppercase;
+    --theme-button-tracking: 0.05em;
 }

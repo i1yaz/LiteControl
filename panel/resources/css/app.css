@@ -6,60 +6,101 @@
 @source '../js/**/*.vue';
 
 @theme {
+    /* Typography Stacks */
     --font-sans: var(--theme-font-sans, 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif);
     --font-mono: var(--theme-font-mono, 'JetBrains Mono', monospace);
+    --font-ui: var(--theme-font-ui, var(--font-sans));
 
-    --color-slate-950: var(--color-slate-950, #080d1a);
-    --color-slate-900: var(--color-slate-900, #0f172a);
-    --color-slate-800: var(--color-slate-800, #1e293b);
-    --color-slate-700: var(--color-slate-700, #334155);
-    --color-slate-600: var(--color-slate-600, #475569);
-    --color-slate-500: var(--color-slate-500, #64748b);
-    --color-slate-400: var(--color-slate-400, #94a3b8);
-    --color-slate-300: var(--color-slate-300, #cbd5e1);
-    --color-slate-200: var(--color-slate-200, #e2e8f0);
-    --color-slate-100: var(--color-slate-100, #f8fafc);
+    /* Theme Border Radii */
+    --radius-theme-sm: var(--theme-radius-sm, 2px);
+    --radius-theme-md: var(--theme-radius-md, 2px);
+    --radius-theme-lg: var(--theme-radius-lg, 2px);
+    --radius-theme-badge: var(--theme-radius-badge, 2px);
 
-    --color-indigo-600: var(--color-indigo-600, #0284c7);
-    --color-indigo-500: var(--color-indigo-500, #0ea5e9);
-    --color-indigo-400: var(--color-indigo-400, #38bdf8);
-
-    --color-obsidian-950: var(--color-slate-950, #06080b);
-    --color-obsidian-900: var(--color-slate-900, #0a0d12);
-    --color-obsidian-850: var(--theme-bg-card, #0f141b);
-    --color-obsidian-800: var(--theme-bg-surface, #161c26);
-    --color-obsidian-border: var(--theme-border, #1e2634);
-
-    --color-plasma-orange: var(--theme-accent, #ff6b35);
-    --color-neon-cyan: #00f0a8;
-
+    /* Surface Hierarchy */
     --color-theme-bg-body: var(--theme-bg-body, #080a0e);
     --color-theme-bg-main: var(--theme-bg-main, #090b0e);
     --color-theme-bg-header: var(--theme-bg-header, #0d1015);
     --color-theme-bg-sidebar: var(--theme-bg-sidebar, #0a0d12);
     --color-theme-bg-card: var(--theme-bg-card, #0c1017);
-    --color-theme-bg-surface: var(--theme-bg-surface, #0e1217);
+    --color-theme-bg-surface: var(--theme-bg-surface, #11161f);
+    --color-theme-bg-input: var(--theme-bg-input, #080a0e);
+    --color-theme-bg-elevated: var(--theme-bg-elevated, #0e1217);
+    --color-theme-bg-overlay: var(--theme-bg-overlay, rgba(6, 8, 11, 0.8));
+
+    /* Borders & Dividers */
     --color-theme-border: var(--theme-border, #1e2634);
     --color-theme-border-subtle: var(--theme-border-subtle, #191f2a);
-    --color-theme-accent: var(--theme-accent, #ff6b35);
-    --color-theme-accent-hover: var(--theme-accent-hover, #ff8252);
+    --color-theme-border-strong: var(--theme-border-strong, #2a3445);
+    --color-theme-border-hover: var(--theme-border-hover, #2a3445);
+
+    /* Text Hierarchy */
     --color-theme-text-primary: var(--theme-text-primary, #f1f5f9);
     --color-theme-text-secondary: var(--theme-text-secondary, #98a6b8);
     --color-theme-text-muted: var(--theme-text-muted, #586477);
+    --color-theme-text-on-accent: var(--theme-text-on-accent, #000000);
+
+    /* Primary Brand Accent */
+    --color-theme-accent: var(--theme-accent, #ff6b35);
+    --color-theme-accent-hover: var(--theme-accent-hover, #ff8252);
+    --color-theme-accent-subtle: var(--theme-accent-subtle, rgba(255, 107, 53, 0.12));
+    --color-theme-accent-border: var(--theme-accent-border, rgba(255, 107, 53, 0.3));
+    --color-theme-accent-text: var(--theme-accent-text, #ff8e62);
+
+    /* Semantic Status: Success */
+    --color-theme-success: var(--theme-success, #10b981);
+    --color-theme-success-hover: var(--theme-success-hover, #059669);
+    --color-theme-success-bg: var(--theme-success-bg, rgba(16, 185, 129, 0.12));
+    --color-theme-success-border: var(--theme-success-border, rgba(16, 185, 129, 0.3));
+    --color-theme-success-text: var(--theme-success-text, #34d399);
+
+    /* Semantic Status: Warning */
+    --color-theme-warning: var(--theme-warning, #f59e0b);
+    --color-theme-warning-hover: var(--theme-warning-hover, #d97706);
+    --color-theme-warning-bg: var(--theme-warning-bg, rgba(245, 158, 11, 0.12));
+    --color-theme-warning-border: var(--theme-warning-border, rgba(245, 158, 11, 0.3));
+    --color-theme-warning-text: var(--theme-warning-text, #fbbf24);
+
+    /* Semantic Status: Danger */
+    --color-theme-danger: var(--theme-danger, #f43f5e);
+    --color-theme-danger-hover: var(--theme-danger-hover, #e11d48);
+    --color-theme-danger-bg: var(--theme-danger-bg, rgba(244, 63, 94, 0.12));
+    --color-theme-danger-border: var(--theme-danger-border, rgba(244, 63, 94, 0.3));
+    --color-theme-danger-text: var(--theme-danger-text, #fb7185);
+
+    /* Semantic Status: Info */
+    --color-theme-info: var(--theme-info, #06b6d4);
+    --color-theme-info-hover: var(--theme-info-hover, #0891b2);
+    --color-theme-info-bg: var(--theme-info-bg, rgba(6, 182, 212, 0.12));
+    --color-theme-info-border: var(--theme-info-border, rgba(6, 182, 212, 0.3));
+    --color-theme-info-text: var(--theme-info-text, #22d3ee);
 }
 
-/* Technical Hairline Grid Texture & Scrollbars */
+body,
+.theme-body {
+    background-color: var(--theme-bg-body);
+    color: var(--theme-text-primary);
+    font-family: var(--theme-font-sans);
+}
+
+.theme-ui-control {
+    font-family: var(--theme-font-ui, var(--theme-font-sans));
+    text-transform: var(--theme-button-transform, none);
+    letter-spacing: var(--theme-button-tracking, normal);
+}
+
+/* Global Theme-Aware Scrollbars */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
 }
 ::-webkit-scrollbar-track {
-    background: #0a0d12;
+    background: var(--theme-bg-sidebar);
 }
 ::-webkit-scrollbar-thumb {
-    background: #1e2634;
-    border-radius: 2px;
+    background: var(--theme-border-strong);
+    border-radius: var(--theme-radius-sm, 2px);
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #ff6b35;
+    background: var(--theme-accent);
 }
