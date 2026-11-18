@@ -1,38 +1,38 @@
-/* Cobalt Precision Theme Tokens (Light Mode) */
+/* Cobalt Precision Theme Tokens (Light Mode — Stitch Project 1120821418972120402) */
 html[data-theme="cobalt"] {
     color-scheme: light;
 
-    /* Surface Hierarchy */
+    /* Surface Hierarchy (Mapped from Stitch surface / surface-container-* tokens) */
     --theme-bg-body: #f8f9ff;
     --theme-bg-main: #f8f9ff;
     --theme-bg-header: #ffffff;
-    --theme-bg-sidebar: #eff4ff;
+    --theme-bg-sidebar: #ffffff;
     --theme-bg-card: #ffffff;
-    --theme-bg-surface: #e5eeff;
+    --theme-bg-surface: #eff4ff;
     --theme-bg-input: #ffffff;
     --theme-bg-elevated: #ffffff;
     --theme-bg-overlay: rgba(11, 28, 48, 0.45);
 
-    /* Borders & Dividers */
-    --theme-border: #c3c6d7;
-    --theme-border-subtle: rgba(195, 198, 215, 0.6);
-    --theme-border-strong: #9ca3b8;
+    /* Borders & Dividers (Mapped from Stitch surface-container / outline-variant / outline) */
+    --theme-border: #d8e2f3;
+    --theme-border-subtle: #e5eeff;
+    --theme-border-strong: #c3c6d7;
     --theme-border-hover: #737686;
 
-    /* Typography Colors */
+    /* Typography Colors (Mapped from Stitch on-surface / on-surface-variant / outline) */
     --theme-text-primary: #0b1c30;
     --theme-text-secondary: #434655;
     --theme-text-muted: #737686;
     --theme-text-on-accent: #ffffff;
 
-    /* Primary Brand Accent (Cobalt) */
+    /* Primary Brand Accent (Mapped from Stitch primary #004ac6 / primary-container #2563eb) */
     --theme-accent: #004ac6;
     --theme-accent-hover: #2563eb;
-    --theme-accent-subtle: rgba(0, 74, 198, 0.08);
-    --theme-accent-border: rgba(0, 74, 198, 0.25);
+    --theme-accent-subtle: #eff4ff;
+    --theme-accent-border: #b4c5ff;
     --theme-accent-text: #003ea8;
 
-    /* Semantic Status Colors (Light-mode high contrast) */
+    /* Semantic Status Colors (Light-mode WCAG AA high contrast) */
     --theme-success: #059669;
     --theme-success-hover: #047857;
     --theme-success-bg: #ecfdf5;
@@ -61,10 +61,10 @@ html[data-theme="cobalt"] {
     --theme-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --theme-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --theme-font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    --theme-radius-sm: 0.125rem;
-    --theme-radius-md: 0.25rem;
+    --theme-radius-sm: 0.25rem;
+    --theme-radius-md: 0.375rem;
     --theme-radius-lg: 0.5rem;
-    --theme-radius-badge: 0.75rem;
+    --theme-radius-badge: 0.375rem;
     --theme-button-transform: none;
     --theme-button-tracking: normal;
 }
