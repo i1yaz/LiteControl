@@ -104,7 +104,7 @@ check_unit_state() {
         return 0
     fi
     if [[ "${svc}" == "openlitespeed" ]]; then
-        if "${OLS_CTRL}" status >/dev/null 2>&1; then
+        if pgrep -x "litespeed" >/dev/null 2>&1 || pgrep -x "lshttpd" >/dev/null 2>&1 || pgrep -x "openlitespeed" >/dev/null 2>&1; then
             printf "active"
         else
             printf "inactive"
