@@ -258,6 +258,7 @@ class ServerController extends Controller
                 return response()->json([
                     'status' => $isActive ? 'online' : 'offline',
                     'service' => 'openlitespeed',
+                    'raw' => $service,
                 ]);
             }
         }
@@ -265,6 +266,7 @@ class ServerController extends Controller
         return response()->json([
             'status' => 'offline',
             'service' => 'openlitespeed',
+            'raw' => $services,
         ]);
     }
 }

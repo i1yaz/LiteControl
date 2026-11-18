@@ -104,7 +104,7 @@ check_unit_state() {
         return 0
     fi
     if [[ "${svc}" == "openlitespeed" ]]; then
-        if pgrep -x "litespeed" >/dev/null 2>&1 || pgrep -x "lshttpd" >/dev/null 2>&1 || pgrep -x "openlitespeed" >/dev/null 2>&1; then
+        if pgrep -f "/usr/local/lsws/bin/(lshttpd|openlitespeed|litespeed)" >/dev/null 2>&1 || systemctl is-active --quiet lshttpd 2>/dev/null || systemctl is-active --quiet lsws 2>/dev/null; then
             printf "active"
         else
             printf "inactive"
