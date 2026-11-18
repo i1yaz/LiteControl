@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -18,6 +21,8 @@ func ExecuteDeploy(args []string) error {
 	switch args[0] {
 	case "init":
 		return runDeployInit(args[1:])
+	case "run":
+		return runDeployRun(args[1:])
 	case "-h", "--help", "help":
 		printDeployUsage()
 		return nil
@@ -52,6 +57,36 @@ func runDeployInit(args []string) error {
 		WebSubpath: *webSubpath,
 		SeedShared: *seedShared,
 	})
+}
+
+func runDeployRun(args []string) error {
+	fs := flag.NewFlagSet("deploy run", flag.ContinueOnError)
+	specPath := fs.String("spec", "", "Path to deploy_{release_id}.json spec file (required)")
+
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
+		return err
+	}
+
+	if *specPath == "" {
+		fs.Usage()
+		return fmt.Errorf("--spec is required")
+	}
+
+	result, err := deploy.RunDeploy(context.Background(), *specPath, os.Stderr)
+	if result.Status != "" {
+		if encErr := json.NewEncoder(os.Stdout).Encode(result); encErr != nil {
+			return encErr
+		}
+	}
+
+	if errors.Is(err, deploy.ErrRolledBack) {
+		os.Exit(2)
+	}
+
+	return err
 }
 
 func printDeployUsage() {
