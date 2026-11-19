@@ -11,6 +11,7 @@ use App\Domains\Security\Actions\UpdatePanelSslAction;
 use App\Domains\Security\Actions\UpdateSshPortAction;
 use App\Domains\Security\Contracts\FirewallDriverInterface;
 use App\Domains\Security\Models\FirewallRule;
+use App\Domains\Security\ValueObjects\ImunifyStatus;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use App\Domains\Shared\ValueObjects\Port;
 use App\Domains\WebServer\Actions\InstallCustomSslAction;
@@ -20,6 +21,7 @@ use App\Exceptions\System\LcCliException;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -481,11 +483,19 @@ class SecurityController extends Controller
     public function imunifyAv(): Response
     {
         $data = $this->moduleCli->getModuleStatus('imunifyav');
-        $status = $data['status'] ?? $data['state'] ?? 'not_installed';
+        $queueState = Cache::get('module_install_imunifyav');
+        $error = Cache::get('module_install_imunifyav_error');
+        $installLog = $this->moduleCli->getModuleInstallLog('imunifyav');
+
+        $imunifyStatus = ImunifyStatus::fromCliData(
+            cliData: $data,
+            queueState: is_string($queueState) ? $queueState : null,
+            installLog: $installLog !== '' ? $installLog : null,
+            error: is_string($error) ? $error : null,
+        );
 
         return Inertia::render('Security/ImunifyAv', [
-            'installed' => ! empty($data['installed']) && $status !== 'not_installed',
-            'status' => $status,
+            ...$imunifyStatus->toArray(),
             'cli_output' => $data,
         ]);
     }

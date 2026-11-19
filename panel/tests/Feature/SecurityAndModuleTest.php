@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Services\TotpService;
 use App\Domains\Security\Models\FirewallRule;
+use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use App\Domains\WebServer\Models\Domain;
 use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -256,7 +257,7 @@ class SecurityAndModuleTest extends TestCase
     {
         $admin = User::where('role', 'admin')->first();
 
-        $mock = $this->mock(\App\Domains\ServerOps\Contracts\ModuleDriverInterface::class);
+        $mock = $this->mock(ModuleDriverInterface::class);
         $mock->shouldReceive('getModuleStatus')
             ->with('modsecurity')
             ->once()
@@ -275,7 +276,7 @@ class SecurityAndModuleTest extends TestCase
     {
         $admin = User::where('role', 'admin')->first();
 
-        $mock = $this->mock(\App\Domains\ServerOps\Contracts\ModuleDriverInterface::class);
+        $mock = $this->mock(ModuleDriverInterface::class);
         $mock->shouldReceive('getModuleStatus')
             ->with('modsecurity')
             ->once()
@@ -287,6 +288,31 @@ class SecurityAndModuleTest extends TestCase
             ->component('Security/ModSecurity')
             ->where('installed', true)
             ->where('status', 'active')
+        );
+    }
+
+    public function test_imunifyav_page_returns_handoff_props_when_active(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+
+        $mock = $this->mock(ModuleDriverInterface::class);
+        $mock->shouldReceive('getModuleStatus')
+            ->with('imunifyav')
+            ->once()
+            ->andReturn(['installed' => true, 'status' => 'active']);
+        $mock->shouldReceive('getModuleInstallLog')
+            ->with('imunifyav')
+            ->once()
+            ->andReturn('ImunifyAV Antivirus installed successfully.');
+
+        $res = $this->actingAs($admin)->get('/security/imunifyav');
+        $res->assertStatus(200);
+        $res->assertInertia(fn (Assert $page) => $page
+            ->component('Security/ImunifyAv')
+            ->where('installed', true)
+            ->where('status', 'active')
+            ->where('ui_url', '/imunifyav/')
+            ->where('install_log', 'ImunifyAV Antivirus installed successfully.')
         );
     }
 

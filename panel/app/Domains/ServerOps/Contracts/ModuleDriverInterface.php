@@ -10,6 +10,8 @@ interface ModuleDriverInterface
 
     public function getModuleStatus(string $module): array;
 
+    public function getModuleInstallLog(string $module, int $lines = 100): string;
+
     /**
      * @throws LcCliException
      */

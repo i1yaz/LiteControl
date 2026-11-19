@@ -76,6 +76,7 @@ class ModuleController extends Controller
             'module' => $module,
             'status' => $status,
             'error' => $status === 'failed' ? Cache::get("module_install_{$module}_error") : null,
+            'log' => $this->moduleCli->getModuleInstallLog($module),
         ]);
     }
 
