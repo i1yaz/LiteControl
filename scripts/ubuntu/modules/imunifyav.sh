@@ -93,11 +93,12 @@ EOF
 
 ensure_resolver_scripts_executable() {
     local scripts=("admins.sh" "users.sh" "domains.sh" "packages.sh" "resellers.sh" "db_info.sh" "panel_info.sh")
-    local src_dir="${SCRIPT_DIR}/../imunify"
+    local src_dir
+    src_dir="$(cd "${SCRIPT_DIR}/../imunify" 2>/dev/null && pwd || echo "${SCRIPT_DIR}/../imunify")"
 
     mkdir -p "${IMUNIFY_SCRIPTS_DIR}"
     for s in "${scripts[@]}"; do
-        if [[ -f "${src_dir}/${s}" && "${src_dir}/${s}" != "${IMUNIFY_SCRIPTS_DIR}/${s}" ]]; then
+        if [[ -f "${src_dir}/${s}" && ! "${src_dir}/${s}" -ef "${IMUNIFY_SCRIPTS_DIR}/${s}" ]]; then
             cp -f "${src_dir}/${s}" "${IMUNIFY_SCRIPTS_DIR}/${s}"
         fi
         if [[ -f "${IMUNIFY_SCRIPTS_DIR}/${s}" ]]; then
