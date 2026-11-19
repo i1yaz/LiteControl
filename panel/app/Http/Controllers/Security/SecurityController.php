@@ -471,6 +471,7 @@ class SecurityController extends Controller
         return Inertia::render('Security/ModSecurity', [
             'installed' => ! empty($data['installed']) && $status !== 'not_installed',
             'status' => $status,
+            'cli_output' => $data,
         ]);
     }
 
@@ -485,6 +486,7 @@ class SecurityController extends Controller
         return Inertia::render('Security/ImunifyAv', [
             'installed' => ! empty($data['installed']) && $status !== 'not_installed',
             'status' => $status,
+            'cli_output' => $data,
         ]);
     }
 }
