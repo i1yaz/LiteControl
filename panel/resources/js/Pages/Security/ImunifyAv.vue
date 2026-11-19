@@ -35,14 +35,14 @@ const installImunify = () => {
                     <CheckCircle2 class="w-7 h-7" />
                 </div>
                 <div>
-                    <h2 class="text-lg font-bold text-theme-text-primary">{{ __('ImunifyAV Scanner Active') }}</h2>
+                    <h2 class="text-lg font-bold text-theme-text-primary">{{ status === 'active' ? __('ImunifyAV Scanner Active') : __('ImunifyAV Scanner Inactive') }}</h2>
                     <p class="text-xs text-theme-text-secondary mt-0.5">{{ __('Antivirus signatures and background daemon active on host system.') }}</p>
                 </div>
             </div>
 
             <div class="p-4 rounded-theme-md bg-theme-bg-surface border border-theme-border text-xs text-theme-text-secondary font-mono space-y-1">
-                <p>{{ __('Status:') }} <span class="text-theme-success-text font-bold uppercase">{{ status }}</span></p>
-                <p>{{ __('Scanner: imunify-antivirus (active)') }}</p>
+                <p>{{ __('Status:') }} <span :class="status === 'active' ? 'text-theme-success-text' : 'text-theme-warning-text'" class="font-bold uppercase">{{ status }}</span></p>
+                <p>{{ __('Scanner: imunify-antivirus') }} ({{ status }})</p>
                 <p>{{ __('Signatures: Daily cloud definitions synchronized') }}</p>
             </div>
         </UiCard>
