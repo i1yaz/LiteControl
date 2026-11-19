@@ -33,7 +33,10 @@ detect_pam_service() {
 }
 
 ensure_install_log() {
-    mkdir -p "$(dirname "${IMUNIFY_INSTALL_LOG}")"
+    local log_dir
+    log_dir="$(dirname "${IMUNIFY_INSTALL_LOG}")"
+    mkdir -p "${log_dir}"
+    chmod 0755 "${log_dir}" 2>/dev/null || true
     : > "${IMUNIFY_INSTALL_LOG}"
     chmod 0644 "${IMUNIFY_INSTALL_LOG}" 2>/dev/null || true
     if id "${LC_USER}" >/dev/null 2>&1; then
@@ -50,7 +53,7 @@ write_integration_conf() {
     local pam_service
     pam_service="$(detect_pam_service)"
 
-    mkdir -p "${IMUNIFY_SYSCONFIG_DIR}/generic"
+    mkdir -p "${IMUNIFY_SYSCONFIG_DIR}/generic" "${IMUNIFY_SYSCONFIG_DIR}/imunify360.config.d"
     touch "${IMUNIFY_SYSCONFIG_DIR}/generic/modsec.conf"
     mkdir -p "${IMUNIFY_UI_DIR}"
 

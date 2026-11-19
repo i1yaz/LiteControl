@@ -42,7 +42,8 @@ class LcCliService
 
         try {
             $cmd = array_merge(['sudo', $this->cliPath, '--json', $command], $args);
-            $result = Process::run($cmd);
+            $timeout = ($command === 'module' && in_array($args[0] ?? '', ['install', 'remove'], true)) ? 1800 : 300;
+            $result = Process::timeout($timeout)->run($cmd);
 
             $output = trim($result->output());
             $decoded = json_decode($output, true);
