@@ -29,7 +29,7 @@ const installImunify = () => {
         </UiPageHeader>
 
         <!-- Installed State -->
-        <UiCard v-if="installed" class="space-y-6">
+        <UiCard v-if="installed && status !== 'not_installed'" class="space-y-6">
             <div class="flex items-center gap-4">
                 <div class="p-3 rounded-theme-lg bg-theme-success-bg text-theme-success-text border border-theme-success-border">
                     <CheckCircle2 class="w-7 h-7" />
