@@ -50,7 +50,9 @@ const isPolling = ref<boolean>(props.installing);
 const liveLog = ref<string>(props.install_log || '');
 const liveError = ref<string | null>(props.error || null);
 const showCliHelp = ref<boolean>(false);
-let pollTimer: ReturnType<typeof setInterval> | null = null;
+let pollTimer: ReturnType<typeof setTimeout> | null = null;
+let isFetching = false;
+let isMounted = false;
 
 watch(() => props.install_log, (val) => {
     if (val) liveLog.value = val;
@@ -66,15 +68,30 @@ watch(() => props.installing, (val) => {
 
 const isActive = computed(() => props.status === 'active');
 
-const stopPolling = () => {
-    isPolling.value = false;
+const clearPollTimer = () => {
     if (pollTimer) {
-        clearInterval(pollTimer);
+        clearTimeout(pollTimer);
         pollTimer = null;
     }
 };
 
+const stopPolling = () => {
+    isPolling.value = false;
+    clearPollTimer();
+};
+
+const scheduleNextPoll = () => {
+    clearPollTimer();
+    if (isMounted && isPolling.value) {
+        pollTimer = setTimeout(pollInstallStatus, 1500);
+    }
+};
+
 const pollInstallStatus = async () => {
+    if (isFetching || !isPolling.value) return;
+    isFetching = true;
+    clearPollTimer();
+
     try {
         const res = await fetch('/modules/install-status', {
             headers: { Accept: 'application/json' },
@@ -102,13 +119,17 @@ const pollInstallStatus = async () => {
         }
     } catch {
         // Keep polling on transient network error
+    } finally {
+        isFetching = false;
+        scheduleNextPoll();
     }
 };
 
 const startPolling = () => {
     isPolling.value = true;
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(pollInstallStatus, 1500);
+    if (!isFetching) {
+        scheduleNextPoll();
+    }
 };
 
 const installOrReinstallImunify = () => {
@@ -141,12 +162,14 @@ const uninstallImunify = async () => {
 };
 
 onMounted(() => {
+    isMounted = true;
     if (props.installing) {
         startPolling();
     }
 });
 
 onUnmounted(() => {
+    isMounted = false;
     stopPolling();
 });
 </script>
