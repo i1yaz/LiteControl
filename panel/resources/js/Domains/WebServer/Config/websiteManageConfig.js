@@ -10,6 +10,7 @@ export const WEBSITE_MANAGE_TABS = [
     { id: 'config',   label: 'Config',   icon: 'SlidersHorizontal' },
     { id: 'ssl',      label: 'SSL',      icon: 'Lock' },
     { id: 'files',    label: 'Files',    icon: 'Folder' },
+    { id: 'deployment', label: 'Deployment', icon: 'Rocket', route: (domain) => `/domains/${domain.id}/deploy` },
 ];
 
 export const WEBSITE_MANAGE_ACTIONS = [
