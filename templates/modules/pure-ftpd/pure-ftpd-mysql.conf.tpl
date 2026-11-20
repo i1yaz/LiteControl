@@ -3,7 +3,7 @@ MYSQLSocket      /var/run/mysqld/mysqld.sock
 MYSQLUser        {{DB_USER}}
 MYSQLPassword    {{DB_PASS}}
 MYSQLDatabase    {{DB_NAME}}
-MYSQLCrypt       argon2
+MYSQLCrypt       crypt
 
 MYSQLGetPW       SELECT password_hash FROM ftp_accounts WHERE status = 'active' AND username = '\L'
 MYSQLGetUID      SELECT uid FROM ftp_accounts WHERE status = 'active' AND username = '\L'
