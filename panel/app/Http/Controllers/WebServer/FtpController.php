@@ -64,7 +64,7 @@ class FtpController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return Inertia::render('Ftp/Index', [
+        return Inertia::render('WebServer/Ftp', [
             'ftpUsers' => $ftpUsers,
             'domains' => $domains,
             'filters' => [

@@ -57,7 +57,7 @@ test('user can list only their own ftp accounts with domain and search filters',
 
     $response->assertOk();
     $page = $response->viewData('page');
-    expect($page['component'])->toBe('Ftp/Index');
+    expect($page['component'])->toBe('WebServer/Ftp');
     expect($page['props']['ftpUsers']['data'])->toHaveCount(1);
     expect($page['props']['ftpUsers']['data'][0]['username'])->toBe('alice_deploy');
     expect($page['props']['domains'])->toHaveCount(1);

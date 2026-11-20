@@ -8,6 +8,7 @@ import UiDataTable from '@shared/Ui/UiDataTable.vue';
 import UiBadge from '@shared/Ui/UiBadge.vue';
 import UiModal from '@shared/Ui/UiModal.vue';
 import UiInput from '@shared/Ui/UiInput.vue';
+import UiPasswordInput from '@shared/Ui/UiPasswordInput.vue';
 import UiSelect from '@shared/Ui/UiSelect.vue';
 import {
     Database,
@@ -39,35 +40,7 @@ const showCreateDbModal = shallowRef(false);
 const showCreateUserModal = shallowRef(false);
 const showPasswordModal = shallowRef(false);
 const showGrantModal = shallowRef(false);
-const showUserPassword = shallowRef(false);
-const showRotatePassword = shallowRef(false);
 const selectedDbUser = shallowRef(null);
-
-const generateStrongPassword = (form = userForm, visibilityRef = showUserPassword) => {
-    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const lower = 'abcdefghijklmnopqrstuvwxyz';
-    const digits = '0123456789';
-    const symbols = '!@#$%^&*()-_=+';
-    const all = upper + lower + digits + symbols;
-    const bytes = new Uint32Array(16);
-    window.crypto.getRandomValues(bytes);
-
-    const chars = [
-        upper[bytes[0] % upper.length],
-        lower[bytes[1] % lower.length],
-        digits[bytes[2] % digits.length],
-        symbols[bytes[3] % symbols.length],
-    ];
-    for (let i = 4; i < 16; i++) {
-        chars.push(all[bytes[i] % all.length]);
-    }
-    for (let i = chars.length - 1; i > 0; i--) {
-        const j = bytes[i] % (i + 1);
-        [chars[i], chars[j]] = [chars[j], chars[i]];
-    }
-    form.password = chars.join('');
-    visibilityRef.value = true;
-};
 
 const dbForm = useForm({
     db_name: '',
@@ -418,37 +391,13 @@ const deleteDbUser = async (id, name) => {
                     />
                 </div>
 
-                <div>
-                    <div class="flex items-center justify-between mb-1">
-                        <label for="db_user_password" class="block text-xs font-medium text-theme-text-secondary">
-                            User Password
-                        </label>
-                        <div class="flex items-center gap-2">
-                            <button
-                                type="button"
-                                @click="showUserPassword = !showUserPassword"
-                                class="text-[11px] text-theme-text-muted hover:text-theme-text-primary transition-colors"
-                            >
-                                {{ showUserPassword ? 'Hide' : 'Show' }}
-                            </button>
-                            <button
-                                type="button"
-                                @click="generateStrongPassword(userForm, showUserPassword)"
-                                class="text-[11px] font-medium text-theme-accent hover:underline"
-                            >
-                                Generate Strong
-                            </button>
-                        </div>
-                    </div>
-                    <UiInput
-                        id="db_user_password"
-                        v-model="userForm.password"
-                        :type="showUserPassword ? 'text' : 'password'"
-                        placeholder="••••••••••••"
-                        :error="userForm.errors.password"
-                        required
-                    />
-                </div>
+                <UiPasswordInput
+                    id="db_user_password"
+                    v-model="userForm.password"
+                    label="User Password"
+                    :error="userForm.errors.password"
+                    required
+                />
 
                 <div>
                     <UiSelect
@@ -480,32 +429,10 @@ const deleteDbUser = async (id, name) => {
                     <p class="text-xs text-theme-text-secondary mb-3">
                         Updating credentials for <strong class="text-theme-text-primary">{{ selectedDbUser?.db_username }}</strong>
                     </p>
-                    <div class="flex items-center justify-between mb-1">
-                        <label for="rotate_pass" class="block text-xs font-medium text-theme-text-secondary">
-                            New Password
-                        </label>
-                        <div class="flex items-center gap-2">
-                            <button
-                                type="button"
-                                @click="showRotatePassword = !showRotatePassword"
-                                class="text-[11px] text-theme-text-muted hover:text-theme-text-primary transition-colors"
-                            >
-                                {{ showRotatePassword ? 'Hide' : 'Show' }}
-                            </button>
-                            <button
-                                type="button"
-                                @click="generateStrongPassword(passForm, showRotatePassword)"
-                                class="text-[11px] font-medium text-theme-accent hover:underline"
-                            >
-                                Generate Strong
-                            </button>
-                        </div>
-                    </div>
-                    <UiInput
+                    <UiPasswordInput
                         id="rotate_pass"
                         v-model="passForm.password"
-                        :type="showRotatePassword ? 'text' : 'password'"
-                        placeholder="••••••••••••"
+                        label="New Password"
                         :error="passForm.errors.password"
                         required
                     />
