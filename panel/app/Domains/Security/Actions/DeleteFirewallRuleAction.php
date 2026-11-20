@@ -20,23 +20,28 @@ class DeleteFirewallRuleAction
      */
     public function handle(string|int $rule, ?User $actor = null, ?string $ipAddress = null): void
     {
-        $this->firewallDriver->deleteRule((string) $rule);
+        $dbRule = is_numeric($rule) ? FirewallRule::find($rule) : null;
 
-        DB::transaction(function () use ($rule, $actor, $ipAddress) {
-            if (is_numeric($rule)) {
-                $dbRule = FirewallRule::find($rule);
-                if ($dbRule) {
-                    $dbRule->delete();
-                }
+        $targetSpec = (string) $rule;
+        if ($dbRule) {
+            $proto = ($dbRule->protocol && $dbRule->protocol !== 'any') ? $dbRule->protocol : 'tcp';
+            $targetSpec = "{$dbRule->port}/{$proto}";
+        }
+
+        $this->firewallDriver->deleteRule($targetSpec);
+
+        DB::transaction(function () use ($rule, $dbRule, $targetSpec, $actor, $ipAddress) {
+            if ($dbRule) {
+                $dbRule->delete();
             }
 
             ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
                 'user_id' => $actor?->id,
                 'action' => 'delete_firewall_rule',
-                'command' => "lc-cli security ufw-delete {$rule}",
+                'command' => "lc-cli security ufw-delete {$targetSpec}",
                 'status' => 'success',
                 'ip_address' => $ipAddress,
-                'details' => json_encode(['rule' => $rule]),
+                'details' => json_encode(['rule' => $rule, 'spec' => $targetSpec]),
             ]);
         });
     }

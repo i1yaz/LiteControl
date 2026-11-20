@@ -24,15 +24,18 @@ class CliFirewallAdapter implements FirewallDriverInterface
         return ['active' => false, 'rules' => []];
     }
 
-    public function addRule(string $action, string $port, string $protocol = 'tcp', ?string $sourceIp = null): array
+    public function addRule(string $action, string $port, string $protocol = 'tcp', ?string $sourceIp = null, ?string $comment = null): array
     {
         $sub = $action === 'allow' ? 'ufw-allow' : 'ufw-deny';
         $proto = $protocol === 'any' ? 'tcp' : $protocol;
         $src = $sourceIp ?: '';
 
         $cliArgs = [$sub, $port, $proto];
-        if (! empty($src)) {
+        if (! empty($src) || ! empty($comment)) {
             $cliArgs[] = $src;
+        }
+        if (! empty($comment)) {
+            $cliArgs[] = $comment;
         }
 
         return $this->runSecurity($cliArgs, 'Failed to apply firewall rule.');

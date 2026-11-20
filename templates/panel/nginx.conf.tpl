@@ -93,6 +93,33 @@ http {
         }
 
         # ----------------------------------------------------------------------
+        # 1b. ImunifyAV Standalone Web UI (/imunifyav/)
+        # ----------------------------------------------------------------------
+        location ^~ /imunifyav/ {
+            alias /usr/local/litecontrol/imunifyav/;
+            index index.html index.php;
+
+            location ~ ^/imunifyav/(.+\.php)$ {
+                alias /usr/local/litecontrol/imunifyav/$1;
+                fastcgi_pass unix:/run/litecontrol-php-fpm.sock;
+                fastcgi_index index.php;
+                include /etc/litecontrol/nginx/fastcgi_params;
+                fastcgi_param SCRIPT_FILENAME $request_filename;
+                fastcgi_read_timeout 300;
+            }
+
+            location ~* ^/imunifyav/(.+\.(jpg|jpeg|gif|css|png|js|ico|html|xml|txt|woff|woff2|ttf|svg))$ {
+                alias /usr/local/litecontrol/imunifyav/$1;
+                expires 1h;
+                access_log off;
+            }
+        }
+
+        location = /imunifyav {
+            return 301 /imunifyav/;
+        }
+
+        # ----------------------------------------------------------------------
         # 2. LiteControl Laravel + Inertia.js Panel Application (/)
         # ----------------------------------------------------------------------
         location / {

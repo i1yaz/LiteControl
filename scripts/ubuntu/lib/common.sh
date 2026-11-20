@@ -309,7 +309,14 @@ mark_module_removed() {
 
 is_module_installed() {
     local module_name="$1"
-    [[ -f "${LC_MODULES_DIR}/${module_name}.installed" ]]
+    if [[ ! -f "${LC_MODULES_DIR}/${module_name}.installed" ]]; then
+        return 1
+    fi
+    if [[ "${module_name}" == "imunifyav" && "${LC_TEST_MODE:-0}" != "1" ]]; then
+        local conf_path="${IMUNIFY_CONF_PATH:-/etc/sysconfig/imunify360/integration.conf}"
+        [[ -f "${conf_path}" ]] || return 1
+    fi
+    return 0
 }
 
 # ------------------------------------------------------------------------------

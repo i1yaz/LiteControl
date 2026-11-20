@@ -4,14 +4,34 @@ import { router } from '@inertiajs/vue3';
 
 const version = ref<string | null>(null);
 const status = ref<'installing' | 'installed' | 'failed' | null>(null);
-let pollTimer: ReturnType<typeof setInterval> | null = null;
+let pollTimer: ReturnType<typeof setTimeout> | null = null;
+let isFetching = false;
+let isMounted = false;
 
 const formatVersion = (ver: string | null) => {
     if (!ver || ver.length < 2) return ver || '';
     return `${ver[0]}.${ver.slice(1)}`;
 };
 
+const stopPolling = () => {
+    if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+    }
+};
+
+const scheduleNextPoll = () => {
+    stopPolling();
+    if (isMounted && status.value === 'installing') {
+        pollTimer = setTimeout(fetchStatus, 3000);
+    }
+};
+
 const fetchStatus = async () => {
+    if (isFetching) return;
+    isFetching = true;
+    stopPolling();
+
     try {
         const res = await fetch('/php/versions/install-status', {
             headers: { Accept: 'application/json' },
@@ -23,28 +43,14 @@ const fetchStatus = async () => {
         version.value = data.version;
         status.value = data.status;
 
-        if (data.status === 'installing') {
-            startPolling();
-        } else {
-            stopPolling();
-            if (prevStatus === 'installing' && data.status === 'installed') {
-                router.reload({ preserveScroll: true });
-            }
+        if (data.status !== 'installing' && prevStatus === 'installing' && data.status === 'installed') {
+            router.reload({ preserveScroll: true });
         }
     } catch {
         // Ignore transient network errors
-    }
-};
-
-const startPolling = () => {
-    if (pollTimer) return;
-    pollTimer = setInterval(fetchStatus, 3000);
-};
-
-const stopPolling = () => {
-    if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
+    } finally {
+        isFetching = false;
+        scheduleNextPoll();
     }
 };
 
@@ -70,6 +76,7 @@ const dismiss = async () => {
 let removeInertiaSuccessListener: (() => void) | null = null;
 
 onMounted(() => {
+    isMounted = true;
     fetchStatus();
     removeInertiaSuccessListener = router.on('success', (event) => {
         const successMsg = (event.detail.page.props as { flash?: { success?: string } })?.flash?.success;
@@ -80,6 +87,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+    isMounted = false;
     stopPolling();
     removeInertiaSuccessListener?.();
 });

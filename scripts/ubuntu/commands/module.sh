@@ -100,7 +100,7 @@ get_module_state() {
             echo "inactive"
         fi
     else
-        systemctl is-active "${svc}" 2>/dev/null || echo "inactive"
+        systemctl is-active --quiet "${svc}" 2>/dev/null && echo "active" || echo "inactive"
     fi
 }
 

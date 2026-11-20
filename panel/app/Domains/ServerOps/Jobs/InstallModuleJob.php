@@ -13,6 +13,10 @@ class InstallModuleJob implements ShouldQueue
 {
     use Queueable;
 
+    public int $timeout = 1800;
+
+    public int $tries = 1;
+
     public function __construct(
         public readonly string $module,
     ) {
@@ -35,5 +39,15 @@ class InstallModuleJob implements ShouldQueue
             Cache::put($errorKey, $e->getMessage(), now()->addMinutes(30));
             throw $e;
         }
+    }
+
+    public function failed(?\Throwable $e): void
+    {
+        Cache::put("module_install_{$this->module}", 'failed', now()->addMinutes(30));
+        Cache::put(
+            "module_install_{$this->module}_error",
+            $e?->getMessage() ?: "Module '{$this->module}' installation timed out or failed.",
+            now()->addMinutes(30)
+        );
     }
 }

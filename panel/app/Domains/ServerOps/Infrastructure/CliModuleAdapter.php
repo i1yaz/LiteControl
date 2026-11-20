@@ -31,7 +31,28 @@ class CliModuleAdapter implements ModuleDriverInterface
             return $res['data'];
         }
 
-        return ['installed' => false, 'state' => 'not_installed'];
+        return ['installed' => false, 'status' => 'not_installed', 'state' => 'not_installed'];
+    }
+
+    public function getModuleInstallLog(string $module, int $lines = 100): string
+    {
+        if (! preg_match('/^[a-z0-9_-]+$/', $module)) {
+            return '';
+        }
+
+        $logPath = "/var/log/litecontrol/{$module}-install.log";
+        if (! is_file($logPath) || ! is_readable($logPath)) {
+            return '';
+        }
+
+        $content = @file_get_contents($logPath);
+        if ($content === false || $content === '') {
+            return '';
+        }
+
+        $allLines = preg_split('/\r\n|\r|\n/', trim($content)) ?: [];
+
+        return implode("\n", array_slice($allLines, -max(1, $lines)));
     }
 
     public function installModule(string $module): array
