@@ -185,7 +185,7 @@ EOF
         local admin_pass
         admin_pass=$(get_secret "panel_admin_password" 2>/dev/null || echo "")
         if [[ -n "${admin_pass}" ]]; then
-            su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan tinker --execute=\"\\App\\Models\\User::where('username', 'admin')->update(['password' => \\Illuminate\\Support\\Facades\\Hash::make('${admin_pass}')]);\"" 2>/dev/null || true
+            su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan tinker --execute=\"\\App\\Domains\\Identity\\Models\\User::where('username', 'admin')->update(['password' => \\Illuminate\\Support\\Facades\\Hash::make('${admin_pass}')]);\"" 2>/dev/null || true
         fi
 
         # Enable Laravel queue worker service
