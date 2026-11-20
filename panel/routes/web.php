@@ -18,6 +18,7 @@ use App\Http\Controllers\ServerOps\DashboardController;
 use App\Http\Controllers\ServerOps\ModuleController;
 use App\Http\Controllers\ServerOps\ServerController;
 use App\Http\Controllers\WebServer\DomainController;
+use App\Http\Controllers\WebServer\FtpController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/theme/switch', [ThemeController::class, 'switch'])->name('theme.switch');
@@ -90,6 +91,13 @@ Route::middleware('auth')->group(function () {
     Route::delete('/databases/users/{dbUser}', [DatabaseController::class, 'destroyUser'])->name('databases.users.destroy');
     Route::post('/databases/grant', [DatabaseController::class, 'grantPrivileges'])->name('databases.grant');
     Route::get('/phpmyadmin/sso', [DatabaseController::class, 'phpmyadminSso'])->name('phpmyadmin.sso');
+
+    // FTP Management
+    Route::get('/ftp', [FtpController::class, 'index'])->name('ftp.index');
+    Route::post('/ftp', [FtpController::class, 'store'])->name('ftp.store');
+    Route::put('/ftp/{ftpUser}', [FtpController::class, 'update'])->name('ftp.update');
+    Route::patch('/ftp/{ftpUser}/password', [FtpController::class, 'updatePassword'])->name('ftp.password');
+    Route::delete('/ftp/{ftpUser}', [FtpController::class, 'destroy'])->name('ftp.destroy');
 
     // Web File Manager
     Route::get('/files', [FileManagerController::class, 'index'])->name('files.index');
