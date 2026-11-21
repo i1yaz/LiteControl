@@ -3,7 +3,7 @@ import { Head, useForm } from '@inertiajs/vue3';
 import { Lock, Save } from '@lucide/vue';
 import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
 import UiCard from '@shared/Ui/UiCard.vue';
-import UiInput from '@shared/Ui/UiInput.vue';
+import UiPasswordInput from '@shared/Ui/UiPasswordInput.vue';
 import UiButton from '@shared/Ui/UiButton.vue';
 
 const form = useForm({
@@ -35,27 +35,32 @@ const submit = () => {
         <!-- Form -->
         <UiCard>
             <form @submit.prevent="submit" class="space-y-5">
-                <UiInput
+                <UiPasswordInput
+                    id="current_password"
                     v-model="form.current_password"
-                    type="password"
                     required
                     :label="__('Current Password')"
                     :error="form.errors.current_password"
+                    :allow-generate="false"
+                    :allow-copy="false"
                 />
 
-                <UiInput
+                <UiPasswordInput
+                    id="new_password"
                     v-model="form.password"
-                    type="password"
                     required
                     :label="__('New Password')"
                     :error="form.errors.password"
+                    @generated="form.password_confirmation = $event"
                 />
 
-                <UiInput
+                <UiPasswordInput
+                    id="password_confirmation"
                     v-model="form.password_confirmation"
-                    type="password"
                     required
                     :label="__('Confirm New Password')"
+                    :allow-generate="false"
+                    :allow-copy="false"
                 />
 
                 <div class="pt-4 border-t border-theme-border-subtle flex items-center justify-end">

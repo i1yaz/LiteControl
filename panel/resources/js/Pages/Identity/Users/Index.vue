@@ -6,6 +6,7 @@ import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
 import UiButton from '@shared/Ui/UiButton.vue';
 import UiModal from '@shared/Ui/UiModal.vue';
 import UiInput from '@shared/Ui/UiInput.vue';
+import UiPasswordInput from '@shared/Ui/UiPasswordInput.vue';
 import UiSelect from '@shared/Ui/UiSelect.vue';
 import UiTextarea from '@shared/Ui/UiTextarea.vue';
 import UiBadge from '@shared/Ui/UiBadge.vue';
@@ -399,12 +400,10 @@ const tableHeaders = [
 
                 <!-- Password (Optional) -->
                 <div>
-                    <UiInput
+                    <UiPasswordInput
                         id="password"
                         v-model="editForm.password"
-                        type="password"
                         :label="__('Password Reset (Leave blank to keep unchanged)')"
-                        placeholder="••••••••••••"
                         :error="editForm.errors.password"
                     />
                 </div>

@@ -4,6 +4,7 @@ import { useForm, Head, Link } from '@inertiajs/vue3';
 import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
 import UiCard from '@shared/Ui/UiCard.vue';
 import UiInput from '@shared/Ui/UiInput.vue';
+import UiPasswordInput from '@shared/Ui/UiPasswordInput.vue';
 import UiSelect from '@shared/Ui/UiSelect.vue';
 import UiTextarea from '@shared/Ui/UiTextarea.vue';
 import UiToggle from '@shared/Ui/UiToggle.vue';
@@ -119,12 +120,10 @@ const submit = () => {
 
                     <!-- Password -->
                     <div>
-                        <UiInput
+                        <UiPasswordInput
                             id="password"
                             v-model="form.password"
-                            type="password"
                             :label="__('Password')"
-                            placeholder="••••••••••••"
                             :error="form.errors.password"
                             required
                         />

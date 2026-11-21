@@ -43,13 +43,15 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'generated']);
 
 const showPassword = shallowRef(false);
 const { copiedKey, copyText } = useClipboard();
 
 const handleGenerate = () => {
-    emit('update:modelValue', generateStrongPassword(props.length));
+    const generated = generateStrongPassword(props.length);
+    emit('update:modelValue', generated);
+    emit('generated', generated);
     showPassword.value = true;
 };
 </script>
