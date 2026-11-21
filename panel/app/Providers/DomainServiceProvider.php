@@ -12,6 +12,7 @@ use App\Domains\Database\Infrastructure\CliDatabaseAdapter;
 use App\Domains\Database\Listeners\CleanupUserDatabasesListener;
 use App\Domains\Database\Models\Database;
 use App\Domains\Database\Policies\DatabasePolicy;
+use App\Domains\Dns\Listeners\SyncMailDnsRecordsOnChangedListener;
 use App\Domains\FileManager\Contracts\FileManagerDriverInterface;
 use App\Domains\FileManager\Infrastructure\CliFileManagerAdapter;
 use App\Domains\HostingPlans\Models\Package;
@@ -53,6 +54,7 @@ use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Domains\Shared\Contracts\DomainOwnershipCheckerInterface;
 use App\Domains\Shared\Contracts\ModuleRegistryQueryInterface;
 use App\Domains\Shared\Events\BackupRestored;
+use App\Domains\Shared\Events\MailDnsRecordsChanged;
 use App\Domains\Shared\Events\SslCertificateIssued;
 use App\Domains\WebServer\Contracts\FtpDriverInterface;
 use App\Domains\WebServer\Contracts\SslDriverInterface;
@@ -109,6 +111,7 @@ class DomainServiceProvider extends ServiceProvider
         });
         Event::listen(BackupRestored::class, ReconcileMailOnBackupRestoredListener::class);
         Event::listen(SslCertificateIssued::class, SyncMailSniOnSslIssuedListener::class);
+        Event::listen(MailDnsRecordsChanged::class, SyncMailDnsRecordsOnChangedListener::class);
 
         Gate::policy(Domain::class, DomainPolicy::class);
         Gate::policy(Database::class, DatabasePolicy::class);

@@ -55,4 +55,9 @@ class MailDomain extends Model
     {
         return $this->hasMany(MailAlias::class);
     }
+
+    public function dkimKeys(): HasMany
+    {
+        return $this->hasMany(MailDkimKey::class);
+    }
 }

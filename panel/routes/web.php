@@ -11,6 +11,7 @@ use App\Http\Controllers\Identity\AuthController;
 use App\Http\Controllers\Identity\UserController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Mail\MailAccountController;
+use App\Http\Controllers\Mail\MailDkimController;
 use App\Http\Controllers\Mail\MailForwarderController;
 use App\Http\Controllers\PanelConfig\ConfigurationController;
 use App\Http\Controllers\PanelConfig\ThemeController;
@@ -102,6 +103,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/email/forwarders', [MailForwarderController::class, 'index'])->name('email.forwarders.index');
     Route::post('/email/forwarders', [MailForwarderController::class, 'store'])->name('email.forwarders.store');
     Route::delete('/email/forwarders/{mailAlias}', [MailForwarderController::class, 'destroy'])->name('email.forwarders.destroy');
+    Route::get('/email/dkim', [MailDkimController::class, 'index'])->name('email.dkim.index');
+    Route::post('/email/dkim', [MailDkimController::class, 'store'])->name('email.dkim.store');
 
     // Web File Manager
     Route::get('/files', [FileManagerController::class, 'index'])->name('files.index');

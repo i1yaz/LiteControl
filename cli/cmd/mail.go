@@ -30,6 +30,10 @@ func ExecuteMail(args []string) error {
 		return runMailPurgeMailbox(args[1:])
 	case "quota-usage":
 		return runMailQuotaUsage(args[1:])
+	case "dkim-generate":
+		return runMailDkimGenerate(args[1:])
+	case "dkim-remove":
+		return runMailDkimRemove(args[1:])
 	case "-h", "--help", "help":
 		printMailUsage()
 		return nil
@@ -223,6 +227,80 @@ func runMailQuotaUsage(args []string) error {
 	return json.NewEncoder(os.Stdout).Encode(usage)
 }
 
+func runMailDkimGenerate(args []string) error {
+	fs := flag.NewFlagSet("mail dkim-generate", flag.ContinueOnError)
+	domain := fs.String("domain", "", "Mail domain (required)")
+	selector := fs.String("selector", "", "DKIM selector (required)")
+	algo := fs.String("algo", "rsa2048", "DKIM algorithm: rsa2048 or ed25519")
+
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
+		return err
+	}
+
+	if *domain == "" || *selector == "" {
+		fs.Usage()
+		return fmt.Errorf("--domain and --selector are required")
+	}
+
+	res, err := mail.DkimGenerate(context.Background(), mail.DkimGenerateOptions{
+		Domain:    *domain,
+		Selector:  *selector,
+		Algorithm: *algo,
+	})
+	if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(os.Stdout).Encode(res)
+}
+
+func runMailDkimRemove(args []string) error {
+	fs := flag.NewFlagSet("mail dkim-remove", flag.ContinueOnError)
+	domain := fs.String("domain", "", "Mail domain (required)")
+	selector := fs.String("selector", "", "DKIM selector (required)")
+	dbHost := fs.String("db-host", "127.0.0.1", "MariaDB host")
+	dbName := fs.String("db-name", "litecontrol", "MariaDB database name")
+	dbUser := fs.String("db-user", "lc_mail_ro", "MariaDB read-only mail user")
+	dbPassword := fs.String("db-password", os.Getenv("MAIL_RO_DB_PASSWORD"), "MariaDB read-only mail password")
+	skipReconcile := fs.Bool("skip-reconcile", false, "Skip post-removal DKIM reconcile")
+
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
+		return err
+	}
+
+	if *domain == "" || *selector == "" {
+		fs.Usage()
+		return fmt.Errorf("--domain and --selector are required")
+	}
+
+	res, err := mail.DkimRemove(context.Background(), mail.DkimRemoveOptions{
+		Domain:        *domain,
+		Selector:      *selector,
+		SkipReconcile: *skipReconcile,
+		ReconcileFunc: func(ctx context.Context, scope string) error {
+			_, err := mail.Reconcile(ctx, mail.ReconcileOptions{
+				Scope:      scope,
+				DBHost:     *dbHost,
+				DBName:     *dbName,
+				DBUser:     *dbUser,
+				DBPassword: *dbPassword,
+			})
+			return err
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(os.Stdout).Encode(res)
+}
+
 func printMailUsage() {
 	fmt.Fprintln(os.Stderr, "Usage: lc-mail <subcommand> [flags]")
 	fmt.Fprintln(os.Stderr, "")
@@ -233,4 +311,6 @@ func printMailUsage() {
 	fmt.Fprintln(os.Stderr, "  evict-session   Flush Dovecot auth cache and kick active sessions for an email address")
 	fmt.Fprintln(os.Stderr, "  purge-mailbox   Safely remove /var/vmail/<domain>/<user> after path containment validation")
 	fmt.Fprintln(os.Stderr, "  quota-usage     Query Dovecot quota usage for a domain and print JSON {email: used_bytes}")
+	fmt.Fprintln(os.Stderr, "  dkim-generate   Generate a DKIM keypair via rspamadm and print JSON {public_key_txt, private_key_path, key_sha256}")
+	fmt.Fprintln(os.Stderr, "  dkim-remove     Safely unlink a DKIM private key under /var/lib/rspamd/dkim and reconcile DKIM maps")
 }
