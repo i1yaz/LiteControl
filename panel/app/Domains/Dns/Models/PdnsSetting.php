@@ -73,6 +73,11 @@ class PdnsSetting extends Model
         return is_string($this->api_key) && trim($this->api_key) !== '';
     }
 
+    public function hasWebserverPassword(): bool
+    {
+        return is_string($this->webserver_password) && trim($this->webserver_password) !== '';
+    }
+
     public function baseUrl(): string
     {
         $host = trim((string) $this->host);
@@ -81,5 +86,29 @@ class PdnsSetting extends Model
         }
 
         return sprintf('http://%s:%d/api/v1/servers/localhost', $host, (int) $this->port);
+    }
+
+    /**
+     * Safe representation for Inertia props (never exposes raw api_key or webserver_password).
+     *
+     * @return array<string, mixed>
+     */
+    public function toPublicArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'host' => (string) $this->host,
+            'port' => (int) $this->port,
+            'webserver_allow_from' => (string) ($this->webserver_allow_from ?? '127.0.0.1,::1'),
+            'has_api_key' => $this->hasApiKey(),
+            'has_webserver_password' => $this->hasWebserverPassword(),
+            'primary_enabled' => (bool) $this->primary_enabled,
+            'secondary_enabled' => (bool) $this->secondary_enabled,
+            'autosecondary_enabled' => (bool) $this->autosecondary_enabled,
+            'allow_axfr_ips' => (string) ($this->allow_axfr_ips ?? ''),
+            'also_notify' => (string) ($this->also_notify ?? ''),
+            'base_url' => $this->baseUrl(),
+            'updated_at' => $this->updated_at?->toIso8601String(),
+        ];
     }
 }

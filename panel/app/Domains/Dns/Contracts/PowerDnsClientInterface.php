@@ -5,9 +5,15 @@ declare(strict_types=1);
 namespace App\Domains\Dns\Contracts;
 
 use App\Domains\Dns\Exceptions\PowerDnsException;
+use App\Domains\Dns\Models\PdnsSetting;
 
 interface PowerDnsClientInterface
 {
+    /**
+     * Return a client instance bound to explicit PowerDNS settings (e.g. during key rotation health probes).
+     */
+    public function withSettings(PdnsSetting $setting): self;
+
     /**
      * Retrieve PowerDNS server metadata (`GET /api/v1/servers/localhost`).
      *

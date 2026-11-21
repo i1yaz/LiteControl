@@ -5,6 +5,7 @@ use App\Http\Controllers\Database\DatabaseController;
 use App\Http\Controllers\Deployment\DomainDeploymentController;
 use App\Http\Controllers\Deployment\DomainDeploymentEnvController;
 use App\Http\Controllers\Deployment\DomainDeploymentHookController;
+use App\Http\Controllers\Dns\PdnsConfigController;
 use App\Http\Controllers\FileManager\FileManagerController;
 use App\Http\Controllers\HostingPlans\PackageController;
 use App\Http\Controllers\Identity\AuthController;
@@ -196,5 +197,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/modules/install-status/dismiss', [ModuleController::class, 'dismissInstallStatus'])->name('modules.install-status.dismiss');
         Route::post('/modules/{module}/install', [ModuleController::class, 'install'])->name('modules.install');
         Route::post('/modules/{module}/remove', [ModuleController::class, 'remove'])->name('modules.remove');
+
+        // PowerDNS Daemon & HTTP API Configuration (Admin Only)
+        Route::get('/dns/settings', [PdnsConfigController::class, 'index'])->name('dns.settings');
+        Route::post('/dns/settings', [PdnsConfigController::class, 'update'])->name('dns.settings.update');
+        Route::post('/dns/settings/rotate-key', [PdnsConfigController::class, 'rotateKey'])->name('dns.settings.rotate-key');
+        Route::post('/dns/settings/test-connection', [PdnsConfigController::class, 'testConnection'])->name('dns.settings.test-connection');
     });
 });

@@ -39,6 +39,7 @@ export default {
         dashboard: LayoutDashboard,
         users: Users,
         domains: Globe,
+        dns: Globe,
         database: Database,
         files: FolderTree,
         php: FileCode,

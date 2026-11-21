@@ -34,6 +34,15 @@ export const PANEL_NAVIGATION = [
         ],
     },
     {
+        id: 'dns',
+        label: 'PowerDNS',
+        icon: 'dns',
+        adminOnly: true,
+        children: [
+            { id: 'dns.settings', label: 'Daemon & API Settings', route: '/dns/settings', adminOnly: true },
+        ],
+    },
+    {
         id: 'database',
         label: 'Databases',
         icon: 'database',

@@ -27,7 +27,7 @@ final class PowerDnsClient implements PowerDnsClientInterface
     /**
      * Create a client instance bound to explicit credentials (e.g. during key rotation health probes).
      */
-    public static function withSettings(PdnsSetting $setting): self
+    public function withSettings(PdnsSetting $setting): PowerDnsClientInterface
     {
         return new self($setting);
     }
