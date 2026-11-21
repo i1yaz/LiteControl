@@ -37,13 +37,17 @@ use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use App\Domains\ServerOps\Infrastructure\CliLogReaderAdapter;
 use App\Domains\ServerOps\Infrastructure\CliModuleAdapter;
 use App\Domains\ServerOps\Infrastructure\CliServerAdapter;
+use App\Domains\ServerOps\Infrastructure\ModuleRegistryQuery;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
+use App\Domains\Shared\Contracts\DomainOwnershipCheckerInterface;
+use App\Domains\Shared\Contracts\ModuleRegistryQueryInterface;
 use App\Domains\WebServer\Contracts\FtpDriverInterface;
 use App\Domains\WebServer\Contracts\SslDriverInterface;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use App\Domains\WebServer\Infrastructure\CliFtpAdapter;
 use App\Domains\WebServer\Infrastructure\CliSslAdapter;
 use App\Domains\WebServer\Infrastructure\CliVhostAdapter;
+use App\Domains\WebServer\Infrastructure\EloquentDomainOwnershipChecker;
 use App\Domains\WebServer\Listeners\ProvisionDefaultDomainListener;
 use App\Domains\WebServer\Models\Domain;
 use App\Domains\WebServer\Policies\DomainPolicy;
@@ -59,6 +63,8 @@ class DomainServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(AuditLoggerInterface::class, EloquentAuditLogger::class);
+        $this->app->bind(DomainOwnershipCheckerInterface::class, EloquentDomainOwnershipChecker::class);
+        $this->app->bind(ModuleRegistryQueryInterface::class, ModuleRegistryQuery::class);
         $this->app->bind(BackupDriverInterface::class, CliBackupAdapter::class);
         $this->app->bind(DatabaseDriverInterface::class, CliDatabaseAdapter::class);
         $this->app->bind(UserDriverInterface::class, CliUserAdapter::class);
