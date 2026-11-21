@@ -18,7 +18,6 @@ export const PANEL_NAVIGATION = [
         adminOnly: true,
         children: [
             { id: 'users.index', label: 'User Directory', route: '/users' },
-            { id: 'users.create', label: 'Provision User', route: '/users/create' },
             { id: 'packages.index', label: 'Quota Profiles', route: '/packages' },
         ],
     },

@@ -144,7 +144,7 @@ const handleFlushGlobalCache = () => {
 <template>
     <Head :title="__('PowerDNS Configuration')" />
 
-    <div class="max-w-5xl mx-auto space-y-6">
+    <div class="space-y-6">
         <UiPageHeader
             :title="__('PowerDNS Daemon & HTTP API Configuration')"
             :subtitle="__('Manage OS drop-in configuration (99-litecontrol.conf), API key rotation, global cache flush, and Autoprimaries.')"

@@ -415,7 +415,7 @@ const triggerZoneCacheFlush = () => {
 <template>
     <Head :title="`${zone?.display_name || zone?.name} — ${__('DNS Record Editor')}`" />
 
-    <div class="max-w-6xl mx-auto space-y-6">
+    <div class="space-y-6">
         <!-- Page Header -->
         <UiPageHeader
             :title="`${zone?.name}`"

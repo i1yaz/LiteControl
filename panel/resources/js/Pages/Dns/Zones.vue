@@ -202,7 +202,7 @@ const closeDeleteModal = () => {
 <template>
     <Head :title="__('PowerDNS Zone Manager')" />
 
-    <div class="max-w-6xl mx-auto space-y-6">
+    <div class="space-y-6">
         <UiPageHeader
             :title="__('Authoritative DNS Zone Manager')"
             :subtitle="__('Manage forward domains, IPv4/IPv6 reverse PTR zones, cross-zone record search, and BIND zone exports.')"

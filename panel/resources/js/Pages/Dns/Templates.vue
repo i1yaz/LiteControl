@@ -88,7 +88,7 @@ const placeholderDescriptions: Record<string, string> = {
 <template>
     <Head :title="__('Default Nameservers & Zone Templates')" />
 
-    <div class="max-w-6xl mx-auto space-y-6">
+    <div class="space-y-6">
         <UiPageHeader
             :title="__('Default Nameservers & Zone Templates')"
             :subtitle="__('Configure default authoritative nameservers, registrar glue record guidance, and reusable DNS zone templates with deterministic placeholders.')"
