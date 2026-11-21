@@ -46,6 +46,10 @@ func ExecuteMail(args []string) error {
 		return runMailWebmailUninstall(args[1:])
 	case "webmail-status":
 		return runMailWebmailStatus(args[1:])
+	case "acme-vhost-provision":
+		return runMailAcmeVhostProvision(args[1:])
+	case "tls-issue":
+		return runMailTlsIssue(args[1:])
 	case "-h", "--help", "help":
 		printMailUsage()
 		return nil
@@ -488,6 +492,59 @@ func runMailWebmailStatus(args []string) error {
 	return json.NewEncoder(os.Stdout).Encode(res)
 }
 
+func runMailAcmeVhostProvision(args []string) error {
+	fs := flag.NewFlagSet("mail acme-vhost-provision", flag.ContinueOnError)
+	skipReload := fs.Bool("skip-reload", false, "Skip OpenLiteSpeed reload")
+
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
+		return err
+	}
+
+	res, err := mail.ProvisionAcmeVhost(context.Background(), mail.ProvisionAcmeVhostOptions{
+		SkipReload: *skipReload,
+	})
+	if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(os.Stdout).Encode(res)
+}
+
+func runMailTlsIssue(args []string) error {
+	fs := flag.NewFlagSet("mail tls-issue", flag.ContinueOnError)
+	domain := fs.String("domain", "", "Base mail domain (required; certificate issued for mail.<domain>)")
+	email := fs.String("email", "", "ACME contact email (required)")
+	certStore := fs.String("cert-store", "", "TLS certificate store directory (defaults to /etc/letsencrypt/live)")
+	skipReload := fs.Bool("skip-reload", false, "Skip OpenLiteSpeed reload")
+
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
+		return err
+	}
+
+	if *domain == "" || *email == "" {
+		fs.Usage()
+		return fmt.Errorf("--domain and --email are required")
+	}
+
+	res, err := mail.IssueStandaloneMailTls(context.Background(), mail.IssueStandaloneMailTlsOptions{
+		Domain:       *domain,
+		Email:        *email,
+		CertStoreDir: *certStore,
+		SkipReload:   *skipReload,
+	})
+	if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(os.Stdout).Encode(res)
+}
+
 func printMailUsage() {
 	fmt.Fprintln(os.Stderr, "Usage: lc-mail <subcommand> [flags]")
 	fmt.Fprintln(os.Stderr, "")
@@ -505,5 +562,7 @@ func printMailUsage() {
 	fmt.Fprintln(os.Stderr, "  filter-status     Report anti-spam filter mode and running status as JSON")
 	fmt.Fprintln(os.Stderr, "  webmail-install   Provision isolated SnappyMail webmail vhost & LSAPI pool on OpenLiteSpeed")
 	fmt.Fprintln(os.Stderr, "  webmail-uninstall Remove dedicated SnappyMail OpenLiteSpeed vhost and app directory")
-	fmt.Fprintln(os.Stderr, "  webmail-status    Report webmail installation and running status as JSON")
+	fmt.Fprintln(os.Stderr, "  webmail-status       Report webmail installation and running status as JSON")
+	fmt.Fprintln(os.Stderr, "  acme-vhost-provision Provision catch-all port-80 OpenLiteSpeed ACME challenge vhost")
+	fmt.Fprintln(os.Stderr, "  tls-issue            Obtain HTTP-01 TLS certificate for standalone mail.<domain>")
 }

@@ -23,12 +23,14 @@ use App\Domains\Identity\Events\UserDeleted;
 use App\Domains\Identity\Infrastructure\CliUserAdapter;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Policies\UserPolicy;
+use App\Domains\Mail\Contracts\DnsTxtResolverInterface;
 use App\Domains\Mail\Contracts\MailFilterDriverInterface;
 use App\Domains\Mail\Contracts\MailServerDriverInterface;
 use App\Domains\Mail\Contracts\WebmailDriverInterface;
 use App\Domains\Mail\Infrastructure\CliMailServerAdapter;
 use App\Domains\Mail\Infrastructure\CliRspamdFilterAdapter;
 use App\Domains\Mail\Infrastructure\CliSnappyMailAdapter;
+use App\Domains\Mail\Infrastructure\PhpDnsTxtResolver;
 use App\Domains\Mail\Listeners\ReconcileMailOnBackupRestoredListener;
 use App\Domains\Mail\Listeners\SyncMailSniOnSslIssuedListener;
 use App\Domains\Mail\Listeners\TeardownUserMailOnUserDeletedListener;
@@ -99,6 +101,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(SslDriverInterface::class, CliSslAdapter::class);
         $this->app->bind(FtpDriverInterface::class, CliFtpAdapter::class);
         $this->app->bind(MailServerDriverInterface::class, CliMailServerAdapter::class);
+        $this->app->bind(DnsTxtResolverInterface::class, PhpDnsTxtResolver::class);
         $this->app->bind(MailFilterDriverInterface::class, function ($app): MailFilterDriverInterface {
             $driver = $app->make(ModuleRegistryQueryInterface::class)->activeDriver('mail_filter') ?? 'rspamd';
 

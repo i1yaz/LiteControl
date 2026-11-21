@@ -92,6 +92,19 @@ class CliMailServerAdapter implements MailServerDriverInterface
         return $usage;
     }
 
+    public function provisionAcmeChallengeVhost(): array
+    {
+        return $this->execute('acme-vhost-provision');
+    }
+
+    public function issueStandaloneMailTls(string $domain, string $contactEmail): array
+    {
+        return $this->execute('tls-issue', [
+            "--domain={$domain}",
+            "--email={$contactEmail}",
+        ]);
+    }
+
     /**
      * Execute an lc-mail subcommand and fail fast with LcCliException on error.
      *

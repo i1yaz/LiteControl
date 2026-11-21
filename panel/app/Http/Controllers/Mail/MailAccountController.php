@@ -7,9 +7,11 @@ namespace App\Http\Controllers\Mail;
 use App\Domains\Mail\Actions\CreateMailAccountAction;
 use App\Domains\Mail\Actions\DeleteMailAccountAction;
 use App\Domains\Mail\Actions\EnableMailDomainAction;
+use App\Domains\Mail\Actions\IssueStandaloneMailTlsAction;
 use App\Domains\Mail\Actions\UpdateMailAccountAction;
 use App\Domains\Mail\Models\MailAccount;
 use App\Domains\Mail\Models\MailDomain;
+use App\Domains\Mail\ValueObjects\DnsTxtVerificationToken;
 use App\Domains\Mail\ValueObjects\EmailAddress;
 use App\Domains\Mail\ValueObjects\MailQuotaMb;
 use App\Domains\Shared\Contracts\ModuleRegistryQueryInterface;
@@ -18,6 +20,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Mail\CreateMailAccountRequest;
 use App\Http\Requests\Mail\EnableMailDomainRequest;
 use App\Http\Requests\Mail\UpdateMailAccountRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -69,9 +72,50 @@ class MailAccountController extends Controller
             adminOverride: (bool) ($validated['admin_override'] ?? false),
             defaultQuotaMb: (int) ($validated['default_quota_mb'] ?? 1024),
             maxAccounts: (int) ($validated['max_accounts'] ?? 50),
+            verifyDnsTxt: (bool) ($validated['verify_dns_txt'] ?? false),
         );
 
         return back()->with('success', "Mail enabled for {$domain->value}.");
+    }
+
+    public function dnsVerificationChallenge(Request $request): JsonResponse
+    {
+        Gate::authorize('create', MailDomain::class);
+
+        $validated = $request->validate([
+            'domain' => ['required', 'string', 'max:255'],
+        ]);
+
+        try {
+            $domain = new DomainName((string) $validated['domain']);
+        } catch (InvalidArgumentException $e) {
+            throw ValidationException::withMessages(['domain' => $e->getMessage()]);
+        }
+
+        $token = DnsTxtVerificationToken::forUserAndDomain(
+            $request->user()->id,
+            $domain->value,
+            (string) config('app.key'),
+        );
+
+        return response()->json([
+            'domain' => $domain->value,
+            'record_type' => 'TXT',
+            'record_name' => DnsTxtVerificationToken::recordName($domain->value),
+            'value' => $token->value,
+        ]);
+    }
+
+    public function issueStandaloneTls(
+        Request $request,
+        MailDomain $mailDomain,
+        IssueStandaloneMailTlsAction $action,
+    ): RedirectResponse {
+        Gate::authorize('update', $mailDomain);
+
+        $action->execute($request->user(), $mailDomain);
+
+        return back()->with('success', "TLS certificate issued for mail.{$mailDomain->domain} and SNI sync queued.");
     }
 
     public function store(CreateMailAccountRequest $request, CreateMailAccountAction $action): RedirectResponse

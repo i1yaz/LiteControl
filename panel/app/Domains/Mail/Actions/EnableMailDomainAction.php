@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Domains\Mail\Actions;
 
 use App\Domains\Identity\Models\User;
+use App\Domains\Mail\Contracts\DnsTxtResolverInterface;
 use App\Domains\Mail\Jobs\ReconcileMailServerJob;
 use App\Domains\Mail\Models\MailDomain;
 use App\Domains\Mail\Models\MailPendingPurge;
+use App\Domains\Mail\ValueObjects\DnsTxtVerificationToken;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Domains\Shared\Contracts\DomainOwnershipCheckerInterface;
 use App\Domains\Shared\Events\MailDnsRecordsChanged;
@@ -56,6 +58,7 @@ final class EnableMailDomainAction
     public function __construct(
         private readonly DomainOwnershipCheckerInterface $ownershipChecker,
         private readonly AuditLoggerInterface $auditLogger,
+        private readonly DnsTxtResolverInterface $dnsTxtResolver,
     ) {}
 
     public function execute(
@@ -65,6 +68,7 @@ final class EnableMailDomainAction
         bool $adminOverride = false,
         int $defaultQuotaMb = 1024,
         int $maxAccounts = 50,
+        bool $verifyDnsTxt = false,
     ): MailDomain {
         if ($this->isDeniedDomain($domain->value)) {
             throw ValidationException::withMessages([
@@ -73,8 +77,37 @@ final class EnableMailDomainAction
         }
 
         $canBypass = $adminOverride && $actor->isAdmin();
+        $ownershipSource = null;
 
-        if (! $canBypass && ! $this->ownershipChecker->userOwnsDomain($owner->id, $domain)) {
+        if ($canBypass) {
+            $ownershipSource = 'admin_override';
+        } elseif ($this->ownershipChecker->userOwnsDomain($owner->id, $domain)) {
+            $ownershipSource = 'webserver';
+        } elseif ($verifyDnsTxt) {
+            $expectedToken = DnsTxtVerificationToken::forUserAndDomain(
+                $owner->id,
+                $domain->value,
+                (string) config('app.key'),
+            );
+            $recordName = DnsTxtVerificationToken::recordName($domain->value);
+            $txtRecords = $this->dnsTxtResolver->resolveTxtRecords($recordName);
+
+            $verified = false;
+            foreach ($txtRecords as $candidate) {
+                if ($expectedToken->matches($candidate)) {
+                    $verified = true;
+                    break;
+                }
+            }
+
+            if (! $verified) {
+                throw ValidationException::withMessages([
+                    'domain' => "DNS TXT ownership verification failed for '{$domain->value}'. Publish TXT record '{$recordName}' with value '{$expectedToken->value}' and retry.",
+                ]);
+            }
+
+            $ownershipSource = 'dns_txt';
+        } else {
             throw ValidationException::withMessages([
                 'domain' => "Domain '{$domain->value}' is not owned by the target user.",
             ]);
@@ -91,8 +124,6 @@ final class EnableMailDomainAction
                 'domain' => "Mail is already enabled for domain '{$domain->value}'.",
             ]);
         }
-
-        $ownershipSource = $canBypass ? 'admin_override' : 'webserver';
 
         $mailDomain = DB::transaction(function () use ($actor, $owner, $domain, $ownershipSource, $defaultQuotaMb, $maxAccounts): MailDomain {
             $record = MailDomain::create([

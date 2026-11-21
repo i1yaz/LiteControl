@@ -86,4 +86,18 @@ interface MailServerDriverInterface
      * @throws LcCliException
      */
     public function readQuotaUsage(string $domain): array;
+
+    /**
+     * Provision the catch-all port-80 OpenLiteSpeed ACME challenge vhost for standalone mail.{domain} TLS.
+     *
+     * @throws LcCliException
+     */
+    public function provisionAcmeChallengeVhost(): array;
+
+    /**
+     * Issue an HTTP-01 TLS certificate for a standalone mail.{domain} host via the ACME challenge vhost.
+     *
+     * @throws LcCliException
+     */
+    public function issueStandaloneMailTls(string $domain, string $contactEmail): array;
 }
