@@ -13,6 +13,7 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Mail\MailAccountController;
 use App\Http\Controllers\Mail\MailDkimController;
 use App\Http\Controllers\Mail\MailForwarderController;
+use App\Http\Controllers\Mail\MailSpamFilterController;
 use App\Http\Controllers\PanelConfig\ConfigurationController;
 use App\Http\Controllers\PanelConfig\ThemeController;
 use App\Http\Controllers\PhpRuntime\PhpController;
@@ -105,6 +106,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/email/forwarders/{mailAlias}', [MailForwarderController::class, 'destroy'])->name('email.forwarders.destroy');
     Route::get('/email/dkim', [MailDkimController::class, 'index'])->name('email.dkim.index');
     Route::post('/email/dkim', [MailDkimController::class, 'store'])->name('email.dkim.store');
+    Route::get('/email/spam-filter', [MailSpamFilterController::class, 'index'])->name('email.spam-filter.index');
+    Route::put('/email/domains/{mailDomain}/spam-policy', [MailSpamFilterController::class, 'update'])->name('email.domains.spam-policy.update');
 
     // Web File Manager
     Route::get('/files', [FileManagerController::class, 'index'])->name('files.index');

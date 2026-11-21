@@ -3,6 +3,7 @@
 namespace App\Domains\ServerOps\Actions;
 
 use App\Domains\Identity\Models\User;
+use App\Domains\Mail\Contracts\MailFilterDriverInterface;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Exceptions\System\LcCliException;
@@ -21,7 +22,11 @@ class RemoveModuleAction
      */
     public function handle(string $module, User $actor, ?string $ipAddress = null): array
     {
-        $result = $this->moduleDriver->removeModule($module);
+        if (in_array($module, ['mail_filter', 'clamav'], true)) {
+            $result = app(MailFilterDriverInterface::class)->demoteToLight();
+        } else {
+            $result = $this->moduleDriver->removeModule($module);
+        }
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,

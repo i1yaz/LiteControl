@@ -34,6 +34,12 @@ func ExecuteMail(args []string) error {
 		return runMailDkimGenerate(args[1:])
 	case "dkim-remove":
 		return runMailDkimRemove(args[1:])
+	case "filter-enable":
+		return runMailFilterEnable(args[1:])
+	case "filter-demote":
+		return runMailFilterDemote(args[1:])
+	case "filter-status":
+		return runMailFilterStatus(args[1:])
 	case "-h", "--help", "help":
 		printMailUsage()
 		return nil
@@ -301,6 +307,105 @@ func runMailDkimRemove(args []string) error {
 	return json.NewEncoder(os.Stdout).Encode(res)
 }
 
+func runMailFilterEnable(args []string) error {
+	fs := flag.NewFlagSet("mail filter-enable", flag.ContinueOnError)
+	driver := fs.String("driver", "rspamd", "Anti-spam filter driver (rspamd)")
+	withClamAV := fs.Bool("with-clamav", false, "Also enable ClamAV antivirus scanning (requires >= 4096 MB RAM)")
+	dbHost := fs.String("db-host", "127.0.0.1", "MariaDB host")
+	dbName := fs.String("db-name", "litecontrol", "MariaDB database name")
+	dbUser := fs.String("db-user", "lc_mail_ro", "MariaDB read-only mail user")
+	dbPassword := fs.String("db-password", os.Getenv("MAIL_RO_DB_PASSWORD"), "MariaDB read-only mail password")
+	skipPackages := fs.Bool("skip-packages", false, "Skip ClamAV OS package installation")
+	skipReconcile := fs.Bool("skip-reconcile", false, "Skip post-enable filter reconcile")
+
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
+		return err
+	}
+
+	res, err := mail.FilterEnable(context.Background(), mail.FilterEnableOptions{
+		Driver:        *driver,
+		WithClamAV:    *withClamAV,
+		SkipPackages:  *skipPackages,
+		SkipReconcile: *skipReconcile,
+		ReconcileFunc: func(ctx context.Context, scope string) error {
+			_, err := mail.Reconcile(ctx, mail.ReconcileOptions{
+				Scope:      scope,
+				DBHost:     *dbHost,
+				DBName:     *dbName,
+				DBUser:     *dbUser,
+				DBPassword: *dbPassword,
+			})
+			return err
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(os.Stdout).Encode(res)
+}
+
+func runMailFilterDemote(args []string) error {
+	fs := flag.NewFlagSet("mail filter-demote", flag.ContinueOnError)
+	driver := fs.String("driver", "rspamd", "Anti-spam filter driver (rspamd)")
+	dbHost := fs.String("db-host", "127.0.0.1", "MariaDB host")
+	dbName := fs.String("db-name", "litecontrol", "MariaDB database name")
+	dbUser := fs.String("db-user", "lc_mail_ro", "MariaDB read-only mail user")
+	dbPassword := fs.String("db-password", os.Getenv("MAIL_RO_DB_PASSWORD"), "MariaDB read-only mail password")
+	skipReconcile := fs.Bool("skip-reconcile", false, "Skip post-demote filter reconcile")
+
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
+		return err
+	}
+
+	res, err := mail.FilterDemote(context.Background(), mail.FilterDemoteOptions{
+		Driver:        *driver,
+		SkipReconcile: *skipReconcile,
+		ReconcileFunc: func(ctx context.Context, scope string) error {
+			_, err := mail.Reconcile(ctx, mail.ReconcileOptions{
+				Scope:      scope,
+				DBHost:     *dbHost,
+				DBName:     *dbName,
+				DBUser:     *dbUser,
+				DBPassword: *dbPassword,
+			})
+			return err
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(os.Stdout).Encode(res)
+}
+
+func runMailFilterStatus(args []string) error {
+	fs := flag.NewFlagSet("mail filter-status", flag.ContinueOnError)
+	driver := fs.String("driver", "rspamd", "Anti-spam filter driver (rspamd)")
+
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
+		return err
+	}
+
+	res, err := mail.FilterStatus(context.Background(), mail.FilterStatusOptions{
+		Driver: *driver,
+	})
+	if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(os.Stdout).Encode(res)
+}
+
 func printMailUsage() {
 	fmt.Fprintln(os.Stderr, "Usage: lc-mail <subcommand> [flags]")
 	fmt.Fprintln(os.Stderr, "")
@@ -313,4 +418,7 @@ func printMailUsage() {
 	fmt.Fprintln(os.Stderr, "  quota-usage     Query Dovecot quota usage for a domain and print JSON {email: used_bytes}")
 	fmt.Fprintln(os.Stderr, "  dkim-generate   Generate a DKIM keypair via rspamadm and print JSON {public_key_txt, private_key_path, key_sha256}")
 	fmt.Fprintln(os.Stderr, "  dkim-remove     Safely unlink a DKIM private key under /var/lib/rspamd/dkim and reconcile DKIM maps")
+	fmt.Fprintln(os.Stderr, "  filter-enable   Upgrade Rspamd-Light to full inbound anti-spam (+ optional --with-clamav)")
+	fmt.Fprintln(os.Stderr, "  filter-demote   Demote Rspamd back to DKIM-Light + outbound ratelimit without touching DKIM keys")
+	fmt.Fprintln(os.Stderr, "  filter-status   Report anti-spam filter mode and running status as JSON")
 }
