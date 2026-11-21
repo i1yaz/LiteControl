@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
 import { Search, X, FileText, Globe, MessageSquare } from '@lucide/vue';
 import UiCard from '@shared/Ui/UiCard.vue';
 import UiBadge from '@shared/Ui/UiBadge.vue';
@@ -81,7 +82,14 @@ const objectTypeBadgeVariant = (type: string) => {
                     </UiBadge>
                 </td>
                 <td class="py-3 px-4 font-mono text-xs text-theme-text-primary">
-                    {{ item.zone_id || item.zone || '—' }}
+                    <Link
+                        v-if="item.zone_id || item.zone"
+                        :href="`/dns/zones/${encodeURIComponent(String(item.zone_id || item.zone))}/records`"
+                        class="text-theme-accent hover:underline font-semibold"
+                    >
+                        {{ item.zone_id || item.zone }}
+                    </Link>
+                    <span v-else>—</span>
                 </td>
                 <td class="py-3 px-4 font-mono text-xs text-theme-text-primary">
                     <div>{{ item.name || '—' }}</div>

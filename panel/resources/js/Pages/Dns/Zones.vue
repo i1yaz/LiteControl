@@ -13,6 +13,7 @@ import {
     FileCode2,
     RefreshCw,
     AlertTriangle,
+    ListFilter,
 } from '@lucide/vue';
 import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
 import UiButton from '@shared/Ui/UiButton.vue';
@@ -164,6 +165,11 @@ const runGlobalSearch = () => {
 const clearGlobalSearch = () => {
     globalSearchInput.value = '';
     runGlobalSearch();
+};
+
+const zoneRecordsUrl = (zone: Record<string, any>) => {
+    const encodedId = encodeURIComponent(String(zone.id || zone.name));
+    return `/dns/zones/${encodedId}/records`;
 };
 
 const exportZoneUrl = (zone: Record<string, any>) => {
@@ -319,9 +325,12 @@ const closeDeleteModal = () => {
                 <td class="py-3.5 px-4">
                     <div class="flex flex-col">
                         <div class="flex items-center gap-2">
-                            <span class="font-mono font-semibold text-theme-text-primary">
+                            <Link
+                                :href="zoneRecordsUrl(zone)"
+                                class="font-mono font-semibold text-theme-text-primary hover:text-theme-accent hover:underline transition-colors"
+                            >
                                 {{ zone.name }}
-                            </span>
+                            </Link>
                             <UiBadge v-if="zone.is_idn" variant="info">
                                 IDN
                             </UiBadge>
@@ -388,9 +397,18 @@ const closeDeleteModal = () => {
                     </div>
                 </td>
 
-                <!-- Actions: Export .zone & Delete -->
+                <!-- Actions: Manage Records, Export .zone & Delete -->
                 <td class="py-3.5 px-4 text-right">
                     <div class="inline-flex items-center justify-end gap-2">
+                        <Link
+                            :href="zoneRecordsUrl(zone)"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-theme-md text-xs font-semibold border border-theme-accent/40 bg-theme-accent/10 text-theme-accent hover:bg-theme-accent/20 transition-colors"
+                            :title="__('Open DNS Record Editor & SOA Settings')"
+                        >
+                            <ListFilter class="w-3.5 h-3.5" />
+                            <span>{{ __('Records') }}</span>
+                        </Link>
+
                         <a
                             :href="exportZoneUrl(zone)"
                             class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-theme-md text-xs font-medium border border-theme-border bg-theme-bg-surface text-theme-text-primary hover:bg-theme-bg-elevated transition-colors"

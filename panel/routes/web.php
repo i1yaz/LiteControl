@@ -6,6 +6,7 @@ use App\Http\Controllers\Deployment\DomainDeploymentController;
 use App\Http\Controllers\Deployment\DomainDeploymentEnvController;
 use App\Http\Controllers\Deployment\DomainDeploymentHookController;
 use App\Http\Controllers\Dns\PdnsConfigController;
+use App\Http\Controllers\Dns\PdnsRecordController;
 use App\Http\Controllers\Dns\PdnsTemplateController;
 use App\Http\Controllers\Dns\PdnsZoneController;
 use App\Http\Controllers\FileManager\FileManagerController;
@@ -206,9 +207,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/dns/settings/rotate-key', [PdnsConfigController::class, 'rotateKey'])->name('dns.settings.rotate-key');
         Route::post('/dns/settings/test-connection', [PdnsConfigController::class, 'testConnection'])->name('dns.settings.test-connection');
 
-        // PowerDNS Zone Manager (Admin Only)
+        // PowerDNS Zone Manager & Record Editor (Admin Only)
         Route::get('/dns/zones', [PdnsZoneController::class, 'index'])->name('dns.zones.index');
         Route::post('/dns/zones', [PdnsZoneController::class, 'store'])->name('dns.zones.store');
+        Route::get('/dns/zones/{zone}/records', [PdnsRecordController::class, 'show'])->where('zone', '[^/]+')->name('dns.zones.records.show');
+        Route::patch('/dns/zones/{zone}/records', [PdnsRecordController::class, 'updateRrsets'])->where('zone', '[^/]+')->name('dns.zones.records.patch');
+        Route::put('/dns/zones/{zone}/soa', [PdnsRecordController::class, 'updateSoa'])->where('zone', '[^/]+')->name('dns.zones.soa.update');
         Route::get('/dns/zones/{zone}/export', [PdnsZoneController::class, 'export'])->where('zone', '[^/]+')->name('dns.zones.export');
         Route::delete('/dns/zones/{zone}', [PdnsZoneController::class, 'destroy'])->where('zone', '[^/]+')->name('dns.zones.destroy');
 
