@@ -18,6 +18,7 @@ use App\Domains\Mail\ValueObjects\EmailAddress;
 use App\Domains\Mail\ValueObjects\MailQuotaMb;
 use App\Domains\Shared\Contracts\ModuleRegistryQueryInterface;
 use App\Domains\Shared\ValueObjects\DomainName;
+use App\Exceptions\System\LcCliException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Mail\CreateMailAccountRequest;
 use App\Http\Requests\Mail\EnableMailDomainRequest;
@@ -212,7 +213,11 @@ class MailAccountController extends Controller
     ): RedirectResponse {
         Gate::authorize('update', $mailDomain);
 
-        $action->execute($request->user(), $mailDomain);
+        try {
+            $action->execute($request->user(), $mailDomain);
+        } catch (LcCliException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return back()->with('success', "TLS certificate issued for mail.{$mailDomain->domain} and SNI sync queued.");
     }

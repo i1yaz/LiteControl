@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
 import UiCard from '@shared/Ui/UiCard.vue';
 import UiButton from '@shared/Ui/UiButton.vue';
@@ -10,6 +10,7 @@ import PendingPurgeBanner from '@domains/Mail/Components/PendingPurgeBanner.vue'
 import StatusBadge from '@domains/Mail/Components/StatusBadge.vue';
 import EnableMailDomainModal from '@domains/Mail/Components/EnableMailDomainModal.vue';
 import EditMailDomainModal from '@domains/Mail/Components/EditMailDomainModal.vue';
+import VerifyTxtModal from '@domains/Mail/Components/VerifyTxtModal.vue';
 
 const props = defineProps({
     domains: {
@@ -39,7 +40,19 @@ const flashSuccess = computed(() => page.props.flash?.success || '');
 const flashError = computed(() => page.props.flash?.error || '');
 
 const showEnableModal = ref(false);
+const showVerifyTxtModal = ref(false);
 const editingDomain = ref(null);
+const issuingTlsDomainId = ref(null);
+
+const issueStandaloneTls = (item) => {
+    issuingTlsDomainId.value = item.id;
+    router.post(`/email/domains/${item.id}/issue-tls`, {}, {
+        preserveScroll: true,
+        onFinish: () => {
+            issuingTlsDomainId.value = null;
+        },
+    });
+};
 
 const ownershipLabel = (source) => {
     const map = {
@@ -73,13 +86,20 @@ const formatDate = (iso) => {
                 subtitle="Enable domains for email hosting, configure per-domain quotas and rate limits, and inspect TLS SNI sync status."
             >
                 <template #actions>
-                    <UiButton
-                        variant="primary"
-                        :disabled="!can_admin_override && available_web_domains.length === 0"
-                        @click="showEnableModal = true"
-                    >
-                        Enable Mail Domain
-                    </UiButton>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <UiButton
+                            variant="secondary"
+                            @click="showVerifyTxtModal = true"
+                        >
+                            Verify DNS TXT
+                        </UiButton>
+                        <UiButton
+                            variant="primary"
+                            @click="showEnableModal = true"
+                        >
+                            Enable Mail Domain
+                        </UiButton>
+                    </div>
                 </template>
             </UiPageHeader>
 
@@ -105,12 +125,17 @@ const formatDate = (iso) => {
                         No mail domains enabled yet.
                     </p>
                     <p class="text-xs text-theme-text-muted max-w-md mx-auto">
-                        Enable one of your hosted web domains to start creating mailboxes, forwarders, and DKIM keys.
+                        Enable one of your hosted web domains or verify an external domain via DNS TXT to start creating mailboxes, forwarders, and DKIM keys.
                     </p>
-                    <div class="pt-2">
+                    <div class="pt-2 flex flex-wrap items-center justify-center gap-2">
+                        <UiButton
+                            variant="secondary"
+                            @click="showVerifyTxtModal = true"
+                        >
+                            Verify DNS TXT
+                        </UiButton>
                         <UiButton
                             variant="primary"
-                            :disabled="!can_admin_override && available_web_domains.length === 0"
                             @click="showEnableModal = true"
                         >
                             Enable Mail Domain
@@ -163,16 +188,39 @@ const formatDate = (iso) => {
                                     {{ item.outbound_hourly_limit }} / hr
                                 </td>
                                 <td class="py-3 px-4">
-                                    <span
-                                        v-if="item.tls_sni_synced_at"
-                                        class="text-xs text-theme-text-secondary"
-                                        :title="item.tls_sni_synced_at"
-                                    >
-                                        {{ formatDate(item.tls_sni_synced_at) }}
-                                    </span>
-                                    <UiBadge v-else variant="warning">
-                                        Pending SNI sync
-                                    </UiBadge>
+                                    <div class="space-y-1.5">
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            <span
+                                                v-if="item.tls_sni_synced_at"
+                                                class="text-xs text-theme-text-secondary"
+                                                :title="item.tls_sni_synced_at"
+                                            >
+                                                {{ formatDate(item.tls_sni_synced_at) }}
+                                            </span>
+                                            <UiBadge v-else variant="warning">
+                                                Pending SNI sync
+                                            </UiBadge>
+                                        </div>
+                                        <div v-if="item.ownership_source === 'dns_txt'" class="space-y-1">
+                                            <div class="flex flex-wrap items-center gap-1.5">
+                                                <UiBadge :variant="item.tls_sni_synced_at ? 'success' : 'neutral'">
+                                                    mail.{{ item.domain }} HTTP-01 TLS: {{ item.tls_sni_synced_at ? 'Active' : 'Not issued' }}
+                                                </UiBadge>
+                                                <UiButton
+                                                    size="xs"
+                                                    variant="secondary"
+                                                    :loading="issuingTlsDomainId === item.id"
+                                                    :disabled="!item.active || issuingTlsDomainId !== null"
+                                                    @click="issueStandaloneTls(item)"
+                                                >
+                                                    {{ item.tls_sni_synced_at ? 'Re-issue TLS' : 'Request TLS' }}
+                                                </UiButton>
+                                            </div>
+                                            <p class="text-[11px] text-theme-text-muted leading-snug max-w-xs">
+                                                Point <code class="font-mono">mail.{{ item.domain }}</code> A/AAAA to this server before requesting HTTP-01 ACME TLS.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="py-3 px-4">
                                     <div class="flex flex-wrap items-center justify-end gap-1.5">
@@ -230,5 +278,10 @@ const formatDate = (iso) => {
             :show="Boolean(editingDomain)"
             :domain="editingDomain"
             @close="editingDomain = null"
+        />
+
+        <VerifyTxtModal
+            :show="showVerifyTxtModal"
+            @close="showVerifyTxtModal = false"
         />
 </template>
