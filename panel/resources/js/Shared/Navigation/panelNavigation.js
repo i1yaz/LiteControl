@@ -119,13 +119,22 @@ export const PANEL_NAVIGATION = [
     },
     {
         id: 'email',
-        label: 'Email Transport',
+        section: 'Mail',
+        label: 'Mail',
         icon: 'email',
         adminOnly: false,
+        requiresModule: 'mail_core',
+        inactiveFallback: {
+            id: 'email.install',
+            label: 'Install Mail Stack',
+            route: '/modules',
+        },
         children: [
-            { id: 'email.accounts', label: 'Mail Accounts', route: '/email/accounts' },
-            { id: 'email.forwarders', label: 'Forwarding Rules', route: '/email/forwarders' },
-            { id: 'email.dkim', label: 'DKIM Signatures', route: '/email/dkim' },
+            { id: 'email.domains', label: 'Domains', route: '/email/domains' },
+            { id: 'email.accounts', label: 'Accounts', route: '/email/accounts' },
+            { id: 'email.forwarders', label: 'Forwarders', route: '/email/forwarders' },
+            { id: 'email.dkim', label: 'DKIM & DNS', route: '/email/dkim' },
+            { id: 'email.spam', label: 'Anti-Spam', route: '/email/spam' },
         ],
     },
 ];

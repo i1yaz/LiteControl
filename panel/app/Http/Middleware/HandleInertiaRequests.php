@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
-use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
-
 use App\Domains\PanelConfig\Queries\ThemeManager;
+use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
+use App\Domains\Shared\Contracts\ModuleRegistryQueryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Inertia\Middleware;
@@ -55,6 +55,11 @@ class HandleInertiaRequests extends Middleware
             ],
             'php' => [
                 'supported_versions' => PhpVersion::SUPPORTED,
+            ],
+            'modules' => [
+                'mail_core' => $user
+                    ? app(ModuleRegistryQueryInterface::class)->isActive('mail_core')
+                    : false,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

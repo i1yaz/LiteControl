@@ -7,6 +7,8 @@ export function useNavigation() {
 
     const user = computed(() => page.props.auth?.user || {});
     const isAdmin = computed(() => user.value?.role === 'admin');
+    const activeModules = computed(() => page.props.modules || {});
+    const isModuleActive = (moduleKey) => Boolean(activeModules.value?.[moduleKey]);
     const currentUrl = computed(() => page.url);
 
     const isRouteActive = (routeUrl) => {
@@ -40,11 +42,23 @@ export function useNavigation() {
         return false;
     };
 
-    // Filter navigation tree based on user role
+    // Filter navigation tree based on user role and active modules
     const filteredNavigation = computed(() => {
         return PANEL_NAVIGATION
             .filter(item => !item.adminOnly || isAdmin.value)
             .map(item => {
+                if (item.requiresModule && !isModuleActive(item.requiresModule)) {
+                    if (!item.inactiveFallback) {
+                        return null;
+                    }
+                    if (item.inactiveFallback.adminOnly && !isAdmin.value) {
+                        return null;
+                    }
+                    return {
+                        ...item,
+                        children: [item.inactiveFallback],
+                    };
+                }
                 if (!item.children) return item;
                 const filteredChildren = item.children.filter(child => !child.adminOnly || isAdmin.value);
                 return {
@@ -52,6 +66,7 @@ export function useNavigation() {
                     children: filteredChildren,
                 };
             })
+            .filter(Boolean)
             .filter(item => !item.children || item.children.length > 0);
     });
 

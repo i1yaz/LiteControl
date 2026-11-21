@@ -1,7 +1,7 @@
 <script setup>
 import { reactive } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import PanelLayout from '@shared/Layouts/PanelLayout.vue';
 
 const props = defineProps({
     domains: {
@@ -56,7 +56,7 @@ const savePolicy = (domain) => {
 <template>
     <Head title="Anti-Spam & ClamAV" />
 
-    <AuthenticatedLayout>
+    <PanelLayout>
         <div class="space-y-6">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div>
@@ -140,5 +140,5 @@ const savePolicy = (domain) => {
                 </div>
             </div>
         </div>
-    </AuthenticatedLayout>
+    </PanelLayout>
 </template>
