@@ -95,10 +95,10 @@ return new class extends Migration
         if ($isMysqlFamily) {
             $database = DB::connection()->getDatabaseName();
             $password = (string) env('MAIL_RO_DB_PASSWORD', Str::random(32));
+            $quotedPassword = DB::getPdo()->quote($password);
 
             DB::statement(
-                "CREATE USER IF NOT EXISTS 'lc_mail_ro'@'127.0.0.1' IDENTIFIED BY ?",
-                [$password]
+                "CREATE USER IF NOT EXISTS 'lc_mail_ro'@'127.0.0.1' IDENTIFIED BY {$quotedPassword}"
             );
 
             foreach (self::VIEWS as $view) {
