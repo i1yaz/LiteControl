@@ -8,6 +8,8 @@ import {
     AlertTriangle,
     Sparkles,
     CheckCircle2,
+    FileCode2,
+    CheckSquare,
 } from '@lucide/vue';
 import UiModal from '@shared/Ui/UiModal.vue';
 import UiInput from '@shared/Ui/UiInput.vue';
@@ -25,6 +27,19 @@ const props = defineProps({
         type: Array as () => string[],
         default: () => [],
     },
+    defaultNameserverDetails: {
+        type: Array as () => Array<{
+            hostname: string;
+            ipv4: string;
+            ipv6: string;
+            base_domain?: string;
+        }>,
+        default: () => [],
+    },
+    zoneTemplates: {
+        type: Array as () => Array<Record<string, any>>,
+        default: () => [],
+    },
     capabilities: {
         type: Object,
         default: () => ({
@@ -37,6 +52,21 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
+const defaultTemplateId = computed(() => {
+    const found = props.zoneTemplates.find((t) => Boolean(t.is_default)) || props.zoneTemplates[0];
+    return found ? String(found.id) : '';
+});
+
+const defaultServerIpv4 = computed(() => {
+    const found = props.defaultNameserverDetails.find((ns) => Boolean(ns.ipv4));
+    return found ? found.ipv4 : '';
+});
+
+const defaultServerIpv6 = computed(() => {
+    const found = props.defaultNameserverDetails.find((ns) => Boolean(ns.ipv6));
+    return found ? found.ipv6 : '';
+});
+
 const form = useForm({
     zone_type: 'forward',
     name: '',
@@ -44,6 +74,9 @@ const form = useForm({
     kind: 'Native',
     nameservers: '',
     masters: '',
+    template_id: '',
+    template_ipv4: '',
+    template_ipv6: '',
 });
 
 watch(
@@ -53,6 +86,15 @@ watch(
             form.clearErrors();
             if (!form.nameservers && props.defaultNameservers.length > 0) {
                 form.nameservers = props.defaultNameservers.join(', ');
+            }
+            if (!form.template_id && defaultTemplateId.value) {
+                form.template_id = defaultTemplateId.value;
+            }
+            if (!form.template_ipv4 && defaultServerIpv4.value) {
+                form.template_ipv4 = defaultServerIpv4.value;
+            }
+            if (!form.template_ipv6 && defaultServerIpv6.value) {
+                form.template_ipv6 = defaultServerIpv6.value;
             }
         }
     }
@@ -242,6 +284,86 @@ const canonicalPreview = computed(() => {
         zone: '',
         hint: 'Provide a nibble-aligned IPv6 CIDR such as 2001:db8:abcd::/48',
     };
+});
+
+/**
+ * Glue Record Checklist Detection:
+ * Triggers when creating a forward zone that matches the base domain of any configured
+ * default nameserver (e.g. creating `litecontrol.test.` when `ns1.litecontrol.test.` is a default NS).
+ */
+const matchingGlueNameservers = computed(() => {
+    if (form.zone_type !== 'forward' || !canonicalPreview.value.valid) {
+        return [];
+    }
+
+    const currentZone = canonicalPreview.value.zone.toLowerCase();
+    const matches: Array<{ hostname: string; ipv4: string; ipv6: string }> = [];
+    const seen = new Set<string>();
+
+    for (const ns of props.defaultNameserverDetails) {
+        const host = (ns.hostname || '').toLowerCase();
+        const base = (ns.base_domain || '').toLowerCase();
+        if (
+            (base && base === currentZone) ||
+            (host && host.endsWith(`.${currentZone}`))
+        ) {
+            if (!seen.has(host)) {
+                seen.add(host);
+                matches.push({
+                    hostname: ns.hostname,
+                    ipv4: ns.ipv4 || '',
+                    ipv6: ns.ipv6 || '',
+                });
+            }
+        }
+    }
+
+    // Also inspect any custom nameservers typed into form.nameservers
+    const typedList = form.nameservers
+        .split(/[\s,;]+/)
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+
+    for (const typed of typedList) {
+        const canonicalNs = typed.endsWith('.') ? typed : `${typed}.`;
+        if (canonicalNs.endsWith(`.${currentZone}`) && !seen.has(canonicalNs)) {
+            seen.add(canonicalNs);
+            matches.push({
+                hostname: canonicalNs,
+                ipv4: form.template_ipv4 || '',
+                ipv6: form.template_ipv6 || '',
+            });
+        }
+    }
+
+    return matches;
+});
+
+const templateOptions = computed(() => {
+    const opts = [
+        {
+            value: '',
+            label: 'No Template — Create empty zone (SOA & NS records only)',
+        },
+    ];
+
+    for (const tpl of props.zoneTemplates) {
+        const count = Array.isArray(tpl.records) ? tpl.records.length : 0;
+        const defaultTag = tpl.is_default ? ' (Default)' : '';
+        opts.push({
+            value: String(tpl.id),
+            label: `${tpl.name}${defaultTag} — ${count} records`,
+        });
+    }
+
+    return opts;
+});
+
+const selectedTemplate = computed(() => {
+    if (!form.template_id) {
+        return null;
+    }
+    return props.zoneTemplates.find((t) => String(t.id) === String(form.template_id)) || null;
 });
 
 const kindOptions = [
@@ -436,6 +558,38 @@ const submit = () => {
                 </p>
             </div>
 
+            <!-- Inline Glue Record Checklist (Triggered when zone matches base domain of Default Nameservers) -->
+            <UiAlert v-if="matchingGlueNameservers.length > 0" variant="warning">
+                <div class="space-y-2 text-xs">
+                    <div class="flex items-center gap-2 font-bold">
+                        <CheckSquare class="w-4 h-4 shrink-0" />
+                        <span>
+                            {{ __('Glue Record Checklist Required for Base Domain') }} ({{ canonicalPreview.zone }})
+                        </span>
+                    </div>
+                    <p>
+                        {{ __('This zone matches the base domain of your authoritative nameservers. To avoid circular DNS resolution failures:') }}
+                    </p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>
+                            <strong>{{ __('Local Glue Records:') }}</strong>
+                            {{ __('Create A/AAAA records in this zone for:') }}
+                            <span class="font-mono">
+                                {{
+                                    matchingGlueNameservers
+                                        .map((n) => `${n.hostname} → ${n.ipv4 || 'IPv4'}${n.ipv6 ? ' / ' + n.ipv6 : ''}`)
+                                        .join(', ')
+                                }}
+                            </span>
+                        </li>
+                        <li>
+                            <strong>{{ __('Registrar Glue (Host Objects):') }}</strong>
+                            {{ __('Register these exact nameserver hostnames and IP addresses at your domain registrar.') }}
+                        </li>
+                    </ul>
+                </div>
+            </UiAlert>
+
             <!-- Zone Kind / Operating Mode -->
             <UiSelect
                 id="pdns-zone-kind"
@@ -470,16 +624,52 @@ const submit = () => {
                 </div>
             </UiAlert>
 
-            <!-- Nameservers (for Native / Primary) or Masters (for Secondary) -->
-            <div v-if="form.kind !== 'Secondary'" class="space-y-3">
+            <!-- Nameservers & Zone Template Selector (for Native / Primary) or Masters (for Secondary) -->
+            <div v-if="form.kind !== 'Secondary'" class="space-y-4">
                 <UiInput
                     id="pdns-zone-nameservers"
                     v-model="form.nameservers"
-                    :label="__('Authoritative Nameservers (Optional)')"
+                    :label="__('Authoritative Nameservers ({{NS1}}, {{NS2}})')"
                     placeholder="ns1.example.com., ns2.example.com."
                     :hint="__('Comma-separated FQDNs. Leave blank to auto-assign default nameservers (ns1/ns2).')"
                     :error="form.errors.nameservers"
                 />
+
+                <!-- Zone Template Selector (Forward Zones Only) -->
+                <div v-if="!isReverseTab" class="p-3.5 rounded-theme-md bg-theme-bg-surface border border-theme-border space-y-3.5">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-theme-text-primary">
+                        <FileCode2 class="w-4 h-4 text-theme-accent" />
+                        <span>{{ __('Zone Record Template') }}</span>
+                    </div>
+
+                    <UiSelect
+                        id="pdns-zone-template-id"
+                        v-model="form.template_id"
+                        :label="__('Initial Record Template')"
+                        :options="templateOptions"
+                        :error="form.errors.template_id"
+                    />
+
+                    <div v-if="selectedTemplate" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <UiInput
+                            id="pdns-zone-template-ipv4"
+                            v-model="form.template_ipv4"
+                            :label="__('Target Server IPv4 ({{IPV4}})')"
+                            placeholder="203.0.113.10"
+                            :error="form.errors.template_ipv4"
+                            required
+                        />
+
+                        <UiInput
+                            id="pdns-zone-template-ipv6"
+                            v-model="form.template_ipv6"
+                            :label="__('Target Server IPv6 ({{IPV6}} - Optional)')"
+                            placeholder="2001:db8::10"
+                            :hint="__('Leave blank to skip AAAA template records.')"
+                            :error="form.errors.template_ipv6"
+                        />
+                    </div>
+                </div>
 
                 <div class="flex flex-wrap items-center gap-2 pt-1">
                     <UiBadge variant="info">

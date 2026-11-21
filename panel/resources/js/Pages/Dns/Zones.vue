@@ -10,6 +10,7 @@ import {
     ShieldCheck,
     Network,
     Settings,
+    FileCode2,
     RefreshCw,
     AlertTriangle,
 } from '@lucide/vue';
@@ -43,6 +44,19 @@ const props = defineProps({
     },
     defaultNameservers: {
         type: Array as () => string[],
+        default: () => [],
+    },
+    defaultNameserverDetails: {
+        type: Array as () => Array<{
+            hostname: string;
+            ipv4: string;
+            ipv6: string;
+            base_domain?: string;
+        }>,
+        default: () => [],
+    },
+    zoneTemplates: {
+        type: Array as () => Array<Record<string, any>>,
         default: () => [],
     },
     capabilities: {
@@ -179,6 +193,14 @@ const closeDeleteModal = () => {
             </template>
             <template #actions>
                 <div class="flex flex-wrap items-center gap-2.5">
+                    <Link
+                        href="/dns/templates"
+                        class="inline-flex items-center gap-2 px-3.5 py-2 rounded-theme-md text-xs font-semibold border border-theme-border bg-theme-bg-card text-theme-text-secondary hover:text-theme-text-primary hover:bg-theme-bg-surface transition-colors"
+                    >
+                        <FileCode2 class="w-4 h-4" />
+                        <span>{{ __('Zone Templates & NS') }}</span>
+                    </Link>
+
                     <Link
                         href="/dns/settings"
                         class="inline-flex items-center gap-2 px-3.5 py-2 rounded-theme-md text-xs font-semibold border border-theme-border bg-theme-bg-card text-theme-text-secondary hover:text-theme-text-primary hover:bg-theme-bg-surface transition-colors"
@@ -392,10 +414,12 @@ const closeDeleteModal = () => {
             </tr>
         </UiDataTable>
 
-        <!-- Create Zone Modal (Forward + Reverse IPv4/IPv6 Helper) -->
+        <!-- Create Zone Modal (Forward + Reverse IPv4/IPv6 Helper + Zone Template Selector) -->
         <PdnsCreateZoneModal
             :show="showCreateModal"
             :default-nameservers="defaultNameservers"
+            :default-nameserver-details="defaultNameserverDetails"
+            :zone-templates="zoneTemplates"
             :capabilities="capabilities"
             @close="showCreateModal = false"
         />

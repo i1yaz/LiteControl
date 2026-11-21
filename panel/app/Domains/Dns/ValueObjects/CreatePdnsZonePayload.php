@@ -22,6 +22,9 @@ final readonly class CreatePdnsZonePayload
         public array $masters = [],
         public string $soaEditApi = 'DEFAULT',
         public bool $apiRectify = true,
+        public ?int $templateId = null,
+        public ?string $templateIpv4 = null,
+        public ?string $templateIpv6 = null,
     ) {
         if (! in_array($this->kind, self::ALLOWED_KINDS, true)) {
             throw new InvalidArgumentException("Unsupported PowerDNS zone kind: {$this->kind}");

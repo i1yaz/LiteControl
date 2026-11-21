@@ -51,5 +51,9 @@ class DatabaseSeeder extends Seeder
                 'home_directory' => '/root',
             ]
         );
+
+        $this->call([
+            DnsZoneTemplateSeeder::class,
+        ]);
     }
 }

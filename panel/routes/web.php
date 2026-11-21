@@ -6,6 +6,7 @@ use App\Http\Controllers\Deployment\DomainDeploymentController;
 use App\Http\Controllers\Deployment\DomainDeploymentEnvController;
 use App\Http\Controllers\Deployment\DomainDeploymentHookController;
 use App\Http\Controllers\Dns\PdnsConfigController;
+use App\Http\Controllers\Dns\PdnsTemplateController;
 use App\Http\Controllers\Dns\PdnsZoneController;
 use App\Http\Controllers\FileManager\FileManagerController;
 use App\Http\Controllers\HostingPlans\PackageController;
@@ -210,5 +211,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/dns/zones', [PdnsZoneController::class, 'store'])->name('dns.zones.store');
         Route::get('/dns/zones/{zone}/export', [PdnsZoneController::class, 'export'])->where('zone', '[^/]+')->name('dns.zones.export');
         Route::delete('/dns/zones/{zone}', [PdnsZoneController::class, 'destroy'])->where('zone', '[^/]+')->name('dns.zones.destroy');
+
+        // PowerDNS Default Nameservers & Zone Templates (Admin Only)
+        Route::get('/dns/templates', [PdnsTemplateController::class, 'index'])->name('dns.templates.index');
+        Route::post('/dns/templates', [PdnsTemplateController::class, 'store'])->name('dns.templates.store');
+        Route::put('/dns/templates/{template}', [PdnsTemplateController::class, 'update'])->name('dns.templates.update');
+        Route::post('/dns/templates/{template}/default', [PdnsTemplateController::class, 'setDefault'])->name('dns.templates.default');
+        Route::delete('/dns/templates/{template}', [PdnsTemplateController::class, 'destroy'])->name('dns.templates.destroy');
+        Route::post('/dns/nameservers', [PdnsTemplateController::class, 'updateNameservers'])->name('dns.nameservers.update');
     });
 });

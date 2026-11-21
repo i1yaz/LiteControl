@@ -89,6 +89,53 @@ class PdnsSetting extends Model
     }
 
     /**
+     * Normalize stored default nameservers into structured entries with base domain metadata.
+     *
+     * @return list<array{hostname: string, ipv4: string, ipv6: string, base_domain: string}>
+     */
+    public function normalizedDefaultNameservers(): array
+    {
+        $raw = $this->default_nameservers ?? [];
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $entries = [];
+        foreach ($raw as $item) {
+            if (is_string($item)) {
+                $hostname = strtolower(rtrim(trim($item), '.'));
+                $ipv4 = '';
+                $ipv6 = '';
+            } elseif (is_array($item)) {
+                $hostname = strtolower(rtrim(trim((string) ($item['hostname'] ?? '')), '.'));
+                $ipv4 = trim((string) ($item['ipv4'] ?? ''));
+                $ipv6 = trim((string) ($item['ipv6'] ?? ''));
+            } else {
+                continue;
+            }
+
+            if ($hostname === '') {
+                continue;
+            }
+
+            $canonicalHostname = $hostname.'.';
+            $labels = explode('.', $hostname);
+            $baseDomain = count($labels) > 2
+                ? implode('.', array_slice($labels, 1)).'.'
+                : $canonicalHostname;
+
+            $entries[] = [
+                'hostname' => $canonicalHostname,
+                'ipv4' => $ipv4,
+                'ipv6' => $ipv6,
+                'base_domain' => $baseDomain,
+            ];
+        }
+
+        return $entries;
+    }
+
+    /**
      * Safe representation for Inertia props (never exposes raw api_key or webserver_password).
      *
      * @return array<string, mixed>
@@ -107,6 +154,7 @@ class PdnsSetting extends Model
             'autosecondary_enabled' => (bool) $this->autosecondary_enabled,
             'allow_axfr_ips' => (string) ($this->allow_axfr_ips ?? ''),
             'also_notify' => (string) ($this->also_notify ?? ''),
+            'default_nameservers' => $this->normalizedDefaultNameservers(),
             'base_url' => $this->baseUrl(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

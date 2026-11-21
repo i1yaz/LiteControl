@@ -9,6 +9,7 @@ use App\Domains\Dns\Actions\DeletePdnsZoneAction;
 use App\Domains\Dns\Actions\ExportPdnsZoneAction;
 use App\Domains\Dns\Exceptions\PowerDnsException;
 use App\Domains\Dns\Models\PdnsSetting;
+use App\Domains\Dns\Queries\ListDnsZoneTemplatesQuery;
 use App\Domains\Dns\Queries\ListPdnsZonesQuery;
 use App\Domains\Dns\Queries\SearchPdnsDataQuery;
 use App\Http\Controllers\Controller;
@@ -30,6 +31,7 @@ class PdnsZoneController extends Controller
         Request $request,
         ListPdnsZonesQuery $listZonesQuery,
         SearchPdnsDataQuery $searchDataQuery,
+        ListDnsZoneTemplatesQuery $listTemplatesQuery,
     ): Response {
         $setting = PdnsSetting::current();
         $searchQuery = trim((string) $request->query('q', ''));
@@ -54,6 +56,8 @@ class PdnsZoneController extends Controller
             'searchResults' => $searchResults,
             'apiError' => $apiError,
             'defaultNameservers' => $this->extractDefaultNameservers($setting),
+            'defaultNameserverDetails' => $setting->normalizedDefaultNameservers(),
+            'zoneTemplates' => $listTemplatesQuery->handle(),
             'capabilities' => [
                 'has_api_key' => $setting->hasApiKey(),
                 'primary_enabled' => (bool) $setting->primary_enabled,

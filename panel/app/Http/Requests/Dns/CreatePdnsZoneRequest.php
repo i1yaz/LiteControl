@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Dns;
 
+use App\Domains\Dns\Models\DnsZoneTemplate;
 use App\Domains\Dns\Models\PdnsSetting;
 use App\Domains\Dns\ValueObjects\CreatePdnsZonePayload;
 use App\Domains\Dns\ValueObjects\ZoneNameNormalizer;
@@ -30,6 +31,9 @@ class CreatePdnsZoneRequest extends FormRequest
             'kind' => ['required', 'string', 'in:Native,Primary,Secondary'],
             'nameservers' => ['nullable'],
             'masters' => ['nullable'],
+            'template_id' => ['nullable', 'integer', 'exists:dns_zone_templates,id'],
+            'template_ipv4' => ['nullable', 'string', 'max:45'],
+            'template_ipv6' => ['nullable', 'string', 'max:64'],
         ];
     }
 
@@ -92,6 +96,31 @@ class CreatePdnsZoneRequest extends FormRequest
                             $validator->errors()->add('nameservers', "Invalid nameserver hostname '{$ns}': {$e->getMessage()}");
                         }
                     }
+
+                    $rawTemplateId = $this->input('template_id');
+                    if ($rawTemplateId !== null && $rawTemplateId !== '' && $zoneType === 'forward') {
+                        $ipv4 = $this->resolveTemplateIpv4();
+                        $ipv6 = trim((string) $this->input('template_ipv6', ''));
+
+                        if ($ipv4 !== '' && filter_var($ipv4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+                            $validator->errors()->add('template_ipv4', 'Please provide a valid IPv4 address for {{IPV4}} template substitution.');
+                        }
+
+                        if ($ipv6 !== '' && filter_var($ipv6, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false) {
+                            $validator->errors()->add('template_ipv6', 'Please provide a valid IPv6 address for {{IPV6}} template substitution.');
+                        }
+
+                        if ($ipv4 === '') {
+                            $template = DnsZoneTemplate::query()->with('records')->find((int) $rawTemplateId);
+                            $needsIpv4 = $template?->records->contains(
+                                static fn ($r): bool => str_contains((string) $r->content, '{{IPV4}}') || str_contains((string) $r->name, '{{IPV4}}')
+                            ) ?? false;
+
+                            if ($needsIpv4) {
+                                $validator->errors()->add('template_ipv4', 'A target IPv4 address ({{IPV4}}) is required for the selected zone template.');
+                            }
+                        }
+                    }
                 }
             },
         ];
@@ -132,6 +161,11 @@ class CreatePdnsZoneRequest extends FormRequest
             $normalizedNameservers = $this->resolveDefaultNameservers($canonicalName, $zoneType, $normalizer);
         }
 
+        $rawTemplateId = $this->input('template_id');
+        $templateId = ($zoneType === 'forward' && $rawTemplateId !== null && $rawTemplateId !== '')
+            ? (int) $rawTemplateId
+            : null;
+
         return new CreatePdnsZonePayload(
             name: $canonicalName,
             kind: $kind,
@@ -140,7 +174,27 @@ class CreatePdnsZoneRequest extends FormRequest
             masters: [],
             soaEditApi: 'DEFAULT',
             apiRectify: true,
+            templateId: $templateId,
+            templateIpv4: $templateId !== null ? $this->resolveTemplateIpv4() : null,
+            templateIpv6: $templateId !== null ? trim((string) $this->input('template_ipv6', '')) : null,
         );
+    }
+
+    private function resolveTemplateIpv4(): string
+    {
+        $explicit = trim((string) $this->input('template_ipv4', ''));
+        if ($explicit !== '') {
+            return $explicit;
+        }
+
+        $setting = PdnsSetting::current();
+        foreach ($setting->normalizedDefaultNameservers() as $ns) {
+            if ($ns['ipv4'] !== '' && filter_var($ns['ipv4'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+                return $ns['ipv4'];
+            }
+        }
+
+        return '';
     }
 
     /**
