@@ -4,10 +4,12 @@ namespace App\Domains\ServerOps\Actions;
 
 use App\Domains\Identity\Models\User;
 use App\Domains\Mail\Contracts\MailFilterDriverInterface;
+use App\Domains\Mail\Contracts\MailServerDriverInterface;
 use App\Domains\Mail\Contracts\WebmailDriverInterface;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Exceptions\System\LcCliException;
+use Illuminate\Support\Facades\Cache;
 
 class RemoveModuleAction
 {
@@ -21,15 +23,21 @@ class RemoveModuleAction
      *
      * @throws LcCliException
      */
-    public function handle(string $module, User $actor, ?string $ipAddress = null): array
+    public function handle(string $module, User $actor, ?string $ipAddress = null, bool $purgeData = false): array
     {
-        if (in_array($module, ['mail_filter', 'clamav'], true)) {
+        if ($module === 'mail_core') {
+            $result = app(MailServerDriverInterface::class)->uninstallCore($purgeData);
+        } elseif (in_array($module, ['mail_filter', 'clamav'], true)) {
             $result = app(MailFilterDriverInterface::class)->demoteToLight();
         } elseif ($module === 'mail_webmail') {
             $result = app(WebmailDriverInterface::class)->uninstall();
+            Cache::forget('mail_webmail_hostname');
         } else {
             $result = $this->moduleDriver->removeModule($module);
         }
+
+        Cache::forget("module_install_{$module}");
+        Cache::forget("module_install_{$module}_error");
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,
@@ -37,7 +45,10 @@ class RemoveModuleAction
             'command' => "lc-cli module remove {$module}",
             'status' => 'success',
             'ip_address' => $ipAddress,
-            'details' => json_encode(['module' => $module]),
+            'details' => json_encode(array_filter([
+                'module' => $module,
+                'purge_data' => $purgeData ? true : null,
+            ])),
         ]);
 
         return $result;

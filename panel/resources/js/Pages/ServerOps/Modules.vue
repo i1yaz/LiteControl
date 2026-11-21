@@ -1,52 +1,88 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import { Layers, Download, Trash2 } from '@lucide/vue';
+import { Layers } from '@lucide/vue';
 import { confirmDialog } from '@shared/Composables/useDialog';
+import UiAlert from '@shared/Ui/UiAlert.vue';
 import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
-import UiCard from '@shared/Ui/UiCard.vue';
-import UiBadge from '@shared/Ui/UiBadge.vue';
-import UiButton from '@shared/Ui/UiButton.vue';
+import ModuleCard from '@domains/ServerOps/Components/ModuleCard.vue';
+import ModuleInstallModal from '@domains/ServerOps/Components/ModuleInstallModal.vue';
+import ModuleUninstallModal from '@domains/ServerOps/Components/ModuleUninstallModal.vue';
 
 const props = defineProps({
-    modules: Array,
+    modules: {
+        type: Array,
+        default: () => [],
+    },
+    server_ram_mb: {
+        type: Number,
+        default: 0,
+    },
     installingModule: {
         type: String,
         default: null,
     },
 });
 
-const localInstalling = ref<string | null>(props.installingModule);
-watch(() => props.installingModule, (val) => {
-    localInstalling.value = val;
-});
-const activeInstalling = computed(() => localInstalling.value || props.installingModule);
+const installModalModule = ref<any>(null);
+const uninstallModalModule = ref<any>(null);
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-const installModule = async (mod) => {
-    if (await confirmDialog({
-        title: 'Install Module',
-        message: `Install optional module '${mod.title || mod.name}'? This will download packages and configure system services.`,
-        confirmText: 'Install',
-    })) {
-        localInstalling.value = mod.name;
-        router.post(`/modules/${mod.name}/install`, {}, {
-            preserveScroll: true,
-            onError: () => {
-                localInstalling.value = null;
-            },
-        });
+const inFlightModules = computed(() =>
+    (props.modules as any[]).filter((m) => m.status === 'pending' || m.status === 'provisioning')
+);
+
+const hasInFlight = computed(() => inFlightModules.value.length > 0 || Boolean(props.installingModule));
+
+const stopPolling = () => {
+    if (pollTimer !== null) {
+        clearInterval(pollTimer);
+        pollTimer = null;
     }
 };
 
-const removeModule = async (mod) => {
-    if (await confirmDialog({
-        title: 'Uninstall Module',
-        message: `Are you sure you want to uninstall module '${mod.title || mod.name}'?`,
-        confirmText: 'Uninstall',
-        variant: 'danger',
-    })) {
-        router.post(`/modules/${mod.name}/remove`);
+const startPolling = () => {
+    if (pollTimer !== null) return;
+    pollTimer = setInterval(() => {
+        router.reload({ only: ['modules', 'installingModule'] });
+    }, 5000);
+};
+
+watch(
+    hasInFlight,
+    (active) => {
+        if (active) {
+            startPolling();
+        } else {
+            stopPolling();
+        }
+    },
+    { immediate: true }
+);
+
+onUnmounted(() => {
+    stopPolling();
+});
+
+const handleInstallClick = async (mod: any) => {
+    if (mod.key === 'mail_core' || mod.key === 'mail_webmail') {
+        installModalModule.value = mod;
+        return;
     }
+
+    if (
+        await confirmDialog({
+            title: 'Install Module',
+            message: `Install optional module '${mod.title || mod.key}'? This will download packages and configure system services.`,
+            confirmText: 'Install',
+        })
+    ) {
+        router.post(`/modules/${mod.key}/install`, {}, { preserveScroll: true });
+    }
+};
+
+const handleUninstallClick = (mod: any) => {
+    uninstallModalModule.value = mod;
 };
 </script>
 
@@ -63,70 +99,37 @@ const removeModule = async (mod) => {
             </template>
         </UiPageHeader>
 
-        <!-- Modules Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <UiCard
-                v-for="mod in modules"
-                :key="mod.name"
-                class="flex flex-col justify-between space-y-5 hover:border-theme-border-hover transition-all"
-            >
-                <div class="space-y-3">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <h2 class="text-base font-bold text-theme-text-primary">{{ mod.title || mod.name }}</h2>
-                            <p class="text-[11px] font-mono text-theme-accent-text">module: {{ mod.name }}</p>
-                        </div>
-                        <UiBadge :variant="mod.installed ? 'success' : 'neutral'">
-                            <span class="w-2 h-2 rounded-full" :class="mod.installed ? 'bg-theme-success' : 'bg-theme-text-muted'"></span>
-                            <span>{{ mod.installed ? 'Installed' : 'Available' }}</span>
-                        </UiBadge>
-                    </div>
-
-                    <p class="text-xs text-theme-text-secondary leading-relaxed">
-                        {{ mod.description }}
-                    </p>
-
-                    <div v-if="mod.depends_on && mod.depends_on.length" class="flex flex-wrap items-center gap-1.5 text-[11px] text-theme-text-muted">
-                        <span>Requires:</span>
-                        <span
-                            v-for="dep in mod.depends_on"
-                            :key="dep"
-                            class="px-1.5 py-0.5 rounded bg-theme-surface-muted font-mono text-theme-text-secondary"
-                        >
-                            {{ dep }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="pt-4 border-t border-theme-border-subtle flex items-center justify-between">
-                    <span class="text-[11px] text-theme-text-muted">
-                        {{ mod.installed ? 'Active in lc-cli' : 'Click to install on-demand' }}
-                    </span>
-
-                    <div class="flex items-center gap-2">
-                        <UiButton
-                            v-if="!mod.installed"
-                            variant="primary"
-                            size="sm"
-                            :loading="activeInstalling === mod.name"
-                            :disabled="Boolean(activeInstalling)"
-                            @click="installModule(mod)"
-                        >
-                            <Download v-if="activeInstalling !== mod.name" class="w-3.5 h-3.5" />
-                            <span>{{ activeInstalling === mod.name ? __('Installing...') : __('Install') }}</span>
-                        </UiButton>
-                        <UiButton
-                            v-else
-                            variant="danger-soft"
-                            size="sm"
-                            @click="removeModule(mod)"
-                        >
-                            <Trash2 class="w-3.5 h-3.5" />
-                            <span>{{ __('Uninstall') }}</span>
-                        </UiButton>
-                    </div>
-                </div>
-            </UiCard>
+        <div aria-live="polite">
+            <UiAlert v-if="hasInFlight" variant="info">
+                Provisioning in progress for
+                <strong>{{ inFlightModules.map((m) => m.title || m.key).join(', ') || installingModule }}</strong>.
+                Status refreshes automatically every 5 seconds.
+            </UiAlert>
         </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ModuleCard
+                v-for="mod in modules"
+                :key="(mod as any).key || (mod as any).name"
+                :module="(mod as any)"
+                :all-modules="modules"
+                :server-ram-mb="server_ram_mb"
+                :busy="hasInFlight"
+                @install="handleInstallClick"
+                @uninstall="handleUninstallClick"
+            />
+        </div>
+
+        <ModuleInstallModal
+            :show="Boolean(installModalModule)"
+            :module="installModalModule"
+            @close="installModalModule = null"
+        />
+
+        <ModuleUninstallModal
+            :show="Boolean(uninstallModalModule)"
+            :module="uninstallModalModule"
+            @close="uninstallModalModule = null"
+        />
     </div>
 </template>
