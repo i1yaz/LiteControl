@@ -22,9 +22,15 @@ ensure_go_cli_binary() {
         return 0
     fi
 
-    if command -v go >/dev/null 2>&1 && [[ -d "${BASE_DIR}/cli" ]]; then
+    local go_bin=""
+    go_bin=$(command -v go 2>/dev/null || true)
+    if [[ -z "${go_bin}" && -x /usr/local/go/bin/go ]]; then
+        go_bin="/usr/local/go/bin/go"
+    fi
+
+    if [[ -n "${go_bin}" && -d "${BASE_DIR}/cli" ]]; then
         mkdir -p "$(dirname "${GO_CLI_BIN}")"
-        (cd "${BASE_DIR}/cli" && CGO_ENABLED=0 go build -ldflags="-s -w" -o "${GO_CLI_BIN}.tmp" .)
+        (cd "${BASE_DIR}/cli" && CGO_ENABLED=0 "${go_bin}" build -ldflags="-s -w" -o "${GO_CLI_BIN}.tmp" .)
         chmod 0750 "${GO_CLI_BIN}.tmp"
         mv -f "${GO_CLI_BIN}.tmp" "${GO_CLI_BIN}"
         return 0

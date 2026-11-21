@@ -233,9 +233,12 @@ migrate_ols_panel_to_nginx_if_needed() {
 sync_core_files_and_sudoers() {
     log_step "03. Updating LiteControl CLI, Scripts, Templates & Sudoers"
 
-    rsync -a --delete "${UPGRADE_SRC_DIR}/bin/" "${LC_BASE_DIR}/bin/"
+    rsync -a --delete --exclude='lc-cli-go' "${UPGRADE_SRC_DIR}/bin/" "${LC_BASE_DIR}/bin/"
     rsync -a --delete "${UPGRADE_SRC_DIR}/scripts/" "${LC_BASE_DIR}/scripts/"
     rsync -a --delete "${UPGRADE_SRC_DIR}/templates/" "${LC_BASE_DIR}/templates/"
+    if [[ -d "${UPGRADE_SRC_DIR}/cli" ]]; then
+        rsync -a --delete "${UPGRADE_SRC_DIR}/cli/" "${LC_BASE_DIR}/cli/"
+    fi
     if [[ -f "${UPGRADE_SRC_DIR}/VERSION" ]]; then
         cp "${UPGRADE_SRC_DIR}/VERSION" "${LC_BASE_DIR}/VERSION"
         sed -i 's/\r$//' "${LC_BASE_DIR}/VERSION"
@@ -244,12 +247,27 @@ sync_core_files_and_sudoers() {
     chmod 750 "${LC_BASE_DIR}/litecontrol_upgrade.sh"
 
     find "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" "${LC_BASE_DIR}/templates" \
-        -type f ! -name "*.phar" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
+        -type f ! -name "*.phar" ! -name "lc-cli-go" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
 
     chown -R root:root "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" "${LC_BASE_DIR}/templates"
+    if [[ -d "${LC_BASE_DIR}/cli" ]]; then
+        chown -R root:root "${LC_BASE_DIR}/cli"
+    fi
     chmod 750 "${LC_BASE_DIR}/bin/lc-cli"
     find "${LC_BASE_DIR}/scripts" -type f -name "*.sh" -exec chmod 750 {} +
     ln -sf "${LC_BASE_DIR}/bin/lc-cli" /usr/local/bin/lc-cli
+
+    # Build/refresh Go CLI binary (`lc-cli-go`) if Go is available
+    local go_bin=""
+    go_bin=$(command -v go 2>/dev/null || true)
+    if [[ -z "${go_bin}" && -x /usr/local/go/bin/go ]]; then
+        go_bin="/usr/local/go/bin/go"
+    fi
+    if [[ -n "${go_bin}" && -d "${LC_BASE_DIR}/cli" ]]; then
+        (cd "${LC_BASE_DIR}/cli" && CGO_ENABLED=0 "${go_bin}" build -ldflags="-s -w" -o "${LC_BASE_DIR}/bin/lc-cli-go.tmp" .) && \
+            chmod 750 "${LC_BASE_DIR}/bin/lc-cli-go.tmp" && \
+            mv -f "${LC_BASE_DIR}/bin/lc-cli-go.tmp" "${LC_BASE_DIR}/bin/lc-cli-go" || true
+    fi
 
     # Install per-user PHP CLI setter and bootstrap Go shim if Go is available
     install -d -m 0755 -o root -g root /usr/local/lib/lc-panel

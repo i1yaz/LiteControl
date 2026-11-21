@@ -65,8 +65,29 @@ do_install() {
         mysql -u root -p"${root_pass}" "${db_name}" < "${schema_file}" 2>/dev/null || true
     fi
 
-    # Open firewall ports
+    # Open firewall ports and ensure Go CLI binary (`lc-cli-go`) is compiled for `lc-cli pdns`
     if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+        local go_cli_bin="${LC_GO_CLI_BIN:-${BASE_DIR}/bin/lc-cli-go}"
+        if [[ ! -x "${go_cli_bin}" && -d "${BASE_DIR}/cli" ]]; then
+            local go_bin=""
+            go_bin=$(command -v go 2>/dev/null || true)
+            if [[ -z "${go_bin}" && -x /usr/local/go/bin/go ]]; then
+                go_bin="/usr/local/go/bin/go"
+            fi
+            if [[ -z "${go_bin}" ]]; then
+                log_info "Installing Go compiler to build LiteControl PowerDNS CLI shim..."
+                apt_install golang-go
+                go_bin=$(command -v go 2>/dev/null || true)
+            fi
+            if [[ -n "${go_bin}" ]]; then
+                log_info "Building LiteControl Go CLI binary (${go_cli_bin})..."
+                mkdir -p "$(dirname "${go_cli_bin}")"
+                (cd "${BASE_DIR}/cli" && CGO_ENABLED=0 "${go_bin}" build -ldflags="-s -w" -o "${go_cli_bin}.tmp" .)
+                chmod 0750 "${go_cli_bin}.tmp"
+                mv -f "${go_cli_bin}.tmp" "${go_cli_bin}"
+            fi
+        fi
+
         ufw allow 53/tcp comment "DNS TCP" >/dev/null 2>&1 || true
         ufw allow 53/udp comment "DNS UDP" >/dev/null 2>&1 || true
         systemctl enable pdns >/dev/null 2>&1 || true

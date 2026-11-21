@@ -70,6 +70,14 @@ const serverVersionLabel = computed(() => {
 
 <template>
     <div class="space-y-4">
+        <!-- Daemon Plane Error Alert -->
+        <UiAlert v-if="daemon?.error" variant="danger">
+            <div class="font-semibold">{{ __('PowerDNS Daemon Plane Error') }}</div>
+            <p class="mt-1 text-xs break-all">
+                {{ daemon.error }}
+            </p>
+        </UiAlert>
+
         <!-- Port 53 Conflict Alert -->
         <UiAlert v-if="hasPort53Conflict" variant="danger">
             <div class="font-semibold">{{ __('Port 53 Conflict Detected') }}</div>
