@@ -16,8 +16,7 @@ gmysql-dbname={{DB_NAME}}
 gmysql-dnssec=yes
 
 default-ttl=3600
-default-soa-mail=hostmaster.{{HOSTNAME}}
-default-soa-name=ns1.{{HOSTNAME}}
+default-soa-content=ns1.{{HOSTNAME}} hostmaster.@ 0 10800 3600 604800 3600
 
 include-dir=/etc/powerdns/pdns.d
 
