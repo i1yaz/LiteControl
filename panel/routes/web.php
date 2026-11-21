@@ -108,6 +108,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/email/accounts/{mailAccount}', [MailAccountController::class, 'destroy'])->name('email.accounts.destroy');
     Route::get('/email/forwarders', [MailForwarderController::class, 'index'])->name('email.forwarders.index');
     Route::post('/email/forwarders', [MailForwarderController::class, 'store'])->name('email.forwarders.store');
+    Route::put('/email/forwarders/{mailAlias}', [MailForwarderController::class, 'update'])->name('email.forwarders.update');
     Route::delete('/email/forwarders/{mailAlias}', [MailForwarderController::class, 'destroy'])->name('email.forwarders.destroy');
     Route::get('/email/dkim', [MailDkimController::class, 'index'])->name('email.dkim.index');
     Route::post('/email/dkim', [MailDkimController::class, 'store'])->name('email.dkim.store');
