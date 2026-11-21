@@ -47,7 +47,8 @@ install_base_packages() {
         bind9-dnsutils \
         socat \
         git \
-         quota
+        golang-go \
+        quota
     log_ok "Base packages installed."
 }
 

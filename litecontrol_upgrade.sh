@@ -285,7 +285,7 @@ sync_core_files_and_sudoers() {
     if [[ -f "${LC_BASE_DIR}/scripts/set-user-php-cli.sh" ]]; then
         install -m 0750 -o root -g root "${LC_BASE_DIR}/scripts/set-user-php-cli.sh" /usr/local/lib/lc-panel/set-user-php-cli.sh
     fi
-    if command -v go >/dev/null 2>&1 && [[ -f "${LC_BASE_DIR}/scripts/bootstrap-lc-php-shim.sh" ]]; then
+    if command -v go >/dev/null 2>&1 && [[ -f "${LC_BASE_DIR}/scripts/bootstrap-lc-php-shim.sh" && -f "${LC_BASE_DIR}/shim/main.go" ]]; then
         (cd "${LC_BASE_DIR}" && bash "${LC_BASE_DIR}/scripts/bootstrap-lc-php-shim.sh")
     fi
 
