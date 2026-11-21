@@ -5,6 +5,7 @@ namespace App\Http\Controllers\ServerOps;
 use App\Domains\ServerOps\Actions\InstallModuleAction;
 use App\Domains\ServerOps\Actions\RemoveModuleAction;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
+use App\Domains\ServerOps\ModuleRegistry;
 use App\Exceptions\System\LcCliException;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -24,7 +25,7 @@ class ModuleController extends Controller
      */
     public function index(): Response
     {
-        $modules = $this->moduleCli->listModules();
+        $modules = ModuleRegistry::mergeWithCliList($this->moduleCli->listModules());
         $current = Cache::get('module_install_current');
         $rawStatus = $current ? Cache::get("module_install_{$current}") : null;
         $installingModule = in_array($rawStatus, ['pending', 'provisioning'], true) ? $current : null;
@@ -40,8 +41,7 @@ class ModuleController extends Controller
      */
     public function install(Request $request, string $module, InstallModuleAction $installModuleAction)
     {
-        $allowed = ['ftp', 'dns', 'mail', 'modsecurity', 'imunifyav'];
-        if (! in_array($module, $allowed)) {
+        if (! in_array($module, ModuleRegistry::allowedKeys(), true)) {
             return redirect()->back()->with('error', "Unsupported module '$module'.");
         }
 
@@ -100,8 +100,7 @@ class ModuleController extends Controller
      */
     public function remove(Request $request, string $module, RemoveModuleAction $removeModuleAction)
     {
-        $allowed = ['ftp', 'dns', 'mail', 'modsecurity', 'imunifyav'];
-        if (! in_array($module, $allowed)) {
+        if (! in_array($module, ModuleRegistry::allowedKeys(), true)) {
             return redirect()->back()->with('error', "Unsupported module '$module'.");
         }
 

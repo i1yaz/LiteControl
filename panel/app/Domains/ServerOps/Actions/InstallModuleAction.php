@@ -3,6 +3,7 @@
 namespace App\Domains\ServerOps\Actions;
 
 use App\Domains\Identity\Models\User;
+use App\Domains\Mail\Jobs\InstallMailCoreJob;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use App\Domains\ServerOps\Jobs\InstallModuleJob;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
@@ -33,7 +34,11 @@ class InstallModuleAction
             'details' => json_encode(['module' => $module]),
         ]);
 
-        InstallModuleJob::dispatch($module);
+        if ($module === 'mail_core') {
+            InstallMailCoreJob::dispatch();
+        } else {
+            InstallModuleJob::dispatch($module);
+        }
 
         return ['status' => 'queued', 'module' => $module];
     }

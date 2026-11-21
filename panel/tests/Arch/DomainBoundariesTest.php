@@ -31,6 +31,7 @@ $domains = [
     'FileManager',
     'HostingPlans',
     'Identity',
+    'Mail',
     'PanelConfig',
     'PhpRuntime',
     'Security',

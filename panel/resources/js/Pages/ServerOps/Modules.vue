@@ -85,6 +85,17 @@ const removeModule = async (mod) => {
                     <p class="text-xs text-theme-text-secondary leading-relaxed">
                         {{ mod.description }}
                     </p>
+
+                    <div v-if="mod.depends_on && mod.depends_on.length" class="flex flex-wrap items-center gap-1.5 text-[11px] text-theme-text-muted">
+                        <span>Requires:</span>
+                        <span
+                            v-for="dep in mod.depends_on"
+                            :key="dep"
+                            class="px-1.5 py-0.5 rounded bg-theme-surface-muted font-mono text-theme-text-secondary"
+                        >
+                            {{ dep }}
+                        </span>
+                    </div>
                 </div>
 
                 <div class="pt-4 border-t border-theme-border-subtle flex items-center justify-between">

@@ -22,6 +22,8 @@ use App\Domains\Identity\Events\UserDeleted;
 use App\Domains\Identity\Infrastructure\CliUserAdapter;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Policies\UserPolicy;
+use App\Domains\Mail\Contracts\MailServerDriverInterface;
+use App\Domains\Mail\Infrastructure\CliMailServerAdapter;
 use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use App\Domains\PanelConfig\Infrastructure\CliTuningAdapter;
 use App\Domains\PanelConfig\Infrastructure\EloquentAuditLogger;
@@ -79,6 +81,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(VhostDriverInterface::class, CliVhostAdapter::class);
         $this->app->bind(SslDriverInterface::class, CliSslAdapter::class);
         $this->app->bind(FtpDriverInterface::class, CliFtpAdapter::class);
+        $this->app->bind(MailServerDriverInterface::class, CliMailServerAdapter::class);
     }
 
     /**
