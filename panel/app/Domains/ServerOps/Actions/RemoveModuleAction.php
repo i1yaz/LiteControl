@@ -4,6 +4,7 @@ namespace App\Domains\ServerOps\Actions;
 
 use App\Domains\Identity\Models\User;
 use App\Domains\Mail\Contracts\MailFilterDriverInterface;
+use App\Domains\Mail\Contracts\WebmailDriverInterface;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Exceptions\System\LcCliException;
@@ -24,6 +25,8 @@ class RemoveModuleAction
     {
         if (in_array($module, ['mail_filter', 'clamav'], true)) {
             $result = app(MailFilterDriverInterface::class)->demoteToLight();
+        } elseif ($module === 'mail_webmail') {
+            $result = app(WebmailDriverInterface::class)->uninstall();
         } else {
             $result = $this->moduleDriver->removeModule($module);
         }

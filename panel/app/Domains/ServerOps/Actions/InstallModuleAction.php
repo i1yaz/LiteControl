@@ -5,6 +5,7 @@ namespace App\Domains\ServerOps\Actions;
 use App\Domains\Identity\Models\User;
 use App\Domains\Mail\Jobs\InstallMailCoreJob;
 use App\Domains\Mail\Jobs\InstallMailFilterJob;
+use App\Domains\Mail\Jobs\InstallWebmailJob;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
 use App\Domains\ServerOps\Jobs\InstallModuleJob;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
@@ -41,6 +42,8 @@ class InstallModuleAction
             InstallMailFilterJob::dispatch('mail_filter', false);
         } elseif ($module === 'clamav') {
             InstallMailFilterJob::dispatch('clamav', true);
+        } elseif ($module === 'mail_webmail') {
+            InstallWebmailJob::dispatch();
         } else {
             InstallModuleJob::dispatch($module);
         }

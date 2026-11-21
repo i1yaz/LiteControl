@@ -25,8 +25,10 @@ use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Policies\UserPolicy;
 use App\Domains\Mail\Contracts\MailFilterDriverInterface;
 use App\Domains\Mail\Contracts\MailServerDriverInterface;
+use App\Domains\Mail\Contracts\WebmailDriverInterface;
 use App\Domains\Mail\Infrastructure\CliMailServerAdapter;
 use App\Domains\Mail\Infrastructure\CliRspamdFilterAdapter;
+use App\Domains\Mail\Infrastructure\CliSnappyMailAdapter;
 use App\Domains\Mail\Listeners\ReconcileMailOnBackupRestoredListener;
 use App\Domains\Mail\Listeners\SyncMailSniOnSslIssuedListener;
 use App\Domains\Mail\Listeners\TeardownUserMailOnUserDeletedListener;
@@ -102,6 +104,13 @@ class DomainServiceProvider extends ServiceProvider
 
             return match ($driver) {
                 default => $app->make(CliRspamdFilterAdapter::class),
+            };
+        });
+        $this->app->bind(WebmailDriverInterface::class, function ($app): WebmailDriverInterface {
+            $driver = $app->make(ModuleRegistryQueryInterface::class)->activeDriver('mail_webmail') ?? 'snappymail';
+
+            return match ($driver) {
+                default => $app->make(CliSnappyMailAdapter::class),
             };
         });
     }
