@@ -112,6 +112,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/email/forwarders/{mailAlias}', [MailForwarderController::class, 'destroy'])->name('email.forwarders.destroy');
     Route::get('/email/dkim', [MailDkimController::class, 'index'])->name('email.dkim.index');
     Route::post('/email/dkim', [MailDkimController::class, 'store'])->name('email.dkim.store');
+    Route::get('/email/spam', [MailSpamFilterController::class, 'index'])->name('email.spam.index');
     Route::get('/email/spam-filter', [MailSpamFilterController::class, 'index'])->name('email.spam-filter.index');
     Route::put('/email/domains/{mailDomain}/spam-policy', [MailSpamFilterController::class, 'update'])->name('email.domains.spam-policy.update');
 

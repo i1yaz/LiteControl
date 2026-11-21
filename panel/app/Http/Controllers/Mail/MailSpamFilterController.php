@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Mail\UpdateDomainSpamPolicyRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,22 +22,47 @@ class MailSpamFilterController extends Controller
     {
         $user = $request->user();
 
-        $domains = MailDomain::query()
-            ->when(! $user->isAdmin(), fn ($q) => $q->where('user_id', $user->id))
-            ->orderBy('domain')
-            ->get([
-                'id',
-                'domain',
-                'active',
-                'spam_filter_enabled',
-                'spam_header_score',
-                'spam_reject_score',
-            ]);
+        $mailDomainsQuery = MailDomain::query()->orderBy('domain');
 
-        return Inertia::render('Mail/SpamFilter', [
+        if (! $user->isAdmin()) {
+            $mailDomainsQuery->where('user_id', $user->id);
+        }
+
+        $mailDomains = $mailDomainsQuery->get();
+
+        $domainFilter = strtolower(trim((string) $request->query('domain', '')));
+        /** @var MailDomain|null $selectedDomainModel */
+        $selectedDomainModel = $domainFilter !== ''
+            ? $mailDomains->firstWhere('domain', $domainFilter)
+            : $mailDomains->first();
+
+        if ($selectedDomainModel === null && $mailDomains->isNotEmpty()) {
+            $selectedDomainModel = $mailDomains->first();
+        }
+
+        if ($selectedDomainModel !== null) {
+            Gate::authorize('view', $selectedDomainModel);
+        }
+
+        $mapDomain = static fn (MailDomain $mailDomain): array => [
+            'id' => $mailDomain->id,
+            'domain' => $mailDomain->domain,
+            'active' => (bool) $mailDomain->active,
+            'spam_filter_enabled' => (bool) $mailDomain->spam_filter_enabled,
+            'spam_header_score' => (float) ($mailDomain->spam_header_score ?? 5.0),
+            'spam_reject_score' => (float) ($mailDomain->spam_reject_score ?? 15.0),
+        ];
+
+        $domains = $mailDomains->map($mapDomain)->values()->all();
+        $selectedDomain = $selectedDomainModel !== null ? $mapDomain($selectedDomainModel) : null;
+
+        return Inertia::render('Mail/Spam/Index', [
+            'filter_active' => $moduleRegistry->isActive('mail_filter'),
+            'clamav_active' => $moduleRegistry->isActive('clamav'),
+            'mail_core_active' => $moduleRegistry->isActive('mail_core'),
+            'can_manage_modules' => $user->isAdmin(),
             'domains' => $domains,
-            'filterActive' => $moduleRegistry->isActive('mail_filter'),
-            'clamavActive' => $moduleRegistry->isActive('clamav'),
+            'selected_domain' => $selectedDomain,
         ]);
     }
 
@@ -49,6 +75,6 @@ class MailSpamFilterController extends Controller
 
         $action->execute($request->user(), $mailDomain, $policy);
 
-        return redirect()->back()->with('success', "Spam filter policy updated for {$mailDomain->domain}.");
+        return redirect()->back()->with('success', "Anti-spam policy updated for {$mailDomain->domain}.");
     }
 }
