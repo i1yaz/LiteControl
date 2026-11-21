@@ -7,6 +7,8 @@ namespace App\Http\Controllers\Dns;
 use App\Domains\Dns\Actions\UpdateZoneRrsetsAction;
 use App\Domains\Dns\Actions\UpdateZoneSoaAction;
 use App\Domains\Dns\Exceptions\PowerDnsException;
+use App\Domains\Dns\Exceptions\SecondaryZoneReadOnlyException;
+use App\Domains\Dns\Models\PdnsSetting;
 use App\Domains\Dns\Queries\GetPdnsZoneDetailQuery;
 use App\Domains\Dns\ValueObjects\RecordNormalizer;
 use App\Domains\Dns\ValueObjects\RecordValidator;
@@ -36,6 +38,8 @@ class PdnsRecordController extends Controller
                 ->with('error', $e->getMessage());
         }
 
+        $setting = PdnsSetting::current();
+
         $editableRecordTypes = array_values(array_filter(
             RecordNormalizer::SUPPORTED_TYPES,
             static fn (string $type): bool => $type !== 'SOA'
@@ -51,6 +55,14 @@ class PdnsRecordController extends Controller
                 'max' => RecordValidator::MAX_TTL,
             ],
             'isReadOnly' => ($zoneDetail['kind'] ?? '') === 'Secondary',
+            'capabilities' => [
+                'has_api_key' => $setting->hasApiKey(),
+                'primary_enabled' => (bool) $setting->primary_enabled,
+                'secondary_enabled' => (bool) $setting->secondary_enabled,
+                'autosecondary_enabled' => (bool) $setting->autosecondary_enabled,
+                'allow_axfr_ips' => (string) ($setting->allow_axfr_ips ?? ''),
+                'also_notify' => (string) ($setting->also_notify ?? ''),
+            ],
         ]);
     }
 
@@ -76,6 +88,8 @@ class PdnsRecordController extends Controller
                         ? sprintf('DNS record set updated in %s.', $result['zone'])
                         : sprintf('Applied %d staged DNS record set operations in %s.', $count, $result['zone'])
                 );
+        } catch (SecondaryZoneReadOnlyException $e) {
+            abort(403, $e->getMessage());
         } catch (InvalidArgumentException|PowerDnsException $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
         }
@@ -95,6 +109,8 @@ class PdnsRecordController extends Controller
 
             return redirect()->route('dns.zones.records.show', ['zone' => $payload->zoneId])
                 ->with('success', sprintf('SOA settings updated for %s.', $payload->zoneId));
+        } catch (SecondaryZoneReadOnlyException $e) {
+            abort(403, $e->getMessage());
         } catch (InvalidArgumentException|PowerDnsException $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
         }

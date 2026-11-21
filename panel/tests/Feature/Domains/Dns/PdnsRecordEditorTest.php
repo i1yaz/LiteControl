@@ -391,9 +391,9 @@ it('updates zone SOA settings, converting @ email to RNAME and preserving serial
     ]);
 });
 
-it('blocks record mutations and SOA edits on Secondary (read-only) zones', function (): void {
+it('blocks record mutations and SOA edits on Secondary (read-only) zones with HTTP 403', function (): void {
     Http::fake([
-        'http://127.0.0.1:8081/api/v1/servers/localhost/zones/replica.example.com.' => Http::response([
+        'http://127.0.0.1:8081/api/v1/servers/localhost/zones/replica.example.com.*' => Http::response([
             'id' => 'replica.example.com.',
             'name' => 'replica.example.com.',
             'kind' => 'Secondary',
@@ -413,7 +413,7 @@ it('blocks record mutations and SOA edits on Secondary (read-only) zones', funct
                 'records' => [['content' => '203.0.113.10']],
             ],
         ],
-    ])->assertSessionHas('error');
+    ])->assertForbidden();
 
     $this->actingAs($this->admin)->put('/dns/zones/replica.example.com./soa', [
         'primary_ns' => 'ns1.replica.example.com.',
@@ -423,7 +423,7 @@ it('blocks record mutations and SOA edits on Secondary (read-only) zones', funct
         'retry' => 3600,
         'expire' => 604800,
         'minimum' => 3600,
-    ])->assertSessionHas('error');
+    ])->assertForbidden();
 
     Http::assertNotSent(fn (Request $r) => $r->method() === 'PATCH');
 });

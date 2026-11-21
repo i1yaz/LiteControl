@@ -128,6 +128,75 @@ final class PowerDnsClient implements PowerDnsClientInterface
         return $response->body();
     }
 
+    public function listZoneMetadata(string $zoneId): array
+    {
+        $encoded = $this->encodeZoneId($zoneId);
+
+        /** @var list<array<string, mixed>> $metadata */
+        $metadata = $this->requestJson('GET', "/zones/{$encoded}/metadata");
+
+        return $metadata;
+    }
+
+    public function getZoneMetadata(string $zoneId, string $metadataKind): array
+    {
+        $encodedZone = $this->encodeZoneId($zoneId);
+        $encodedKind = rawurlencode(strtoupper(trim($metadataKind)));
+
+        $response = $this->requestJson('GET', "/zones/{$encodedZone}/metadata/{$encodedKind}");
+
+        $values = [];
+        if (isset($response['metadata']) && is_array($response['metadata'])) {
+            foreach ($response['metadata'] as $val) {
+                if (is_string($val) && trim($val) !== '') {
+                    $values[] = trim($val);
+                }
+            }
+        }
+
+        return $values;
+    }
+
+    public function putZoneMetadata(string $zoneId, string $metadataKind, array $values): array
+    {
+        $encodedZone = $this->encodeZoneId($zoneId);
+        $normalizedKind = strtoupper(trim($metadataKind));
+        $encodedKind = rawurlencode($normalizedKind);
+
+        $cleanedValues = [];
+        foreach ($values as $value) {
+            if (is_string($value) && trim($value) !== '') {
+                $cleanedValues[] = trim($value);
+            }
+        }
+
+        return $this->requestJson('PUT', "/zones/{$encodedZone}/metadata/{$encodedKind}", [
+            'kind' => $normalizedKind,
+            'metadata' => array_values($cleanedValues),
+        ]);
+    }
+
+    public function notifyZone(string $zoneId): array
+    {
+        $encoded = $this->encodeZoneId($zoneId);
+
+        return $this->requestJson('PUT', "/zones/{$encoded}/notify");
+    }
+
+    public function axfrRetrieveZone(string $zoneId): array
+    {
+        $encoded = $this->encodeZoneId($zoneId);
+
+        return $this->requestJson('PUT', "/zones/{$encoded}/axfr-retrieve");
+    }
+
+    public function rectifyZone(string $zoneId): array
+    {
+        $encoded = $this->encodeZoneId($zoneId);
+
+        return $this->requestJson('PUT', "/zones/{$encoded}/rectify");
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>

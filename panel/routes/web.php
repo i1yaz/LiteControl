@@ -9,6 +9,7 @@ use App\Http\Controllers\Dns\PdnsConfigController;
 use App\Http\Controllers\Dns\PdnsRecordController;
 use App\Http\Controllers\Dns\PdnsTemplateController;
 use App\Http\Controllers\Dns\PdnsZoneController;
+use App\Http\Controllers\Dns\PdnsZoneModeController;
 use App\Http\Controllers\FileManager\FileManagerController;
 use App\Http\Controllers\HostingPlans\PackageController;
 use App\Http\Controllers\Identity\AuthController;
@@ -213,6 +214,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/dns/zones/{zone}/records', [PdnsRecordController::class, 'show'])->where('zone', '[^/]+')->name('dns.zones.records.show');
         Route::patch('/dns/zones/{zone}/records', [PdnsRecordController::class, 'updateRrsets'])->where('zone', '[^/]+')->name('dns.zones.records.patch');
         Route::put('/dns/zones/{zone}/soa', [PdnsRecordController::class, 'updateSoa'])->where('zone', '[^/]+')->name('dns.zones.soa.update');
+        Route::put('/dns/zones/{zone}/mode', [PdnsZoneModeController::class, 'updateMode'])->where('zone', '[^/]+')->name('dns.zones.mode.update');
+        Route::put('/dns/zones/{zone}/notify', [PdnsZoneModeController::class, 'notify'])->where('zone', '[^/]+')->name('dns.zones.notify');
+        Route::put('/dns/zones/{zone}/axfr-retrieve', [PdnsZoneModeController::class, 'axfrRetrieve'])->where('zone', '[^/]+')->name('dns.zones.axfr-retrieve');
         Route::get('/dns/zones/{zone}/export', [PdnsZoneController::class, 'export'])->where('zone', '[^/]+')->name('dns.zones.export');
         Route::delete('/dns/zones/{zone}', [PdnsZoneController::class, 'destroy'])->where('zone', '[^/]+')->name('dns.zones.destroy');
 

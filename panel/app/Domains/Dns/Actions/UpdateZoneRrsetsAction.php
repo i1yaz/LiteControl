@@ -6,6 +6,7 @@ namespace App\Domains\Dns\Actions;
 
 use App\Domains\Dns\Contracts\PowerDnsClientInterface;
 use App\Domains\Dns\Exceptions\PowerDnsException;
+use App\Domains\Dns\Exceptions\SecondaryZoneReadOnlyException;
 use App\Domains\Dns\ValueObjects\RrsetPayloadBuilder;
 use App\Domains\Dns\ValueObjects\ZoneNameNormalizer;
 use App\Domains\Identity\Models\User;
@@ -46,9 +47,7 @@ final class UpdateZoneRrsetsAction
 
         $kind = strtolower(trim((string) ($zone['kind'] ?? 'Native')));
         if (in_array($kind, ['secondary', 'slave'], true)) {
-            throw new InvalidArgumentException(
-                sprintf('Zone "%s" is configured as a Secondary (read-only) zone. Local record edits are disabled.', $canonicalZoneId)
-            );
+            throw SecondaryZoneReadOnlyException::forRecords($canonicalZoneId);
         }
 
         $existingRrsets = isset($zone['rrsets']) && is_array($zone['rrsets']) ? $zone['rrsets'] : [];

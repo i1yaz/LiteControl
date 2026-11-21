@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Dns\Queries;
 
 use App\Domains\Dns\Contracts\PowerDnsClientInterface;
+use App\Domains\Dns\Exceptions\PowerDnsException;
 use App\Domains\Dns\ValueObjects\RecordNormalizer;
 use App\Domains\Dns\ValueObjects\ZoneNameNormalizer;
 
@@ -25,6 +26,35 @@ final class GetPdnsZoneDetailQuery
     {
         $canonicalZoneId = $this->zoneNameNormalizer->ensureTrailingDot($zoneId);
         $rawZone = $this->powerDnsClient->getZone($canonicalZoneId);
+
+        $allowAxfrFrom = [];
+        $alsoNotify = [];
+
+        try {
+            $rawMetadata = $this->powerDnsClient->listZoneMetadata($canonicalZoneId);
+            foreach ($rawMetadata as $metaItem) {
+                if (! is_array($metaItem)) {
+                    continue;
+                }
+                $metaKind = strtoupper(trim((string) ($metaItem['kind'] ?? '')));
+                $metaValues = [];
+                if (isset($metaItem['metadata']) && is_array($metaItem['metadata'])) {
+                    foreach ($metaItem['metadata'] as $val) {
+                        if (is_string($val) && trim($val) !== '') {
+                            $metaValues[] = trim($val);
+                        }
+                    }
+                }
+
+                if ($metaKind === 'ALLOW-AXFR-FROM') {
+                    $allowAxfrFrom = $metaValues;
+                } elseif ($metaKind === 'ALSO-NOTIFY') {
+                    $alsoNotify = $metaValues;
+                }
+            }
+        } catch (PowerDnsException) {
+            // Gracefully degrade if metadata endpoint is unavailable or unsupported
+        }
 
         $canonicalName = $this->zoneNameNormalizer->ensureTrailingDot(
             (string) ($rawZone['name'] ?? $rawZone['id'] ?? $canonicalZoneId)
@@ -207,6 +237,8 @@ final class GetPdnsZoneDetailQuery
             'soa_edit_api' => (string) ($rawZone['soa_edit_api'] ?? 'DEFAULT'),
             'api_rectify' => (bool) ($rawZone['api_rectify'] ?? true),
             'masters' => $masters,
+            'allow_axfr_from' => $allowAxfrFrom,
+            'also_notify' => $alsoNotify,
             'account' => (string) ($rawZone['account'] ?? ''),
             'last_check' => isset($rawZone['last_check']) ? (int) $rawZone['last_check'] : null,
             'soa' => $soaData,

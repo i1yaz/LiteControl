@@ -22,6 +22,10 @@ import {
     X,
     Network,
     Scissors,
+    ArrowRightLeft,
+    Send,
+    DownloadCloud,
+    Clock,
 } from '@lucide/vue';
 import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
 import UiButton from '@shared/Ui/UiButton.vue';
@@ -33,6 +37,7 @@ import UiAlert from '@shared/Ui/UiAlert.vue';
 import UiCard from '@shared/Ui/UiCard.vue';
 import PdnsRrsetModal from '@domains/Dns/Components/PdnsRrsetModal.vue';
 import PdnsSoaSettingsDrawer from '@domains/Dns/Components/PdnsSoaSettingsDrawer.vue';
+import PdnsZoneReplicationTab from '@domains/Dns/Components/PdnsZoneReplicationTab.vue';
 
 const props = defineProps({
     zone: {
@@ -59,8 +64,20 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    capabilities: {
+        type: Object as () => Record<string, any>,
+        default: () => ({
+            has_api_key: false,
+            primary_enabled: true,
+            secondary_enabled: false,
+            autosecondary_enabled: false,
+            allow_axfr_ips: '',
+            also_notify: '',
+        }),
+    },
 });
 
+const activeMainTab = ref<'records' | 'replication'>('records');
 const activeTypeTab = ref('ALL');
 const searchFilter = ref('');
 const showRrsetModal = ref(false);
@@ -68,6 +85,31 @@ const modalInitialChangetype = ref<'REPLACE' | 'EXTEND'>('REPLACE');
 const editingRrset = ref<Record<string, any> | null>(null);
 const showSoaDrawer = ref(false);
 const patchSubmitting = ref(false);
+const notifying = ref(false);
+const retrievingAxfr = ref(false);
+
+const mainSectionTabs = computed(() => [
+    {
+        id: 'records',
+        label: `DNS Records (${rrsets.value.length})`,
+    },
+    {
+        id: 'replication',
+        label: `Replication / Mode (${props.zone?.kind || 'Native'})`,
+    },
+]);
+
+const formattedLastCheck = computed(() => {
+    const ts = props.zone?.last_check;
+    if (!ts || Number(ts) <= 0) {
+        return 'Never / Pending';
+    }
+    try {
+        return new Date(Number(ts) * 1000).toLocaleString();
+    } catch {
+        return String(ts);
+    }
+});
 
 // Staged Bulk Operations Queue for Draft / Bulk Save Mode
 const stagedOperations = ref<Array<Record<string, any>>>([]);
@@ -305,6 +347,36 @@ const clearStagedOperations = () => {
 const applyAllStagedOperations = () => {
     dispatchPatchOperations(stagedOperations.value, true);
 };
+
+const triggerZoneNotify = () => {
+    if (props.zone?.kind !== 'Primary' || notifying.value) return;
+    notifying.value = true;
+    router.put(
+        `/dns/zones/${encodedZoneId.value}/notify`,
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                notifying.value = false;
+            },
+        }
+    );
+};
+
+const triggerZoneAxfrRetrieve = () => {
+    if (props.zone?.kind !== 'Secondary' || retrievingAxfr.value) return;
+    retrievingAxfr.value = true;
+    router.put(
+        `/dns/zones/${encodedZoneId.value}/axfr-retrieve`,
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                retrievingAxfr.value = false;
+            },
+        }
+    );
+};
 </script>
 
 <template>
@@ -342,6 +414,30 @@ const applyAllStagedOperations = () => {
                         <Download class="w-4 h-4" />
                         <span>{{ __('Export .zone') }}</span>
                     </a>
+
+                    <UiButton
+                        v-if="zone?.kind === 'Primary'"
+                        type="button"
+                        variant="secondary"
+                        :loading="notifying"
+                        :disabled="notifying"
+                        @click="triggerZoneNotify"
+                    >
+                        <Send v-if="!notifying" class="w-4 h-4" />
+                        <span>{{ notifying ? __('Sending NOTIFY...') : __('Send Notify') }}</span>
+                    </UiButton>
+
+                    <UiButton
+                        v-if="zone?.kind === 'Secondary'"
+                        type="button"
+                        variant="primary"
+                        :loading="retrievingAxfr"
+                        :disabled="retrievingAxfr"
+                        @click="triggerZoneAxfrRetrieve"
+                    >
+                        <DownloadCloud v-if="!retrievingAxfr" class="w-4 h-4" />
+                        <span>{{ retrievingAxfr ? __('Syncing AXFR...') : __('Retrieve / Sync Now') }}</span>
+                    </UiButton>
 
                     <UiButton
                         type="button"
@@ -399,33 +495,93 @@ const applyAllStagedOperations = () => {
                     <RefreshCw class="w-3 h-3" />
                     <span>{{ zone?.api_rectify ? __('API-RECTIFY: ON') : __('API-RECTIFY: OFF') }}</span>
                 </UiBadge>
+
+                <UiBadge v-if="zone?.kind === 'Secondary'" variant="neutral">
+                    <Clock class="w-3 h-3" />
+                    <span class="font-mono">{{ __('Last Check:') }} {{ formattedLastCheck }}</span>
+                </UiBadge>
             </div>
 
-            <div class="text-xs text-theme-text-secondary font-mono">
-                {{ rrsets.length }} {{ __('RRSets') }}
+            <div class="flex items-center gap-3">
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 text-xs font-semibold text-theme-accent hover:underline cursor-pointer"
+                    @click="activeMainTab = activeMainTab === 'records' ? 'replication' : 'records'"
+                >
+                    <ArrowRightLeft class="w-3.5 h-3.5" />
+                    <span>
+                        {{
+                            activeMainTab === 'records'
+                                ? __('Configure Mode & Transfer')
+                                : __('Back to Record Grid')
+                        }}
+                    </span>
+                </button>
+                <span class="text-xs text-theme-text-secondary font-mono">
+                    {{ rrsets.length }} {{ __('RRSets') }}
+                </span>
             </div>
         </div>
 
+        <!-- Primary View Tabs: DNS Records vs Replication / Mode -->
+        <UiTabs
+            v-model="activeMainTab"
+            :tabs="mainSectionTabs"
+        />
+
         <!-- Read-Only Guard Banner for Secondary Zones -->
         <UiAlert v-if="isReadOnly" variant="warning">
-            <div class="flex items-start gap-2.5">
-                <Lock class="w-4 h-4 shrink-0 mt-0.5" />
-                <div class="space-y-1">
-                    <div class="font-semibold">
-                        {{ __('Secondary Zone — Read-Only Record Grid') }}
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-start gap-2.5">
+                    <Lock class="w-4 h-4 shrink-0 mt-0.5" />
+                    <div class="space-y-1">
+                        <div class="font-semibold">
+                            {{ __('Secondary Zone — Read-Only Record Grid') }}
+                        </div>
+                        <p class="text-xs">
+                            {{
+                                __('This zone replicates records from upstream primary server(s) via AXFR/IXFR. Direct record creation, editing, and deletion are disabled.')
+                            }}
+                            <span v-if="zone?.masters?.length" class="font-mono font-semibold">
+                                ({{ __('Masters:') }} {{ zone.masters.join(', ') }})
+                            </span>
+                        </p>
+                        <div class="flex flex-wrap items-center gap-3 pt-1 text-[11px] font-mono text-theme-text-secondary">
+                            <span>{{ __('SOA Serial:') }} {{ zone?.serial || '—' }}</span>
+                            <span>•</span>
+                            <span>{{ __('Last Check:') }} {{ formattedLastCheck }}</span>
+                        </div>
                     </div>
-                    <p class="text-xs">
-                        {{
-                            __('This zone replicates records from upstream primary server(s) via AXFR/IXFR. Direct record creation, editing, and deletion are disabled.')
-                        }}
-                        <span v-if="zone?.masters?.length" class="font-mono font-semibold">
-                            ({{ __('Masters:') }} {{ zone.masters.join(', ') }})
-                        </span>
-                    </p>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                    <UiButton
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        :loading="retrievingAxfr"
+                        :disabled="retrievingAxfr"
+                        @click="triggerZoneAxfrRetrieve"
+                    >
+                        <DownloadCloud v-if="!retrievingAxfr" class="w-3.5 h-3.5" />
+                        <span>{{ retrievingAxfr ? __('Syncing AXFR...') : __('Retrieve / Sync Now') }}</span>
+                    </UiButton>
                 </div>
             </div>
         </UiAlert>
 
+        <!-- Replication / Operating Mode Tab -->
+        <PdnsZoneReplicationTab
+            v-if="activeMainTab === 'replication'"
+            :zone="zone"
+            :capabilities="capabilities"
+            :notifying="notifying"
+            :retrieving="retrievingAxfr"
+            @trigger-notify="triggerZoneNotify"
+            @trigger-axfr-retrieve="triggerZoneAxfrRetrieve"
+        />
+
+        <template v-else>
         <!-- Staged Draft / Bulk Save Queue Banner -->
         <UiCard
             v-if="stagedOperations.length > 0 && !isReadOnly"
@@ -741,6 +897,7 @@ const applyAllStagedOperations = () => {
                 </td>
             </tr>
         </UiDataTable>
+        </template>
 
         <!-- Type-Aware Add / Edit RRSet Modal -->
         <PdnsRrsetModal

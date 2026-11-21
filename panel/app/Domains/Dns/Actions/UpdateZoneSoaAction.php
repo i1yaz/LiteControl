@@ -6,6 +6,7 @@ namespace App\Domains\Dns\Actions;
 
 use App\Domains\Dns\Contracts\PowerDnsClientInterface;
 use App\Domains\Dns\Exceptions\PowerDnsException;
+use App\Domains\Dns\Exceptions\SecondaryZoneReadOnlyException;
 use App\Domains\Dns\ValueObjects\RecordNormalizer;
 use App\Domains\Dns\ValueObjects\RrsetPayloadBuilder;
 use App\Domains\Dns\ValueObjects\UpdateZoneSoaPayload;
@@ -42,9 +43,7 @@ final class UpdateZoneSoaAction
 
         $kind = strtolower(trim((string) ($zone['kind'] ?? 'Native')));
         if (in_array($kind, ['secondary', 'slave'], true)) {
-            throw new InvalidArgumentException(
-                sprintf('Zone "%s" is configured as a Secondary (read-only) zone. SOA settings cannot be modified locally.', $canonicalZoneId)
-            );
+            throw SecondaryZoneReadOnlyException::forSoa($canonicalZoneId);
         }
 
         $effectiveSerial = $payload->manualSerialOverride && $payload->serial !== null

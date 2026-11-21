@@ -101,4 +101,59 @@ interface PowerDnsClientInterface
      * @throws PowerDnsException
      */
     public function exportZone(string $zoneId): string;
+
+    /**
+     * Retrieve all metadata entries for a zone (`GET /api/v1/servers/localhost/zones/{zone_id}/metadata`).
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws PowerDnsException
+     */
+    public function listZoneMetadata(string $zoneId): array;
+
+    /**
+     * Retrieve a single metadata kind for a zone (`GET /api/v1/servers/localhost/zones/{zone_id}/metadata/{metadata_kind}`).
+     *
+     * @return list<string>
+     *
+     * @throws PowerDnsException
+     */
+    public function getZoneMetadata(string $zoneId, string $metadataKind): array;
+
+    /**
+     * Replace a metadata kind for a zone (`PUT /api/v1/servers/localhost/zones/{zone_id}/metadata/{metadata_kind}`).
+     *
+     * @param  list<string>  $values
+     * @return array<string, mixed>
+     *
+     * @throws PowerDnsException
+     */
+    public function putZoneMetadata(string $zoneId, string $metadataKind, array $values): array;
+
+    /**
+     * Send DNS NOTIFY to all secondaries for a Primary zone (`PUT /api/v1/servers/localhost/zones/{zone_id}/notify`).
+     *
+     * @return array<string, mixed>
+     *
+     * @throws PowerDnsException
+     */
+    public function notifyZone(string $zoneId): array;
+
+    /**
+     * Trigger an immediate AXFR/IXFR transfer retrieval from upstream masters for a Secondary zone (`PUT /api/v1/servers/localhost/zones/{zone_id}/axfr-retrieve`).
+     *
+     * @return array<string, mixed>
+     *
+     * @throws PowerDnsException
+     */
+    public function axfrRetrieveZone(string $zoneId): array;
+
+    /**
+     * Rectify a zone's ordername/auth fields (`PUT /api/v1/servers/localhost/zones/{zone_id}/rectify`).
+     *
+     * @return array<string, mixed>
+     *
+     * @throws PowerDnsException
+     */
+    public function rectifyZone(string $zoneId): array;
 }
