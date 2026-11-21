@@ -9,8 +9,10 @@ use App\Domains\Mail\Actions\DeleteMailAccountAction;
 use App\Domains\Mail\Actions\EnableMailDomainAction;
 use App\Domains\Mail\Actions\IssueStandaloneMailTlsAction;
 use App\Domains\Mail\Actions\UpdateMailAccountAction;
+use App\Domains\Mail\Contracts\WebmailDriverInterface;
 use App\Domains\Mail\Models\MailAccount;
 use App\Domains\Mail\Models\MailDomain;
+use App\Domains\Mail\Models\MailPendingPurge;
 use App\Domains\Mail\ValueObjects\DnsTxtVerificationToken;
 use App\Domains\Mail\ValueObjects\EmailAddress;
 use App\Domains\Mail\ValueObjects\MailQuotaMb;
@@ -31,9 +33,15 @@ use InvalidArgumentException;
 
 class MailAccountController extends Controller
 {
-    public function index(Request $request, ModuleRegistryQueryInterface $moduleRegistry): Response
-    {
+    public function index(
+        Request $request,
+        ModuleRegistryQueryInterface $moduleRegistry,
+        WebmailDriverInterface $webmailDriver,
+    ): Response {
+        Gate::authorize('viewAny', MailAccount::class);
+
         $user = $request->user();
+        $user->loadMissing('package');
 
         $mailDomainsQuery = MailDomain::query()->orderBy('domain');
         if (! $user->isAdmin()) {
@@ -41,17 +49,108 @@ class MailAccountController extends Controller
         }
         $mailDomains = $mailDomainsQuery->get();
 
-        $accounts = MailAccount::query()
-            ->with('mailDomain:id,domain,user_id')
-            ->whereIn('mail_domain_id', $mailDomains->pluck('id'))
-            ->orderBy('email')
-            ->get();
+        $domainFilter = trim((string) $request->query('domain', ''));
+        /** @var MailDomain|null $selectedDomainModel */
+        $selectedDomainModel = $domainFilter !== ''
+            ? $mailDomains->firstWhere('domain', strtolower($domainFilter))
+            : null;
 
-        return Inertia::render('Mail/Accounts', [
-            'mailCoreActive' => $moduleRegistry->isActive('mail_core'),
-            'mailDomains' => $mailDomains,
+        $accountsQuery = MailAccount::query()
+            ->whereIn('mail_domain_id', $mailDomains->pluck('id'))
+            ->orderBy('email');
+
+        if ($selectedDomainModel !== null) {
+            $accountsQuery->where('mail_domain_id', $selectedDomainModel->id);
+        }
+
+        $accounts = $accountsQuery
+            ->paginate(15)
+            ->withQueryString()
+            ->through(fn (MailAccount $account): array => [
+                'id' => $account->id,
+                'mail_domain_id' => $account->mail_domain_id,
+                'local_part' => $account->local_part,
+                'email' => $account->email,
+                'quota_mb' => (int) $account->quota_mb,
+                'used_bytes' => (int) $account->used_bytes,
+                'active' => (bool) $account->active,
+                'allow_imap' => (bool) $account->allow_imap,
+                'allow_pop3' => (bool) $account->allow_pop3,
+                'allow_smtp' => (bool) $account->allow_smtp,
+                'created_at' => $account->created_at?->toIso8601String(),
+            ]);
+
+        $domains = $mailDomains->map(fn (MailDomain $mailDomain): array => [
+            'id' => $mailDomain->id,
+            'domain' => $mailDomain->domain,
+            'default_quota_mb' => (int) $mailDomain->default_quota_mb,
+            'max_accounts' => (int) $mailDomain->max_accounts,
+            'active' => (bool) $mailDomain->active,
+        ])->values()->all();
+
+        $selectedDomain = $selectedDomainModel !== null ? [
+            'id' => $selectedDomainModel->id,
+            'domain' => $selectedDomainModel->domain,
+            'default_quota_mb' => (int) $selectedDomainModel->default_quota_mb,
+            'max_accounts' => (int) $selectedDomainModel->max_accounts,
+            'active' => (bool) $selectedDomainModel->active,
+        ] : null;
+
+        $userDomainIds = MailDomain::query()
+            ->where('user_id', $user->id)
+            ->pluck('id');
+
+        $usedAccounts = MailAccount::query()
+            ->whereIn('mail_domain_id', $user->isAdmin() ? $mailDomains->pluck('id') : $userDomainIds)
+            ->count();
+
+        $package = $user->package;
+        $packageLimits = [
+            'used_accounts' => $usedAccounts,
+            'max_accounts' => (int) ($package?->max_email_accounts ?? 0),
+            'max_quota_mb' => (int) ($package?->disk_quota_mb ?? 0),
+        ];
+
+        $pendingPurgesQuery = MailPendingPurge::query()
+            ->where('entity_type', 'mailbox')
+            ->orderByDesc('created_at');
+
+        if ($selectedDomainModel !== null) {
+            $pendingPurgesQuery->where('domain', $selectedDomainModel->domain);
+        } elseif (! $user->isAdmin()) {
+            $pendingPurgesQuery->whereIn('domain', $mailDomains->pluck('domain'));
+        }
+
+        $pendingPurges = $pendingPurgesQuery
+            ->get()
+            ->map(fn (MailPendingPurge $purge): array => [
+                'id' => $purge->id,
+                'entity_type' => $purge->entity_type,
+                'domain' => $purge->domain,
+                'email' => $purge->email,
+                'status' => $purge->status,
+                'attempts' => (int) $purge->attempts,
+                'last_error' => $purge->last_error,
+            ])
+            ->values()
+            ->all();
+
+        $webmailUrl = null;
+        if ($moduleRegistry->isActive('mail_webmail')) {
+            $webmailDomain = $selectedDomainModel?->domain ?? $mailDomains->first()?->domain;
+            if ($webmailDomain !== null) {
+                $webmailUrl = $webmailDriver->loginUrl(new DomainName($webmailDomain));
+            }
+        }
+
+        return Inertia::render('Mail/Accounts/Index', [
+            'domains' => $domains,
+            'selected_domain' => $selectedDomain,
             'accounts' => $accounts,
-            'isAdmin' => $user->isAdmin(),
+            'package_limits' => $packageLimits,
+            'pending_purges' => $pendingPurges,
+            'webmail_url' => $webmailUrl,
+            'mail_core_active' => $moduleRegistry->isActive('mail_core'),
         ]);
     }
 
@@ -138,7 +237,7 @@ class MailAccountController extends Controller
             password: (string) $validated['password'],
             quotaMb: $quota,
             allowImap: (bool) ($validated['allow_imap'] ?? true),
-            allowPop3: (bool) ($validated['allow_pop3'] ?? true),
+            allowPop3: (bool) ($validated['allow_pop3'] ?? false),
             allowSmtp: (bool) ($validated['allow_smtp'] ?? true),
         );
 
