@@ -6,6 +6,7 @@ namespace App\Domains\Dns\Actions;
 
 use App\Domains\Dns\Models\DnsZoneTemplate;
 use App\Domains\Dns\Models\DnsZoneTemplateRecord;
+use App\Domains\Dns\ValueObjects\RecordNormalizer;
 use App\Domains\Dns\ValueObjects\ZoneTemplateRecordData;
 use App\Domains\Dns\ValueObjects\ZoneTemplateVariables;
 
@@ -18,6 +19,10 @@ final class RenderZoneTemplateAction
         '{{NS1}}',
         '{{NS2}}',
     ];
+
+    public function __construct(
+        private readonly RecordNormalizer $recordNormalizer = new RecordNormalizer,
+    ) {}
 
     /**
      * Deterministically expand placeholders ({{DOMAIN}}, {{IPV4}}, {{IPV6}}, {{NS1}}, {{NS2}})
@@ -200,55 +205,16 @@ final class RenderZoneTemplateAction
         $trimmed = trim($content);
 
         return match ($type) {
-            'NS', 'CNAME', 'PTR' => $this->normalizeTargetFqdn($trimmed, $canonicalDomain, $bareDomain),
-            'MX' => $this->normalizeMxContent($trimmed, $priority, $canonicalDomain, $bareDomain),
-            'TXT' => $this->normalizeTxtContent($trimmed),
+            'A' => $this->recordNormalizer->normalizeARecord($trimmed),
+            'AAAA' => $this->recordNormalizer->normalizeAaaaRecord($trimmed),
+            'NS' => $this->recordNormalizer->normalizeNsRecord($trimmed, $canonicalDomain),
+            'CNAME' => $this->recordNormalizer->normalizeCnameRecord($trimmed, $canonicalDomain),
+            'PTR' => $this->recordNormalizer->normalizePtrRecord($trimmed, $canonicalDomain),
+            'MX' => $this->recordNormalizer->normalizeMxFromContentString($trimmed, $priority ?? 10, $canonicalDomain),
+            'SRV' => $this->recordNormalizer->normalizeSrvFromContentString($trimmed, $canonicalDomain),
+            'CAA' => $this->recordNormalizer->normalizeCaaFromContentString($trimmed),
+            'TXT' => $this->recordNormalizer->normalizeTxtRecord($trimmed),
             default => $trimmed,
         };
-    }
-
-    private function normalizeTargetFqdn(string $target, string $canonicalDomain, string $bareDomain): string
-    {
-        $trimmed = strtolower(trim($target));
-        if ($trimmed === '' || $trimmed === '@') {
-            return $canonicalDomain;
-        }
-
-        $withoutDot = rtrim($trimmed, '.');
-        if (! str_contains($withoutDot, '.')) {
-            return $withoutDot.'.'.$canonicalDomain;
-        }
-
-        return $withoutDot.'.';
-    }
-
-    private function normalizeMxContent(
-        string $content,
-        ?int $priority,
-        string $canonicalDomain,
-        string $bareDomain,
-    ): string {
-        if (preg_match('/^(\d+)\s+(.+)$/', $content, $matches) === 1) {
-            $mxPriority = (int) $matches[1];
-            $target = $this->normalizeTargetFqdn($matches[2], $canonicalDomain, $bareDomain);
-
-            return sprintf('%d %s', $mxPriority, $target);
-        }
-
-        $mxPriority = $priority ?? 10;
-        $target = $this->normalizeTargetFqdn($content, $canonicalDomain, $bareDomain);
-
-        return sprintf('%d %s', $mxPriority, $target);
-    }
-
-    private function normalizeTxtContent(string $content): string
-    {
-        if (str_starts_with($content, '"') && str_ends_with($content, '"')) {
-            return $content;
-        }
-
-        $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], $content);
-
-        return '"'.$escaped.'"';
     }
 }
