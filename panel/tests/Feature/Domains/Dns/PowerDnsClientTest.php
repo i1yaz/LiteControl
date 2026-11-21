@@ -188,6 +188,36 @@ it('executes zone lifecycle and rrset patch endpoints cleanly', function (): voi
     );
 });
 
+it('searches cross-zone data and exports BIND zone definitions via PowerDnsClient', function (): void {
+    PdnsSetting::current()->update([
+        'api_key' => str_repeat('a1b2', 16),
+    ]);
+
+    Http::fake([
+        'http://127.0.0.1:8081/api/v1/servers/localhost/search-data*' => Http::response([
+            [
+                'object_type' => 'record',
+                'zone_id' => 'example.com.',
+                'name' => 'www.example.com.',
+                'type' => 'A',
+                'content' => '203.0.113.10',
+            ],
+        ], 200),
+        'http://127.0.0.1:8081/api/v1/servers/localhost/zones/example.com./export' => Http::response([
+            'zone' => "example.com.\t3600\tIN\tSOA\tns1.example.com. hostmaster.example.com. 1 10800 3600 604800 3600\n",
+        ], 200),
+    ]);
+
+    $client = app(PowerDnsClientInterface::class);
+
+    $matches = $client->searchData('www.example');
+    expect($matches)->toHaveCount(1)
+        ->and($matches[0]['name'])->toBe('www.example.com.');
+
+    $exported = $client->exportZone('example.com.');
+    expect($exported)->toContain('IN	SOA	ns1.example.com.');
+});
+
 it('maps PowerDNS error responses into typed PowerDnsException and redacts X-API-Key from logs', function (): void {
     $secretKey = 'deadbeefcafebabe0123456789abcdef0123456789abcdef0123456789abcdef';
     PdnsSetting::current()->update([

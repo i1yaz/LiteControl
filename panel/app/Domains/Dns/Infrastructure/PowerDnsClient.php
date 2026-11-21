@@ -90,6 +90,44 @@ final class PowerDnsClient implements PowerDnsClientInterface
         ]);
     }
 
+    public function searchData(string $query, int $max = 100, string $objectType = 'all'): array
+    {
+        $trimmed = trim($query);
+        if ($trimmed === '') {
+            return [];
+        }
+
+        $wildcardQuery = str_contains($trimmed, '*') ? $trimmed : "*{$trimmed}*";
+        $clampedMax = max(1, min(500, $max));
+
+        $params = [
+            'q' => $wildcardQuery,
+            'max' => $clampedMax,
+        ];
+
+        if ($objectType !== '' && $objectType !== 'all') {
+            $params['object_type'] = $objectType;
+        }
+
+        /** @var list<array<string, mixed>> $results */
+        $results = $this->requestJson('GET', '/search-data', $params);
+
+        return $results;
+    }
+
+    public function exportZone(string $zoneId): string
+    {
+        $encoded = $this->encodeZoneId($zoneId);
+        $response = $this->send('GET', "/zones/{$encoded}/export");
+
+        $decoded = $response->json();
+        if (is_array($decoded) && isset($decoded['zone']) && is_string($decoded['zone'])) {
+            return $decoded['zone'];
+        }
+
+        return $response->body();
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>

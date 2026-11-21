@@ -39,6 +39,7 @@ export const PANEL_NAVIGATION = [
         icon: 'dns',
         adminOnly: true,
         children: [
+            { id: 'dns.zones', label: 'DNS Zones', route: '/dns/zones', adminOnly: true },
             { id: 'dns.settings', label: 'Daemon & API Settings', route: '/dns/settings', adminOnly: true },
         ],
     },

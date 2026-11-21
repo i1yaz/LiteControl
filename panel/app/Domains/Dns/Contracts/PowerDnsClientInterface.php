@@ -85,4 +85,20 @@ interface PowerDnsClientInterface
      * @throws PowerDnsException
      */
     public function patchRrsets(string $zoneId, array $rrsets): void;
+
+    /**
+     * Search records, zones, and comments across all zones (`GET /api/v1/servers/localhost/search-data`).
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws PowerDnsException
+     */
+    public function searchData(string $query, int $max = 100, string $objectType = 'all'): array;
+
+    /**
+     * Export a zone in BIND/AXFR format (`GET /api/v1/servers/localhost/zones/{zone_id}/export`).
+     *
+     * @throws PowerDnsException
+     */
+    public function exportZone(string $zoneId): string;
 }
