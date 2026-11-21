@@ -16,7 +16,7 @@ BASE_DIR="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 source "${SCRIPT_DIR}/../lib/common.sh"
 
 GO_CLI_BIN="${LC_GO_CLI_BIN:-${BASE_DIR}/bin/lc-cli-go}"
-PDNS_CLI_LOG="${LC_PDNS_CLI_LOG:-/var/log/litecontrol/pdns-cli.log}"
+PDNS_CLI_LOG="${LC_PDNS_CLI_LOG:-/var/log/litecontrol/panel-error.log}"
 
 log_pdns_raw() {
     mkdir -p "$(dirname "${PDNS_CLI_LOG}")" 2>/dev/null || true

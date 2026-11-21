@@ -271,11 +271,11 @@ sync_core_files_and_sudoers() {
     fi
     if [[ -n "${go_bin}" && -d "${LC_BASE_DIR}/cli" ]]; then
         mkdir -p /var/log/litecontrol 2>/dev/null || true
-        if (cd "${LC_BASE_DIR}/cli" && CGO_ENABLED=0 "${go_bin}" build -ldflags="-s -w" -o "${LC_BASE_DIR}/bin/lc-cli-go.tmp" .) >> /var/log/litecontrol/pdns-cli.log 2>&1; then
+        if (cd "${LC_BASE_DIR}/cli" && CGO_ENABLED=0 "${go_bin}" build -ldflags="-s -w" -o "${LC_BASE_DIR}/bin/lc-cli-go.tmp" .) >> /var/log/litecontrol/panel-error.log 2>&1; then
             chmod 750 "${LC_BASE_DIR}/bin/lc-cli-go.tmp"
             mv -f "${LC_BASE_DIR}/bin/lc-cli-go.tmp" "${LC_BASE_DIR}/bin/lc-cli-go"
         else
-            log_warn "Failed to build lc-cli-go; see /var/log/litecontrol/pdns-cli.log"
+            log_warn "Failed to build lc-cli-go; see /var/log/litecontrol/panel-error.log"
             rm -f "${LC_BASE_DIR}/bin/lc-cli-go.tmp" 2>/dev/null || true
         fi
     fi
