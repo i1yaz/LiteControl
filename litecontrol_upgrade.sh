@@ -257,16 +257,27 @@ sync_core_files_and_sudoers() {
     find "${LC_BASE_DIR}/scripts" -type f -name "*.sh" -exec chmod 750 {} +
     ln -sf "${LC_BASE_DIR}/bin/lc-cli" /usr/local/bin/lc-cli
 
-    # Build/refresh Go CLI binary (`lc-cli-go`) if Go is available
+    # Build/refresh Go CLI binary (`lc-cli-go`); install golang-go if missing and cli/ is present
     local go_bin=""
     go_bin=$(command -v go 2>/dev/null || true)
     if [[ -z "${go_bin}" && -x /usr/local/go/bin/go ]]; then
         go_bin="/usr/local/go/bin/go"
     fi
+    if [[ -z "${go_bin}" && -d "${LC_BASE_DIR}/cli" ]] && command -v apt-get >/dev/null 2>&1; then
+        log_info "Installing golang-go to build LiteControl Go CLI binary (lc-cli-go)..."
+        DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1 || true
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq golang-go >/dev/null 2>&1 || true
+        go_bin=$(command -v go 2>/dev/null || true)
+    fi
     if [[ -n "${go_bin}" && -d "${LC_BASE_DIR}/cli" ]]; then
-        (cd "${LC_BASE_DIR}/cli" && CGO_ENABLED=0 "${go_bin}" build -ldflags="-s -w" -o "${LC_BASE_DIR}/bin/lc-cli-go.tmp" .) && \
-            chmod 750 "${LC_BASE_DIR}/bin/lc-cli-go.tmp" && \
-            mv -f "${LC_BASE_DIR}/bin/lc-cli-go.tmp" "${LC_BASE_DIR}/bin/lc-cli-go" || true
+        mkdir -p /var/log/litecontrol 2>/dev/null || true
+        if (cd "${LC_BASE_DIR}/cli" && CGO_ENABLED=0 "${go_bin}" build -ldflags="-s -w" -o "${LC_BASE_DIR}/bin/lc-cli-go.tmp" .) >> /var/log/litecontrol/pdns-cli.log 2>&1; then
+            chmod 750 "${LC_BASE_DIR}/bin/lc-cli-go.tmp"
+            mv -f "${LC_BASE_DIR}/bin/lc-cli-go.tmp" "${LC_BASE_DIR}/bin/lc-cli-go"
+        else
+            log_warn "Failed to build lc-cli-go; see /var/log/litecontrol/pdns-cli.log"
+            rm -f "${LC_BASE_DIR}/bin/lc-cli-go.tmp" 2>/dev/null || true
+        fi
     fi
 
     # Install per-user PHP CLI setter and bootstrap Go shim if Go is available
