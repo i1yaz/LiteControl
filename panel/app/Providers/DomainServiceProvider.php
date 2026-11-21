@@ -24,6 +24,9 @@ use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Policies\UserPolicy;
 use App\Domains\Mail\Contracts\MailServerDriverInterface;
 use App\Domains\Mail\Infrastructure\CliMailServerAdapter;
+use App\Domains\Mail\Listeners\ReconcileMailOnBackupRestoredListener;
+use App\Domains\Mail\Listeners\SyncMailSniOnSslIssuedListener;
+use App\Domains\Mail\Listeners\TeardownUserMailOnUserDeletedListener;
 use App\Domains\Mail\Models\MailAccount;
 use App\Domains\Mail\Models\MailAlias;
 use App\Domains\Mail\Models\MailDomain;
@@ -49,6 +52,8 @@ use App\Domains\ServerOps\Infrastructure\ModuleRegistryQuery;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Domains\Shared\Contracts\DomainOwnershipCheckerInterface;
 use App\Domains\Shared\Contracts\ModuleRegistryQueryInterface;
+use App\Domains\Shared\Events\BackupRestored;
+use App\Domains\Shared\Events\SslCertificateIssued;
 use App\Domains\WebServer\Contracts\FtpDriverInterface;
 use App\Domains\WebServer\Contracts\SslDriverInterface;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
@@ -96,11 +101,14 @@ class DomainServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(UserCreated::class, ProvisionDefaultDomainListener::class);
+        Event::listen(UserDeleted::class, TeardownUserMailOnUserDeletedListener::class);
         Event::listen(UserDeleted::class, CleanupUserDatabasesListener::class);
         Event::listen(UserDeleted::class, CleanupUserBackupsListener::class);
         Event::listen(UserDeleted::class, function (UserDeleted $event): void {
             Domain::where('user_id', $event->userId)->delete();
         });
+        Event::listen(BackupRestored::class, ReconcileMailOnBackupRestoredListener::class);
+        Event::listen(SslCertificateIssued::class, SyncMailSniOnSslIssuedListener::class);
 
         Gate::policy(Domain::class, DomainPolicy::class);
         Gate::policy(Database::class, DatabasePolicy::class);

@@ -50,7 +50,7 @@ class BackupActionsTest extends TestCase
         $cliMock = Mockery::mock(BackupDriverInterface::class);
         $cliMock->shouldReceive('createBackup')
             ->once()
-            ->with('backupuser')
+            ->withArgs(fn (string $username): bool => $username === 'backupuser')
             ->andReturn([
                 'filename' => 'backup-backupuser-20261111_120000.tar.gz',
                 'path' => '/home/backupuser/backups/backup-backupuser-20261111_120000.tar.gz',
@@ -80,7 +80,7 @@ class BackupActionsTest extends TestCase
         $cliMock = Mockery::mock(BackupDriverInterface::class);
         $cliMock->shouldReceive('createBackup')
             ->once()
-            ->with('backupuser')
+            ->withArgs(fn (string $username): bool => $username === 'backupuser')
             ->andThrow(new LcCliException('Backup creation failed.', 'backup', ['create', 'backupuser']));
 
         $this->expectException(LcCliException::class);
