@@ -24,6 +24,12 @@ use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Policies\UserPolicy;
 use App\Domains\Mail\Contracts\MailServerDriverInterface;
 use App\Domains\Mail\Infrastructure\CliMailServerAdapter;
+use App\Domains\Mail\Models\MailAccount;
+use App\Domains\Mail\Models\MailAlias;
+use App\Domains\Mail\Models\MailDomain;
+use App\Domains\Mail\Policies\MailAccountPolicy;
+use App\Domains\Mail\Policies\MailAliasPolicy;
+use App\Domains\Mail\Policies\MailDomainPolicy;
 use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use App\Domains\PanelConfig\Infrastructure\CliTuningAdapter;
 use App\Domains\PanelConfig\Infrastructure\EloquentAuditLogger;
@@ -101,5 +107,8 @@ class DomainServiceProvider extends ServiceProvider
         Gate::policy(Backup::class, BackupPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Package::class, PackagePolicy::class);
+        Gate::policy(MailDomain::class, MailDomainPolicy::class);
+        Gate::policy(MailAccount::class, MailAccountPolicy::class);
+        Gate::policy(MailAlias::class, MailAliasPolicy::class);
     }
 }

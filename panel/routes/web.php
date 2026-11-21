@@ -10,6 +10,8 @@ use App\Http\Controllers\HostingPlans\PackageController;
 use App\Http\Controllers\Identity\AuthController;
 use App\Http\Controllers\Identity\UserController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\Mail\MailAccountController;
+use App\Http\Controllers\Mail\MailForwarderController;
 use App\Http\Controllers\PanelConfig\ConfigurationController;
 use App\Http\Controllers\PanelConfig\ThemeController;
 use App\Http\Controllers\PhpRuntime\PhpController;
@@ -90,6 +92,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('/databases/users/{dbUser}', [DatabaseController::class, 'destroyUser'])->name('databases.users.destroy');
     Route::post('/databases/grant', [DatabaseController::class, 'grantPrivileges'])->name('databases.grant');
     Route::get('/phpmyadmin/sso', [DatabaseController::class, 'phpmyadminSso'])->name('phpmyadmin.sso');
+
+    // Email Management
+    Route::get('/email/accounts', [MailAccountController::class, 'index'])->name('email.accounts.index');
+    Route::post('/email/domains', [MailAccountController::class, 'enableDomain'])->name('email.domains.store');
+    Route::post('/email/accounts', [MailAccountController::class, 'store'])->name('email.accounts.store');
+    Route::put('/email/accounts/{mailAccount}', [MailAccountController::class, 'update'])->name('email.accounts.update');
+    Route::delete('/email/accounts/{mailAccount}', [MailAccountController::class, 'destroy'])->name('email.accounts.destroy');
+    Route::get('/email/forwarders', [MailForwarderController::class, 'index'])->name('email.forwarders.index');
+    Route::post('/email/forwarders', [MailForwarderController::class, 'store'])->name('email.forwarders.store');
+    Route::delete('/email/forwarders/{mailAlias}', [MailForwarderController::class, 'destroy'])->name('email.forwarders.destroy');
 
     // Web File Manager
     Route::get('/files', [FileManagerController::class, 'index'])->name('files.index');
