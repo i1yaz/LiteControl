@@ -35,7 +35,7 @@ do_install() {
     fi
 
     local db_user="litecontrol"
-    local db_name="litecontrol"
+    local db_name="pdns"
     local db_pass
     db_pass=$(get_secret "mysql_panel_password" 2>/dev/null || echo "secret")
     local srv_host
@@ -57,11 +57,17 @@ do_install() {
         chown root:pdns "${PDNS_CONF_DIR}/pdns.conf" 2>/dev/null || true
     fi
 
-    # Initialize PowerDNS schema into litecontrol database
+    # Initialize dedicated PowerDNS database and schema (isolated from litecontrol.domains)
     local schema_file="${BASE_DIR}/templates/modules/powerdns/schema.mysql.sql"
     if [[ "${LC_TEST_MODE:-0}" != "1" && -f "${schema_file}" ]]; then
         local root_pass
         root_pass=$(get_secret "mysql_root_password" 2>/dev/null || echo "")
+        mysql -u root -p"${root_pass}" -e "
+            CREATE DATABASE IF NOT EXISTS \`${db_name}\` CHARACTER SET latin1;
+            GRANT ALL PRIVILEGES ON \`${db_name}\`.* TO '${db_user}'@'127.0.0.1';
+            GRANT ALL PRIVILEGES ON \`${db_name}\`.* TO '${db_user}'@'localhost';
+            FLUSH PRIVILEGES;
+        " 2>/dev/null || true
         mysql -u root -p"${root_pass}" "${db_name}" < "${schema_file}" 2>/dev/null || true
     fi
 

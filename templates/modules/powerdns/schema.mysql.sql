@@ -7,10 +7,13 @@ CREATE TABLE IF NOT EXISTS domains (
   type                  VARCHAR(8) NOT NULL,
   notified_serial       INT UNSIGNED DEFAULT NULL,
   account               VARCHAR(40) CHARACTER SET 'utf8' DEFAULT NULL,
+  options               VARCHAR(64000) DEFAULT NULL,
+  catalog               VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (id)
 ) Engine=InnoDB CHARACTER SET 'latin1';
 
 CREATE UNIQUE INDEX IF NOT EXISTS name_index ON domains(name);
+CREATE INDEX IF NOT EXISTS catalog_idx ON domains(catalog);
 
 CREATE TABLE IF NOT EXISTS records (
   id                    BIGINT AUTO_INCREMENT,
