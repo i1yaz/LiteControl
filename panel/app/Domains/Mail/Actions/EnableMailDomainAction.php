@@ -69,6 +69,7 @@ final class EnableMailDomainAction
         int $defaultQuotaMb = 1024,
         int $maxAccounts = 50,
         bool $verifyDnsTxt = false,
+        int $outboundHourlyLimit = 200,
     ): MailDomain {
         if ($this->isDeniedDomain($domain->value)) {
             throw ValidationException::withMessages([
@@ -125,7 +126,7 @@ final class EnableMailDomainAction
             ]);
         }
 
-        $mailDomain = DB::transaction(function () use ($actor, $owner, $domain, $ownershipSource, $defaultQuotaMb, $maxAccounts): MailDomain {
+        $mailDomain = DB::transaction(function () use ($actor, $owner, $domain, $ownershipSource, $defaultQuotaMb, $maxAccounts, $outboundHourlyLimit): MailDomain {
             $record = MailDomain::create([
                 'user_id' => $owner->id,
                 'domain' => $domain->value,
@@ -133,6 +134,7 @@ final class EnableMailDomainAction
                 'active' => true,
                 'default_quota_mb' => $defaultQuotaMb,
                 'max_accounts' => $maxAccounts,
+                'outbound_hourly_limit' => $outboundHourlyLimit,
             ]);
 
             $this->auditLogger->log([

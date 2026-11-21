@@ -12,6 +12,7 @@ use App\Http\Controllers\Identity\UserController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Mail\MailAccountController;
 use App\Http\Controllers\Mail\MailDkimController;
+use App\Http\Controllers\Mail\MailDomainController;
 use App\Http\Controllers\Mail\MailForwarderController;
 use App\Http\Controllers\Mail\MailSpamFilterController;
 use App\Http\Controllers\PanelConfig\ConfigurationController;
@@ -96,9 +97,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/phpmyadmin/sso', [DatabaseController::class, 'phpmyadminSso'])->name('phpmyadmin.sso');
 
     // Email Management
+    Route::get('/email/domains', [MailDomainController::class, 'index'])->name('email.domains.index');
+    Route::post('/email/domains', [MailDomainController::class, 'store'])->name('email.domains.store');
+    Route::put('/email/domains/{mailDomain}', [MailDomainController::class, 'update'])->name('email.domains.update');
     Route::get('/email/accounts', [MailAccountController::class, 'index'])->name('email.accounts.index');
     Route::get('/email/domains/dns-challenge', [MailAccountController::class, 'dnsVerificationChallenge'])->name('email.domains.dns-challenge');
-    Route::post('/email/domains', [MailAccountController::class, 'enableDomain'])->name('email.domains.store');
     Route::post('/email/domains/{mailDomain}/issue-tls', [MailAccountController::class, 'issueStandaloneTls'])->name('email.domains.issue-tls');
     Route::post('/email/accounts', [MailAccountController::class, 'store'])->name('email.accounts.store');
     Route::put('/email/accounts/{mailAccount}', [MailAccountController::class, 'update'])->name('email.accounts.update');

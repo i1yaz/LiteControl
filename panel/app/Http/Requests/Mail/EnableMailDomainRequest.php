@@ -25,6 +25,7 @@ class EnableMailDomainRequest extends FormRequest
             'verify_dns_txt' => ['sometimes', 'boolean'],
             'default_quota_mb' => ['sometimes', 'integer', 'min:0'],
             'max_accounts' => ['sometimes', 'integer', 'min:0'],
+            'outbound_hourly_limit' => ['sometimes', 'integer', 'min:1'],
         ];
     }
 }
