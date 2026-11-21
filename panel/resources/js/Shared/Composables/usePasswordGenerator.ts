@@ -1,5 +1,19 @@
 import { ref } from 'vue';
 
+function randomIndex(max: number): number {
+    if (max <= 0) throw new RangeError('max must be greater than 0');
+    const limit = Math.floor(0x100000000 / max) * max;
+    const buf = new Uint32Array(1);
+
+    let value: number;
+    do {
+        globalThis.crypto.getRandomValues(buf);
+        value = buf[0];
+    } while (value >= limit);
+
+    return value % max;
+}
+
 export function generateStrongPassword(length = 16): string {
     const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const lower = 'abcdefghijklmnopqrstuvwxyz';
@@ -7,20 +21,21 @@ export function generateStrongPassword(length = 16): string {
     const symbols = '!@#$%^&*()-_=+';
     const all = upper + lower + digits + symbols;
     const size = Math.max(8, length);
-    const bytes = new Uint32Array(size);
-    window.crypto.getRandomValues(bytes);
 
     const chars = [
-        upper[bytes[0] % upper.length],
-        lower[bytes[1] % lower.length],
-        digits[bytes[2] % digits.length],
-        symbols[bytes[3] % symbols.length],
+        upper[randomIndex(upper.length)],
+        lower[randomIndex(lower.length)],
+        digits[randomIndex(digits.length)],
+        symbols[randomIndex(symbols.length)],
     ];
+
     for (let i = 4; i < size; i++) {
-        chars.push(all[bytes[i] % all.length]);
+        chars.push(all[randomIndex(all.length)]);
     }
+
+    // Fisher-Yates shuffle with independent random indices
     for (let i = chars.length - 1; i > 0; i--) {
-        const j = bytes[i] % (i + 1);
+        const j = randomIndex(i + 1);
         [chars[i], chars[j]] = [chars[j], chars[i]];
     }
 
