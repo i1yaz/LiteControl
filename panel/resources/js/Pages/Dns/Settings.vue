@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { Globe } from '@lucide/vue';
+import { Globe, Eraser } from '@lucide/vue';
 import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
+import UiButton from '@shared/Ui/UiButton.vue';
+import UiTabs from '@shared/Ui/UiTabs.vue';
 import { useDialog } from '@shared/Composables/useDialog';
 import PdnsStatusOverview from '@domains/Dns/Components/PdnsStatusOverview.vue';
 import PdnsDaemonConfigForm from '@domains/Dns/Components/PdnsDaemonConfigForm.vue';
+import PdnsAutoprimariesTab from '@domains/Dns/Components/PdnsAutoprimariesTab.vue';
 
 const props = defineProps({
     settings: {
@@ -20,12 +23,46 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    autoprimaries: {
+        type: Array as () => Array<{
+            ip: string;
+            nameserver: string;
+            display_nameserver?: string;
+            is_idn?: boolean;
+            account?: string;
+        }>,
+        default: () => [],
+    },
+    autoprimariesError: {
+        type: String,
+        default: null,
+    },
 });
 
 const { confirm } = useDialog();
 
+const activeSectionTab = ref<'daemon' | 'autoprimaries'>('daemon');
 const testingConnection = ref(false);
 const rotatingKey = ref(false);
+const flushingGlobalCache = ref(false);
+
+const sectionTabs = computed(() => [
+    {
+        id: 'daemon',
+        label: 'Daemon & HTTP API Config',
+    },
+    {
+        id: 'autoprimaries',
+        label: `Autoprimaries / Supermasters (${props.autoprimaries.length})`,
+    },
+]);
+
+const capabilities = computed(() => ({
+    has_api_key: Boolean(props.settings?.has_api_key),
+    primary_enabled: Boolean(props.settings?.primary_enabled),
+    secondary_enabled: Boolean(props.settings?.secondary_enabled),
+    autosecondary_enabled: Boolean(props.settings?.autosecondary_enabled),
+}));
 
 const form = useForm({
     host: props.settings?.host ?? '127.0.0.1',
@@ -88,6 +125,20 @@ const handleRotateKey = async () => {
         }
     );
 };
+
+const handleFlushGlobalCache = () => {
+    flushingGlobalCache.value = true;
+    router.put(
+        '/dns/settings/cache/flush',
+        { domain: '.' },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                flushingGlobalCache.value = false;
+            },
+        }
+    );
+};
 </script>
 
 <template>
@@ -96,10 +147,22 @@ const handleRotateKey = async () => {
     <div class="max-w-5xl mx-auto space-y-6">
         <UiPageHeader
             :title="__('PowerDNS Daemon & HTTP API Configuration')"
-            :subtitle="__('Manage OS drop-in configuration (99-litecontrol.conf), API key rotation, and global replication capabilities.')"
+            :subtitle="__('Manage OS drop-in configuration (99-litecontrol.conf), API key rotation, global cache flush, and Autoprimaries.')"
         >
             <template #icon>
                 <Globe class="w-6 h-6 text-theme-accent" />
+            </template>
+            <template #actions>
+                <UiButton
+                    type="button"
+                    variant="secondary"
+                    :loading="flushingGlobalCache"
+                    :disabled="flushingGlobalCache || testingConnection || rotatingKey"
+                    @click="handleFlushGlobalCache"
+                >
+                    <Eraser v-if="!flushingGlobalCache" class="w-4 h-4" />
+                    <span>{{ flushingGlobalCache ? __('Flushing Cache...') : __('Flush Global Cache') }}</span>
+                </UiButton>
             </template>
         </UiPageHeader>
 
@@ -109,14 +172,30 @@ const handleRotateKey = async () => {
             :api-health="apiHealth"
             :testing-connection="testingConnection"
             :rotating-key="rotatingKey"
+            :flushing-cache="flushingGlobalCache"
             @test-connection="handleTestConnection"
             @rotate-key="handleRotateKey"
+            @flush-cache="handleFlushGlobalCache"
+        />
+
+        <UiTabs
+            v-model="activeSectionTab"
+            :tabs="sectionTabs"
         />
 
         <PdnsDaemonConfigForm
+            v-if="activeSectionTab === 'daemon'"
             :form="form"
             :has-webserver-password="Boolean(settings?.has_webserver_password)"
             @submit="submitConfig"
+        />
+
+        <PdnsAutoprimariesTab
+            v-else
+            :autoprimaries="autoprimaries"
+            :capabilities="capabilities"
+            :show-settings-link="false"
+            :api-error="autoprimariesError"
         />
     </div>
 </template>

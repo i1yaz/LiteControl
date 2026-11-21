@@ -35,10 +35,15 @@ final class DeleteDnsZoneTemplateAction
         });
 
         Log::info('PowerDNS zone template deleted', [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
             'actor_username' => $actor?->username,
+            'action' => 'pdns_delete_zone_template',
+            'zone' => $templateName,
+            'mode' => 'template',
             'template_id' => $templateId,
             'template_name' => $templateName,
+            'status' => 'success',
         ]);
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([

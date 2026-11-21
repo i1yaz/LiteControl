@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Dns;
 
 use App\Domains\Dns\Actions\ApplyPdnsConfigAction;
+use App\Domains\Dns\Actions\FlushPdnsCacheAction;
 use App\Domains\Dns\Actions\RotatePdnsApiKeyAction;
 use App\Domains\Dns\Actions\TestPdnsConnectionAction;
 use App\Domains\Dns\Exceptions\PowerDnsException;
 use App\Domains\Dns\Models\PdnsSetting;
 use App\Domains\Dns\Queries\GetPdnsHealthQuery;
+use App\Domains\Dns\Queries\ListAutoprimariesQuery;
 use App\Exceptions\System\LcCliException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Dns\UpdatePdnsConfigRequest;
@@ -24,15 +26,31 @@ class PdnsConfigController extends Controller
     /**
      * Render the PowerDNS Daemon & HTTP API Configuration UI.
      */
-    public function index(Request $request, GetPdnsHealthQuery $healthQuery): Response
-    {
+    public function index(
+        Request $request,
+        GetPdnsHealthQuery $healthQuery,
+        ListAutoprimariesQuery $listAutoprimariesQuery,
+    ): Response {
         $setting = PdnsSetting::current();
         $health = $healthQuery->handle($setting);
+
+        $autoprimaries = [];
+        $autoprimariesError = null;
+
+        if ($setting->hasApiKey() && ($health['api_health']['connected'] ?? false)) {
+            try {
+                $autoprimaries = $listAutoprimariesQuery->handle();
+            } catch (PowerDnsException $e) {
+                $autoprimariesError = $e->getMessage();
+            }
+        }
 
         return Inertia::render('Dns/Settings', [
             'settings' => $setting->toPublicArray(),
             'daemon' => $health['daemon'],
             'apiHealth' => $health['api_health'],
+            'autoprimaries' => $autoprimaries,
+            'autoprimariesError' => $autoprimariesError,
         ]);
     }
 
@@ -83,6 +101,28 @@ class PdnsConfigController extends Controller
                 )
             );
         } catch (PowerDnsException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Flush the global PowerDNS authoritative packet/query cache (`PUT /api/v1/servers/localhost/cache/flush?domain=.`).
+     */
+    public function flushCache(Request $request, FlushPdnsCacheAction $action): RedirectResponse
+    {
+        try {
+            $domain = trim((string) $request->input('domain', '.'));
+            $result = $action->handle($domain, $request->user(), $request->ip());
+
+            return redirect()->back()->with(
+                'success',
+                sprintf(
+                    'PowerDNS cache flushed for %s (%d entries cleared).',
+                    $result['domain'] === '.' ? 'all zones (.)' : $result['domain'],
+                    $result['count'],
+                )
+            );
+        } catch (InvalidArgumentException|PowerDnsException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
     }

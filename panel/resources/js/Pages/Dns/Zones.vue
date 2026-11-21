@@ -25,10 +25,21 @@ import UiAlert from '@shared/Ui/UiAlert.vue';
 import PdnsCreateZoneModal from '@domains/Dns/Components/PdnsCreateZoneModal.vue';
 import PdnsDeleteZoneModal from '@domains/Dns/Components/PdnsDeleteZoneModal.vue';
 import PdnsSearchResultsCard from '@domains/Dns/Components/PdnsSearchResultsCard.vue';
+import PdnsAutoprimariesTab from '@domains/Dns/Components/PdnsAutoprimariesTab.vue';
 
 const props = defineProps({
     zones: {
         type: Array as () => Array<Record<string, any>>,
+        default: () => [],
+    },
+    autoprimaries: {
+        type: Array as () => Array<{
+            ip: string;
+            nameserver: string;
+            display_nameserver?: string;
+            is_idn?: boolean;
+            account?: string;
+        }>,
         default: () => [],
     },
     searchQuery: {
@@ -85,6 +96,7 @@ const filterTabs = computed(() => {
     const primaryCount = props.zones.filter((z) => z.kind === 'Primary').length;
     const secondaryCount = props.zones.filter((z) => z.kind === 'Secondary').length;
     const nativeCount = props.zones.filter((z) => z.kind === 'Native').length;
+    const autoprimariesCount = props.autoprimaries.length;
 
     return [
         { id: 'all', label: `All (${allCount})` },
@@ -93,6 +105,7 @@ const filterTabs = computed(() => {
         { id: 'Primary', label: `Primary (${primaryCount})` },
         { id: 'Secondary', label: `Secondary (${secondaryCount})` },
         { id: 'Native', label: `Native (${nativeCount})` },
+        { id: 'autoprimaries', label: `Autoprimaries (${autoprimariesCount})` },
     ];
 });
 
@@ -289,14 +302,23 @@ const closeDeleteModal = () => {
             @clear="clearGlobalSearch"
         />
 
-        <!-- Filter Tabs (All, Forward, Reverse, Primary, Secondary, Native) -->
+        <!-- Filter Tabs (All, Forward, Reverse, Primary, Secondary, Native, Autoprimaries) -->
         <UiTabs
             v-model="activeTab"
             :tabs="filterTabs"
         />
 
+        <!-- Autoprimaries (Supermasters) CRUD Tab -->
+        <PdnsAutoprimariesTab
+            v-if="activeTab === 'autoprimaries'"
+            :autoprimaries="autoprimaries"
+            :capabilities="capabilities"
+            :api-error="apiError"
+        />
+
         <!-- Zones Table -->
         <UiDataTable
+            v-else
             :headers="tableHeaders"
             :items-count="filteredZones.length"
             :empty-message="__('No authoritative DNS zones found matching the selected filter.')"

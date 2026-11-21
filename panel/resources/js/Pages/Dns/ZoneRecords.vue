@@ -26,6 +26,7 @@ import {
     Send,
     DownloadCloud,
     Clock,
+    Eraser,
 } from '@lucide/vue';
 import UiPageHeader from '@shared/Ui/UiPageHeader.vue';
 import UiButton from '@shared/Ui/UiButton.vue';
@@ -87,6 +88,8 @@ const showSoaDrawer = ref(false);
 const patchSubmitting = ref(false);
 const notifying = ref(false);
 const retrievingAxfr = ref(false);
+const rectifyingZone = ref(false);
+const flushingZoneCache = ref(false);
 
 const mainSectionTabs = computed(() => [
     {
@@ -377,6 +380,36 @@ const triggerZoneAxfrRetrieve = () => {
         }
     );
 };
+
+const triggerZoneRectify = () => {
+    if (rectifyingZone.value) return;
+    rectifyingZone.value = true;
+    router.put(
+        `/dns/zones/${encodedZoneId.value}/rectify`,
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                rectifyingZone.value = false;
+            },
+        }
+    );
+};
+
+const triggerZoneCacheFlush = () => {
+    if (flushingZoneCache.value) return;
+    flushingZoneCache.value = true;
+    router.put(
+        `/dns/zones/${encodedZoneId.value}/cache/flush`,
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                flushingZoneCache.value = false;
+            },
+        }
+    );
+};
 </script>
 
 <template>
@@ -437,6 +470,30 @@ const triggerZoneAxfrRetrieve = () => {
                     >
                         <DownloadCloud v-if="!retrievingAxfr" class="w-4 h-4" />
                         <span>{{ retrievingAxfr ? __('Syncing AXFR...') : __('Retrieve / Sync Now') }}</span>
+                    </UiButton>
+
+                    <UiButton
+                        type="button"
+                        variant="secondary"
+                        :loading="rectifyingZone"
+                        :disabled="rectifyingZone || flushingZoneCache"
+                        :title="__('Recalculate DNSSEC ordername and auth fields for this zone (PUT /zones/{id}/rectify)')"
+                        @click="triggerZoneRectify"
+                    >
+                        <RefreshCw v-if="!rectifyingZone" class="w-4 h-4" />
+                        <span>{{ rectifyingZone ? __('Rectifying...') : __('Rectify Zone') }}</span>
+                    </UiButton>
+
+                    <UiButton
+                        type="button"
+                        variant="secondary"
+                        :loading="flushingZoneCache"
+                        :disabled="flushingZoneCache || rectifyingZone"
+                        :title="__('Flush PowerDNS query and packet cache for this zone (PUT /cache/flush?domain={zone})')"
+                        @click="triggerZoneCacheFlush"
+                    >
+                        <Eraser v-if="!flushingZoneCache" class="w-4 h-4" />
+                        <span>{{ flushingZoneCache ? __('Flushing Cache...') : __('Flush Cache') }}</span>
                     </UiButton>
 
                     <UiButton

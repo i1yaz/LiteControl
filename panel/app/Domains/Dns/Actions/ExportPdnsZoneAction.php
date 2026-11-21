@@ -38,9 +38,13 @@ final class ExportPdnsZoneAction
         $filename = $safeBase.'.zone';
 
         Log::info('PowerDNS zone exported', [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
             'actor_username' => $actor?->username,
+            'action' => 'pdns_export_zone',
             'zone' => $canonicalZoneId,
+            'mode' => 'export',
+            'status' => 'success',
         ]);
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([

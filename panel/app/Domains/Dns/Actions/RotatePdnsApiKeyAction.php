@@ -77,7 +77,13 @@ final class RotatePdnsApiKeyAction
             $sanitizedError = $this->redactSecrets($probeException->getMessage(), array_filter([$newKey, $previousKey]));
 
             Log::error('PowerDNS API key rotation failed health check probe; rolled back to prior key', [
+                'actor' => $actor?->username ?? 'system',
                 'actor_id' => $actor?->id,
+                'actor_username' => $actor?->username,
+                'action' => 'pdns_rotate_api_key',
+                'zone' => null,
+                'mode' => 'daemon',
+                'status' => 'error',
                 'host' => $currentConfig->host,
                 'port' => $currentConfig->port,
                 'rolled_back' => $rollbackSucceeded,
@@ -142,7 +148,13 @@ final class RotatePdnsApiKeyAction
         ];
 
         Log::info('PowerDNS API key rotated and verified', [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
+            'actor_username' => $actor?->username,
+            'action' => 'pdns_rotate_api_key',
+            'zone' => null,
+            'mode' => 'daemon',
+            'status' => 'success',
             'details' => $auditDetails,
         ]);
 

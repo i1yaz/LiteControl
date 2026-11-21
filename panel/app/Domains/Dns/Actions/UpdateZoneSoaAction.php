@@ -87,11 +87,15 @@ final class UpdateZoneSoaAction
         ];
 
         Log::info('PowerDNS zone SOA updated', [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
             'actor_username' => $actor?->username,
+            'action' => 'pdns_update_soa',
             'zone' => $canonicalZoneId,
+            'mode' => (string) ($zone['kind'] ?? 'Native'),
             'content' => $normalizedSoaContent,
             'manual_serial_override' => $payload->manualSerialOverride,
+            'status' => 'success',
         ]);
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([

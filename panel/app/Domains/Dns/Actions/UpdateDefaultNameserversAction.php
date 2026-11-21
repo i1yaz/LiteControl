@@ -36,9 +36,14 @@ final class UpdateDefaultNameserversAction
         ]);
 
         Log::info('PowerDNS default nameservers updated', [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
             'actor_username' => $actor?->username,
+            'action' => 'pdns_update_default_nameservers',
+            'zone' => null,
+            'mode' => 'nameservers',
             'default_nameservers' => $storageArray,
+            'status' => 'success',
         ]);
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([

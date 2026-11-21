@@ -65,7 +65,13 @@ final class ApplyPdnsConfigAction
         ];
 
         Log::info('PowerDNS daemon configuration applied', [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
+            'actor_username' => $actor?->username,
+            'action' => 'pdns_apply_config',
+            'zone' => null,
+            'mode' => 'daemon',
+            'status' => 'success',
             'config' => $auditDetails,
         ]);
 

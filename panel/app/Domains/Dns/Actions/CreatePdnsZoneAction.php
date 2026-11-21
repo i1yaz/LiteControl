@@ -76,13 +76,17 @@ final class CreatePdnsZoneAction
         ];
 
         Log::info('PowerDNS zone created', [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
             'actor_username' => $actor?->username,
+            'action' => 'pdns_create_zone',
             'zone' => $payload->name,
+            'mode' => $payload->kind,
             'kind' => $payload->kind,
             'zone_type' => $payload->zoneType,
             'template_id' => $template?->id,
             'template_rrsets_count' => count($renderedRrsets),
+            'status' => 'success',
         ]);
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([

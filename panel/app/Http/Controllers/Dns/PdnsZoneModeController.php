@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Dns;
 
+use App\Domains\Dns\Actions\FlushPdnsCacheAction;
+use App\Domains\Dns\Actions\RectifyZoneAction;
 use App\Domains\Dns\Actions\TriggerAxfrRetrieveAction;
 use App\Domains\Dns\Actions\TriggerNotifyAction;
 use App\Domains\Dns\Actions\UpdateZoneModeAction;
@@ -79,6 +81,49 @@ class PdnsZoneModeController extends Controller
 
             return redirect()->route('dns.zones.records.show', ['zone' => $result['zone']])
                 ->with('success', sprintf('AXFR transfer retrieval queued for %s (%s).', $result['zone'], $result['result']));
+        } catch (InvalidArgumentException|PowerDnsException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Rectify a zone's ordername/auth records (`PUT /api/v1/servers/localhost/zones/{zone_id}/rectify`).
+     */
+    public function rectify(
+        Request $request,
+        string $zone,
+        RectifyZoneAction $action,
+    ): RedirectResponse {
+        try {
+            $result = $action->handle($zone, $request->user(), $request->ip());
+
+            return redirect()->route('dns.zones.records.show', ['zone' => $result['zone']])
+                ->with('success', sprintf('Zone %s rectified (%s).', $result['zone'], $result['result']));
+        } catch (InvalidArgumentException|PowerDnsException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Flush the PowerDNS packet/query cache for a specific zone (`PUT /api/v1/servers/localhost/cache/flush?domain={zone_id}`).
+     */
+    public function flushCache(
+        Request $request,
+        string $zone,
+        FlushPdnsCacheAction $action,
+    ): RedirectResponse {
+        try {
+            $result = $action->handle($zone, $request->user(), $request->ip());
+
+            return redirect()->route('dns.zones.records.show', ['zone' => $result['domain']])
+                ->with(
+                    'success',
+                    sprintf(
+                        'PowerDNS cache flushed for %s (%d entries cleared).',
+                        $result['domain'],
+                        $result['count'],
+                    )
+                );
         } catch (InvalidArgumentException|PowerDnsException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

@@ -66,8 +66,10 @@ final class TriggerAxfrRetrieveAction
         ];
 
         Log::info('PowerDNS Secondary zone AXFR retrieve triggered', [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
             'actor_username' => $actor?->username,
+            'action' => 'pdns_trigger_axfr_retrieve',
             'zone' => $canonicalZoneId,
             'mode' => 'Secondary',
             'masters' => $masters,

@@ -156,4 +156,39 @@ interface PowerDnsClientInterface
      * @throws PowerDnsException
      */
     public function rectifyZone(string $zoneId): array;
+
+    /**
+     * Flush PowerDNS authoritative packet/query cache (`PUT /api/v1/servers/localhost/cache/flush?domain={domain}`).
+     *
+     * @return array<string, mixed>
+     *
+     * @throws PowerDnsException
+     */
+    public function flushCache(string $domain = '.'): array;
+
+    /**
+     * List all configured Autoprimaries / Supermasters (`GET /api/v1/servers/localhost/autoprimaries`).
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws PowerDnsException
+     */
+    public function listAutoprimaries(): array;
+
+    /**
+     * Add a trusted Autoprimary / Supermaster (`POST /api/v1/servers/localhost/autoprimaries`).
+     *
+     * @param  array{ip: string, nameserver: string, account?: string}  $payload
+     * @return array<string, mixed>
+     *
+     * @throws PowerDnsException
+     */
+    public function createAutoprimary(array $payload): array;
+
+    /**
+     * Remove an Autoprimary / Supermaster (`DELETE /api/v1/servers/localhost/autoprimaries/{ip}/{nameserver}`).
+     *
+     * @throws PowerDnsException
+     */
+    public function deleteAutoprimary(string $ip, string $nameserver): void;
 }

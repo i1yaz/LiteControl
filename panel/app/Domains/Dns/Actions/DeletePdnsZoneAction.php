@@ -49,9 +49,13 @@ final class DeletePdnsZoneAction
 
         $timestamp = now()->toIso8601String();
         $auditDetails = [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
             'actor_username' => $actor?->username,
+            'action' => 'pdns_delete_zone',
             'zone' => $canonicalZoneId,
+            'mode' => 'delete',
+            'status' => 'success',
             'timestamp' => $timestamp,
         ];
 

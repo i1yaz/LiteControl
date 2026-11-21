@@ -55,8 +55,10 @@ final class TriggerNotifyAction
         ];
 
         Log::info('PowerDNS outbound zone NOTIFY triggered', [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
             'actor_username' => $actor?->username,
+            'action' => 'pdns_trigger_notify',
             'zone' => $canonicalZoneId,
             'mode' => 'Primary',
             'result' => $resultMessage,

@@ -5,6 +5,7 @@ use App\Http\Controllers\Database\DatabaseController;
 use App\Http\Controllers\Deployment\DomainDeploymentController;
 use App\Http\Controllers\Deployment\DomainDeploymentEnvController;
 use App\Http\Controllers\Deployment\DomainDeploymentHookController;
+use App\Http\Controllers\Dns\PdnsAutoprimaryController;
 use App\Http\Controllers\Dns\PdnsConfigController;
 use App\Http\Controllers\Dns\PdnsRecordController;
 use App\Http\Controllers\Dns\PdnsTemplateController;
@@ -207,6 +208,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/dns/settings', [PdnsConfigController::class, 'update'])->name('dns.settings.update');
         Route::post('/dns/settings/rotate-key', [PdnsConfigController::class, 'rotateKey'])->name('dns.settings.rotate-key');
         Route::post('/dns/settings/test-connection', [PdnsConfigController::class, 'testConnection'])->name('dns.settings.test-connection');
+        Route::put('/dns/settings/cache/flush', [PdnsConfigController::class, 'flushCache'])->name('dns.settings.cache.flush');
+
+        // PowerDNS Autoprimaries / Supermasters (Admin Only)
+        Route::post('/dns/autoprimaries', [PdnsAutoprimaryController::class, 'store'])->name('dns.autoprimaries.store');
+        Route::delete('/dns/autoprimaries/{ip}/{nameserver}', [PdnsAutoprimaryController::class, 'destroy'])
+            ->where(['ip' => '[^/]+', 'nameserver' => '[^/]+'])
+            ->name('dns.autoprimaries.destroy');
 
         // PowerDNS Zone Manager & Record Editor (Admin Only)
         Route::get('/dns/zones', [PdnsZoneController::class, 'index'])->name('dns.zones.index');
@@ -217,6 +225,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/dns/zones/{zone}/mode', [PdnsZoneModeController::class, 'updateMode'])->where('zone', '[^/]+')->name('dns.zones.mode.update');
         Route::put('/dns/zones/{zone}/notify', [PdnsZoneModeController::class, 'notify'])->where('zone', '[^/]+')->name('dns.zones.notify');
         Route::put('/dns/zones/{zone}/axfr-retrieve', [PdnsZoneModeController::class, 'axfrRetrieve'])->where('zone', '[^/]+')->name('dns.zones.axfr-retrieve');
+        Route::put('/dns/zones/{zone}/rectify', [PdnsZoneModeController::class, 'rectify'])->where('zone', '[^/]+')->name('dns.zones.rectify');
+        Route::put('/dns/zones/{zone}/cache/flush', [PdnsZoneModeController::class, 'flushCache'])->where('zone', '[^/]+')->name('dns.zones.cache.flush');
         Route::get('/dns/zones/{zone}/export', [PdnsZoneController::class, 'export'])->where('zone', '[^/]+')->name('dns.zones.export');
         Route::delete('/dns/zones/{zone}', [PdnsZoneController::class, 'destroy'])->where('zone', '[^/]+')->name('dns.zones.destroy');
 

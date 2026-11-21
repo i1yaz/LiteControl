@@ -218,6 +218,57 @@ it('searches cross-zone data and exports BIND zone definitions via PowerDnsClien
     expect($exported)->toContain('IN	SOA	ns1.example.com.');
 });
 
+it('manages autoprimaries, zone rectification, and cache flush via PowerDnsClient', function (): void {
+    PdnsSetting::current()->update([
+        'api_key' => str_repeat('a1b2', 16),
+    ]);
+
+    Http::fake([
+        'http://127.0.0.1:8081/api/v1/servers/localhost/autoprimaries' => function (Request $request) {
+            if ($request->method() === 'GET') {
+                return Http::response([
+                    ['ip' => '203.0.113.10', 'nameserver' => 'ns1.example.com.', 'account' => 'dc1'],
+                ], 200);
+            }
+
+            if ($request->method() === 'POST') {
+                return Http::response($request->data(), 201);
+            }
+
+            return Http::response([], 500);
+        },
+        'http://127.0.0.1:8081/api/v1/servers/localhost/autoprimaries/203.0.113.10/ns1.example.com.' => Http::response('', 204),
+        'http://127.0.0.1:8081/api/v1/servers/localhost/zones/example.com./rectify' => Http::response([
+            'result' => 'Rectified',
+        ], 200),
+        'http://127.0.0.1:8081/api/v1/servers/localhost/cache/flush*' => Http::response([
+            'count' => 14,
+            'result' => 'Flushed cache.',
+        ], 200),
+    ]);
+
+    $client = app(PowerDnsClientInterface::class);
+
+    $autoprimaries = $client->listAutoprimaries();
+    expect($autoprimaries)->toHaveCount(1)
+        ->and($autoprimaries[0]['ip'])->toBe('203.0.113.10');
+
+    $created = $client->createAutoprimary([
+        'ip' => '203.0.113.10',
+        'nameserver' => 'ns1.example.com.',
+        'account' => 'dc1',
+    ]);
+    expect($created)->toHaveKey('nameserver', 'ns1.example.com.');
+
+    $client->deleteAutoprimary('203.0.113.10', 'ns1.example.com.');
+
+    $rectify = $client->rectifyZone('example.com.');
+    expect($rectify)->toHaveKey('result', 'Rectified');
+
+    $flush = $client->flushCache('example.com.');
+    expect($flush)->toHaveKey('count', 14);
+});
+
 it('maps PowerDNS error responses into typed PowerDnsException and redacts X-API-Key from logs', function (): void {
     $secretKey = 'deadbeefcafebabe0123456789abcdef0123456789abcdef0123456789abcdef';
     PdnsSetting::current()->update([

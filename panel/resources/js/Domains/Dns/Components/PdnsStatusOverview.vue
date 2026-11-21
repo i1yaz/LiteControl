@@ -11,6 +11,7 @@ import {
     AlertTriangle,
     FileCode,
     Network,
+    Eraser,
 } from '@lucide/vue';
 import UiCard from '@shared/Ui/UiCard.vue';
 import UiBadge from '@shared/Ui/UiBadge.vue';
@@ -38,9 +39,13 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    flushingCache: {
+        type: Boolean,
+        default: false,
+    },
 });
 
-const emit = defineEmits(['test-connection', 'rotate-key']);
+const emit = defineEmits(['test-connection', 'rotate-key', 'flush-cache']);
 
 const isDaemonActive = computed(() => Boolean(props.daemon?.systemd_active));
 const hasPort53Conflict = computed(() => Boolean(props.daemon?.port_53?.conflict));
@@ -233,8 +238,20 @@ const serverVersionLabel = computed(() => {
                             type="button"
                             variant="secondary"
                             size="sm"
+                            :loading="flushingCache"
+                            :disabled="flushingCache || testingConnection || rotatingKey"
+                            @click="emit('flush-cache')"
+                        >
+                            <Eraser v-if="!flushingCache" class="w-4 h-4" />
+                            <span>{{ flushingCache ? __('Flushing Cache...') : __('Flush Global Cache') }}</span>
+                        </UiButton>
+
+                        <UiButton
+                            type="button"
+                            variant="secondary"
+                            size="sm"
                             :loading="testingConnection"
-                            :disabled="testingConnection || rotatingKey"
+                            :disabled="testingConnection || rotatingKey || flushingCache"
                             @click="emit('test-connection')"
                         >
                             <RefreshCw v-if="!testingConnection" class="w-4 h-4" />
@@ -246,7 +263,7 @@ const serverVersionLabel = computed(() => {
                             variant="warning"
                             size="sm"
                             :loading="rotatingKey"
-                            :disabled="rotatingKey || testingConnection"
+                            :disabled="rotatingKey || testingConnection || flushingCache"
                             @click="emit('rotate-key')"
                         >
                             <Key v-if="!rotatingKey" class="w-4 h-4" />

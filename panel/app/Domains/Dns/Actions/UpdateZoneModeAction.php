@@ -84,8 +84,10 @@ final class UpdateZoneModeAction
         ];
 
         Log::info('PowerDNS zone operating mode updated', [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
             'actor_username' => $actor?->username,
+            'action' => 'pdns_update_zone_mode',
             'zone' => $canonicalZoneId,
             'previous_kind' => $previousKind,
             'mode' => $payload->kind,

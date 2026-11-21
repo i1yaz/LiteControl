@@ -197,6 +197,52 @@ final class PowerDnsClient implements PowerDnsClientInterface
         return $this->requestJson('PUT', "/zones/{$encoded}/rectify");
     }
 
+    public function flushCache(string $domain = '.'): array
+    {
+        $trimmed = trim($domain);
+        if ($trimmed === '') {
+            $trimmed = '.';
+        } elseif (! str_ends_with($trimmed, '.')) {
+            $trimmed .= '.';
+        }
+
+        $encodedDomain = rawurlencode($trimmed);
+
+        return $this->requestJson('PUT', "/cache/flush?domain={$encodedDomain}");
+    }
+
+    public function listAutoprimaries(): array
+    {
+        /** @var list<array<string, mixed>> $autoprimaries */
+        $autoprimaries = $this->requestJson('GET', '/autoprimaries');
+
+        return $autoprimaries;
+    }
+
+    public function createAutoprimary(array $payload): array
+    {
+        return $this->requestJson('POST', '/autoprimaries', $payload);
+    }
+
+    public function deleteAutoprimary(string $ip, string $nameserver): void
+    {
+        $trimmedIp = trim($ip);
+        $trimmedNs = trim($nameserver);
+
+        if ($trimmedIp === '' || $trimmedNs === '') {
+            throw new PowerDnsException(
+                message: 'Autoprimary IP and nameserver are required for deletion.',
+                statusCode: 0,
+                apiError: 'Autoprimary IP and nameserver are required for deletion.',
+            );
+        }
+
+        $encodedIp = rawurlencode($trimmedIp);
+        $encodedNs = rawurlencode($trimmedNs);
+
+        $this->requestNoContent('DELETE', "/autoprimaries/{$encodedIp}/{$encodedNs}");
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>

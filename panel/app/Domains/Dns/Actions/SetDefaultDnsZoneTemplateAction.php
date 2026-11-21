@@ -27,10 +27,15 @@ final class SetDefaultDnsZoneTemplateAction
         });
 
         Log::info('PowerDNS default zone template updated', [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
             'actor_username' => $actor?->username,
+            'action' => 'pdns_set_default_zone_template',
+            'zone' => $template->name,
+            'mode' => 'template',
             'template_id' => $template->id,
             'template_name' => $template->name,
+            'status' => 'success',
         ]);
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([

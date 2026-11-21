@@ -79,11 +79,15 @@ final class UpdateZoneRrsetsAction
         ];
 
         Log::info('PowerDNS zone RRSets updated', [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
             'actor_username' => $actor?->username,
+            'action' => 'pdns_update_rrsets',
             'zone' => $canonicalZoneId,
+            'mode' => (string) ($zone['kind'] ?? 'Native'),
             'operations_count' => count($builtRrsets),
             'operations' => $summaryItems,
+            'status' => 'success',
         ]);
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([

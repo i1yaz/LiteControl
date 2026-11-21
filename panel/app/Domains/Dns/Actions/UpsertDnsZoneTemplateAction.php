@@ -61,12 +61,17 @@ final class UpsertDnsZoneTemplateAction
         $actionKey = $existing === null ? 'pdns_create_zone_template' : 'pdns_update_zone_template';
 
         Log::info('PowerDNS zone template saved', [
+            'actor' => $actor?->username ?? 'system',
             'actor_id' => $actor?->id,
             'actor_username' => $actor?->username,
+            'action' => $actionKey,
+            'zone' => $template->name,
+            'mode' => 'template',
             'template_id' => $template->id,
             'template_name' => $template->name,
             'is_default' => $template->is_default,
             'records_count' => count($payload->records),
+            'status' => 'success',
         ]);
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([

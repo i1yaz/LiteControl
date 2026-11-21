@@ -9,6 +9,7 @@ use App\Domains\Dns\Actions\DeletePdnsZoneAction;
 use App\Domains\Dns\Actions\ExportPdnsZoneAction;
 use App\Domains\Dns\Exceptions\PowerDnsException;
 use App\Domains\Dns\Models\PdnsSetting;
+use App\Domains\Dns\Queries\ListAutoprimariesQuery;
 use App\Domains\Dns\Queries\ListDnsZoneTemplatesQuery;
 use App\Domains\Dns\Queries\ListPdnsZonesQuery;
 use App\Domains\Dns\Queries\SearchPdnsDataQuery;
@@ -32,11 +33,13 @@ class PdnsZoneController extends Controller
         ListPdnsZonesQuery $listZonesQuery,
         SearchPdnsDataQuery $searchDataQuery,
         ListDnsZoneTemplatesQuery $listTemplatesQuery,
+        ListAutoprimariesQuery $listAutoprimariesQuery,
     ): Response {
         $setting = PdnsSetting::current();
         $searchQuery = trim((string) $request->query('q', ''));
 
         $zones = [];
+        $autoprimaries = [];
         $searchResults = [];
         $apiError = null;
 
@@ -50,8 +53,17 @@ class PdnsZoneController extends Controller
             $apiError = $e->getMessage();
         }
 
+        if ($apiError === null) {
+            try {
+                $autoprimaries = $listAutoprimariesQuery->handle();
+            } catch (PowerDnsException) {
+                $autoprimaries = [];
+            }
+        }
+
         return Inertia::render('Dns/Zones', [
             'zones' => $zones,
+            'autoprimaries' => $autoprimaries,
             'searchQuery' => $searchQuery,
             'searchResults' => $searchResults,
             'apiError' => $apiError,
