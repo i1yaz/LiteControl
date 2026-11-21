@@ -12,6 +12,8 @@ use App\Domains\Database\Infrastructure\CliDatabaseAdapter;
 use App\Domains\Database\Listeners\CleanupUserDatabasesListener;
 use App\Domains\Database\Models\Database;
 use App\Domains\Database\Policies\DatabasePolicy;
+use App\Domains\Dns\Contracts\PdnsDaemonDriverInterface;
+use App\Domains\Dns\Infrastructure\CliPdnsDaemonAdapter;
 use App\Domains\FileManager\Contracts\FileManagerDriverInterface;
 use App\Domains\FileManager\Infrastructure\CliFileManagerAdapter;
 use App\Domains\HostingPlans\Models\Package;
@@ -61,6 +63,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(AuditLoggerInterface::class, EloquentAuditLogger::class);
         $this->app->bind(BackupDriverInterface::class, CliBackupAdapter::class);
         $this->app->bind(DatabaseDriverInterface::class, CliDatabaseAdapter::class);
+        $this->app->bind(PdnsDaemonDriverInterface::class, CliPdnsDaemonAdapter::class);
         $this->app->bind(UserDriverInterface::class, CliUserAdapter::class);
         $this->app->bind(TuningDriverInterface::class, CliTuningAdapter::class);
         $this->app->bind(PhpRuntimeDriverInterface::class, CliPhpRuntimeAdapter::class);

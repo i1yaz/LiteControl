@@ -19,3 +19,6 @@ default-ttl=3600
 default-soa-mail=hostmaster.{{HOSTNAME}}
 default-soa-name=ns1.{{HOSTNAME}}
 
+include-dir=/etc/powerdns/pdns.d
+
+

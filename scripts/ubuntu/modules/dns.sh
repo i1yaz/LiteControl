@@ -41,7 +41,9 @@ do_install() {
     local srv_host
     srv_host=$(hostname 2>/dev/null || echo "localhost")
 
-    mkdir -p "${PDNS_CONF_DIR}"
+    mkdir -p "${PDNS_CONF_DIR}" "${PDNS_CONF_DIR}/pdns.d"
+    chmod 0750 "${PDNS_CONF_DIR}" "${PDNS_CONF_DIR}/pdns.d" 2>/dev/null || true
+    chown root:pdns "${PDNS_CONF_DIR}" "${PDNS_CONF_DIR}/pdns.d" 2>/dev/null || true
 
     # Configure pdns.conf
     local tpl="${BASE_DIR}/templates/modules/powerdns/pdns.conf.tpl"
@@ -51,6 +53,8 @@ do_install() {
             -e "s|{{DB_NAME}}|${db_name}|g" \
             -e "s|{{HOSTNAME}}|${srv_host}|g" \
             "${tpl}" > "${PDNS_CONF_DIR}/pdns.conf"
+        chmod 0640 "${PDNS_CONF_DIR}/pdns.conf" 2>/dev/null || true
+        chown root:pdns "${PDNS_CONF_DIR}/pdns.conf" 2>/dev/null || true
     fi
 
     # Initialize PowerDNS schema into litecontrol database

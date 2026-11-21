@@ -55,6 +55,7 @@ Management Subcommands:
   security <ufw-status|ufw-allow|ufw-delete|panel-port|ssh-port|modsec>
   backup   <create|restore|list|schedule>
   module   <list|status|install|remove> <ftp|dns|mail|csf|modsecurity|imunifyav>
+  pdns     <status|apply-config>
 EOF
 }
 
@@ -195,7 +196,7 @@ case "${COMMAND}" in
             exit 1
         fi
         ;;
-    user|vhost|php|tuning|server|db|ssl|security|backup|module|filemanager)
+    user|vhost|php|tuning|server|db|ssl|security|backup|module|filemanager|pdns)
         dispatch_subcommand "${COMMAND}" "$@"
         ;;
     help|--help|-h)
