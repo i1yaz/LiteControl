@@ -343,9 +343,11 @@ ols_test_config() {
     fi
     local test_output
     if ! test_output=$("${OLS_BIN}" -t 2>&1); then
+        export OLS_LAST_ERROR="${test_output}"
         log_error "OpenLiteSpeed configuration test failed: ${test_output}"
         return 1
     fi
+    export OLS_LAST_ERROR=""
     return 0
 }
 

@@ -13,6 +13,10 @@ index  {
   indexFiles              index.html
 }
 
+accessControl  {
+  allow                   *
+}
+
 extprocessor lc_panel_backend {
   type                    proxy
   address                 https://127.0.0.1:__PANEL_PORT__

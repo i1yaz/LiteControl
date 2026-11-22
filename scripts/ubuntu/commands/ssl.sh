@@ -17,7 +17,7 @@ source "${SCRIPT_DIR}/../lib/common.sh"
 
 DOMAINS_META_DIR="${LC_CONF_DIR}/domains"
 VHOSTS_META_DIR="${LC_CONF_DIR}/vhosts"
-ACME_WEBROOT="${LC_CONF_DIR}/acme-webroot"
+ACME_WEBROOT="${LC_ACME_WEBROOT:-/var/www/litecontrol-acme}"
 ACME_BIN="${ACME_BIN:-/root/.acme.sh/acme.sh}"
 
 emit_error() {
@@ -307,7 +307,8 @@ EOF
         ' "${OLS_CONF}" > "${OLS_CONF}.tmp" && mv "${OLS_CONF}.tmp" "${OLS_CONF}"
 
         if ! ols_safe_reload; then
-            emit_error "Failed to reload OpenLiteSpeed after configuring panel proxy for '${hostname}'; configuration rolled back."
+            local detail="${OLS_LAST_ERROR:+ (${OLS_LAST_ERROR})}"
+            emit_error "Failed to reload OpenLiteSpeed after configuring panel proxy for '${hostname}'; configuration rolled back.${detail}"
         fi
     fi
 }
