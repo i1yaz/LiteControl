@@ -194,8 +194,18 @@ class SecurityAndModuleTest extends TestCase
             'domain' => 'panel.example.com',
         ]);
 
-        $response->assertRedirect();
+        $response->assertRedirect('https://panel.example.com/security/panel-ssl');
         $response->assertSessionHas('success');
+
+        $inertiaResponse = $this->actingAs($admin)
+            ->withHeader('X-Inertia', 'true')
+            ->post('/security/panel-ssl', [
+                'type' => 'letsencrypt',
+                'domain' => 'panel.example.com',
+            ]);
+
+        $inertiaResponse->assertStatus(409);
+        $inertiaResponse->assertHeader('X-Inertia-Location', 'https://panel.example.com/security/panel-ssl');
     }
 
     public function test_user_can_update_own_password(): void

@@ -22,7 +22,7 @@ extprocessor lc_panel_backend {
   address                 https://127.0.0.1:__PANEL_PORT__
   maxConns                100
   pcKeepAliveTimeout      60
-  initTimeout             60
+  initTimeout             300
   retryTimeout            0
   respBuffer              0
 }

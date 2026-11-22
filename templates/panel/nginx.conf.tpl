@@ -45,6 +45,9 @@ http {
         listen [::]:__PANEL_PORT__ ssl http2;
         server_name _;
 
+        # BEGIN LITECONTROL IP ACCESS
+        # END LITECONTROL IP ACCESS
+
         ssl_certificate     /etc/litecontrol/ssl/fullchain.pem;
         ssl_certificate_key /etc/litecontrol/ssl/privkey.pem;
         ssl_protocols       TLSv1.2 TLSv1.3;

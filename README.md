@@ -416,8 +416,11 @@ lc-cli ssl renew
 # Apply custom SSL certificate files to a domain
 lc-cli ssl custom example.com /path/to/cert.pem /path/to/key.pem
 
-# Apply custom SSL certificate to the LiteControl Panel port
-lc-cli ssl panel-ssl /path/to/panel-cert.pem /path/to/panel-key.pem
+# Issue Let's Encrypt certificate for the LiteControl Panel domain (enables HTTPS on port 443 and disables direct IP access)
+lc-cli ssl panel-ssl issue panel.example.com
+
+# Apply custom SSL certificate to the LiteControl Panel listener (optionally binding a panel domain)
+lc-cli ssl panel-ssl custom /path/to/panel-cert.pem /path/to/panel-key.pem [panel.example.com]
 ```
 
 ### Security & Firewall
@@ -433,6 +436,11 @@ lc-cli security ufw-delete 8443/tcp
 
 # Change the LiteControl panel HTTPS port dynamically
 lc-cli security panel-port 9090
+
+# Allow or block direct IP/port access to the LiteControl panel (disabled automatically once a panel domain SSL is configured)
+lc-cli security panel-ip-access status
+lc-cli security panel-ip-access enable
+lc-cli security panel-ip-access disable
 
 # Change SSH port
 lc-cli security ssh-port 2222

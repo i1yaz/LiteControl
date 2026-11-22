@@ -30,7 +30,15 @@ const form = useForm({
 
 const submit = () => {
     form.type = mode.value;
-    form.post('/security/panel-ssl');
+    const targetDomain = form.domain.trim().toLowerCase();
+
+    form.post('/security/panel-ssl', {
+        onSuccess: () => {
+            if (targetDomain && window.location.hostname.toLowerCase() !== targetDomain) {
+                window.location.href = `https://${targetDomain}/security/panel-ssl`;
+            }
+        },
+    });
 };
 </script>
 
@@ -64,8 +72,8 @@ const submit = () => {
                         <ExternalLink class="w-3.5 h-3.5" />
                     </a>
                     <p class="text-xs text-theme-muted">
-                        {{ __('Direct out-of-band fallback remains available on') }}
-                        <span class="font-mono">https://{{ configuredDomain }}:{{ panelPort }}</span>
+                        {{ __('Direct IP access on port') }} <span class="font-mono">{{ panelPort }}</span> {{ __('is disabled once Panel SSL is active. To re-enable direct IP access via SSH, run:') }}
+                        <span class="font-mono">lc-cli security panel-ip-access enable</span>
                     </p>
                 </div>
             </div>

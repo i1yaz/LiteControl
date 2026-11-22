@@ -714,6 +714,16 @@ class LcCliService
                         'data' => ['old_port' => 8090, 'new_port' => $newPort],
                     ];
                 }
+                if ($sub === 'panel-ip-access') {
+                    $mode = $args[1] ?? 'status';
+                    $state = in_array($mode, ['disable', 'deny', 'off'], true) ? 'disabled' : 'enabled';
+
+                    return [
+                        'status' => 'success',
+                        'message' => "Panel direct IP access is {$state} (port 8090).",
+                        'data' => ['ip_access' => $state, 'panel_port' => 8090, 'panel_domain' => 'panel.local'],
+                    ];
+                }
                 if ($sub === 'ssh-port') {
                     $newPort = (int) ($args[1] ?? 22);
 

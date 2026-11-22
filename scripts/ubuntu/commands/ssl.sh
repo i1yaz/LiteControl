@@ -429,9 +429,15 @@ cmd_ssl_panel() {
             fi
 
             persist_panel_domain "${hostname}"
+            apply_panel_ip_access_config "disabled"
             ols_safe_reload
             panel_safe_reload
-            emit_success "Panel SSL certificate issued and HTTPS proxy enabled for '${hostname}'." "{\"hostname\":\"${hostname}\",\"proxy_enabled\":true,\"url\":\"https://${hostname}\"}"
+            if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+                local panel_port
+                panel_port=$(get_panel_port)
+                (sleep 3 && ufw delete allow "${panel_port}/tcp" >/dev/null 2>&1 || true) </dev/null >/dev/null 2>&1 &
+            fi
+            emit_success "Panel SSL certificate issued and HTTPS proxy enabled for '${hostname}'. Direct IP access has been disabled." "{\"hostname\":\"${hostname}\",\"proxy_enabled\":true,\"ip_access\":\"disabled\",\"url\":\"https://${hostname}\"}"
             ;;
         custom)
             local cert_src="${1:-}"
@@ -452,12 +458,18 @@ cmd_ssl_panel() {
                 hostname="${hostname,,}"
                 setup_panel_proxy_vhost "${hostname}"
                 persist_panel_domain "${hostname}"
+                apply_panel_ip_access_config "disabled"
             fi
 
             ols_safe_reload
             panel_safe_reload
             if [[ -n "${hostname}" ]]; then
-                emit_success "Panel custom SSL certificate updated and HTTPS proxy enabled for '${hostname}'." "{\"installed\":true,\"hostname\":\"${hostname}\",\"proxy_enabled\":true,\"url\":\"https://${hostname}\"}"
+                if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+                    local panel_port
+                    panel_port=$(get_panel_port)
+                    (sleep 3 && ufw delete allow "${panel_port}/tcp" >/dev/null 2>&1 || true) </dev/null >/dev/null 2>&1 &
+                fi
+                emit_success "Panel custom SSL certificate updated and HTTPS proxy enabled for '${hostname}'. Direct IP access has been disabled." "{\"installed\":true,\"hostname\":\"${hostname}\",\"proxy_enabled\":true,\"ip_access\":\"disabled\",\"url\":\"https://${hostname}\"}"
             else
                 emit_success "Panel custom SSL certificate updated successfully." '{"installed":true}'
             fi

@@ -446,6 +446,71 @@ panel_safe_reload() {
     return 0
 }
 
+get_panel_ip_access() {
+    if [[ -s "${LC_CONF_DIR}/panel_ip_access" ]]; then
+        tr -d ' \t\r\n' < "${LC_CONF_DIR}/panel_ip_access"
+    elif [[ -s "${LC_CONF_DIR}/panel_domain" ]]; then
+        printf "disabled"
+    else
+        printf "enabled"
+    fi
+}
+
+apply_panel_ip_access_config() {
+    local state="$1" # "enabled" or "disabled"
+    mkdir -p "${LC_CONF_DIR}"
+    printf "%s\n" "${state}" > "${LC_CONF_DIR}/panel_ip_access"
+    chmod 644 "${LC_CONF_DIR}/panel_ip_access" 2>/dev/null || true
+
+    [[ -f "${PANEL_NGINX_CONF}" ]] || return 0
+
+    if ! grep -q "# BEGIN LITECONTROL IP ACCESS" "${PANEL_NGINX_CONF}"; then
+        awk '
+            /server_name[[:space:]]+_;/{
+                print
+                print ""
+                print "        # BEGIN LITECONTROL IP ACCESS"
+                print "        # END LITECONTROL IP ACCESS"
+                next
+            }
+            { print }
+        ' "${PANEL_NGINX_CONF}" > "${PANEL_NGINX_CONF}.tmp" && mv "${PANEL_NGINX_CONF}.tmp" "${PANEL_NGINX_CONF}"
+    fi
+
+    if [[ "${state}" == "disabled" ]]; then
+        awk '
+            /# BEGIN LITECONTROL IP ACCESS/{
+                print
+                print "        if ($remote_addr !~ ^(127\\.0\\.0\\.1|::1)$) {"
+                print "            return 444;"
+                print "        }"
+                skip=1
+                next
+            }
+            /# END LITECONTROL IP ACCESS/{
+                skip=0
+                print
+                next
+            }
+            !skip { print }
+        ' "${PANEL_NGINX_CONF}" > "${PANEL_NGINX_CONF}.tmp" && mv "${PANEL_NGINX_CONF}.tmp" "${PANEL_NGINX_CONF}"
+    else
+        awk '
+            /# BEGIN LITECONTROL IP ACCESS/{
+                print
+                skip=1
+                next
+            }
+            /# END LITECONTROL IP ACCESS/{
+                skip=0
+                print
+                next
+            }
+            !skip { print }
+        ' "${PANEL_NGINX_CONF}" > "${PANEL_NGINX_CONF}.tmp" && mv "${PANEL_NGINX_CONF}.tmp" "${PANEL_NGINX_CONF}"
+    fi
+}
+
 # ------------------------------------------------------------------------------
 # OpenLiteSpeed Health Verification
 # ------------------------------------------------------------------------------

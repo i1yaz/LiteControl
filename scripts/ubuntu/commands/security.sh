@@ -339,6 +339,69 @@ cmd_ssh_port() {
 }
 
 # ------------------------------------------------------------------------------
+# Panel Direct IP Access Control
+# ------------------------------------------------------------------------------
+
+cmd_panel_ip_access() {
+    local mode="${1:-status}"
+    local panel_port
+    panel_port=$(get_panel_port)
+    local panel_domain=""
+    if [[ -s "${LC_CONF_DIR}/panel_domain" ]]; then
+        panel_domain=$(tr -d ' \t\r\n' < "${LC_CONF_DIR}/panel_domain")
+    fi
+
+    case "${mode}" in
+        enable|allow|on)
+            panel_backup_config
+            apply_panel_ip_access_config "enabled"
+            if ! panel_safe_reload; then
+                emit_error "Failed to reload Panel Nginx after enabling direct IP access."
+            fi
+            if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+                ufw allow "${panel_port}/tcp" comment "LiteControl Panel" >/dev/null 2>&1 || true
+            fi
+            local data_json
+            data_json=$(printf '{"ip_access":"enabled","panel_port":%s,"panel_domain":"%s"}' \
+                "${panel_port}" \
+                "$(json_escape "${panel_domain}")")
+            emit_success "Direct IP access to LiteControl panel enabled on port ${panel_port}." "${data_json}"
+            ;;
+        disable|deny|off)
+            if [[ -z "${panel_domain}" ]]; then
+                emit_error "Cannot disable direct IP access because no panel domain is configured yet. Run 'lc-cli ssl panel-ssl issue <hostname>' first."
+            fi
+            panel_backup_config
+            apply_panel_ip_access_config "disabled"
+            if ! panel_safe_reload; then
+                emit_error "Failed to reload Panel Nginx after disabling direct IP access."
+            fi
+            if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+                ufw delete allow "${panel_port}/tcp" >/dev/null 2>&1 || true
+            fi
+            local data_json
+            data_json=$(printf '{"ip_access":"disabled","panel_port":%s,"panel_domain":"%s"}' \
+                "${panel_port}" \
+                "$(json_escape "${panel_domain}")")
+            emit_success "Direct IP access to LiteControl panel disabled. Access panel via https://${panel_domain}." "${data_json}"
+            ;;
+        status)
+            local current_state
+            current_state=$(get_panel_ip_access)
+            local data_json
+            data_json=$(printf '{"ip_access":"%s","panel_port":%s,"panel_domain":"%s"}' \
+                "$(json_escape "${current_state}")" \
+                "${panel_port}" \
+                "$(json_escape "${panel_domain}")")
+            emit_success "Panel direct IP access is ${current_state} (port ${panel_port})." "${data_json}"
+            ;;
+        *)
+            emit_error "Usage: lc-cli security panel-ip-access <enable|disable|status>"
+            ;;
+    esac
+}
+
+# ------------------------------------------------------------------------------
 # Dispatcher
 # ------------------------------------------------------------------------------
 
@@ -361,6 +424,9 @@ case "${ACTION}" in
     panel-port)
         cmd_panel_port "$@"
         ;;
+    panel-ip-access)
+        cmd_panel_ip_access "$@"
+        ;;
     ssh-port)
         cmd_ssh_port "$@"
         ;;
@@ -369,12 +435,13 @@ case "${ACTION}" in
 Usage: lc-cli security <command> [arguments...]
 
 Commands:
-  ufw-status                           Get status and numbered list of firewall rules
-  ufw-allow   <port> [proto] [ip]      Allow incoming traffic
-  ufw-deny    <port> [proto] [ip]      Deny incoming traffic
-  ufw-delete  <rule_num|rule_spec>     Delete a firewall rule
-  panel-port  <new_port>               Change LiteControl panel port (1024-65535)
-  ssh-port    <new_port>               Change SSH server port (1-65535)
+  ufw-status                                   Get status and numbered list of firewall rules
+  ufw-allow       <port> [proto] [ip]          Allow incoming traffic
+  ufw-deny        <port> [proto] [ip]          Deny incoming traffic
+  ufw-delete      <rule_num|rule_spec>         Delete a firewall rule
+  panel-port      <new_port>                   Change LiteControl panel port (1024-65535)
+  panel-ip-access <enable|disable|status>      Enable or disable direct IP/port access to panel
+  ssh-port        <new_port>                   Change SSH server port (1-65535)
 EOF
         ;;
     *)

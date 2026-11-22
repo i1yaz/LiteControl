@@ -52,7 +52,7 @@ Management Subcommands:
   server   <stats|services|service-action|processes|kill-process|timezone|hostname|logs|webadmin-status|webadmin-enable|webadmin-disable>
   db       <list|create-db|delete-db|create-user|delete-user|password>
   ssl      <issue|renew|custom|panel-ssl>
-  security <ufw-status|ufw-allow|ufw-delete|panel-port|ssh-port|modsec>
+  security <ufw-status|ufw-allow|ufw-delete|panel-port|panel-ip-access|ssh-port|modsec>
   backup   <create|restore|list|schedule>
   module   <list|status|install|remove> <ftp|dns|mail|csf|modsecurity|imunifyav>
   pdns     <status|apply-config>

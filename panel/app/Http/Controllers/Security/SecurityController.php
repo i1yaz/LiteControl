@@ -331,10 +331,21 @@ class SecurityController extends Controller
         try {
             $action->handle($validated, Auth::user(), $request->ip());
 
-            $domain = $validated['domain'] ?? null;
+            $domain = ! empty($validated['domain']) ? strtolower(trim((string) $validated['domain'])) : null;
             $message = $domain
-                ? "LiteControl panel SSL updated. You can now access the panel at https://{$domain}."
+                ? "LiteControl panel SSL updated. Direct IP access has been disabled; access the panel at https://{$domain}."
                 : 'LiteControl panel SSL certificate updated successfully.';
+
+            if ($domain) {
+                $targetUrl = "https://{$domain}/security/panel-ssl";
+                $request->session()->flash('success', $message);
+
+                if ($request->header('X-Inertia')) {
+                    return Inertia::location($targetUrl);
+                }
+
+                return redirect()->to($targetUrl)->with('success', $message);
+            }
 
             return redirect()->back()->with('success', $message);
         } catch (LcCliException $e) {
