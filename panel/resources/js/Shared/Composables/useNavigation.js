@@ -60,7 +60,11 @@ export function useNavigation() {
                     };
                 }
                 if (!item.children) return item;
-                const filteredChildren = item.children.filter(child => !child.adminOnly || isAdmin.value);
+                const filteredChildren = item.children.filter(
+                    child =>
+                        (!child.adminOnly || isAdmin.value) &&
+                        (!child.requiresModule || isModuleActive(child.requiresModule))
+                );
                 return {
                     ...item,
                     children: filteredChildren,

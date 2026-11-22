@@ -69,8 +69,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/domains/{domain}/vhost-conf', [DomainController::class, 'saveVhostConf'])->name('domains.vhost-conf.save');
     Route::get('/domains/{domain}/htaccess', [DomainController::class, 'getHtaccess'])->name('domains.htaccess.get');
     Route::post('/domains/{domain}/htaccess', [DomainController::class, 'saveHtaccess'])->name('domains.htaccess.save');
-    Route::post('/domains/{domain}/ftp', [DomainController::class, 'storeFtp'])->name('domains.ftp.store');
-    Route::delete('/domains/{domain}/ftp/{ftpAccount}', [DomainController::class, 'destroyFtp'])->name('domains.ftp.destroy');
+    Route::middleware('module:ftp')->group(function () {
+        Route::post('/domains/{domain}/ftp', [DomainController::class, 'storeFtp'])->name('domains.ftp.store');
+        Route::delete('/domains/{domain}/ftp/{ftpAccount}', [DomainController::class, 'destroyFtp'])->name('domains.ftp.destroy');
+    });
     Route::post('/domains/{domain}/fix-permissions', [DomainController::class, 'fixPermissions'])->name('domains.fix-permissions');
     Route::post('/domains/{domain}/open-basedir', [DomainController::class, 'toggleOpenBasedir'])->name('domains.open-basedir');
     Route::get('/subdomains', [DomainController::class, 'subdomains'])->name('subdomains.index');
@@ -104,31 +106,35 @@ Route::middleware('auth')->group(function () {
     Route::get('/phpmyadmin/sso', [DatabaseController::class, 'phpmyadminSso'])->name('phpmyadmin.sso');
 
     // Email Management
-    Route::get('/email/domains', [MailDomainController::class, 'index'])->name('email.domains.index');
-    Route::post('/email/domains', [MailDomainController::class, 'store'])->name('email.domains.store');
-    Route::put('/email/domains/{mailDomain}', [MailDomainController::class, 'update'])->name('email.domains.update');
-    Route::get('/email/accounts', [MailAccountController::class, 'index'])->name('email.accounts.index');
-    Route::get('/email/domains/dns-challenge', [MailAccountController::class, 'dnsVerificationChallenge'])->name('email.domains.dns-challenge');
-    Route::post('/email/domains/{mailDomain}/issue-tls', [MailAccountController::class, 'issueStandaloneTls'])->name('email.domains.issue-tls');
-    Route::post('/email/accounts', [MailAccountController::class, 'store'])->name('email.accounts.store');
-    Route::put('/email/accounts/{mailAccount}', [MailAccountController::class, 'update'])->name('email.accounts.update');
-    Route::delete('/email/accounts/{mailAccount}', [MailAccountController::class, 'destroy'])->name('email.accounts.destroy');
-    Route::get('/email/forwarders', [MailForwarderController::class, 'index'])->name('email.forwarders.index');
-    Route::post('/email/forwarders', [MailForwarderController::class, 'store'])->name('email.forwarders.store');
-    Route::put('/email/forwarders/{mailAlias}', [MailForwarderController::class, 'update'])->name('email.forwarders.update');
-    Route::delete('/email/forwarders/{mailAlias}', [MailForwarderController::class, 'destroy'])->name('email.forwarders.destroy');
-    Route::get('/email/dkim', [MailDkimController::class, 'index'])->name('email.dkim.index');
-    Route::post('/email/dkim', [MailDkimController::class, 'store'])->name('email.dkim.store');
-    Route::get('/email/spam', [MailSpamFilterController::class, 'index'])->name('email.spam.index');
-    Route::get('/email/spam-filter', [MailSpamFilterController::class, 'index'])->name('email.spam-filter.index');
-    Route::put('/email/domains/{mailDomain}/spam-policy', [MailSpamFilterController::class, 'update'])->name('email.domains.spam-policy.update');
+    Route::middleware('module:mail_core')->group(function () {
+        Route::get('/email/domains', [MailDomainController::class, 'index'])->name('email.domains.index');
+        Route::post('/email/domains', [MailDomainController::class, 'store'])->name('email.domains.store');
+        Route::put('/email/domains/{mailDomain}', [MailDomainController::class, 'update'])->name('email.domains.update');
+        Route::get('/email/accounts', [MailAccountController::class, 'index'])->name('email.accounts.index');
+        Route::get('/email/domains/dns-challenge', [MailAccountController::class, 'dnsVerificationChallenge'])->name('email.domains.dns-challenge');
+        Route::post('/email/domains/{mailDomain}/issue-tls', [MailAccountController::class, 'issueStandaloneTls'])->name('email.domains.issue-tls');
+        Route::post('/email/accounts', [MailAccountController::class, 'store'])->name('email.accounts.store');
+        Route::put('/email/accounts/{mailAccount}', [MailAccountController::class, 'update'])->name('email.accounts.update');
+        Route::delete('/email/accounts/{mailAccount}', [MailAccountController::class, 'destroy'])->name('email.accounts.destroy');
+        Route::get('/email/forwarders', [MailForwarderController::class, 'index'])->name('email.forwarders.index');
+        Route::post('/email/forwarders', [MailForwarderController::class, 'store'])->name('email.forwarders.store');
+        Route::put('/email/forwarders/{mailAlias}', [MailForwarderController::class, 'update'])->name('email.forwarders.update');
+        Route::delete('/email/forwarders/{mailAlias}', [MailForwarderController::class, 'destroy'])->name('email.forwarders.destroy');
+        Route::get('/email/dkim', [MailDkimController::class, 'index'])->name('email.dkim.index');
+        Route::post('/email/dkim', [MailDkimController::class, 'store'])->name('email.dkim.store');
+        Route::get('/email/spam', [MailSpamFilterController::class, 'index'])->name('email.spam.index');
+        Route::get('/email/spam-filter', [MailSpamFilterController::class, 'index'])->name('email.spam-filter.index');
+        Route::put('/email/domains/{mailDomain}/spam-policy', [MailSpamFilterController::class, 'update'])->name('email.domains.spam-policy.update');
+    });
 
     // FTP Management
-    Route::get('/ftp', [FtpController::class, 'index'])->name('ftp.index');
-    Route::post('/ftp', [FtpController::class, 'store'])->name('ftp.store');
-    Route::put('/ftp/{ftpUser}', [FtpController::class, 'update'])->name('ftp.update');
-    Route::patch('/ftp/{ftpUser}/password', [FtpController::class, 'updatePassword'])->name('ftp.password');
-    Route::delete('/ftp/{ftpUser}', [FtpController::class, 'destroy'])->name('ftp.destroy');
+    Route::middleware('module:ftp')->group(function () {
+        Route::get('/ftp', [FtpController::class, 'index'])->name('ftp.index');
+        Route::post('/ftp', [FtpController::class, 'store'])->name('ftp.store');
+        Route::put('/ftp/{ftpUser}', [FtpController::class, 'update'])->name('ftp.update');
+        Route::patch('/ftp/{ftpUser}/password', [FtpController::class, 'updatePassword'])->name('ftp.password');
+        Route::delete('/ftp/{ftpUser}', [FtpController::class, 'destroy'])->name('ftp.destroy');
+    });
 
     // Web File Manager
     Route::get('/files', [FileManagerController::class, 'index'])->name('files.index');
@@ -236,39 +242,42 @@ Route::middleware('auth')->group(function () {
         Route::post('/modules/{module}/install', [ModuleController::class, 'install'])->name('modules.install');
         Route::post('/modules/{module}/remove', [ModuleController::class, 'remove'])->name('modules.remove');
 
-        // PowerDNS Daemon & HTTP API Configuration (Admin Only)
-        Route::get('/dns/settings', [PdnsConfigController::class, 'index'])->name('dns.settings');
-        Route::post('/dns/settings', [PdnsConfigController::class, 'update'])->name('dns.settings.update');
-        Route::post('/dns/settings/rotate-key', [PdnsConfigController::class, 'rotateKey'])->name('dns.settings.rotate-key');
-        Route::post('/dns/settings/test-connection', [PdnsConfigController::class, 'testConnection'])->name('dns.settings.test-connection');
-        Route::put('/dns/settings/cache/flush', [PdnsConfigController::class, 'flushCache'])->name('dns.settings.cache.flush');
+        // PowerDNS Management (Admin Only + requires powerdns module)
+        Route::middleware('module:powerdns')->group(function () {
+            // PowerDNS Daemon & HTTP API Configuration
+            Route::get('/dns/settings', [PdnsConfigController::class, 'index'])->name('dns.settings');
+            Route::post('/dns/settings', [PdnsConfigController::class, 'update'])->name('dns.settings.update');
+            Route::post('/dns/settings/rotate-key', [PdnsConfigController::class, 'rotateKey'])->name('dns.settings.rotate-key');
+            Route::post('/dns/settings/test-connection', [PdnsConfigController::class, 'testConnection'])->name('dns.settings.test-connection');
+            Route::put('/dns/settings/cache/flush', [PdnsConfigController::class, 'flushCache'])->name('dns.settings.cache.flush');
 
-        // PowerDNS Autoprimaries / Supermasters (Admin Only)
-        Route::post('/dns/autoprimaries', [PdnsAutoprimaryController::class, 'store'])->name('dns.autoprimaries.store');
-        Route::delete('/dns/autoprimaries/{ip}/{nameserver}', [PdnsAutoprimaryController::class, 'destroy'])
-            ->where(['ip' => '[^/]+', 'nameserver' => '[^/]+'])
-            ->name('dns.autoprimaries.destroy');
+            // PowerDNS Autoprimaries / Supermasters
+            Route::post('/dns/autoprimaries', [PdnsAutoprimaryController::class, 'store'])->name('dns.autoprimaries.store');
+            Route::delete('/dns/autoprimaries/{ip}/{nameserver}', [PdnsAutoprimaryController::class, 'destroy'])
+                ->where(['ip' => '[^/]+', 'nameserver' => '[^/]+'])
+                ->name('dns.autoprimaries.destroy');
 
-        // PowerDNS Zone Manager & Record Editor (Admin Only)
-        Route::get('/dns/zones', [PdnsZoneController::class, 'index'])->name('dns.zones.index');
-        Route::post('/dns/zones', [PdnsZoneController::class, 'store'])->name('dns.zones.store');
-        Route::get('/dns/zones/{zone}/records', [PdnsRecordController::class, 'show'])->where('zone', '[^/]+')->name('dns.zones.records.show');
-        Route::patch('/dns/zones/{zone}/records', [PdnsRecordController::class, 'updateRrsets'])->where('zone', '[^/]+')->name('dns.zones.records.patch');
-        Route::put('/dns/zones/{zone}/soa', [PdnsRecordController::class, 'updateSoa'])->where('zone', '[^/]+')->name('dns.zones.soa.update');
-        Route::put('/dns/zones/{zone}/mode', [PdnsZoneModeController::class, 'updateMode'])->where('zone', '[^/]+')->name('dns.zones.mode.update');
-        Route::put('/dns/zones/{zone}/notify', [PdnsZoneModeController::class, 'notify'])->where('zone', '[^/]+')->name('dns.zones.notify');
-        Route::put('/dns/zones/{zone}/axfr-retrieve', [PdnsZoneModeController::class, 'axfrRetrieve'])->where('zone', '[^/]+')->name('dns.zones.axfr-retrieve');
-        Route::put('/dns/zones/{zone}/rectify', [PdnsZoneModeController::class, 'rectify'])->where('zone', '[^/]+')->name('dns.zones.rectify');
-        Route::put('/dns/zones/{zone}/cache/flush', [PdnsZoneModeController::class, 'flushCache'])->where('zone', '[^/]+')->name('dns.zones.cache.flush');
-        Route::get('/dns/zones/{zone}/export', [PdnsZoneController::class, 'export'])->where('zone', '[^/]+')->name('dns.zones.export');
-        Route::delete('/dns/zones/{zone}', [PdnsZoneController::class, 'destroy'])->where('zone', '[^/]+')->name('dns.zones.destroy');
+            // PowerDNS Zone Manager & Record Editor
+            Route::get('/dns/zones', [PdnsZoneController::class, 'index'])->name('dns.zones.index');
+            Route::post('/dns/zones', [PdnsZoneController::class, 'store'])->name('dns.zones.store');
+            Route::get('/dns/zones/{zone}/records', [PdnsRecordController::class, 'show'])->where('zone', '[^/]+')->name('dns.zones.records.show');
+            Route::patch('/dns/zones/{zone}/records', [PdnsRecordController::class, 'updateRrsets'])->where('zone', '[^/]+')->name('dns.zones.records.patch');
+            Route::put('/dns/zones/{zone}/soa', [PdnsRecordController::class, 'updateSoa'])->where('zone', '[^/]+')->name('dns.zones.soa.update');
+            Route::put('/dns/zones/{zone}/mode', [PdnsZoneModeController::class, 'updateMode'])->where('zone', '[^/]+')->name('dns.zones.mode.update');
+            Route::put('/dns/zones/{zone}/notify', [PdnsZoneModeController::class, 'notify'])->where('zone', '[^/]+')->name('dns.zones.notify');
+            Route::put('/dns/zones/{zone}/axfr-retrieve', [PdnsZoneModeController::class, 'axfrRetrieve'])->where('zone', '[^/]+')->name('dns.zones.axfr-retrieve');
+            Route::put('/dns/zones/{zone}/rectify', [PdnsZoneModeController::class, 'rectify'])->where('zone', '[^/]+')->name('dns.zones.rectify');
+            Route::put('/dns/zones/{zone}/cache/flush', [PdnsZoneModeController::class, 'flushCache'])->where('zone', '[^/]+')->name('dns.zones.cache.flush');
+            Route::get('/dns/zones/{zone}/export', [PdnsZoneController::class, 'export'])->where('zone', '[^/]+')->name('dns.zones.export');
+            Route::delete('/dns/zones/{zone}', [PdnsZoneController::class, 'destroy'])->where('zone', '[^/]+')->name('dns.zones.destroy');
 
-        // PowerDNS Default Nameservers & Zone Templates (Admin Only)
-        Route::get('/dns/templates', [PdnsTemplateController::class, 'index'])->name('dns.templates.index');
-        Route::post('/dns/templates', [PdnsTemplateController::class, 'store'])->name('dns.templates.store');
-        Route::put('/dns/templates/{template}', [PdnsTemplateController::class, 'update'])->name('dns.templates.update');
-        Route::post('/dns/templates/{template}/default', [PdnsTemplateController::class, 'setDefault'])->name('dns.templates.default');
-        Route::delete('/dns/templates/{template}', [PdnsTemplateController::class, 'destroy'])->name('dns.templates.destroy');
-        Route::post('/dns/nameservers', [PdnsTemplateController::class, 'updateNameservers'])->name('dns.nameservers.update');
+            // PowerDNS Default Nameservers & Zone Templates
+            Route::get('/dns/templates', [PdnsTemplateController::class, 'index'])->name('dns.templates.index');
+            Route::post('/dns/templates', [PdnsTemplateController::class, 'store'])->name('dns.templates.store');
+            Route::put('/dns/templates/{template}', [PdnsTemplateController::class, 'update'])->name('dns.templates.update');
+            Route::post('/dns/templates/{template}/default', [PdnsTemplateController::class, 'setDefault'])->name('dns.templates.default');
+            Route::delete('/dns/templates/{template}', [PdnsTemplateController::class, 'destroy'])->name('dns.templates.destroy');
+            Route::post('/dns/nameservers', [PdnsTemplateController::class, 'updateNameservers'])->name('dns.nameservers.update');
+        });
     });
 });

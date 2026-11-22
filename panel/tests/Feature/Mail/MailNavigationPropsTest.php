@@ -10,34 +10,38 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-it('shares modules.mail_core as false when mail_core is inactive', function () {
+it('shares modules.mail_core, powerdns, and ftp as false when inactive', function () {
     $user = User::factory()->create(['username' => 'mailadmin', 'role' => 'admin']);
 
-    $this->mock(ModuleRegistryQueryInterface::class)
-        ->shouldReceive('isActive')
-        ->with('mail_core')
-        ->andReturn(false);
+    $mock = $this->mock(ModuleRegistryQueryInterface::class);
+    $mock->shouldReceive('isActive')->with('mail_core')->andReturn(false);
+    $mock->shouldReceive('isActive')->with('powerdns')->andReturn(false);
+    $mock->shouldReceive('isActive')->with('ftp')->andReturn(false);
 
     $this->actingAs($user)
         ->get('/dashboard')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('modules.mail_core', false)
+            ->where('modules.powerdns', false)
+            ->where('modules.ftp', false)
         );
 });
 
-it('shares modules.mail_core as true when mail_core is active', function () {
+it('shares modules.mail_core, powerdns, and ftp as true when active', function () {
     $user = User::factory()->create(['username' => 'mailadmin', 'role' => 'admin']);
 
-    $this->mock(ModuleRegistryQueryInterface::class)
-        ->shouldReceive('isActive')
-        ->with('mail_core')
-        ->andReturn(true);
+    $mock = $this->mock(ModuleRegistryQueryInterface::class);
+    $mock->shouldReceive('isActive')->with('mail_core')->andReturn(true);
+    $mock->shouldReceive('isActive')->with('powerdns')->andReturn(true);
+    $mock->shouldReceive('isActive')->with('ftp')->andReturn(true);
 
     $this->actingAs($user)
         ->get('/dashboard')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('modules.mail_core', true)
+            ->where('modules.powerdns', true)
+            ->where('modules.ftp', true)
         );
 });

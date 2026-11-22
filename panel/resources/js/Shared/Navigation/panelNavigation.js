@@ -37,6 +37,13 @@ export const PANEL_NAVIGATION = [
         label: 'PowerDNS',
         icon: 'dns',
         adminOnly: true,
+        requiresModule: 'powerdns',
+        inactiveFallback: {
+            id: 'dns.install',
+            label: 'Install PowerDNS',
+            route: '/modules',
+            adminOnly: true,
+        },
         children: [
             { id: 'dns.zones', label: 'DNS Zones', route: '/dns/zones', adminOnly: true },
             { id: 'dns.templates', label: 'Zone Templates & NS', route: '/dns/templates', adminOnly: true },
@@ -51,7 +58,7 @@ export const PANEL_NAVIGATION = [
         children: [
             { id: 'databases.index', label: 'MySQL Engines', route: '/databases' },
             { id: 'databases.pma', label: 'phpMyAdmin', route: '/phpmyadmin/sso', external: true },
-            { id: 'ftp.index', label: 'FTP', route: '/ftp' },
+            { id: 'ftp.index', label: 'FTP', route: '/ftp', requiresModule: 'ftp' },
         ],
     },
     {
@@ -139,6 +146,7 @@ export const PANEL_NAVIGATION = [
             id: 'email.install',
             label: 'Install Mail Stack',
             route: '/modules',
+            adminOnly: true,
         },
         children: [
             { id: 'email.domains', label: 'Domains', route: '/email/domains' },

@@ -32,6 +32,7 @@ it('renders Mail/Spam/Index with filter_active = false gating when mail_filter i
     $mockRegistry->shouldReceive('isActive')->with('mail_filter')->andReturn(false);
     $mockRegistry->shouldReceive('isActive')->with('clamav')->andReturn(false);
     $mockRegistry->shouldReceive('isActive')->with('mail_core')->andReturn(true);
+    $mockRegistry->shouldReceive('isActive')->andReturn(false)->byDefault();
     $this->app->instance(ModuleRegistryQueryInterface::class, $mockRegistry);
 
     $this->actingAs($tenant)
@@ -91,6 +92,7 @@ it('scopes Mail/Spam/Index domains to the authenticated tenant and selects domai
     $mockRegistry->shouldReceive('isActive')->with('mail_filter')->andReturn(true);
     $mockRegistry->shouldReceive('isActive')->with('clamav')->andReturn(true);
     $mockRegistry->shouldReceive('isActive')->with('mail_core')->andReturn(true);
+    $mockRegistry->shouldReceive('isActive')->andReturn(false)->byDefault();
     $this->app->instance(ModuleRegistryQueryInterface::class, $mockRegistry);
 
     $this->actingAs($tenantA)

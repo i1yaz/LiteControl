@@ -56,10 +56,14 @@ class HandleInertiaRequests extends Middleware
             'php' => [
                 'supported_versions' => PhpVersion::SUPPORTED,
             ],
-            'modules' => [
-                'mail_core' => $user
-                    ? app(ModuleRegistryQueryInterface::class)->isActive('mail_core')
-                    : false,
+            'modules' => fn () => $user ? [
+                'mail_core' => app(ModuleRegistryQueryInterface::class)->isActive('mail_core'),
+                'powerdns' => app(ModuleRegistryQueryInterface::class)->isActive('powerdns'),
+                'ftp' => app(ModuleRegistryQueryInterface::class)->isActive('ftp'),
+            ] : [
+                'mail_core' => false,
+                'powerdns' => false,
+                'ftp' => false,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
