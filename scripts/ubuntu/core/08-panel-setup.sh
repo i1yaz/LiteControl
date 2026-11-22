@@ -165,11 +165,11 @@ EOF
         local run_composer=""
         local system_composer
         system_composer="$(command -v composer 2>/dev/null || true)"
-        if [[ -n "${system_composer}" ]] && "${php_bin}" "${system_composer}" --version >/dev/null 2>&1; then
+        if [[ -n "${system_composer}" ]] && COMPOSER_ALLOW_SUPERUSER=1 "${php_bin}" "${system_composer}" --version --no-interaction </dev/null >/dev/null 2>&1; then
             log_info "Using system Composer at ${system_composer}."
             run_composer="${php_bin} -d memory_limit=-1 ${system_composer}"
         else
-            if [[ -f "${composer_bin}" ]] && "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+            if [[ -f "${composer_bin}" ]] && COMPOSER_ALLOW_SUPERUSER=1 "${php_bin}" "${composer_bin}" --version --no-interaction </dev/null >/dev/null 2>&1; then
                 log_info "Reusing isolated Composer at ${composer_bin}."
             else
                 log_info "Fetching verified Composer standalone binary..."
@@ -178,7 +178,7 @@ EOF
                 chmod 755 "${composer_bin}"
             fi
             run_composer="${php_bin} -d memory_limit=-1 ${composer_bin}"
-            if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+            if [[ ! -f "${composer_bin}" ]] || ! COMPOSER_ALLOW_SUPERUSER=1 "${php_bin}" "${composer_bin}" --version --no-interaction </dev/null >/dev/null 2>&1; then
                 run_composer="/usr/local/bin/composer"
             fi
         fi

@@ -397,13 +397,13 @@ ensure_panel_composer() {
 
     local system_composer
     system_composer="$(command -v composer 2>/dev/null || true)"
-    if [[ -n "${system_composer}" ]] && "${php_bin}" "${system_composer}" --version >/dev/null 2>&1; then
+    if [[ -n "${system_composer}" ]] && COMPOSER_ALLOW_SUPERUSER=1 "${php_bin}" "${system_composer}" --version --no-interaction </dev/null >/dev/null 2>&1; then
         log_info "Using system Composer at ${system_composer}."
         return 0
     fi
 
     if [[ -x "${composer_bin}" && -f "${composer_bin}" ]]; then
-        if "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+        if COMPOSER_ALLOW_SUPERUSER=1 "${php_bin}" "${composer_bin}" --version --no-interaction </dev/null >/dev/null 2>&1; then
             log_info "Reusing isolated Composer at ${composer_bin}."
             return 0
         fi
@@ -415,7 +415,7 @@ ensure_panel_composer() {
     mkdir -p "${LC_BASE_DIR}/bin"
     if curl -fsSL --connect-timeout 15 --max-time 30 -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar; then
         chmod 755 "${composer_bin}"
-        if "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+        if COMPOSER_ALLOW_SUPERUSER=1 "${php_bin}" "${composer_bin}" --version --no-interaction </dev/null >/dev/null 2>&1; then
             log_ok "Verified Composer phar installed at ${composer_bin}."
             return 0
         fi
@@ -467,7 +467,7 @@ upgrade_laravel_panel() {
         fi
         local system_composer
         system_composer="$(command -v composer 2>/dev/null || true)"
-        if [[ -n "${system_composer}" ]] && "${php_bin}" "${system_composer}" --version >/dev/null 2>&1; then
+        if [[ -n "${system_composer}" ]] && COMPOSER_ALLOW_SUPERUSER=1 "${php_bin}" "${system_composer}" --version --no-interaction </dev/null >/dev/null 2>&1; then
             composer_bin="${php_bin} -d memory_limit=-1 ${system_composer}"
         elif [[ -f "${LC_BASE_DIR}/bin/composer.phar" ]]; then
             composer_bin="${php_bin} -d memory_limit=-1 ${LC_BASE_DIR}/bin/composer.phar"
