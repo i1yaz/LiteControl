@@ -22,16 +22,6 @@ install_and_configure_redis() {
         sed -i 's/^bind .*/bind 127.0.0.1/' "${redis_conf}" || true
         # Ensure systemd supervision is enabled
         sed -i 's/^#\?supervised .*/supervised systemd/' "${redis_conf}" || true
-
-        # Set sensible default memory policy if not already configured
-        if ! grep -q "^maxmemory " "${redis_conf}"; then
-            cat >> "${redis_conf}" <<'EOF'
-
-# LiteControl default tuning
-maxmemory 256mb
-maxmemory-policy allkeys-lru
-EOF
-        fi
     fi
 
     systemctl enable redis-server >/dev/null 2>&1 || true

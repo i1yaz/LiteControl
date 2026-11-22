@@ -5,6 +5,12 @@ use App\Http\Controllers\Database\DatabaseController;
 use App\Http\Controllers\Deployment\DomainDeploymentController;
 use App\Http\Controllers\Deployment\DomainDeploymentEnvController;
 use App\Http\Controllers\Deployment\DomainDeploymentHookController;
+use App\Http\Controllers\Dns\PdnsAutoprimaryController;
+use App\Http\Controllers\Dns\PdnsConfigController;
+use App\Http\Controllers\Dns\PdnsRecordController;
+use App\Http\Controllers\Dns\PdnsTemplateController;
+use App\Http\Controllers\Dns\PdnsZoneController;
+use App\Http\Controllers\Dns\PdnsZoneModeController;
 use App\Http\Controllers\FileManager\FileManagerController;
 use App\Http\Controllers\HostingPlans\PackageController;
 use App\Http\Controllers\Identity\AuthController;
@@ -221,5 +227,40 @@ Route::middleware('auth')->group(function () {
         Route::post('/modules/install-status/dismiss', [ModuleController::class, 'dismissInstallStatus'])->name('modules.install-status.dismiss');
         Route::post('/modules/{module}/install', [ModuleController::class, 'install'])->name('modules.install');
         Route::post('/modules/{module}/remove', [ModuleController::class, 'remove'])->name('modules.remove');
+
+        // PowerDNS Daemon & HTTP API Configuration (Admin Only)
+        Route::get('/dns/settings', [PdnsConfigController::class, 'index'])->name('dns.settings');
+        Route::post('/dns/settings', [PdnsConfigController::class, 'update'])->name('dns.settings.update');
+        Route::post('/dns/settings/rotate-key', [PdnsConfigController::class, 'rotateKey'])->name('dns.settings.rotate-key');
+        Route::post('/dns/settings/test-connection', [PdnsConfigController::class, 'testConnection'])->name('dns.settings.test-connection');
+        Route::put('/dns/settings/cache/flush', [PdnsConfigController::class, 'flushCache'])->name('dns.settings.cache.flush');
+
+        // PowerDNS Autoprimaries / Supermasters (Admin Only)
+        Route::post('/dns/autoprimaries', [PdnsAutoprimaryController::class, 'store'])->name('dns.autoprimaries.store');
+        Route::delete('/dns/autoprimaries/{ip}/{nameserver}', [PdnsAutoprimaryController::class, 'destroy'])
+            ->where(['ip' => '[^/]+', 'nameserver' => '[^/]+'])
+            ->name('dns.autoprimaries.destroy');
+
+        // PowerDNS Zone Manager & Record Editor (Admin Only)
+        Route::get('/dns/zones', [PdnsZoneController::class, 'index'])->name('dns.zones.index');
+        Route::post('/dns/zones', [PdnsZoneController::class, 'store'])->name('dns.zones.store');
+        Route::get('/dns/zones/{zone}/records', [PdnsRecordController::class, 'show'])->where('zone', '[^/]+')->name('dns.zones.records.show');
+        Route::patch('/dns/zones/{zone}/records', [PdnsRecordController::class, 'updateRrsets'])->where('zone', '[^/]+')->name('dns.zones.records.patch');
+        Route::put('/dns/zones/{zone}/soa', [PdnsRecordController::class, 'updateSoa'])->where('zone', '[^/]+')->name('dns.zones.soa.update');
+        Route::put('/dns/zones/{zone}/mode', [PdnsZoneModeController::class, 'updateMode'])->where('zone', '[^/]+')->name('dns.zones.mode.update');
+        Route::put('/dns/zones/{zone}/notify', [PdnsZoneModeController::class, 'notify'])->where('zone', '[^/]+')->name('dns.zones.notify');
+        Route::put('/dns/zones/{zone}/axfr-retrieve', [PdnsZoneModeController::class, 'axfrRetrieve'])->where('zone', '[^/]+')->name('dns.zones.axfr-retrieve');
+        Route::put('/dns/zones/{zone}/rectify', [PdnsZoneModeController::class, 'rectify'])->where('zone', '[^/]+')->name('dns.zones.rectify');
+        Route::put('/dns/zones/{zone}/cache/flush', [PdnsZoneModeController::class, 'flushCache'])->where('zone', '[^/]+')->name('dns.zones.cache.flush');
+        Route::get('/dns/zones/{zone}/export', [PdnsZoneController::class, 'export'])->where('zone', '[^/]+')->name('dns.zones.export');
+        Route::delete('/dns/zones/{zone}', [PdnsZoneController::class, 'destroy'])->where('zone', '[^/]+')->name('dns.zones.destroy');
+
+        // PowerDNS Default Nameservers & Zone Templates (Admin Only)
+        Route::get('/dns/templates', [PdnsTemplateController::class, 'index'])->name('dns.templates.index');
+        Route::post('/dns/templates', [PdnsTemplateController::class, 'store'])->name('dns.templates.store');
+        Route::put('/dns/templates/{template}', [PdnsTemplateController::class, 'update'])->name('dns.templates.update');
+        Route::post('/dns/templates/{template}/default', [PdnsTemplateController::class, 'setDefault'])->name('dns.templates.default');
+        Route::delete('/dns/templates/{template}', [PdnsTemplateController::class, 'destroy'])->name('dns.templates.destroy');
+        Route::post('/dns/nameservers', [PdnsTemplateController::class, 'updateNameservers'])->name('dns.nameservers.update');
     });
 });

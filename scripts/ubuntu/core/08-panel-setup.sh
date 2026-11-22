@@ -17,6 +17,9 @@ sync_files_to_install_dir() {
         rsync -a "${REPO_ROOT}/bin/" "${LC_BASE_DIR}/bin/"
         rsync -a "${REPO_ROOT}/scripts/" "${LC_BASE_DIR}/scripts/"
         rsync -a "${REPO_ROOT}/templates/" "${LC_BASE_DIR}/templates/"
+        if [[ -d "${REPO_ROOT}/cli" ]]; then
+            rsync -a "${REPO_ROOT}/cli/" "${LC_BASE_DIR}/cli/"
+        fi
         if [[ -f "${REPO_ROOT}/VERSION" ]]; then
             cp "${REPO_ROOT}/VERSION" "${LC_BASE_DIR}/VERSION"
         fi
@@ -35,13 +38,27 @@ sync_files_to_install_dir() {
         chmod 644 "${LC_CONF_DIR}/version"
     fi
 
-    # Strip any CRLF line endings from scripts and binaries (excluding .phar)
-    find "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" -type f ! -name "*.phar" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
+    # Strip any CRLF line endings from scripts and binaries (excluding .phar and compiled Go binaries)
+    find "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" -type f ! -name "*.phar" ! -name "lc-cli-go" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
 
     chown -R root:root "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" "${LC_BASE_DIR}/templates"
+    if [[ -d "${LC_BASE_DIR}/cli" ]]; then
+        chown -R root:root "${LC_BASE_DIR}/cli"
+    fi
     chmod 750 "${LC_BASE_DIR}/bin/lc-cli"
     find "${LC_BASE_DIR}/scripts" -type f -name "*.sh" -exec chmod 750 {} +
     ln -sf "${LC_BASE_DIR}/bin/lc-cli" /usr/local/bin/lc-cli
+
+    local go_bin=""
+    go_bin=$(command -v go 2>/dev/null || true)
+    if [[ -z "${go_bin}" && -x /usr/local/go/bin/go ]]; then
+        go_bin="/usr/local/go/bin/go"
+    fi
+    if [[ -n "${go_bin}" && -d "${LC_BASE_DIR}/cli" ]]; then
+        (cd "${LC_BASE_DIR}/cli" && CGO_ENABLED=0 "${go_bin}" build -ldflags="-s -w" -o "${LC_BASE_DIR}/bin/lc-cli-go.tmp" .) && \
+            chmod 750 "${LC_BASE_DIR}/bin/lc-cli-go.tmp" && \
+            mv -f "${LC_BASE_DIR}/bin/lc-cli-go.tmp" "${LC_BASE_DIR}/bin/lc-cli-go" || true
+    fi
 }
 
 configure_sudoers() {

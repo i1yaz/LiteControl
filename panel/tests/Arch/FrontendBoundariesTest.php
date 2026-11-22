@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 function jsRoot(): string
 {
-    return str_replace('\\', '/', dirname(__DIR__, 2) . '/resources/js');
+    return str_replace('\\', '/', dirname(__DIR__, 2).'/resources/js');
 }
 
 /**
@@ -90,12 +90,13 @@ function normalizePosixPath(string $path): string
         }
         if ($part === '..') {
             array_pop($stack);
+
             continue;
         }
         $stack[] = $part;
     }
 
-    return $prefix . '/' . implode('/', $stack);
+    return $prefix.'/'.implode('/', $stack);
 }
 
 function resolveImportToJsRelativePath(string $specifier, string $importerFile, string $root): ?string
@@ -103,11 +104,11 @@ function resolveImportToJsRelativePath(string $specifier, string $importerFile, 
     $root = rtrim(normalizePosixPath($root), '/');
 
     if (str_starts_with($specifier, '@domains/')) {
-        return 'Domains/' . substr($specifier, strlen('@domains/'));
+        return 'Domains/'.substr($specifier, strlen('@domains/'));
     }
 
     if (str_starts_with($specifier, '@shared/')) {
-        return 'Shared/' . substr($specifier, strlen('@shared/'));
+        return 'Shared/'.substr($specifier, strlen('@shared/'));
     }
 
     if (str_starts_with($specifier, '@/')) {
@@ -115,8 +116,8 @@ function resolveImportToJsRelativePath(string $specifier, string $importerFile, 
     }
 
     if (str_starts_with($specifier, './') || str_starts_with($specifier, '../')) {
-        $resolved = normalizePosixPath(dirname($importerFile) . '/' . $specifier);
-        if (str_starts_with($resolved, $root . '/')) {
+        $resolved = normalizePosixPath(dirname($importerFile).'/'.$specifier);
+        if (str_starts_with($resolved, $root.'/')) {
             return substr($resolved, strlen($root) + 1);
         }
     }
@@ -156,6 +157,8 @@ test('top-level directories in Pages and Domains match canonical Bounded Context
         'Identity',
         'HostingPlans',
         'Database',
+        'Dns',
+        'Domains',
         'Backup',
         'FileManager',
         'Security',
@@ -214,6 +217,7 @@ test('Domains files respect bounded context isolation and never import from Page
 
             if (str_starts_with($resolved, 'Pages/')) {
                 $violations[] = "{$relPath} imports from Pages: '{$specifier}'";
+
                 continue;
             }
 

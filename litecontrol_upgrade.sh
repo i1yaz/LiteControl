@@ -273,9 +273,12 @@ migrate_ols_panel_to_nginx_if_needed() {
 sync_core_files_and_sudoers() {
     log_step "03. Updating LiteControl CLI, Scripts, Templates & Sudoers"
 
-    rsync -a --delete "${UPGRADE_SRC_DIR}/bin/" "${LC_BASE_DIR}/bin/"
+    rsync -a --delete --exclude='lc-cli-go' "${UPGRADE_SRC_DIR}/bin/" "${LC_BASE_DIR}/bin/"
     rsync -a --delete "${UPGRADE_SRC_DIR}/scripts/" "${LC_BASE_DIR}/scripts/"
     rsync -a --delete "${UPGRADE_SRC_DIR}/templates/" "${LC_BASE_DIR}/templates/"
+    if [[ -d "${UPGRADE_SRC_DIR}/cli" ]]; then
+        rsync -a --delete "${UPGRADE_SRC_DIR}/cli/" "${LC_BASE_DIR}/cli/"
+    fi
     if [[ -f "${UPGRADE_SRC_DIR}/VERSION" ]]; then
         cp "${UPGRADE_SRC_DIR}/VERSION" "${LC_BASE_DIR}/VERSION"
         sed -i 's/\r$//' "${LC_BASE_DIR}/VERSION"
@@ -284,9 +287,35 @@ sync_core_files_and_sudoers() {
     chmod 750 "${LC_BASE_DIR}/litecontrol_upgrade.sh"
 
     chown -R root:root "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" "${LC_BASE_DIR}/templates"
+    if [[ -d "${LC_BASE_DIR}/cli" ]]; then
+        chown -R root:root "${LC_BASE_DIR}/cli"
+    fi
     chmod 750 "${LC_BASE_DIR}/bin/lc-cli"
     find "${LC_BASE_DIR}/scripts" -type f -name "*.sh" -exec chmod 750 {} +
     ln -sf "${LC_BASE_DIR}/bin/lc-cli" /usr/local/bin/lc-cli
+
+    # Build/refresh Go CLI binary (`lc-cli-go`); install golang-go if missing and cli/ is present
+    local go_bin=""
+    go_bin=$(command -v go 2>/dev/null || true)
+    if [[ -z "${go_bin}" && -x /usr/local/go/bin/go ]]; then
+        go_bin="/usr/local/go/bin/go"
+    fi
+    if [[ -z "${go_bin}" && -d "${LC_BASE_DIR}/cli" ]] && command -v apt-get >/dev/null 2>&1; then
+        log_info "Installing golang-go to build LiteControl Go CLI binary (lc-cli-go)..."
+        DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1 || true
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq golang-go >/dev/null 2>&1 || true
+        go_bin=$(command -v go 2>/dev/null || true)
+    fi
+    if [[ -n "${go_bin}" && -d "${LC_BASE_DIR}/cli" ]]; then
+        mkdir -p /var/log/litecontrol 2>/dev/null || true
+        if (cd "${LC_BASE_DIR}/cli" && CGO_ENABLED=0 "${go_bin}" build -ldflags="-s -w" -o "${LC_BASE_DIR}/bin/lc-cli-go.tmp" .) >> /var/log/litecontrol/panel-error.log 2>&1; then
+            chmod 750 "${LC_BASE_DIR}/bin/lc-cli-go.tmp"
+            mv -f "${LC_BASE_DIR}/bin/lc-cli-go.tmp" "${LC_BASE_DIR}/bin/lc-cli-go"
+        else
+            log_warn "Failed to build lc-cli-go; see /var/log/litecontrol/panel-error.log"
+            rm -f "${LC_BASE_DIR}/bin/lc-cli-go.tmp" 2>/dev/null || true
+        fi
+    fi
 
     # Install per-user PHP CLI setter and Go php-shim (prebuilt release binary preferred, source build fallback)
     install -d -m 0755 -o root -g root /usr/local/lib/lc-panel

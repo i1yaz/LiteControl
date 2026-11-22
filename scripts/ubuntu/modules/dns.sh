@@ -35,13 +35,15 @@ do_install() {
     fi
 
     local db_user="litecontrol"
-    local db_name="litecontrol"
+    local db_name="pdns"
     local db_pass
     db_pass=$(get_secret "mysql_panel_password" 2>/dev/null || echo "secret")
     local srv_host
     srv_host=$(hostname 2>/dev/null || echo "localhost")
 
-    mkdir -p "${PDNS_CONF_DIR}"
+    mkdir -p "${PDNS_CONF_DIR}" "${PDNS_CONF_DIR}/pdns.d"
+    chmod 0750 "${PDNS_CONF_DIR}" "${PDNS_CONF_DIR}/pdns.d" 2>/dev/null || true
+    chown root:pdns "${PDNS_CONF_DIR}" "${PDNS_CONF_DIR}/pdns.d" 2>/dev/null || true
 
     # Configure pdns.conf
     local tpl="${BASE_DIR}/templates/modules/powerdns/pdns.conf.tpl"
@@ -51,18 +53,47 @@ do_install() {
             -e "s|{{DB_NAME}}|${db_name}|g" \
             -e "s|{{HOSTNAME}}|${srv_host}|g" \
             "${tpl}" > "${PDNS_CONF_DIR}/pdns.conf"
+        chmod 0640 "${PDNS_CONF_DIR}/pdns.conf" 2>/dev/null || true
+        chown root:pdns "${PDNS_CONF_DIR}/pdns.conf" 2>/dev/null || true
     fi
 
-    # Initialize PowerDNS schema into litecontrol database
+    # Initialize dedicated PowerDNS database and schema (isolated from litecontrol.domains)
     local schema_file="${BASE_DIR}/templates/modules/powerdns/schema.mysql.sql"
     if [[ "${LC_TEST_MODE:-0}" != "1" && -f "${schema_file}" ]]; then
         local root_pass
         root_pass=$(get_secret "mysql_root_password" 2>/dev/null || echo "")
+        mysql -u root -p"${root_pass}" -e "
+            CREATE DATABASE IF NOT EXISTS \`${db_name}\` CHARACTER SET latin1;
+            GRANT ALL PRIVILEGES ON \`${db_name}\`.* TO '${db_user}'@'127.0.0.1';
+            GRANT ALL PRIVILEGES ON \`${db_name}\`.* TO '${db_user}'@'localhost';
+            FLUSH PRIVILEGES;
+        " 2>/dev/null || true
         mysql -u root -p"${root_pass}" "${db_name}" < "${schema_file}" 2>/dev/null || true
     fi
 
-    # Open firewall ports
+    # Open firewall ports and ensure Go CLI binary (`lc-cli-go`) is compiled for `lc-cli pdns`
     if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+        local go_cli_bin="${LC_GO_CLI_BIN:-${BASE_DIR}/bin/lc-cli-go}"
+        if [[ ! -x "${go_cli_bin}" && -d "${BASE_DIR}/cli" ]]; then
+            local go_bin=""
+            go_bin=$(command -v go 2>/dev/null || true)
+            if [[ -z "${go_bin}" && -x /usr/local/go/bin/go ]]; then
+                go_bin="/usr/local/go/bin/go"
+            fi
+            if [[ -z "${go_bin}" ]]; then
+                log_info "Installing Go compiler to build LiteControl PowerDNS CLI shim..."
+                apt_install golang-go
+                go_bin=$(command -v go 2>/dev/null || true)
+            fi
+            if [[ -n "${go_bin}" ]]; then
+                log_info "Building LiteControl Go CLI binary (${go_cli_bin})..."
+                mkdir -p "$(dirname "${go_cli_bin}")"
+                (cd "${BASE_DIR}/cli" && CGO_ENABLED=0 "${go_bin}" build -ldflags="-s -w" -o "${go_cli_bin}.tmp" .)
+                chmod 0750 "${go_cli_bin}.tmp"
+                mv -f "${go_cli_bin}.tmp" "${go_cli_bin}"
+            fi
+        fi
+
         ufw allow 53/tcp comment "DNS TCP" >/dev/null 2>&1 || true
         ufw allow 53/udp comment "DNS UDP" >/dev/null 2>&1 || true
         systemctl enable pdns >/dev/null 2>&1 || true

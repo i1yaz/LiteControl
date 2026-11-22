@@ -795,6 +795,50 @@ class LcCliService
 
                 return ['status' => 'success', 'message' => "Mock operation '$command $sub' completed successfully.", 'data' => []];
 
+            case 'pdns':
+                if ($sub === 'status' || empty($sub)) {
+                    return [
+                        'status' => 'success',
+                        'message' => 'PowerDNS status retrieved.',
+                        'data' => [
+                            'distro_family' => 'debian',
+                            'config_path' => '/etc/powerdns/pdns.conf',
+                            'drop_in_dir' => '/etc/powerdns/pdns.d',
+                            'drop_in_path' => '/etc/powerdns/pdns.d/99-litecontrol.conf',
+                            'service_name' => 'pdns',
+                            'systemd_active' => true,
+                            'systemd_state' => 'active',
+                            'drop_in_present' => true,
+                            'include_dir_enabled' => true,
+                            'port_53' => [
+                                'owner' => 'pdns_server',
+                                'conflict' => false,
+                                'listeners' => [
+                                    ['protocol' => 'udp', 'local_ip' => '0.0.0.0', 'port' => 53, 'process' => 'pdns_server', 'pid' => 1290],
+                                    ['protocol' => 'tcp', 'local_ip' => '0.0.0.0', 'port' => 53, 'process' => 'pdns_server', 'pid' => 1290],
+                                ],
+                            ],
+                        ],
+                    ];
+                }
+
+                if ($sub === 'apply-config') {
+                    return [
+                        'status' => 'success',
+                        'message' => 'PowerDNS configuration validated and applied.',
+                        'data' => [
+                            'distro_family' => 'debian',
+                            'config_path' => '/etc/powerdns/pdns.conf',
+                            'drop_in_path' => '/etc/powerdns/pdns.d/99-litecontrol.conf',
+                            'include_dir_updated' => false,
+                            'validated' => true,
+                            'service_state' => 'active',
+                        ],
+                    ];
+                }
+
+                return ['status' => 'success', 'message' => "Mock operation 'pdns $sub' completed successfully.", 'data' => []];
+
             default:
                 return [
                     'status' => 'success',

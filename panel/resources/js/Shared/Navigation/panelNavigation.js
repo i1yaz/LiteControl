@@ -18,7 +18,6 @@ export const PANEL_NAVIGATION = [
         adminOnly: true,
         children: [
             { id: 'users.index', label: 'User Directory', route: '/users' },
-            { id: 'users.create', label: 'Provision User', route: '/users/create' },
             { id: 'packages.index', label: 'Quota Profiles', route: '/packages' },
         ],
     },
@@ -31,6 +30,17 @@ export const PANEL_NAVIGATION = [
         children: [
             { id: 'domains.index', label: 'Domains', route: '/domains' },
             { id: 'subdomains.index', label: 'Subdomains', route: '/subdomains' },
+        ],
+    },
+    {
+        id: 'dns',
+        label: 'PowerDNS',
+        icon: 'dns',
+        adminOnly: true,
+        children: [
+            { id: 'dns.zones', label: 'DNS Zones', route: '/dns/zones', adminOnly: true },
+            { id: 'dns.templates', label: 'Zone Templates & NS', route: '/dns/templates', adminOnly: true },
+            { id: 'dns.settings', label: 'Daemon & API Settings', route: '/dns/settings', adminOnly: true },
         ],
     },
     {
