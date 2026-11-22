@@ -13,7 +13,21 @@ export function useNavigation() {
 
     const isRouteActive = (routeUrl) => {
         if (!routeUrl) return false;
-        const cleanCurrent = currentUrl.value.split('?')[0];
+        const fullCurrent = currentUrl.value;
+        const cleanCurrent = fullCurrent.split('?')[0];
+
+        // If the nav item specifies a query string (e.g. /modules?module=powerdns),
+        // require an exact match including query string.
+        if (routeUrl.includes('?')) {
+            return fullCurrent === routeUrl;
+        }
+
+        // If another nav item matches the full URL with query string (e.g. /modules?module=powerdns),
+        // don't also mark the base route (/modules) as active.
+        if (fullCurrent.includes('?') && allNavRoutes.value.includes(fullCurrent)) {
+            return false;
+        }
+
         if (routeUrl === '/dashboard') {
             return cleanCurrent === '/dashboard' || cleanCurrent === '/';
         }
@@ -27,6 +41,7 @@ export function useNavigation() {
         return !allNavRoutes.value.some(
             other =>
                 other !== routeUrl &&
+                !other.includes('?') &&
                 other.length > routeUrl.length &&
                 (cleanCurrent === other || cleanCurrent.startsWith(`${other}/`))
         );
@@ -60,11 +75,21 @@ export function useNavigation() {
                     };
                 }
                 if (!item.children) return item;
-                const filteredChildren = item.children.filter(
-                    child =>
-                        (!child.adminOnly || isAdmin.value) &&
-                        (!child.requiresModule || isModuleActive(child.requiresModule))
-                );
+                const filteredChildren = item.children
+                    .filter(child => !child.adminOnly || isAdmin.value)
+                    .map(child => {
+                        if (child.requiresModule && !isModuleActive(child.requiresModule)) {
+                            if (!child.inactiveFallback) {
+                                return null;
+                            }
+                            if (child.inactiveFallback.adminOnly && !isAdmin.value) {
+                                return null;
+                            }
+                            return child.inactiveFallback;
+                        }
+                        return child;
+                    })
+                    .filter(Boolean);
                 return {
                     ...item,
                     children: filteredChildren,
