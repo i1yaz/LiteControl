@@ -363,8 +363,18 @@ ols_safe_reload() {
         "${OLS_CTRL}" start >/dev/null 2>&1
     fi
 
-    sleep 1
-    if ! "${OLS_CTRL}" status >/dev/null 2>&1; then
+    local ols_up=0
+    local attempt
+    for attempt in 1 2 3 4 5; do
+        sleep 1
+        if "${OLS_CTRL}" status >/dev/null 2>&1 || systemctl is-active --quiet lshttpd 2>/dev/null || systemctl is-active --quiet lsws 2>/dev/null; then
+            ols_up=1
+            break
+        fi
+    done
+
+    if [[ "${ols_up}" -ne 1 ]]; then
+        export OLS_LAST_ERROR="OpenLiteSpeed failed to stay running after reload"
         log_error "OpenLiteSpeed failed to stay running after reload. Triggering auto-rollback..."
         ols_restore_config
         "${OLS_CTRL}" restart >/dev/null 2>&1
