@@ -19,12 +19,15 @@
 set -euo pipefail
 
 GITHUB_REPO_URL="${GITHUB_REPO_URL:-https://github.com/i1yaz/LiteControl.git}"
-UPGRADE_SRC_DIR="${UPGRADE_SRC_DIR:-/usr/local/src/litecontrol}"
+GITHUB_REPO_SLUG="${GITHUB_REPO_SLUG:-$(printf '%s' "${GITHUB_REPO_URL}" | sed -E 's#^https?://github\.com/##; s#\.git$##')}"
+UPGRADE_SRC_DIR="${UPGRADE_SRC_DIR:-}"
+UPGRADE_SRC_IS_TEMP=0
 LC_BASE_DIR="${LC_BASE_DIR:-/usr/local/litecontrol}"
 LC_CONF_DIR="${LC_CONF_DIR:-/etc/litecontrol}"
 LC_BACKUP_ROOT="${LC_BACKUP_ROOT:-/var/backups/litecontrol}"
 
 TARGET_REF=""
+TARGET_IS_TAG=0
 NON_INTERACTIVE=0
 BUILD_FRONTEND=1
 
@@ -123,34 +126,67 @@ resolve_target_ref() {
     fi
 }
 
+cleanup_upgrade_src() {
+    if [[ "${UPGRADE_SRC_IS_TEMP}" -eq 1 && -n "${UPGRADE_SRC_DIR}" && -d "${UPGRADE_SRC_DIR}" ]]; then
+        rm -rf "${UPGRADE_SRC_DIR}"
+    fi
+}
+
 fetch_target_source() {
     printf "\n%s==> Fetching LiteControl source (%s)...%s\n" "${C_BOLD}${C_BLUE}" "${TARGET_REF}" "${C_RESET}"
 
-    if ! command -v git >/dev/null 2>&1; then
+    if ! command -v curl >/dev/null 2>&1 || ! command -v rsync >/dev/null 2>&1; then
         DEBIAN_FRONTEND=noninteractive apt-get update -qq
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git curl rsync
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl rsync tar
     fi
 
-    mkdir -p "$(dirname "${UPGRADE_SRC_DIR}")"
-
-    if [[ ! -d "${UPGRADE_SRC_DIR}/.git" ]]; then
-        rm -rf "${UPGRADE_SRC_DIR}"
-        git clone --quiet "${GITHUB_REPO_URL}" "${UPGRADE_SRC_DIR}"
-    fi
-
-    git -C "${UPGRADE_SRC_DIR}" fetch --all --tags --prune --quiet
-    git -C "${UPGRADE_SRC_DIR}" reset --hard --quiet 2>/dev/null || true
-    git -C "${UPGRADE_SRC_DIR}" clean -fd --quiet 2>/dev/null || true
-
-    # Checkout matching tag, remote branch, or commit
-    if git -C "${UPGRADE_SRC_DIR}" rev-parse -q --verify "refs/tags/${TARGET_REF}" >/dev/null 2>&1; then
-        git -C "${UPGRADE_SRC_DIR}" checkout -f "tags/${TARGET_REF}" --quiet
-    elif git -C "${UPGRADE_SRC_DIR}" rev-parse -q --verify "refs/tags/v${TARGET_REF}" >/dev/null 2>&1; then
-        TARGET_REF="v${TARGET_REF}"
-        git -C "${UPGRADE_SRC_DIR}" checkout -f "tags/${TARGET_REF}" --quiet
-    elif git -C "${UPGRADE_SRC_DIR}" rev-parse -q --verify "refs/remotes/origin/${TARGET_REF}" >/dev/null 2>&1; then
-        git -C "${UPGRADE_SRC_DIR}" checkout -f -B "${TARGET_REF}" "origin/${TARGET_REF}" --quiet
+    if [[ -z "${UPGRADE_SRC_DIR}" ]]; then
+        UPGRADE_SRC_DIR="$(mktemp -d /tmp/litecontrol-upgrade.XXXXXX)"
+        UPGRADE_SRC_IS_TEMP=1
+        trap cleanup_upgrade_src EXIT
     else
+        mkdir -p "${UPGRADE_SRC_DIR}"
+    fi
+
+    local archive_url=""
+    local downloaded=0
+
+    # 1. Try tag archive first (production default — no .git history on disk)
+    for tag_candidate in "${TARGET_REF}" "v${TARGET_REF#v}"; do
+        archive_url="https://github.com/${GITHUB_REPO_SLUG}/archive/refs/tags/${tag_candidate}.tar.gz"
+        if curl -fsSL "${archive_url}" | tar -xz --strip-components=1 -C "${UPGRADE_SRC_DIR}" 2>/dev/null; then
+            TARGET_REF="${tag_candidate}"
+            TARGET_IS_TAG=1
+            downloaded=1
+            break
+        fi
+        rm -rf "${UPGRADE_SRC_DIR:?}"/*
+    done
+
+    # 2. Try branch archive (dev/testing — still no .git history on disk)
+    if [[ "${downloaded}" -eq 0 ]]; then
+        archive_url="https://github.com/${GITHUB_REPO_SLUG}/archive/refs/heads/${TARGET_REF}.tar.gz"
+        if curl -fsSL "${archive_url}" | tar -xz --strip-components=1 -C "${UPGRADE_SRC_DIR}" 2>/dev/null; then
+            TARGET_IS_TAG=0
+            downloaded=1
+        else
+            rm -rf "${UPGRADE_SRC_DIR:?}"/*
+        fi
+    fi
+
+    # 3. Fallback to shallow git clone (e.g., private repo or commit SHA)
+    if [[ "${downloaded}" -eq 0 ]]; then
+        if ! command -v git >/dev/null 2>&1; then
+            DEBIAN_FRONTEND=noninteractive apt-get update -qq
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git
+        fi
+        if git clone --depth 1 --branch "${TARGET_REF}" --quiet "${GITHUB_REPO_URL}" "${UPGRADE_SRC_DIR}" 2>/dev/null; then
+            rm -rf "${UPGRADE_SRC_DIR}/.git"
+            downloaded=1
+        fi
+    fi
+
+    if [[ "${downloaded}" -eq 0 ]]; then
         printf "%s[ERROR]%s Version tag or branch '%s' not found in repository %s\n" "${C_RED}" "${C_RESET}" "${TARGET_REF}" "${GITHUB_REPO_URL}" >&2
         exit 1
     fi
@@ -251,13 +287,42 @@ sync_core_files_and_sudoers() {
     find "${LC_BASE_DIR}/scripts" -type f -name "*.sh" -exec chmod 750 {} +
     ln -sf "${LC_BASE_DIR}/bin/lc-cli" /usr/local/bin/lc-cli
 
-    # Install per-user PHP CLI setter and bootstrap Go shim if Go is available
+    # Install per-user PHP CLI setter and Go php-shim (prebuilt release binary preferred, source build fallback)
     install -d -m 0755 -o root -g root /usr/local/lib/lc-panel
     if [[ -f "${LC_BASE_DIR}/scripts/set-user-php-cli.sh" ]]; then
         install -m 0750 -o root -g root "${LC_BASE_DIR}/scripts/set-user-php-cli.sh" /usr/local/lib/lc-panel/set-user-php-cli.sh
     fi
-    if command -v go >/dev/null 2>&1 && [[ -f "${LC_BASE_DIR}/scripts/bootstrap-lc-php-shim.sh" ]]; then
-        (cd "${LC_BASE_DIR}" && bash "${LC_BASE_DIR}/scripts/bootstrap-lc-php-shim.sh")
+    if [[ -f "${LC_BASE_DIR}/scripts/bootstrap-lc-php-shim.sh" ]]; then
+        local shim_arch=""
+        case "$(uname -m)" in
+            x86_64|amd64) shim_arch="amd64" ;;
+            aarch64|arm64) shim_arch="arm64" ;;
+        esac
+
+        local prebuilt_shim=""
+        if [[ "${TARGET_IS_TAG}" -eq 1 && -n "${shim_arch}" ]]; then
+            local asset_name="php-shim-linux-${shim_arch}"
+            local release_base="https://github.com/${GITHUB_REPO_SLUG}/releases/download/${TARGET_REF}"
+            local tmp_bin="${UPGRADE_SRC_DIR}/${asset_name}"
+            local tmp_sums="${UPGRADE_SRC_DIR}/checksums.txt"
+
+            if curl -fsSL "${release_base}/${asset_name}" -o "${tmp_bin}" 2>/dev/null \
+                && curl -fsSL "${release_base}/checksums.txt" -o "${tmp_sums}" 2>/dev/null; then
+                if (cd "${UPGRADE_SRC_DIR}" && grep -E " ${asset_name}$" checksums.txt | sha256sum -c - >/dev/null 2>&1); then
+                    prebuilt_shim="${tmp_bin}"
+                    log_info "Verified pre-built ${asset_name} from release ${TARGET_REF}."
+                else
+                    log_warn "Checksum verification failed for ${asset_name}; skipping pre-built binary."
+                    rm -f "${tmp_bin}" "${tmp_sums}"
+                fi
+            fi
+        fi
+
+        if [[ -n "${prebuilt_shim}" ]]; then
+            SHIM_PREBUILT_BIN="${prebuilt_shim}" bash "${LC_BASE_DIR}/scripts/bootstrap-lc-php-shim.sh"
+        elif command -v go >/dev/null 2>&1 && [[ -f "${UPGRADE_SRC_DIR}/shim/go.mod" ]]; then
+            SHIM_SRC_DIR="${UPGRADE_SRC_DIR}/shim" bash "${LC_BASE_DIR}/scripts/bootstrap-lc-php-shim.sh"
+        fi
     fi
 
     # Update sudoers rule safely
@@ -282,8 +347,8 @@ sync_core_files_and_sudoers() {
         chmod 755 /etc/profile.d/litecontrol.sh
     fi
 
-    # Install/refresh per-user / per-directory PHP CLI shim at /usr/local/bin/php
-    if [[ -f "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" ]]; then
+    # Fallback shell PHP CLI shim only if the Go php-shim binary is not installed
+    if [[ ! -x /usr/local/lib/lc-panel/php-shim && -f "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" ]]; then
         rm -f /usr/local/bin/php
         cp "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" /usr/local/bin/php
         sed -i 's/\r$//' /usr/local/bin/php
