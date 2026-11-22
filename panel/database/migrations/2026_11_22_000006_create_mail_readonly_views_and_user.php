@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 return new class extends Migration
 {
@@ -91,34 +90,10 @@ return new class extends Migration
             INNER JOIN mail_domains d ON d.id = a.mail_domain_id
             WHERE a.active = 1 AND d.active = 1
         SQL);
-
-        if ($isMysqlFamily) {
-            $database = DB::connection()->getDatabaseName();
-            $password = (string) env('MAIL_RO_DB_PASSWORD', Str::random(32));
-            $quotedPassword = DB::getPdo()->quote($password);
-
-            DB::statement(
-                "CREATE USER IF NOT EXISTS 'lc_mail_ro'@'127.0.0.1' IDENTIFIED BY {$quotedPassword}"
-            );
-
-            foreach (self::VIEWS as $view) {
-                DB::statement("GRANT SELECT ON `{$database}`.`{$view}` TO 'lc_mail_ro'@'127.0.0.1'");
-            }
-
-            DB::statement('FLUSH PRIVILEGES');
-        }
     }
 
     public function down(): void
     {
-        $driver = DB::getDriverName();
-        $isMysqlFamily = in_array($driver, ['mysql', 'mariadb'], true);
-
-        if ($isMysqlFamily) {
-            DB::statement("DROP USER IF EXISTS 'lc_mail_ro'@'127.0.0.1'");
-            DB::statement('FLUSH PRIVILEGES');
-        }
-
         foreach (array_reverse(self::VIEWS) as $view) {
             DB::statement("DROP VIEW IF EXISTS {$view}");
         }

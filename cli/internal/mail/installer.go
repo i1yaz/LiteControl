@@ -103,6 +103,12 @@ func InstallCore(ctx context.Context, opts InstallOptions) (InstallResult, error
 		dbUser = "lc_mail_ro"
 	}
 
+	if opts.DBPassword != "" {
+		if err := ensureReadonlyDBUser(ctx, runner, dbHost, dbName, dbUser, opts.DBPassword); err != nil {
+			return InstallResult{}, err
+		}
+	}
+
 	tplData := TemplateData{
 		Hostname:       opts.Hostname,
 		DBHost:         dbHost,
@@ -302,4 +308,51 @@ func detectRedisBinary(runner CommandRunner) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("neither redis-server nor valkey-server found in PATH")
+}
+
+var mailReadonlyViews = []string{
+	"v_postfix_domains",
+	"v_postfix_mailboxes",
+	"v_postfix_aliases",
+	"v_postfix_mailbox_self",
+	"v_postfix_sender_mailboxes",
+	"v_postfix_sender_aliases",
+	"v_dovecot_users",
+}
+
+func ensureReadonlyDBUser(ctx context.Context, runner CommandRunner, dbHost, dbName, dbUser, dbPassword string) error {
+	dbBin := ""
+	for _, candidate := range []string{"mariadb", "mysql"} {
+		if p, err := runner.LookPath(candidate); err == nil && p != "" {
+			dbBin = p
+			break
+		}
+	}
+	if dbBin == "" {
+		return fmt.Errorf("neither mariadb nor mysql client found in PATH")
+	}
+
+	escUser := escapeSQLString(dbUser)
+	escHost := escapeSQLString(dbHost)
+	escPass := escapeSQLString(dbPassword)
+	escDB := strings.ReplaceAll(dbName, "`", "``")
+
+	var b strings.Builder
+	fmt.Fprintf(&b, "CREATE USER IF NOT EXISTS '%s'@'%s' IDENTIFIED BY '%s'; ", escUser, escHost, escPass)
+	fmt.Fprintf(&b, "ALTER USER '%s'@'%s' IDENTIFIED BY '%s'; ", escUser, escHost, escPass)
+	for _, view := range mailReadonlyViews {
+		fmt.Fprintf(&b, "GRANT SELECT ON `%s`.`%s` TO '%s'@'%s'; ", escDB, view, escUser, escHost)
+	}
+	b.WriteString("FLUSH PRIVILEGES;")
+
+	if _, err := runner.Run(ctx, dbBin, "-u", "root", "-e", b.String()); err != nil {
+		return fmt.Errorf("provision read-only mail DB user %s@%s: %w", dbUser, dbHost, err)
+	}
+	return nil
+}
+
+func escapeSQLString(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `'`, `\'`)
+	return s
 }

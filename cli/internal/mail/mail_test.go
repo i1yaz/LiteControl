@@ -203,7 +203,10 @@ func TestInstallCoreAndUninstallCore(t *testing.T) {
 	}
 
 	runner := &fakeRunner{
-		binaries: map[string]string{"redis-server": "/usr/bin/redis-server"},
+		binaries: map[string]string{
+			"redis-server": "/usr/bin/redis-server",
+			"mariadb":      "/usr/bin/mariadb",
+		},
 		handlers: map[string]func(args ...string) (string, error){
 			"postconf -h mail_version": func(...string) (string, error) { return "3.8.6\n", nil },
 			"dovecot --version":        func(...string) (string, error) { return "2.3.21\n", nil },
@@ -237,6 +240,9 @@ func TestInstallCoreAndUninstallCore(t *testing.T) {
 	// Verify SELinux restorecon -RF and validation gates ran
 	joinedCalls := strings.Join(runner.calls, "\n")
 	for _, want := range []string{
+		"CREATE USER IF NOT EXISTS 'lc_mail_ro'@'127.0.0.1' IDENTIFIED BY 'ro-secret'",
+		"ALTER USER 'lc_mail_ro'@'127.0.0.1' IDENTIFIED BY 'ro-secret'",
+		"GRANT SELECT ON `litecontrol`.`v_dovecot_users` TO 'lc_mail_ro'@'127.0.0.1'",
 		"restorecon -RF /etc/postfix",
 		"postfix check",
 		"doveconf -n",
