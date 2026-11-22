@@ -45,12 +45,13 @@ export const PANEL_NAVIGATION = [
     },
     {
         id: 'database',
-        label: 'Databases',
+        label: 'Databases & FTP',
         icon: 'database',
         adminOnly: false,
         children: [
             { id: 'databases.index', label: 'MySQL Engines', route: '/databases' },
             { id: 'databases.pma', label: 'phpMyAdmin', route: '/phpmyadmin/sso', external: true },
+            { id: 'ftp.index', label: 'FTP', route: '/ftp' },
         ],
     },
     {

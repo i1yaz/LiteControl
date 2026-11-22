@@ -29,6 +29,7 @@ use App\Http\Controllers\ServerOps\DashboardController;
 use App\Http\Controllers\ServerOps\ModuleController;
 use App\Http\Controllers\ServerOps\ServerController;
 use App\Http\Controllers\WebServer\DomainController;
+use App\Http\Controllers\WebServer\FtpController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/theme/switch', [ThemeController::class, 'switch'])->name('theme.switch');
@@ -121,6 +122,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/email/spam', [MailSpamFilterController::class, 'index'])->name('email.spam.index');
     Route::get('/email/spam-filter', [MailSpamFilterController::class, 'index'])->name('email.spam-filter.index');
     Route::put('/email/domains/{mailDomain}/spam-policy', [MailSpamFilterController::class, 'update'])->name('email.domains.spam-policy.update');
+
+    // FTP Management
+    Route::get('/ftp', [FtpController::class, 'index'])->name('ftp.index');
+    Route::post('/ftp', [FtpController::class, 'store'])->name('ftp.store');
+    Route::put('/ftp/{ftpUser}', [FtpController::class, 'update'])->name('ftp.update');
+    Route::patch('/ftp/{ftpUser}/password', [FtpController::class, 'updatePassword'])->name('ftp.password');
+    Route::delete('/ftp/{ftpUser}', [FtpController::class, 'destroy'])->name('ftp.destroy');
 
     // Web File Manager
     Route::get('/files', [FileManagerController::class, 'index'])->name('files.index');

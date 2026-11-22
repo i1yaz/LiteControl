@@ -3,6 +3,7 @@ import { useForm } from '@inertiajs/vue3';
 import { UserPlus, Check, X } from '@lucide/vue';
 import UiButton from '@shared/Ui/UiButton.vue';
 import UiInput from '@shared/Ui/UiInput.vue';
+import UiPasswordInput from '@shared/Ui/UiPasswordInput.vue';
 
 const props = defineProps({
     domain: {
@@ -69,12 +70,10 @@ const submitFtp = () => {
             </div>
 
             <div>
-                <UiInput
+                <UiPasswordInput
                     id="ftp_password"
                     v-model="form.password"
-                    type="password"
                     label="FTP Password"
-                    placeholder="••••••••••••"
                     :error="form.errors.password"
                     required
                 />
