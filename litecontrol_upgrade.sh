@@ -101,9 +101,13 @@ parse_args() {
 }
 
 resolve_target_ref() {
-    # Query latest release tag from GitHub remote, falling back to 'main'
+    # Query latest release tag from GitHub Releases API (no git required), falling back to git ls-remote then 'main'
     local latest_tag=""
-    if command -v git >/dev/null 2>&1; then
+    if command -v curl >/dev/null 2>&1; then
+        latest_tag=$(curl -fsSL "https://api.github.com/repos/${GITHUB_REPO_SLUG}/releases/latest" 2>/dev/null \
+            | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1 || true)
+    fi
+    if [[ -z "${latest_tag}" ]] && command -v git >/dev/null 2>&1; then
         latest_tag=$(git ls-remote --tags --refs --sort="-v:refname" "${GITHUB_REPO_URL}" 2>/dev/null | head -n 1 | awk -F'/' '{print $NF}' || true)
     fi
     local default_ref="${latest_tag:-main}"
@@ -278,9 +282,6 @@ sync_core_files_and_sudoers() {
     fi
     cp "${UPGRADE_SRC_DIR}/litecontrol_upgrade.sh" "${LC_BASE_DIR}/litecontrol_upgrade.sh"
     chmod 750 "${LC_BASE_DIR}/litecontrol_upgrade.sh"
-
-    find "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" "${LC_BASE_DIR}/templates" \
-        -type f ! -name "*.phar" -exec sed -i 's/\r$//' {} + 2>/dev/null || true
 
     chown -R root:root "${LC_BASE_DIR}/bin" "${LC_BASE_DIR}/scripts" "${LC_BASE_DIR}/templates"
     chmod 750 "${LC_BASE_DIR}/bin/lc-cli"

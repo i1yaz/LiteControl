@@ -44,8 +44,8 @@ install_primary_lsphp() {
         return 1
     fi
 
-    # Install per-user / per-directory PHP CLI shim at /usr/local/bin/php
-    if [[ -f "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" ]]; then
+    # Fallback shell PHP CLI shim only if the Go php-shim binary is not installed
+    if [[ ! -x /usr/local/lib/lc-panel/php-shim && -f "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" ]]; then
         rm -f /usr/local/bin/php
         cp "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" /usr/local/bin/php
         sed -i 's/\r$//' /usr/local/bin/php
