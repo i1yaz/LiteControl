@@ -14,5 +14,5 @@ interface PanelSslDriverInterface
     /**
      * Install custom SSL certificate & private key for LiteControl panel.
      */
-    public function installCustomPanelSsl(string $certificate, string $privateKey): array;
+    public function installCustomPanelSsl(string $certificate, string $privateKey, ?string $domain = null): array;
 }

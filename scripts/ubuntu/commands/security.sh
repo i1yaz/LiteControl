@@ -255,6 +255,13 @@ cmd_panel_port() {
         fi
     done
 
+    # Keep OLS panel reverse proxy backend port in sync if configured
+    local panel_proxy_vhconf="${OLS_VHOSTS_DIR}/lc_panel_proxy/vhconf.conf"
+    if [[ -f "${panel_proxy_vhconf}" ]]; then
+        sed -i -E "s|https://127\.0\.0\.1:[0-9]+|https://127.0.0.1:${new_port}|g" "${panel_proxy_vhconf}"
+        ols_safe_reload || true
+    fi
+
     # 3. Reload Panel Nginx safely with auto-rollback
     if ! panel_safe_reload; then
         # Rollback port state and Nginx config

@@ -300,8 +300,18 @@ class SecurityController extends Controller
      */
     public function panelSsl(): Response
     {
+        $configuredDomain = is_readable('/etc/litecontrol/panel_domain')
+            ? trim((string) file_get_contents('/etc/litecontrol/panel_domain'))
+            : '';
+
+        $panelPort = is_readable('/etc/litecontrol/port')
+            ? (int) trim((string) file_get_contents('/etc/litecontrol/port'))
+            : 8090;
+
         return Inertia::render('Security/PanelSsl', [
-            'panelHost' => request()->getHost(),
+            'panelHost' => $configuredDomain !== '' ? $configuredDomain : request()->getHost(),
+            'configuredDomain' => $configuredDomain !== '' ? $configuredDomain : null,
+            'panelPort' => $panelPort > 0 ? $panelPort : 8090,
             'hasSsl' => true,
         ]);
     }
@@ -313,7 +323,7 @@ class SecurityController extends Controller
     {
         $validated = $request->validate([
             'type' => ['required', 'in:letsencrypt,custom'],
-            'domain' => ['required_if:type,letsencrypt', 'nullable', 'string'],
+            'domain' => ['required_if:type,letsencrypt', 'nullable', 'string', 'regex:/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'],
             'certificate' => ['required_if:type,custom', 'nullable', 'string'],
             'private_key' => ['required_if:type,custom', 'nullable', 'string'],
         ]);
@@ -321,7 +331,12 @@ class SecurityController extends Controller
         try {
             $action->handle($validated, Auth::user(), $request->ip());
 
-            return redirect()->back()->with('success', 'LiteControl panel SSL certificate updated successfully.');
+            $domain = $validated['domain'] ?? null;
+            $message = $domain
+                ? "LiteControl panel SSL updated. You can now access the panel at https://{$domain}."
+                : 'LiteControl panel SSL certificate updated successfully.';
+
+            return redirect()->back()->with('success', $message);
         } catch (LcCliException $e) {
             return redirect()->back()->with('error', $e->getMessage() ?: 'Failed to apply panel SSL certificate.');
         }

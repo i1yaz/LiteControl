@@ -192,7 +192,7 @@ class SecurityActionsTest extends TestCase
         $sslMock = Mockery::mock(PanelSslDriverInterface::class);
         $sslMock->shouldReceive('installCustomPanelSsl')
             ->once()
-            ->with('MOCKCERT', 'MOCKKEY')
+            ->with('MOCKCERT', 'MOCKKEY', null)
             ->andReturn(['panel_ssl' => true]);
 
         $action = new UpdatePanelSslAction($sslMock);

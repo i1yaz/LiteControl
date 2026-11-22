@@ -23,7 +23,8 @@ class UpdatePanelSslAction
         if ($data['type'] === 'letsencrypt') {
             $result = $this->panelSslDriver->issuePanelSsl($data['domain']);
         } else {
-            $result = $this->panelSslDriver->installCustomPanelSsl($data['certificate'], $data['private_key']);
+            $domain = ! empty($data['domain']) ? (string) $data['domain'] : null;
+            $result = $this->panelSslDriver->installCustomPanelSsl($data['certificate'], $data['private_key'], $domain);
         }
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([

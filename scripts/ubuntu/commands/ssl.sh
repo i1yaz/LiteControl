@@ -11,10 +11,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 # shellcheck source=../lib/common.sh
 source "${SCRIPT_DIR}/../lib/common.sh"
 
 DOMAINS_META_DIR="${LC_CONF_DIR}/domains"
+VHOSTS_META_DIR="${LC_CONF_DIR}/vhosts"
+ACME_WEBROOT="${LC_CONF_DIR}/acme-webroot"
 ACME_BIN="${ACME_BIN:-/root/.acme.sh/acme.sh}"
 
 emit_error() {
@@ -227,6 +230,103 @@ cmd_ssl_renew() {
     emit_success "SSL certificate renewal completed." '{"renewed":true}'
 }
 
+resolve_panel_proxy_tpl() {
+    if [[ -f "${LC_BASE_DIR}/templates/ols/panel_proxy_vhconf.conf.tpl" ]]; then
+        printf "%s" "${LC_BASE_DIR}/templates/ols/panel_proxy_vhconf.conf.tpl"
+    else
+        printf "%s" "${REPO_ROOT}/templates/ols/panel_proxy_vhconf.conf.tpl"
+    fi
+}
+
+setup_panel_proxy_vhost() {
+    local hostname="$1"
+    local vh_name="lc_panel_proxy"
+    local vh_dir="${OLS_VHOSTS_DIR}/${vh_name}"
+    local vh_conf="${vh_dir}/vhconf.conf"
+    local panel_port="${LC_DEFAULT_PORT:-8090}"
+
+    if [[ -s "${LC_CONF_DIR}/port" ]]; then
+        panel_port=$(tr -d ' \t\r\n' < "${LC_CONF_DIR}/port")
+    fi
+
+    # Prevent colliding with an existing user-hosted website domain
+    if [[ -f "${VHOSTS_META_DIR}/${hostname}.conf" ]]; then
+        emit_error "Domain '${hostname}' is already configured as a hosted website. Choose a dedicated subdomain (e.g. panel.${hostname})."
+    fi
+
+    mkdir -p "${ACME_WEBROOT}/.well-known/acme-challenge" "${vh_dir}"
+    if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+        chmod 755 "${ACME_WEBROOT}" "${ACME_WEBROOT}/.well-known" "${ACME_WEBROOT}/.well-known/acme-challenge"
+    fi
+
+    local tpl_file
+    tpl_file=$(resolve_panel_proxy_tpl)
+    if [[ ! -f "${tpl_file}" ]]; then
+        emit_error "Panel proxy template not found at '${tpl_file}'."
+    fi
+
+    sed -e "s|__ACME_WEBROOT__|${ACME_WEBROOT}|g" \
+        -e "s|__PANEL_DOMAIN__|${hostname}|g" \
+        -e "s|__PANEL_PORT__|${panel_port}|g" \
+        -e "s|__SSL_KEY__|${LC_SSL_DIR}/privkey.pem|g" \
+        -e "s|__SSL_CERT__|${LC_SSL_DIR}/fullchain.pem|g" \
+        "${tpl_file}" > "${vh_conf}"
+
+    if [[ -f "${OLS_CONF}" ]]; then
+        ols_backup_config
+
+        # Remove any existing lc_panel_proxy block/maps first for idempotent updates
+        awk -v vh="${vh_name}" '
+            $0 == "# VHOST_START:" vh { skip=1; next }
+            $0 == "# VHOST_END:" vh { skip=0; next }
+            index($0, "# MAP_HTTP:" vh) > 0 { next }
+            index($0, "# MAP_HTTPS:" vh) > 0 { next }
+            !skip { print }
+        ' "${OLS_CONF}" > "${OLS_CONF}.tmp" && mv "${OLS_CONF}.tmp" "${OLS_CONF}"
+
+        local vhost_block
+        vhost_block=$(cat <<EOF
+# VHOST_START:${vh_name}
+virtualhost ${vh_name} {
+  vhRoot                  ${ACME_WEBROOT}
+  configFile              conf/vhosts/${vh_name}/vhconf.conf
+  allowSymbolLink         1
+  enableScript            0
+  restrained              1
+  setUIDMode              0
+}
+# VHOST_END:${vh_name}
+EOF
+)
+
+        awk -v block="${vhost_block}" -v vh="${vh_name}" -v dom="${hostname}" '
+            /# END LITECONTROL VHOSTS/ { print block }
+            /# END LITECONTROL MAP_HTTP/ { print "  map                     " vh " " dom " # MAP_HTTP:" vh }
+            /# END LITECONTROL MAP_HTTPS/ { print "  map                     " vh " " dom " # MAP_HTTPS:" vh }
+            { print }
+        ' "${OLS_CONF}" > "${OLS_CONF}.tmp" && mv "${OLS_CONF}.tmp" "${OLS_CONF}"
+
+        if ! ols_safe_reload; then
+            emit_error "Failed to reload OpenLiteSpeed after configuring panel proxy for '${hostname}'; configuration rolled back."
+        fi
+    fi
+}
+
+persist_panel_domain() {
+    local hostname="$1"
+    mkdir -p "${LC_CONF_DIR}"
+    printf "%s\n" "${hostname}" > "${LC_CONF_DIR}/panel_domain"
+    chmod 644 "${LC_CONF_DIR}/panel_domain" 2>/dev/null || true
+
+    if [[ -f "${LC_PANEL_DIR}/.env" ]]; then
+        if grep -qE '^APP_URL=' "${LC_PANEL_DIR}/.env"; then
+            sed -i -E "s|^APP_URL=.*|APP_URL=https://${hostname}|" "${LC_PANEL_DIR}/.env"
+        else
+            printf "\nAPP_URL=https://%s\n" "${hostname}" >> "${LC_PANEL_DIR}/.env"
+        fi
+    fi
+}
+
 cmd_ssl_panel() {
     local action="${1:-}"
     shift || true
@@ -236,9 +336,15 @@ cmd_ssl_panel() {
             local hostname="${1:-}"
             local email="${2:-}"
             [[ -n "${hostname}" ]] || emit_error "Missing panel hostname for SSL issuance."
+            validate_domain "${hostname}"
+            hostname="${hostname,,}"
 
             local panel_cert="${LC_SSL_DIR}/fullchain.pem"
             local panel_key="${LC_SSL_DIR}/privkey.pem"
+            mkdir -p "${LC_SSL_DIR}"
+
+            # Configure OLS system reverse-proxy vhost first so port 80 serves ACME HTTP-01 challenges
+            setup_panel_proxy_vhost "${hostname}"
 
             if [[ "${LC_TEST_MODE:-0}" == "1" ]]; then
                 openssl req -x509 -nodes -days 90 -newkey rsa:2048 \
@@ -246,38 +352,51 @@ cmd_ssl_panel() {
                     -out "${panel_cert}" \
                     -subj "/CN=${hostname}" >/dev/null 2>&1 || true
             else
-                local webroot="${LC_PANEL_DIR}/public"
-                mkdir -p "${webroot}"
                 if [[ -n "${email}" ]]; then
                     "${ACME_BIN}" --register-account -m "${email}" >/dev/null 2>&1 || true
                 fi
-                "${ACME_BIN}" --issue -d "${hostname}" -w "${webroot}" --keylength ec-256 --force || \
+                "${ACME_BIN}" --issue -d "${hostname}" -w "${ACME_WEBROOT}" --keylength ec-256 --force || \
                     emit_error "Failed to issue certificate for panel hostname ${hostname}."
 
                 "${ACME_BIN}" --install-cert -d "${hostname}" --ecc \
                     --key-file "${panel_key}" \
-                    --fullchain-file "${panel_cert}"
+                    --fullchain-file "${panel_cert}" \
+                    --reloadcmd "systemctl reload ${PANEL_SYSTEMD_SERVICE} 2>/dev/null || true; ${OLS_CTRL} reload 2>/dev/null || true"
             fi
 
+            persist_panel_domain "${hostname}"
             ols_safe_reload
             panel_safe_reload
-            emit_success "Panel SSL certificate issued for '${hostname}'." "{\"hostname\":\"${hostname}\"}"
+            emit_success "Panel SSL certificate issued and HTTPS proxy enabled for '${hostname}'." "{\"hostname\":\"${hostname}\",\"proxy_enabled\":true,\"url\":\"https://${hostname}\"}"
             ;;
         custom)
             local cert_src="${1:-}"
             local key_src="${2:-}"
+            local hostname="${3:-}"
             [[ -n "${cert_src}" ]] || emit_error "Missing panel certificate file."
             [[ -n "${key_src}" ]] || emit_error "Missing panel private key file."
             validate_ssl_pair "${cert_src}" "${key_src}"
 
+            mkdir -p "${LC_SSL_DIR}"
             cp -f "${cert_src}" "${LC_SSL_DIR}/fullchain.pem"
             cp -f "${key_src}" "${LC_SSL_DIR}/privkey.pem"
             chmod 600 "${LC_SSL_DIR}/privkey.pem"
             chmod 644 "${LC_SSL_DIR}/fullchain.pem"
 
+            if [[ -n "${hostname}" ]]; then
+                validate_domain "${hostname}"
+                hostname="${hostname,,}"
+                setup_panel_proxy_vhost "${hostname}"
+                persist_panel_domain "${hostname}"
+            fi
+
             ols_safe_reload
             panel_safe_reload
-            emit_success "Panel custom SSL certificate updated successfully." '{"installed":true}'
+            if [[ -n "${hostname}" ]]; then
+                emit_success "Panel custom SSL certificate updated and HTTPS proxy enabled for '${hostname}'." "{\"installed\":true,\"hostname\":\"${hostname}\",\"proxy_enabled\":true,\"url\":\"https://${hostname}\"}"
+            else
+                emit_success "Panel custom SSL certificate updated successfully." '{"installed":true}'
+            fi
             ;;
         *)
             emit_error "Usage: lc-cli ssl panel-ssl <issue|custom> ..."

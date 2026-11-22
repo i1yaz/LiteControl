@@ -25,7 +25,7 @@ class CliPanelSslAdapter implements PanelSslDriverInterface
         return $res['data'] ?? [];
     }
 
-    public function installCustomPanelSsl(string $certificate, string $privateKey): array
+    public function installCustomPanelSsl(string $certificate, string $privateKey, ?string $domain = null): array
     {
         $tempCert = tempnam(sys_get_temp_dir(), 'panel_cert_');
         $tempKey = tempnam(sys_get_temp_dir(), 'panel_key_');
@@ -33,10 +33,15 @@ class CliPanelSslAdapter implements PanelSslDriverInterface
         file_put_contents($tempKey, $privateKey);
 
         try {
-            $res = $this->lcCli->run('ssl', ['panel-ssl', 'custom', $tempCert, $tempKey]);
+            $args = ['panel-ssl', 'custom', $tempCert, $tempKey];
+            if ($domain !== null && $domain !== '') {
+                $args[] = $domain;
+            }
+
+            $res = $this->lcCli->run('ssl', $args);
 
             if (($res['status'] ?? '') === 'error') {
-                throw new LcCliException($res['message'] ?? 'Failed to apply panel SSL certificate.', 'ssl', ['panel-ssl', 'custom', $tempCert, $tempKey]);
+                throw new LcCliException($res['message'] ?? 'Failed to apply panel SSL certificate.', 'ssl', $args);
             }
 
             return $res['data'] ?? [];
