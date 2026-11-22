@@ -307,13 +307,24 @@ setup_panel_proxy_vhost() {
     if [[ -f "${OLS_CONF}" ]]; then
         ols_backup_config
 
-        # Remove any existing lc_panel_proxy block/maps first for idempotent updates
+        # Remove any existing lc_panel_proxy block/maps first, strip legacy inline map comments,
+        # and ensure catch-all 'map Example *' sits after specific vhost maps
         awk -v vh="${vh_name}" '
             $0 == "# VHOST_START:" vh { skip=1; next }
             $0 == "# VHOST_END:" vh { skip=0; next }
             index($0, "# MAP_HTTP:" vh) > 0 { next }
             index($0, "# MAP_HTTPS:" vh) > 0 { next }
-            !skip { print }
+            $1 == "map" && $2 == vh { next }
+            $1 == "map" && $2 == "Example" && $3 == "*" { next }
+            !skip {
+                if ($1 == "map") {
+                    sub(/[[:space:]]+# MAP_HTTPS?:[^[:space:]]+[[:space:]]*$/, "")
+                }
+                print
+                if ($0 ~ /# END LITECONTROL MAP_HTTP$/ || $0 ~ /# END LITECONTROL MAP_HTTPS$/) {
+                    print "  map                     Example *"
+                }
+            }
         ' "${OLS_CONF}" > "${OLS_CONF}.tmp" && mv "${OLS_CONF}.tmp" "${OLS_CONF}"
 
         local vhost_block
@@ -332,9 +343,15 @@ EOF
 )
 
         awk -v block="${vhost_block}" -v vh="${vh_name}" -v dom="${hostname}" '
-            /# END LITECONTROL VHOSTS/ { print block }
-            /# END LITECONTROL MAP_HTTP/ { print "  map                     " vh " " dom " # MAP_HTTP:" vh }
-            /# END LITECONTROL MAP_HTTPS/ { print "  map                     " vh " " dom " # MAP_HTTPS:" vh }
+            /# END LITECONTROL VHOSTS$/ { print block }
+            /# END LITECONTROL MAP_HTTP$/ {
+                print "  # MAP_HTTP:" vh
+                print "  map                     " vh " " dom
+            }
+            /# END LITECONTROL MAP_HTTPS$/ {
+                print "  # MAP_HTTPS:" vh
+                print "  map                     " vh " " dom
+            }
             { print }
         ' "${OLS_CONF}" > "${OLS_CONF}.tmp" && mv "${OLS_CONF}.tmp" "${OLS_CONF}"
 

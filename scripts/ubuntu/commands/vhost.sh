@@ -181,10 +181,25 @@ EOF
 )
 
     awk -v block="${vhost_block}" -v dom="${domain}" '
-        /# END LITECONTROL VHOSTS/ { print block }
-        /# END LITECONTROL MAP_HTTP/ { print "  map                     " dom " " dom ", www." dom " # MAP_HTTP:" dom }
-        /# END LITECONTROL MAP_HTTPS/ { print "  map                     " dom " " dom ", www." dom " # MAP_HTTPS:" dom }
-        { print }
+        $1 == "map" && $2 == "Example" && $3 == "*" { next }
+        /# END LITECONTROL VHOSTS$/ { print block }
+        /# END LITECONTROL MAP_HTTP$/ {
+            print "  # MAP_HTTP:" dom
+            print "  map                     " dom " " dom ", www." dom
+        }
+        /# END LITECONTROL MAP_HTTPS$/ {
+            print "  # MAP_HTTPS:" dom
+            print "  map                     " dom " " dom ", www." dom
+        }
+        {
+            if ($1 == "map") {
+                sub(/[[:space:]]+# MAP_HTTPS?:[^[:space:]]+[[:space:]]*$/, "")
+            }
+            print
+            if ($0 ~ /# END LITECONTROL MAP_HTTP$/ || $0 ~ /# END LITECONTROL MAP_HTTPS$/) {
+                print "  map                     Example *"
+            }
+        }
     ' "${OLS_CONF}" > "${OLS_CONF}.tmp" && mv "${OLS_CONF}.tmp" "${OLS_CONF}"
 
     if ! ols_safe_reload; then
@@ -241,6 +256,7 @@ cmd_vhost_remove() {
             $0 == "# VHOST_END:" dom { skip=0; next }
             index($0, "# MAP_HTTP:" dom) > 0 { next }
             index($0, "# MAP_HTTPS:" dom) > 0 { next }
+            $1 == "map" && $2 == dom { next }
             !skip { print }
         ' "${OLS_CONF}" > "${OLS_CONF}.tmp" && mv "${OLS_CONF}.tmp" "${OLS_CONF}"
     fi
@@ -509,14 +525,9 @@ cmd_vhost_alias_add() {
     ols_backup_config
     if [[ -f "${OLS_CONF}" ]]; then
         awk -v dom="${domain}" -v al="${alias}" '
-            $0 ~ "# MAP_HTTP:" dom {
-                print $0
-                print "  map                     " dom " " al ", www." al " # MAP_HTTP:" dom
-                next
-            }
-            $0 ~ "# MAP_HTTPS:" dom {
-                print $0
-                print "  map                     " dom " " al ", www." al " # MAP_HTTPS:" dom
+            $1 == "map" && $2 == dom {
+                sub(/[[:space:]]+# MAP_HTTPS?:[^[:space:]]+[[:space:]]*$/, "")
+                print $0 ", " al ", www." al
                 next
             }
             { print }

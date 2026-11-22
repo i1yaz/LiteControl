@@ -194,9 +194,9 @@ virtualhost Example {
 listener Default {
   address                 *:80
   secure                  0
-  map                     Example *
   # BEGIN LITECONTROL MAP_HTTP
   # END LITECONTROL MAP_HTTP
+  map                     Example *
 }
 
 listener SSL {
@@ -212,7 +212,7 @@ listener SSL {
   enableSpdy              15
   enableStapling          1
   ocspRespMaxAge          86400
-  map                     Example *
   # BEGIN LITECONTROL MAP_HTTPS
   # END LITECONTROL MAP_HTTPS
+  map                     Example *
 }

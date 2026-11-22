@@ -235,6 +235,13 @@ assert_contains "${out}" '"status":"success"' "ssl issue succeeds in sandbox tes
 out=$(bash "${CLI}" --json ssl panel-ssl custom "${TEST_CERT}" "${TEST_KEY}")
 assert_contains "${out}" '"status":"success"' "ssl panel-ssl custom succeeds"
 
+# Test panel-ssl issue configures lc_panel_proxy without inline comments on map lines
+out=$(bash "${CLI}" --json ssl panel-ssl issue panel.example.com)
+assert_contains "${out}" '"status":"success"' "ssl panel-ssl issue succeeds"
+assert_contains "$(cat "${OLS_CONF}")" "virtualhost lc_panel_proxy {" "httpd_config.conf contains lc_panel_proxy virtualhost"
+assert_contains "$(cat "${OLS_CONF}")" "map                     lc_panel_proxy panel.example.com" "httpd_config.conf maps lc_panel_proxy to panel.example.com"
+assert_not_contains "$(cat "${OLS_CONF}")" "panel.example.com # MAP_" "httpd_config.conf map line has no trailing inline comment"
+
 # Test ssl renew
 out=$(bash "${CLI}" --json ssl renew)
 assert_contains "${out}" '"status":"success"' "ssl renew succeeds"
