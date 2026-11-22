@@ -10,6 +10,11 @@ use App\Http\Controllers\HostingPlans\PackageController;
 use App\Http\Controllers\Identity\AuthController;
 use App\Http\Controllers\Identity\UserController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\Mail\MailAccountController;
+use App\Http\Controllers\Mail\MailDkimController;
+use App\Http\Controllers\Mail\MailDomainController;
+use App\Http\Controllers\Mail\MailForwarderController;
+use App\Http\Controllers\Mail\MailSpamFilterController;
 use App\Http\Controllers\PanelConfig\ConfigurationController;
 use App\Http\Controllers\PanelConfig\ThemeController;
 use App\Http\Controllers\PhpRuntime\PhpController;
@@ -90,6 +95,26 @@ Route::middleware('auth')->group(function () {
     Route::delete('/databases/users/{dbUser}', [DatabaseController::class, 'destroyUser'])->name('databases.users.destroy');
     Route::post('/databases/grant', [DatabaseController::class, 'grantPrivileges'])->name('databases.grant');
     Route::get('/phpmyadmin/sso', [DatabaseController::class, 'phpmyadminSso'])->name('phpmyadmin.sso');
+
+    // Email Management
+    Route::get('/email/domains', [MailDomainController::class, 'index'])->name('email.domains.index');
+    Route::post('/email/domains', [MailDomainController::class, 'store'])->name('email.domains.store');
+    Route::put('/email/domains/{mailDomain}', [MailDomainController::class, 'update'])->name('email.domains.update');
+    Route::get('/email/accounts', [MailAccountController::class, 'index'])->name('email.accounts.index');
+    Route::get('/email/domains/dns-challenge', [MailAccountController::class, 'dnsVerificationChallenge'])->name('email.domains.dns-challenge');
+    Route::post('/email/domains/{mailDomain}/issue-tls', [MailAccountController::class, 'issueStandaloneTls'])->name('email.domains.issue-tls');
+    Route::post('/email/accounts', [MailAccountController::class, 'store'])->name('email.accounts.store');
+    Route::put('/email/accounts/{mailAccount}', [MailAccountController::class, 'update'])->name('email.accounts.update');
+    Route::delete('/email/accounts/{mailAccount}', [MailAccountController::class, 'destroy'])->name('email.accounts.destroy');
+    Route::get('/email/forwarders', [MailForwarderController::class, 'index'])->name('email.forwarders.index');
+    Route::post('/email/forwarders', [MailForwarderController::class, 'store'])->name('email.forwarders.store');
+    Route::put('/email/forwarders/{mailAlias}', [MailForwarderController::class, 'update'])->name('email.forwarders.update');
+    Route::delete('/email/forwarders/{mailAlias}', [MailForwarderController::class, 'destroy'])->name('email.forwarders.destroy');
+    Route::get('/email/dkim', [MailDkimController::class, 'index'])->name('email.dkim.index');
+    Route::post('/email/dkim', [MailDkimController::class, 'store'])->name('email.dkim.store');
+    Route::get('/email/spam', [MailSpamFilterController::class, 'index'])->name('email.spam.index');
+    Route::get('/email/spam-filter', [MailSpamFilterController::class, 'index'])->name('email.spam-filter.index');
+    Route::put('/email/domains/{mailDomain}/spam-policy', [MailSpamFilterController::class, 'update'])->name('email.domains.spam-policy.update');
 
     // Web File Manager
     Route::get('/files', [FileManagerController::class, 'index'])->name('files.index');

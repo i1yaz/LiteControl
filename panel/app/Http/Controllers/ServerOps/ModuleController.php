@@ -5,6 +5,8 @@ namespace App\Http\Controllers\ServerOps;
 use App\Domains\ServerOps\Actions\InstallModuleAction;
 use App\Domains\ServerOps\Actions\RemoveModuleAction;
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
+use App\Domains\ServerOps\ModuleRegistry;
 use App\Exceptions\System\LcCliException;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -15,8 +17,11 @@ use Inertia\Response;
 
 class ModuleController extends Controller
 {
+    private const CLAMAV_MIN_RAM_MB = 4096;
+
     public function __construct(
-        protected ModuleDriverInterface $moduleCli
+        protected ModuleDriverInterface $moduleCli,
+        protected ServerDriverInterface $serverDriver,
     ) {}
 
     /**
@@ -24,13 +29,61 @@ class ModuleController extends Controller
      */
     public function index(): Response
     {
-        $modules = $this->moduleCli->listModules();
+        $rawModules = ModuleRegistry::mergeWithCliList($this->moduleCli->listModules());
+        $webmailHost = Cache::get('mail_webmail_hostname');
+        if (! is_string($webmailHost) || $webmailHost === '') {
+            $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+            $webmailHost = is_string($appHost) && $appHost !== '' && $appHost !== 'localhost'
+                ? "webmail.{$appHost}"
+                : null;
+        }
+
+        $modules = array_map(function (array $mod) use ($webmailHost): array {
+            $key = (string) ($mod['name'] ?? '');
+            $cachedState = Cache::get("module_install_{$key}");
+            $installed = (bool) ($mod['installed'] ?? false);
+
+            $status = match (true) {
+                in_array($cachedState, ['pending', 'provisioning', 'failed'], true) => $cachedState,
+                $installed || $cachedState === 'active' => 'active',
+                default => 'inactive',
+            };
+
+            $isActive = $status === 'active';
+            $errorMessage = $status === 'failed'
+                ? (is_string($err = Cache::get("module_install_{$key}_error")) ? $err : 'Installation failed.')
+                : null;
+
+            $launchUrl = ($key === 'mail_webmail' && $isActive && is_string($webmailHost) && $webmailHost !== '')
+                ? "https://{$webmailHost}/"
+                : null;
+
+            return [
+                'key' => $key,
+                'name' => $key,
+                'title' => (string) ($mod['title'] ?? $key),
+                'description' => (string) ($mod['description'] ?? ''),
+                'driver' => (string) ($mod['driver'] ?? $key),
+                'parent_key' => $mod['parent'] ?? null,
+                'depends_on' => is_array($mod['depends_on'] ?? null) ? array_values($mod['depends_on']) : [],
+                'status' => $status,
+                'is_active' => $isActive,
+                'installed' => $isActive,
+                'error_message' => $errorMessage,
+                'launch_url' => $launchUrl,
+            ];
+        }, $rawModules);
+
         $current = Cache::get('module_install_current');
         $rawStatus = $current ? Cache::get("module_install_{$current}") : null;
         $installingModule = in_array($rawStatus, ['pending', 'provisioning'], true) ? $current : null;
 
+        $stats = $this->serverDriver->getStats();
+        $serverRamMb = (int) ($stats['ram_total_mb'] ?? 0);
+
         return Inertia::render('ServerOps/Modules', [
             'modules' => $modules,
+            'server_ram_mb' => $serverRamMb,
             'installingModule' => $installingModule,
         ]);
     }
@@ -40,13 +93,42 @@ class ModuleController extends Controller
      */
     public function install(Request $request, string $module, InstallModuleAction $installModuleAction)
     {
-        $allowed = ['ftp', 'dns', 'mail', 'modsecurity', 'imunifyav'];
-        if (! in_array($module, $allowed)) {
+        if (! in_array($module, ModuleRegistry::allowedKeys(), true)) {
             return redirect()->back()->with('error', "Unsupported module '$module'.");
         }
 
+        if ($module === 'clamav') {
+            $serverRamMb = (int) ($this->serverDriver->getStats()['ram_total_mb'] ?? 0);
+            if ($serverRamMb < self::CLAMAV_MIN_RAM_MB) {
+                return redirect()->back()->with(
+                    'error',
+                    sprintf(
+                        'ClamAV requires at least %d MB of server RAM (detected %d MB).',
+                        self::CLAMAV_MIN_RAM_MB,
+                        $serverRamMb
+                    )
+                );
+            }
+        }
+
+        $hostname = null;
+        if (in_array($module, ['mail_core', 'mail_webmail'], true)) {
+            $validated = $request->validate([
+                'hostname' => [
+                    'required',
+                    'string',
+                    'max:253',
+                    'regex:/^(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/',
+                ],
+            ], [
+                'hostname.required' => 'A valid FQDN hostname is required.',
+                'hostname.regex' => 'Hostname must be a valid fully qualified domain name (e.g. mail.example.com).',
+            ]);
+            $hostname = $validated['hostname'];
+        }
+
         try {
-            $installModuleAction->handle($module, Auth::user(), $request->ip());
+            $installModuleAction->handle($module, Auth::user(), $request->ip(), $hostname);
 
             return redirect()->back()->with('success', "Module '$module' installation queued.");
         } catch (LcCliException $e) {
@@ -100,13 +182,17 @@ class ModuleController extends Controller
      */
     public function remove(Request $request, string $module, RemoveModuleAction $removeModuleAction)
     {
-        $allowed = ['ftp', 'dns', 'mail', 'modsecurity', 'imunifyav'];
-        if (! in_array($module, $allowed)) {
+        if (! in_array($module, ModuleRegistry::allowedKeys(), true)) {
             return redirect()->back()->with('error', "Unsupported module '$module'.");
         }
 
         try {
-            $removeModuleAction->handle($module, Auth::user(), $request->ip());
+            $removeModuleAction->handle(
+                $module,
+                Auth::user(),
+                $request->ip(),
+                $request->boolean('purge_data')
+            );
 
             return redirect()->back()->with('success', "Module '$module' removed successfully.");
         } catch (LcCliException $e) {

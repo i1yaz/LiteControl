@@ -16,22 +16,62 @@
 
 set -euo pipefail
 
-# Resolve repository root: support running via git clone or curl/wget pipe
-GITHUB_REPO_URL="https://github.com/i1yaz/LiteControl.git"
-INSTALL_SRC_DIR="/usr/local/src/litecontrol"
+# Resolve repository root: support running from local checkout or curl/wget pipe
+GITHUB_REPO_URL="${GITHUB_REPO_URL:-https://github.com/i1yaz/LiteControl.git}"
+GITHUB_REPO_SLUG="${GITHUB_REPO_SLUG:-$(printf '%s' "${GITHUB_REPO_URL}" | sed -E 's#^https?://github\.com/##; s#\.git$##')}"
+INSTALL_REF="${INSTALL_REF:-}"
+INSTALL_SRC_IS_TEMP=0
+
+cleanup_install_src() {
+    if [[ "${INSTALL_SRC_IS_TEMP}" -eq 1 && -n "${REPO_DIR:-}" && -d "${REPO_DIR}" ]]; then
+        rm -rf "${REPO_DIR}"
+    fi
+}
 
 if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
     REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 else
-    # Executed via curl/wget pipe or bash -c string
+    # Executed via curl/wget pipe or bash -c string — use ephemeral temp dir (no .git left on disk)
     echo "==> Downloading LiteControl installer and scripts..."
-    if ! command -v git >/dev/null 2>&1; then
-        apt-get update -qq && apt-get install -y -qq git curl
+    if ! command -v curl >/dev/null 2>&1 || ! command -v tar >/dev/null 2>&1; then
+        apt-get update -qq && apt-get install -y -qq curl tar
     fi
-    mkdir -p "$(dirname "${INSTALL_SRC_DIR}")"
-    rm -rf "${INSTALL_SRC_DIR}"
-    git clone --depth 1 "${GITHUB_REPO_URL}" "${INSTALL_SRC_DIR}"
-    REPO_DIR="${INSTALL_SRC_DIR}"
+    REPO_DIR="$(mktemp -d /tmp/litecontrol-install.XXXXXX)"
+    INSTALL_SRC_IS_TEMP=1
+    trap cleanup_install_src EXIT
+
+    if [[ -z "${INSTALL_REF}" ]]; then
+        INSTALL_REF="$(curl -fsSL "https://api.github.com/repos/${GITHUB_REPO_SLUG}/releases/latest" 2>/dev/null \
+            | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1 || true)"
+    fi
+
+    downloaded=0
+    if [[ -n "${INSTALL_REF}" ]]; then
+        if curl -fsSL "https://github.com/${GITHUB_REPO_SLUG}/archive/refs/tags/${INSTALL_REF}.tar.gz" \
+            | tar -xz --strip-components=1 -C "${REPO_DIR}" 2>/dev/null; then
+            downloaded=1
+        else
+            rm -rf "${REPO_DIR:?}"/*
+        fi
+    fi
+
+    if [[ "${downloaded}" -eq 0 ]]; then
+        branch_ref="${INSTALL_REF:-main}"
+        if curl -fsSL "https://github.com/${GITHUB_REPO_SLUG}/archive/refs/heads/${branch_ref}.tar.gz" \
+            | tar -xz --strip-components=1 -C "${REPO_DIR}" 2>/dev/null; then
+            downloaded=1
+        else
+            rm -rf "${REPO_DIR:?}"/*
+        fi
+    fi
+
+    if [[ "${downloaded}" -eq 0 ]]; then
+        if ! command -v git >/dev/null 2>&1; then
+            apt-get update -qq && apt-get install -y -qq git
+        fi
+        git clone --depth 1 "${GITHUB_REPO_URL}" "${REPO_DIR}"
+        rm -rf "${REPO_DIR}/.git"
+    fi
 fi
 
 # Strip CRLF in case repository was cloned/copied from Windows with CRLF

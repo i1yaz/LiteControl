@@ -30,9 +30,13 @@ class CliBackupAdapter implements BackupDriverInterface
         return [];
     }
 
-    public function createBackup(string $username): array
+    public function createBackup(string $username, bool $includeMail = false): array
     {
         $args = ['create', $username];
+        if ($includeMail) {
+            $args[] = '--include-mail';
+        }
+
         $res = $this->lcCli->run('backup', $args);
 
         if (($res['status'] ?? '') !== 'success') {

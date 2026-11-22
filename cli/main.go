@@ -3,11 +3,22 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/litecontrol/lc-cli/cmd"
 )
 
 func main() {
+	binName := strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe")
+	if binName == "lc-mail" {
+		if err := cmd.ExecuteMail(os.Args[1:]); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	if len(os.Args) < 2 {
 		printUsage()
 		os.Exit(1)
@@ -16,6 +27,11 @@ func main() {
 	switch os.Args[1] {
 	case "deploy":
 		if err := cmd.ExecuteDeploy(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+	case "mail":
+		if err := cmd.ExecuteMail(os.Args[2:]); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
@@ -33,4 +49,5 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "")
 	fmt.Fprintln(os.Stderr, "Commands:")
 	fmt.Fprintln(os.Stderr, "  deploy    Manage zero-downtime atomic deployments")
+	fmt.Fprintln(os.Stderr, "  mail      Manage LiteControl mail stack (Postfix, Dovecot, Rspamd, postsrsd)")
 }

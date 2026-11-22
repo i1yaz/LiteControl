@@ -16,7 +16,7 @@ interface BackupDriverInterface
     /**
      * @throws LcCliException
      */
-    public function createBackup(string $username): array;
+    public function createBackup(string $username, bool $includeMail = false): array;
 
     /**
      * @throws LcCliException

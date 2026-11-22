@@ -4,6 +4,7 @@ namespace App\Domains\WebServer\Actions;
 
 use App\Domains\Identity\Models\User;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
+use App\Domains\Shared\Events\SslCertificateIssued;
 use App\Domains\WebServer\Contracts\SslDriverInterface;
 use App\Domains\WebServer\Models\Domain;
 use App\Exceptions\System\LcCliException;
@@ -54,7 +55,7 @@ class InstallCustomSslAction
         file_put_contents($tempKey, $privateKey);
 
         try {
-            $this->sslDriver->installCustom($domain->domain, $tempCert, $tempKey);
+            $result = $this->sslDriver->installCustom($domain->domain, $tempCert, $tempKey);
         } catch (LcCliException $e) {
             return [
                 'status' => 'error',
@@ -69,6 +70,20 @@ class InstallCustomSslAction
             'ssl_enabled' => true,
             'ssl_expires_at' => $expiresAt,
         ]);
+
+        $certPath = is_string($result['cert_path'] ?? null)
+            ? $result['cert_path']
+            : "/etc/letsencrypt/live/{$domain->domain}/fullchain.pem";
+        $keyPath = is_string($result['key_path'] ?? null)
+            ? $result['key_path']
+            : "/etc/letsencrypt/live/{$domain->domain}/privkey.pem";
+
+        SslCertificateIssued::dispatch(
+            $domain->domain,
+            $certPath,
+            $keyPath,
+            $expiresAt->timestamp,
+        );
 
         $this->auditLogger?->log([
             'user_id' => $actor->id,

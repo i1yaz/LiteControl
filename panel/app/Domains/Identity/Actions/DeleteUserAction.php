@@ -39,8 +39,12 @@ class DeleteUserAction
         $this->userDriver->deleteUser($username, true);
         $this->userDriver->removePhpCliConfig($username);
 
-        // 2. Delete user record and audit log; cross-domain records are cleaned up via UserDeleted listeners
-        DB::transaction(function () use ($user, $username, $actor, $ipAddress) {
+        // 2. Dispatch UserDeleted before deleting the user record so ON DELETE RESTRICT
+        //    listeners (e.g. Mail domain teardown) can clean up inside the same transaction.
+        //    Queued listeners with $afterCommit = true still wait until the transaction commits.
+        DB::transaction(function () use ($user, $userId, $username, $actor, $ipAddress) {
+            UserDeleted::dispatch($userId, $username->value);
+
             $user->delete();
 
             if ($actor) {
@@ -54,7 +58,5 @@ class DeleteUserAction
                 ]);
             }
         });
-
-        UserDeleted::dispatch($userId, $username->value);
     }
 }

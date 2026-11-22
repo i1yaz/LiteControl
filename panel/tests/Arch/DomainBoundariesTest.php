@@ -28,9 +28,11 @@ arch('domain value objects are readonly')
 $domains = [
     'Backup',
     'Database',
+    'Dns',
     'FileManager',
     'HostingPlans',
     'Identity',
+    'Mail',
     'PanelConfig',
     'PhpRuntime',
     'Security',

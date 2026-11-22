@@ -12,6 +12,7 @@ use App\Domains\Database\Infrastructure\CliDatabaseAdapter;
 use App\Domains\Database\Listeners\CleanupUserDatabasesListener;
 use App\Domains\Database\Models\Database;
 use App\Domains\Database\Policies\DatabasePolicy;
+use App\Domains\Dns\Listeners\SyncMailDnsRecordsOnChangedListener;
 use App\Domains\FileManager\Contracts\FileManagerDriverInterface;
 use App\Domains\FileManager\Infrastructure\CliFileManagerAdapter;
 use App\Domains\HostingPlans\Models\Package;
@@ -22,6 +23,23 @@ use App\Domains\Identity\Events\UserDeleted;
 use App\Domains\Identity\Infrastructure\CliUserAdapter;
 use App\Domains\Identity\Models\User;
 use App\Domains\Identity\Policies\UserPolicy;
+use App\Domains\Mail\Contracts\DnsTxtResolverInterface;
+use App\Domains\Mail\Contracts\MailFilterDriverInterface;
+use App\Domains\Mail\Contracts\MailServerDriverInterface;
+use App\Domains\Mail\Contracts\WebmailDriverInterface;
+use App\Domains\Mail\Infrastructure\CliMailServerAdapter;
+use App\Domains\Mail\Infrastructure\CliRspamdFilterAdapter;
+use App\Domains\Mail\Infrastructure\CliSnappyMailAdapter;
+use App\Domains\Mail\Infrastructure\PhpDnsTxtResolver;
+use App\Domains\Mail\Listeners\ReconcileMailOnBackupRestoredListener;
+use App\Domains\Mail\Listeners\SyncMailSniOnSslIssuedListener;
+use App\Domains\Mail\Listeners\TeardownUserMailOnUserDeletedListener;
+use App\Domains\Mail\Models\MailAccount;
+use App\Domains\Mail\Models\MailAlias;
+use App\Domains\Mail\Models\MailDomain;
+use App\Domains\Mail\Policies\MailAccountPolicy;
+use App\Domains\Mail\Policies\MailAliasPolicy;
+use App\Domains\Mail\Policies\MailDomainPolicy;
 use App\Domains\PanelConfig\Contracts\TuningDriverInterface;
 use App\Domains\PanelConfig\Infrastructure\CliTuningAdapter;
 use App\Domains\PanelConfig\Infrastructure\EloquentAuditLogger;
@@ -37,13 +55,20 @@ use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use App\Domains\ServerOps\Infrastructure\CliLogReaderAdapter;
 use App\Domains\ServerOps\Infrastructure\CliModuleAdapter;
 use App\Domains\ServerOps\Infrastructure\CliServerAdapter;
+use App\Domains\ServerOps\Infrastructure\ModuleRegistryQuery;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
+use App\Domains\Shared\Contracts\DomainOwnershipCheckerInterface;
+use App\Domains\Shared\Contracts\ModuleRegistryQueryInterface;
+use App\Domains\Shared\Events\BackupRestored;
+use App\Domains\Shared\Events\MailDnsRecordsChanged;
+use App\Domains\Shared\Events\SslCertificateIssued;
 use App\Domains\WebServer\Contracts\FtpDriverInterface;
 use App\Domains\WebServer\Contracts\SslDriverInterface;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
 use App\Domains\WebServer\Infrastructure\CliFtpAdapter;
 use App\Domains\WebServer\Infrastructure\CliSslAdapter;
 use App\Domains\WebServer\Infrastructure\CliVhostAdapter;
+use App\Domains\WebServer\Infrastructure\EloquentDomainOwnershipChecker;
 use App\Domains\WebServer\Listeners\ProvisionDefaultDomainListener;
 use App\Domains\WebServer\Models\Domain;
 use App\Domains\WebServer\Policies\DomainPolicy;
@@ -59,6 +84,8 @@ class DomainServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(AuditLoggerInterface::class, EloquentAuditLogger::class);
+        $this->app->bind(DomainOwnershipCheckerInterface::class, EloquentDomainOwnershipChecker::class);
+        $this->app->bind(ModuleRegistryQueryInterface::class, ModuleRegistryQuery::class);
         $this->app->bind(BackupDriverInterface::class, CliBackupAdapter::class);
         $this->app->bind(DatabaseDriverInterface::class, CliDatabaseAdapter::class);
         $this->app->bind(UserDriverInterface::class, CliUserAdapter::class);
@@ -73,6 +100,22 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(VhostDriverInterface::class, CliVhostAdapter::class);
         $this->app->bind(SslDriverInterface::class, CliSslAdapter::class);
         $this->app->bind(FtpDriverInterface::class, CliFtpAdapter::class);
+        $this->app->bind(MailServerDriverInterface::class, CliMailServerAdapter::class);
+        $this->app->bind(DnsTxtResolverInterface::class, PhpDnsTxtResolver::class);
+        $this->app->bind(MailFilterDriverInterface::class, function ($app): MailFilterDriverInterface {
+            $driver = $app->make(ModuleRegistryQueryInterface::class)->activeDriver('mail_filter') ?? 'rspamd';
+
+            return match ($driver) {
+                default => $app->make(CliRspamdFilterAdapter::class),
+            };
+        });
+        $this->app->bind(WebmailDriverInterface::class, function ($app): WebmailDriverInterface {
+            $driver = $app->make(ModuleRegistryQueryInterface::class)->activeDriver('mail_webmail') ?? 'snappymail';
+
+            return match ($driver) {
+                default => $app->make(CliSnappyMailAdapter::class),
+            };
+        });
     }
 
     /**
@@ -81,16 +124,23 @@ class DomainServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(UserCreated::class, ProvisionDefaultDomainListener::class);
+        Event::listen(UserDeleted::class, TeardownUserMailOnUserDeletedListener::class);
         Event::listen(UserDeleted::class, CleanupUserDatabasesListener::class);
         Event::listen(UserDeleted::class, CleanupUserBackupsListener::class);
         Event::listen(UserDeleted::class, function (UserDeleted $event): void {
             Domain::where('user_id', $event->userId)->delete();
         });
+        Event::listen(BackupRestored::class, ReconcileMailOnBackupRestoredListener::class);
+        Event::listen(SslCertificateIssued::class, SyncMailSniOnSslIssuedListener::class);
+        Event::listen(MailDnsRecordsChanged::class, SyncMailDnsRecordsOnChangedListener::class);
 
         Gate::policy(Domain::class, DomainPolicy::class);
         Gate::policy(Database::class, DatabasePolicy::class);
         Gate::policy(Backup::class, BackupPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Package::class, PackagePolicy::class);
+        Gate::policy(MailDomain::class, MailDomainPolicy::class);
+        Gate::policy(MailAccount::class, MailAccountPolicy::class);
+        Gate::policy(MailAlias::class, MailAliasPolicy::class);
     }
 }

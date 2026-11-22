@@ -2,6 +2,9 @@
 set -euo pipefail
 
 DEFAULT_VERSION="${1:-8.3}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SHIM_SRC_DIR="${SHIM_SRC_DIR:-${SCRIPT_DIR}/../shim}"
+SHIM_PREBUILT_BIN="${SHIM_PREBUILT_BIN:-}"
 SHIM_BIN="/usr/local/lib/lc-panel/php-shim"
 CFG_DIR="/etc/lc-panel/php-cli"
 
@@ -15,8 +18,15 @@ if [[ ! -f "${CFG_DIR}/default" ]]; then
     chmod 0644 "${CFG_DIR}/default"
 fi
 
-# 3. Build static Go shim binary
-CGO_ENABLED=0 go build -ldflags="-s -w" -o "${SHIM_BIN}.tmp" ./shim/main.go
+# 3. Install pre-built static Go shim binary or build from source
+if [[ -n "${SHIM_PREBUILT_BIN}" && -f "${SHIM_PREBUILT_BIN}" ]]; then
+    cp -f "${SHIM_PREBUILT_BIN}" "${SHIM_BIN}.tmp"
+elif [[ -f "${SHIM_SRC_DIR}/go.mod" ]]; then
+    (cd "${SHIM_SRC_DIR}" && CGO_ENABLED=0 go build -ldflags="-s -w" -o "${SHIM_BIN}.tmp" .)
+else
+    echo "ERROR: Neither SHIM_PREBUILT_BIN nor ${SHIM_SRC_DIR}/go.mod found." >&2
+    exit 1
+fi
 chmod 0755 "${SHIM_BIN}.tmp"
 mv -f "${SHIM_BIN}.tmp" "$SHIM_BIN"
 

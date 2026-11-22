@@ -9,11 +9,14 @@ class LcCliService
 {
     protected string $cliPath;
 
+    protected string $mailCliPath;
+
     protected bool $mockMode;
 
-    public function __construct(?string $cliPath = null, ?bool $mockMode = null)
+    public function __construct(?string $cliPath = null, ?bool $mockMode = null, ?string $mailCliPath = null)
     {
         $this->cliPath = $cliPath ?? env('LC_CLI_PATH', '/usr/local/litecontrol/bin/lc-cli');
+        $this->mailCliPath = $mailCliPath ?? env('LC_MAIL_CLI_PATH', '/usr/local/litecontrol/bin/lc-mail');
         // Force mock mode if explicit or if we are not running on Linux or CLI binary doesn't exist
         $this->mockMode = $mockMode ?? (
             (bool) env('LC_DEV_MOCK', false) ||
@@ -75,6 +78,126 @@ class LcCliService
                 'data' => null,
             ];
         }
+    }
+
+    /**
+     * Execute an lc-mail subcommand with flags and return standardized response.
+     *
+     * @param  string  $subcommand  E.g. 'install-core', 'uninstall-core', 'reconcile', 'evict-session', 'purge-mailbox', 'quota-usage'
+     * @param  array<int, string>  $args  CLI flags passed to lc-mail
+     * @return array{status: string, message: string, data: mixed}
+     */
+    public function runMail(string $subcommand, array $args = []): array
+    {
+        if ($this->mockMode || ! file_exists($this->mailCliPath)) {
+            return $this->mockMailResponse($subcommand, $args);
+        }
+
+        try {
+            $cmd = array_merge(['sudo', $this->mailCliPath, $subcommand], $args);
+            $timeout = in_array($subcommand, ['install-core', 'uninstall-core'], true) ? 1800 : 300;
+            $result = Process::timeout($timeout)->run($cmd);
+
+            $output = trim($result->output());
+            $decoded = $output !== '' ? json_decode($output, true) : null;
+
+            if (! $result->successful()) {
+                return [
+                    'status' => 'error',
+                    'message' => trim($result->errorOutput()) ?: $output ?: "lc-mail {$subcommand} failed with exit code ".$result->exitCode(),
+                    'data' => [
+                        'raw_output' => $output,
+                        'exit_code' => $result->exitCode(),
+                    ],
+                ];
+            }
+
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return [
+                    'status' => 'success',
+                    'message' => "lc-mail {$subcommand} completed successfully.",
+                    'data' => $decoded,
+                ];
+            }
+
+            return [
+                'status' => 'success',
+                'message' => "lc-mail {$subcommand} completed successfully.",
+                'data' => ['raw_output' => $output],
+            ];
+        } catch (\Throwable $e) {
+            Log::error('LcCliService lc-mail execution exception: '.$e->getMessage(), [
+                'subcommand' => $subcommand,
+                'args' => $args,
+            ]);
+
+            return [
+                'status' => 'error',
+                'message' => 'Exception executing lc-mail: '.$e->getMessage(),
+                'data' => null,
+            ];
+        }
+    }
+
+    /**
+     * Provide realistic mock JSON responses for lc-mail during local development and Windows testing.
+     *
+     * @param  array<int, string>  $args
+     * @return array{status: string, message: string, data: array<string, mixed>}
+     */
+    protected function mockMailResponse(string $subcommand, array $args = []): array
+    {
+        return match ($subcommand) {
+            'install-core' => [
+                'status' => 'success',
+                'message' => 'Mail core stack installed successfully.',
+                'data' => ['installed' => true, 'driver' => 'postfix_dovecot', 'args' => $args],
+            ],
+            'uninstall-core' => [
+                'status' => 'success',
+                'message' => 'Mail core stack uninstalled successfully.',
+                'data' => ['installed' => false, 'args' => $args],
+            ],
+            'reconcile' => [
+                'status' => 'success',
+                'message' => 'Mail server configuration reconciled.',
+                'data' => ['reconciled' => true, 'reloaded' => []],
+            ],
+            'evict-session' => [
+                'status' => 'success',
+                'message' => 'Mail session evicted.',
+                'data' => ['evicted' => true],
+            ],
+            'dkim-generate' => [
+                'status' => 'success',
+                'message' => 'DKIM key generated.',
+                'data' => [
+                    'public_key_txt' => 'v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA',
+                    'private_key_path' => '/var/lib/rspamd/dkim/mock.key',
+                    'key_sha256' => hash('sha256', 'mock-dkim-key'),
+                ],
+            ],
+            'dkim-remove' => [
+                'status' => 'success',
+                'message' => 'DKIM key removed.',
+                'data' => ['removed' => true],
+            ],
+            'purge-mailbox', 'purge-domain' => [
+                'status' => 'success',
+                'message' => 'Mail data purged.',
+                'data' => ['purged' => true],
+            ],
+            'quota-usage' => [
+                'status' => 'success',
+                'message' => 'Quota usage retrieved.',
+                'data' => [],
+            ],
+            default => [
+                'status' => 'success',
+                'message' => "Mock lc-mail '{$subcommand}' completed successfully.",
+                'data' => [],
+            ],
+        };
     }
 
     /**
