@@ -386,10 +386,9 @@ cmd_ssl_panel() {
                     -out "${panel_cert}" \
                     -subj "/CN=${hostname}" >/dev/null 2>&1 || true
             else
-                if [[ -n "${email}" ]]; then
-                    "${ACME_BIN}" --register-account -m "${email}" >/dev/null 2>&1 || true
-                fi
-                "${ACME_BIN}" --issue -d "${hostname}" -w "${ACME_WEBROOT}" --keylength ec-256 --force || \
+                local acme_email="${email:-admin@${hostname}}"
+                "${ACME_BIN}" --register-account -m "${acme_email}" --server letsencrypt >/dev/null 2>&1 || true
+                "${ACME_BIN}" --issue -d "${hostname}" -w "${ACME_WEBROOT}" --server letsencrypt --keylength ec-256 --force || \
                     emit_error "Failed to issue certificate for panel hostname ${hostname}."
 
                 "${ACME_BIN}" --install-cert -d "${hostname}" --ecc \
