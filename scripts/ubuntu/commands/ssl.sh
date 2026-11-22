@@ -47,6 +47,37 @@ validate_domain() {
     fi
 }
 
+verify_dns_precheck() {
+    local hostname="$1"
+
+    if [[ "${LC_TEST_MODE:-0}" == "1" ]]; then
+        return 0
+    fi
+
+    local resolved=""
+    if command -v dig >/dev/null 2>&1; then
+        resolved=$(dig +short A "${hostname}" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || true)
+        if [[ -z "${resolved}" ]]; then
+            resolved=$(dig +short AAAA "${hostname}" 2>/dev/null | grep -E '^[0-9a-fA-F:]+$' || true)
+        fi
+    elif command -v getent >/dev/null 2>&1; then
+        resolved=$(getent ahosts "${hostname}" 2>/dev/null | awk '{print $1}' | sort -u || true)
+    else
+        # No DNS lookup tool available; let acme.sh handle validation
+        return 0
+    fi
+
+    if [[ -z "${resolved}" ]]; then
+        emit_error "DNS pre-check failed: '${hostname}' does not resolve yet. Create an A/AAAA record pointing to this server and wait for DNS propagation."
+    fi
+
+    local first_ip
+    first_ip=$(printf "%s\n" "${resolved}" | head -n 1)
+    if [[ "${first_ip}" =~ ^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.) || "${first_ip}" == "::1" ]]; then
+        emit_error "DNS pre-check failed: '${hostname}' resolves to private/loopback IP '${first_ip}'. Point it to your server's public IP first."
+    fi
+}
+
 validate_ssl_pair() {
     local cert="$1"
     local key="$2"
@@ -339,6 +370,7 @@ cmd_ssl_panel() {
             [[ -n "${hostname}" ]] || emit_error "Missing panel hostname for SSL issuance."
             validate_domain "${hostname}"
             hostname="${hostname,,}"
+            verify_dns_precheck "${hostname}"
 
             local panel_cert="${LC_SSL_DIR}/fullchain.pem"
             local panel_key="${LC_SSL_DIR}/privkey.pem"
