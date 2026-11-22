@@ -10,11 +10,40 @@ import {
     LayoutDashboard, Users, Globe, Database, FolderTree,
     FileCode, Sliders, Server, Shield, Mail, Layers,
     UserCircle, LogOut, ChevronDown, Menu, X, ExternalLink,
-    CheckCircle2, AlertCircle, Cpu, Radio, Palette, RefreshCw
+    CheckCircle2, AlertCircle, Cpu, Radio, Palette, RefreshCw, Copy, Check
 } from '@lucide/vue';
 
 const page = usePage();
 const flash = computed(() => page.props.flash || {});
+const serverIp = computed(() => (page.props.panel as { server_ip?: string } | undefined)?.server_ip || '');
+const ipCopied = shallowRef(false);
+let ipCopyTimer: ReturnType<typeof setTimeout> | null = null;
+
+const copyServerIp = async () => {
+    if (!serverIp.value) return;
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(serverIp.value);
+        } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = serverIp.value;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+        ipCopied.value = true;
+        if (ipCopyTimer) clearTimeout(ipCopyTimer);
+        ipCopyTimer = setTimeout(() => {
+            ipCopied.value = false;
+        }, 1800);
+    } catch {
+        // Ignore clipboard errors in restricted contexts
+    }
+};
 const { user, isAdmin, filteredNavigation, openSubmenus, toggleSubmenu, isRouteActive, isItemActive } = useNavigation();
 const { activeThemeId, availableThemes, switchTheme } = useTheme();
 
@@ -129,6 +158,20 @@ const logout = () => {
 
             <!-- Global Status Bar & Profile -->
             <div class="flex items-center gap-3 sm:gap-4">
+                <!-- Server IP (Click to Copy) -->
+                <button
+                    v-if="serverIp"
+                    type="button"
+                    @click="copyServerIp"
+                    :title="ipCopied ? __('IP copied to clipboard') : __('Click to copy server IP')"
+                    class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-theme-sm bg-theme-bg-surface border border-theme-border hover:border-theme-border-strong text-xs font-mono transition-colors cursor-pointer group focus:outline-none focus:ring-1 focus:ring-theme-accent/50"
+                >
+                    <span class="text-theme-text-secondary">{{ __('IP:') }}</span>
+                    <span class="text-theme-text-primary font-semibold">{{ serverIp }}</span>
+                    <Check v-if="ipCopied" class="w-3.5 h-3.5 text-theme-success-text ml-0.5" />
+                    <Copy v-else class="w-3 h-3 text-theme-text-muted group-hover:text-theme-text-primary transition-colors ml-0.5" />
+                </button>
+
                 <!-- 2FA Status Quick Link -->
                 <div
                     v-if="$page.props.auth?.user?.two_factor_confirmed_at"

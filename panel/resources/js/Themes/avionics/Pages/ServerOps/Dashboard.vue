@@ -27,7 +27,6 @@ const {
     loadAvg,
     uptime,
     hostname,
-    serverIp,
     serverTime,
     olsVersion,
     osPretty,
@@ -57,10 +56,6 @@ const {
                     <span class="w-2 h-2 rounded-full bg-theme-success"></span>
                     <span class="text-theme-text-secondary">{{ __('HOST:') }}</span>
                     <span class="text-theme-text-primary font-semibold">{{ hostname }}</span>
-                </div>
-                <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-theme-sm bg-theme-bg-surface border border-theme-border font-mono text-xs text-theme-text-secondary">
-                    <span>{{ __('IP:') }}</span>
-                    <span class="text-theme-text-primary">{{ serverIp }}</span>
                 </div>
             </div>
         </div>
