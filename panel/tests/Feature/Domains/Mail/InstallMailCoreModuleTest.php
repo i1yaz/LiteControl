@@ -18,7 +18,7 @@ uses(TestCase::class, RefreshDatabase::class);
 it('registers mail stack and powerdns modules with parent and dependency links', function () {
     $defs = ModuleRegistry::definitions();
 
-    expect($defs)->toHaveKeys(['mail_core', 'mail_filter', 'mail_webmail', 'clamav', 'powerdns'])
+    expect($defs)->toHaveKeys(['mail_core', 'mail_filter', 'mail_webmail', 'clamav', 'dns'])
         ->and($defs['mail_core']['parent'])->toBeNull()
         ->and($defs['mail_core']['depends_on'])->toBe([])
         ->and($defs['mail_filter']['parent'])->toBe('mail_core')
@@ -27,7 +27,7 @@ it('registers mail stack and powerdns modules with parent and dependency links',
         ->and($defs['mail_webmail']['depends_on'])->toBe(['mail_core'])
         ->and($defs['clamav']['parent'])->toBe('mail_filter')
         ->and($defs['clamav']['depends_on'])->toBe(['mail_core', 'mail_filter'])
-        ->and($defs['powerdns']['parent'])->toBeNull();
+        ->and($defs['dns']['parent'])->toBeNull();
 });
 
 it('queues InstallMailCoreJob with pending state when installing mail_core via /modules', function () {

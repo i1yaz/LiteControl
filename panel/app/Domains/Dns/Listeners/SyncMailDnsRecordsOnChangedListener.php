@@ -19,7 +19,7 @@ final class SyncMailDnsRecordsOnChangedListener implements ShouldQueue
 
     public function handle(MailDnsRecordsChanged $event): void
     {
-        if (! $this->moduleRegistry->isActive('powerdns')) {
+        if (! $this->moduleRegistry->isActive('dns')) {
             return;
         }
 

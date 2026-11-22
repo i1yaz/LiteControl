@@ -23,7 +23,7 @@ it('reports active state and driver from ModuleDriverInterface', function () {
         ->with('mail_filter')
         ->andReturn(['installed' => false, 'status' => 'not_installed', 'driver' => 'rspamd']);
     $driver->shouldReceive('getModuleStatus')
-        ->with('powerdns')
+        ->with('dns')
         ->andReturn(['installed' => true, 'status' => 'active']);
 
     $query = new ModuleRegistryQuery($driver);
@@ -32,6 +32,6 @@ it('reports active state and driver from ModuleDriverInterface', function () {
         ->and($query->activeDriver('mail_core'))->toBe('postfix_dovecot')
         ->and($query->isActive('mail_filter'))->toBeFalse()
         ->and($query->activeDriver('mail_filter'))->toBeNull()
-        ->and($query->isActive('powerdns'))->toBeTrue()
-        ->and($query->activeDriver('powerdns'))->toBeNull();
+        ->and($query->isActive('dns'))->toBeTrue()
+        ->and($query->activeDriver('dns'))->toBeNull();
 });

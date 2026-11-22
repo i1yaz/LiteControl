@@ -23,9 +23,18 @@ class CliModuleAdapter implements ModuleDriverInterface
         return [];
     }
 
+    private function toCliModuleKey(string $module): string
+    {
+        return match ($module) {
+            'powerdns' => 'dns',
+            default => $module,
+        };
+    }
+
     public function getModuleStatus(string $module): array
     {
-        $res = $this->lcCli->run('module', ['status', $module]);
+        $cliModule = $this->toCliModuleKey($module);
+        $res = $this->lcCli->run('module', ['status', $cliModule]);
 
         if (($res['status'] ?? '') === 'success' && isset($res['data']) && is_array($res['data'])) {
             return $res['data'];
@@ -57,10 +66,11 @@ class CliModuleAdapter implements ModuleDriverInterface
 
     public function installModule(string $module): array
     {
-        $res = $this->lcCli->run('module', ['install', $module]);
+        $cliModule = $this->toCliModuleKey($module);
+        $res = $this->lcCli->run('module', ['install', $cliModule]);
 
         if (($res['status'] ?? '') === 'error') {
-            throw new LcCliException($res['message'] ?? "Failed to install module $module.", 'module', ['install', $module]);
+            throw new LcCliException($res['message'] ?? "Failed to install module $module.", 'module', ['install', $cliModule]);
         }
 
         return $res['data'] ?? [];
@@ -68,10 +78,11 @@ class CliModuleAdapter implements ModuleDriverInterface
 
     public function removeModule(string $module): array
     {
-        $res = $this->lcCli->run('module', ['remove', $module]);
+        $cliModule = $this->toCliModuleKey($module);
+        $res = $this->lcCli->run('module', ['remove', $cliModule]);
 
         if (($res['status'] ?? '') === 'error') {
-            throw new LcCliException($res['message'] ?? "Failed to remove module $module.", 'module', ['remove', $module]);
+            throw new LcCliException($res['message'] ?? "Failed to remove module $module.", 'module', ['remove', $cliModule]);
         }
 
         return $res['data'] ?? [];

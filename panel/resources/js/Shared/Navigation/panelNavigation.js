@@ -34,14 +34,14 @@ export const PANEL_NAVIGATION = [
     },
     {
         id: 'dns',
-        label: 'PowerDNS',
+        label: 'DNS',
         icon: 'dns',
         adminOnly: true,
-        requiresModule: 'powerdns',
+        requiresModule: 'dns',
         inactiveFallback: {
             id: 'dns.install',
-            label: 'Install PowerDNS',
-            route: '/modules?module=powerdns',
+            label: 'Install DNS Server',
+            route: '/modules?module=dns',
             adminOnly: true,
         },
         children: [

@@ -29,9 +29,9 @@ final class ModuleRegistry
                 'depends_on' => [],
                 'description' => 'FTP server with MariaDB backend',
             ],
-            'powerdns' => [
-                'name' => 'powerdns',
-                'title' => 'PowerDNS',
+            'dns' => [
+                'name' => 'dns',
+                'title' => 'DNS Server (PowerDNS)',
                 'driver' => 'powerdns',
                 'parent' => null,
                 'depends_on' => [],
@@ -97,7 +97,7 @@ final class ModuleRegistry
     {
         return array_values(array_unique(array_merge(
             array_keys(self::definitions()),
-            ['dns', 'mail']
+            ['powerdns', 'mail']
         )));
     }
 
@@ -112,7 +112,8 @@ final class ModuleRegistry
         $byName = [];
         foreach ($cliModules as $item) {
             if (is_array($item) && isset($item['name']) && is_string($item['name'])) {
-                $byName[$item['name']] = $item;
+                $name = $item['name'] === 'powerdns' ? 'dns' : $item['name'];
+                $byName[$name] = array_merge($item, ['name' => $name]);
             }
         }
 

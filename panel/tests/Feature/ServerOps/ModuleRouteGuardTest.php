@@ -9,11 +9,11 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-it('redirects admins to modules index when powerdns is not installed', function (string $uri) {
+it('redirects admins to modules index when dns is not installed', function (string $uri) {
     $admin = User::factory()->create(['username' => 'dnsadmin', 'role' => 'admin']);
 
     $mock = $this->mock(ModuleRegistryQueryInterface::class);
-    $mock->shouldReceive('isActive')->with('powerdns')->andReturn(false);
+    $mock->shouldReceive('isActive')->with('dns')->andReturn(false);
 
     $this->actingAs($admin)
         ->get($uri)
@@ -78,13 +78,13 @@ it('returns 403 json for json requests when required module is not installed', f
     $admin = User::factory()->create(['username' => 'jsonadmin', 'role' => 'admin']);
 
     $mock = $this->mock(ModuleRegistryQueryInterface::class);
-    $mock->shouldReceive('isActive')->with('powerdns')->andReturn(false);
+    $mock->shouldReceive('isActive')->with('dns')->andReturn(false);
 
     $this->actingAs($admin)
         ->getJson('/dns/zones')
         ->assertForbidden()
         ->assertJson([
-            'module' => 'powerdns',
+            'module' => 'dns',
         ]);
 });
 

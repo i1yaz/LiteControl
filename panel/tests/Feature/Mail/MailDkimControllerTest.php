@@ -63,7 +63,7 @@ it('renders Mail/Dkim/Index scoped to tenant, omits private_key_path, and return
     ]);
 
     $mockRegistry = Mockery::mock(ModuleRegistryQueryInterface::class);
-    $mockRegistry->shouldReceive('isActive')->with('powerdns')->andReturn(false);
+    $mockRegistry->shouldReceive('isActive')->with('dns')->andReturn(false);
     $mockRegistry->shouldReceive('isActive')->with('mail_core')->andReturn(true);
     $mockRegistry->shouldReceive('isActive')->with('ftp')->andReturn(false);
     $this->app->instance(ModuleRegistryQueryInterface::class, $mockRegistry);
@@ -104,7 +104,7 @@ it('exposes powerdns_active = true when powerdns module is active', function ():
     ]);
 
     $mockRegistry = Mockery::mock(ModuleRegistryQueryInterface::class);
-    $mockRegistry->shouldReceive('isActive')->with('powerdns')->andReturn(true);
+    $mockRegistry->shouldReceive('isActive')->with('dns')->andReturn(true);
     $mockRegistry->shouldReceive('isActive')->with('mail_core')->andReturn(true);
     $mockRegistry->shouldReceive('isActive')->with('ftp')->andReturn(false);
     $this->app->instance(ModuleRegistryQueryInterface::class, $mockRegistry);

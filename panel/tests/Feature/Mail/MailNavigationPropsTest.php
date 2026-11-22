@@ -10,12 +10,12 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-it('shares modules.mail_core, powerdns, and ftp as false when inactive', function () {
+it('shares modules.mail_core, dns, and ftp as false when inactive', function () {
     $user = User::factory()->create(['username' => 'mailadmin', 'role' => 'admin']);
 
     $mock = $this->mock(ModuleRegistryQueryInterface::class);
     $mock->shouldReceive('isActive')->with('mail_core')->andReturn(false);
-    $mock->shouldReceive('isActive')->with('powerdns')->andReturn(false);
+    $mock->shouldReceive('isActive')->with('dns')->andReturn(false);
     $mock->shouldReceive('isActive')->with('ftp')->andReturn(false);
 
     $this->actingAs($user)
@@ -23,17 +23,17 @@ it('shares modules.mail_core, powerdns, and ftp as false when inactive', functio
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('modules.mail_core', false)
-            ->where('modules.powerdns', false)
+            ->where('modules.dns', false)
             ->where('modules.ftp', false)
         );
 });
 
-it('shares modules.mail_core, powerdns, and ftp as true when active', function () {
+it('shares modules.mail_core, dns, and ftp as true when active', function () {
     $user = User::factory()->create(['username' => 'mailadmin', 'role' => 'admin']);
 
     $mock = $this->mock(ModuleRegistryQueryInterface::class);
     $mock->shouldReceive('isActive')->with('mail_core')->andReturn(true);
-    $mock->shouldReceive('isActive')->with('powerdns')->andReturn(true);
+    $mock->shouldReceive('isActive')->with('dns')->andReturn(true);
     $mock->shouldReceive('isActive')->with('ftp')->andReturn(true);
 
     $this->actingAs($user)
@@ -41,7 +41,7 @@ it('shares modules.mail_core, powerdns, and ftp as true when active', function (
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('modules.mail_core', true)
-            ->where('modules.powerdns', true)
+            ->where('modules.dns', true)
             ->where('modules.ftp', true)
         );
 });

@@ -58,11 +58,11 @@ class HandleInertiaRequests extends Middleware
             ],
             'modules' => fn () => $user ? [
                 'mail_core' => app(ModuleRegistryQueryInterface::class)->isActive('mail_core'),
-                'powerdns' => app(ModuleRegistryQueryInterface::class)->isActive('powerdns'),
+                'dns' => app(ModuleRegistryQueryInterface::class)->isActive('dns'),
                 'ftp' => app(ModuleRegistryQueryInterface::class)->isActive('ftp'),
             ] : [
                 'mail_core' => false,
-                'powerdns' => false,
+                'dns' => false,
                 'ftp' => false,
             ],
             'flash' => [

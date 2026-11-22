@@ -242,8 +242,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/modules/{module}/install', [ModuleController::class, 'install'])->name('modules.install');
         Route::post('/modules/{module}/remove', [ModuleController::class, 'remove'])->name('modules.remove');
 
-        // PowerDNS Management (Admin Only + requires powerdns module)
-        Route::middleware('module:powerdns')->group(function () {
+        // DNS Management (Admin Only + requires dns module)
+        Route::middleware('module:dns')->group(function () {
             // PowerDNS Daemon & HTTP API Configuration
             Route::get('/dns/settings', [PdnsConfigController::class, 'index'])->name('dns.settings');
             Route::post('/dns/settings', [PdnsConfigController::class, 'update'])->name('dns.settings.update');

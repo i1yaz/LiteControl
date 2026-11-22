@@ -38,6 +38,13 @@ emit_success() {
     fi
 }
 
+normalize_module_name() {
+    case "$1" in
+        powerdns) echo "dns" ;;
+        *) echo "$1" ;;
+    esac
+}
+
 validate_module() {
     local m="$1"
     for sm in "${SUPPORTED_MODULES[@]}"; do
@@ -165,6 +172,7 @@ cmd_module_list() {
 cmd_module_status() {
     local mod="${1:-}"
     [[ -n "${mod}" ]] || emit_error "Missing module name."
+    mod="$(normalize_module_name "${mod}")"
     validate_module "${mod}"
 
     local inst=false
@@ -195,6 +203,7 @@ cmd_module_status() {
 cmd_module_install() {
     local mod="${1:-}"
     [[ -n "${mod}" ]] || emit_error "Missing module name."
+    mod="$(normalize_module_name "${mod}")"
     validate_module "${mod}"
 
     local installer="${MODULES_INSTALLERS_DIR}/${mod}.sh"
@@ -215,6 +224,7 @@ cmd_module_install() {
 cmd_module_remove() {
     local mod="${1:-}"
     [[ -n "${mod}" ]] || emit_error "Missing module name."
+    mod="$(normalize_module_name "${mod}")"
     validate_module "${mod}"
 
     local installer="${MODULES_INSTALLERS_DIR}/${mod}.sh"

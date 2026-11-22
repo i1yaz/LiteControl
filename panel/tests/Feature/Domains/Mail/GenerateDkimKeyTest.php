@@ -214,7 +214,7 @@ it('only consumes MailDnsRecordsChanged in Dns listener when powerdns module is 
     Log::spy();
 
     $inactiveRegistry = Mockery::mock(ModuleRegistryQueryInterface::class);
-    $inactiveRegistry->shouldReceive('isActive')->once()->with('powerdns')->andReturn(false);
+    $inactiveRegistry->shouldReceive('isActive')->once()->with('dns')->andReturn(false);
 
     $listener = new SyncMailDnsRecordsOnChangedListener($inactiveRegistry);
     $listener->handle(new MailDnsRecordsChanged('example.com', [['type' => 'TXT']]));
@@ -222,7 +222,7 @@ it('only consumes MailDnsRecordsChanged in Dns listener when powerdns module is 
     Log::shouldNotHaveReceived('info');
 
     $activeRegistry = Mockery::mock(ModuleRegistryQueryInterface::class);
-    $activeRegistry->shouldReceive('isActive')->once()->with('powerdns')->andReturn(true);
+    $activeRegistry->shouldReceive('isActive')->once()->with('dns')->andReturn(true);
 
     $activeListener = new SyncMailDnsRecordsOnChangedListener($activeRegistry);
     $activeListener->handle(new MailDnsRecordsChanged('example.com', [['type' => 'TXT']]));

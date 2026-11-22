@@ -112,7 +112,7 @@ class MailDkimController extends Controller
             'selected_domain' => $selectedDomain,
             'dkim_keys' => $dkimKeys,
             'dns_records' => $dnsRecords,
-            'powerdns_active' => $moduleRegistry->isActive('powerdns'),
+            'powerdns_active' => $moduleRegistry->isActive('dns'),
             'mail_core_active' => $moduleRegistry->isActive('mail_core'),
         ]);
     }
