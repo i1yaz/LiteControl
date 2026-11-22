@@ -89,6 +89,17 @@ final class ModuleRegistry
     }
 
     /**
+     * Normalize legacy module aliases to their canonical registry key.
+     */
+    public static function normalizeKey(string $module): string
+    {
+        return match ($module) {
+            'powerdns' => 'dns',
+            default => $module,
+        };
+    }
+
+    /**
      * All module keys permitted by the /modules endpoints (including legacy aliases).
      *
      * @return list<string>
@@ -112,7 +123,7 @@ final class ModuleRegistry
         $byName = [];
         foreach ($cliModules as $item) {
             if (is_array($item) && isset($item['name']) && is_string($item['name'])) {
-                $name = $item['name'] === 'powerdns' ? 'dns' : $item['name'];
+                $name = self::normalizeKey($item['name']);
                 $byName[$name] = array_merge($item, ['name' => $name]);
             }
         }

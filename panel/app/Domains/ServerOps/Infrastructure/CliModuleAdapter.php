@@ -3,6 +3,7 @@
 namespace App\Domains\ServerOps\Infrastructure;
 
 use App\Domains\ServerOps\Contracts\ModuleDriverInterface;
+use App\Domains\ServerOps\ModuleRegistry;
 use App\Exceptions\System\LcCliException;
 use App\Support\Cli\LcCliService;
 
@@ -25,10 +26,7 @@ class CliModuleAdapter implements ModuleDriverInterface
 
     private function toCliModuleKey(string $module): string
     {
-        return match ($module) {
-            'powerdns' => 'dns',
-            default => $module,
-        };
+        return ModuleRegistry::normalizeKey($module);
     }
 
     public function getModuleStatus(string $module): array
@@ -45,11 +43,12 @@ class CliModuleAdapter implements ModuleDriverInterface
 
     public function getModuleInstallLog(string $module, int $lines = 100): string
     {
-        if (! preg_match('/^[a-z0-9_-]+$/', $module)) {
+        $cliModule = $this->toCliModuleKey($module);
+        if (! preg_match('/^[a-z0-9_-]+$/', $cliModule)) {
             return '';
         }
 
-        $logPath = "/var/log/litecontrol/{$module}-install.log";
+        $logPath = "/var/log/litecontrol/{$cliModule}-install.log";
         if (! is_file($logPath) || ! is_readable($logPath)) {
             return '';
         }

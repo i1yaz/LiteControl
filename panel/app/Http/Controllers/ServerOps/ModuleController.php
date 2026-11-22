@@ -97,6 +97,8 @@ class ModuleController extends Controller
             return redirect()->back()->with('error', "Unsupported module '$module'.");
         }
 
+        $module = ModuleRegistry::normalizeKey($module);
+
         if ($module === 'clamav') {
             $serverRamMb = (int) ($this->serverDriver->getStats()['ram_total_mb'] ?? 0);
             if ($serverRamMb < self::CLAMAV_MIN_RAM_MB) {
@@ -185,6 +187,8 @@ class ModuleController extends Controller
         if (! in_array($module, ModuleRegistry::allowedKeys(), true)) {
             return redirect()->back()->with('error', "Unsupported module '$module'.");
         }
+
+        $module = ModuleRegistry::normalizeKey($module);
 
         try {
             $removeModuleAction->handle(

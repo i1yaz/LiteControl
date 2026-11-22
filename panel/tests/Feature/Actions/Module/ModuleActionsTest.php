@@ -138,4 +138,21 @@ class ModuleActionsTest extends TestCase
 
         $action->handle('ftp', $this->admin);
     }
+
+    public function test_module_controller_normalizes_legacy_powerdns_key_to_dns_on_install(): void
+    {
+        Queue::fake();
+
+        $this->actingAs($this->admin)
+            ->post('/modules/powerdns/install')
+            ->assertRedirect()
+            ->assertSessionHas('success', "Module 'dns' installation queued.");
+
+        $this->assertEquals('pending', Cache::get('module_install_dns'));
+        $this->assertEquals('dns', Cache::get('module_install_current'));
+
+        Queue::assertPushed(InstallModuleJob::class, function (InstallModuleJob $job) {
+            return $job->module === 'dns';
+        });
+    }
 }
