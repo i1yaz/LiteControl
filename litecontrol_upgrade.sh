@@ -394,8 +394,17 @@ ensure_panel_composer() {
     if [[ ! -x "${php_bin}" ]]; then
         php_bin="$(command -v php 2>/dev/null || echo "/usr/local/bin/php")"
     fi
+
+    local system_composer
+    system_composer="$(command -v composer 2>/dev/null || true)"
+    if [[ -n "${system_composer}" ]] && "${php_bin}" "${system_composer}" --version >/dev/null 2>&1; then
+        log_info "Using system Composer at ${system_composer}."
+        return 0
+    fi
+
     if [[ -x "${composer_bin}" && -f "${composer_bin}" ]]; then
         if "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+            log_info "Reusing isolated Composer at ${composer_bin}."
             return 0
         fi
         log_warn "Cached composer.phar failed verification; re-downloading official release..."
@@ -404,7 +413,7 @@ ensure_panel_composer() {
 
     log_info "Fetching verified Composer official phar..."
     mkdir -p "${LC_BASE_DIR}/bin"
-    if curl -4 -fsSL --connect-timeout 15 --max-time 120 -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar; then
+    if curl -fsSL --connect-timeout 15 --max-time 30 -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar; then
         chmod 755 "${composer_bin}"
         if "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
             log_ok "Verified Composer phar installed at ${composer_bin}."
@@ -413,7 +422,7 @@ ensure_panel_composer() {
     fi
 
     # Fallback if download failed or curl unavailable
-    if command -v composer >/dev/null 2>&1; then
+    if [[ -n "${system_composer}" ]]; then
         log_warn "Using system composer fallback."
         return 0
     fi
@@ -451,13 +460,19 @@ upgrade_laravel_panel() {
     if [[ -f "${LC_PANEL_DIR}/artisan" ]]; then
         ensure_panel_composer
         log_info "Installing Composer dependencies..."
-        local composer_bin="/usr/local/bin/composer"
+        local composer_bin=""
         local php_bin="/usr/bin/php"
         if [[ ! -x "${php_bin}" ]]; then
             php_bin="$(command -v php 2>/dev/null || echo "/usr/local/bin/php")"
         fi
-        if [[ -f "${LC_BASE_DIR}/bin/composer.phar" ]]; then
+        local system_composer
+        system_composer="$(command -v composer 2>/dev/null || true)"
+        if [[ -n "${system_composer}" ]] && "${php_bin}" "${system_composer}" --version >/dev/null 2>&1; then
+            composer_bin="${php_bin} -d memory_limit=-1 ${system_composer}"
+        elif [[ -f "${LC_BASE_DIR}/bin/composer.phar" ]]; then
             composer_bin="${php_bin} -d memory_limit=-1 ${LC_BASE_DIR}/bin/composer.phar"
+        else
+            composer_bin="/usr/local/bin/composer"
         fi
         local composer_env="export HOME='${LC_BASE_DIR}' COMPOSER_HOME='${LC_BASE_DIR}/.config/composer' COMPOSER_CACHE_DIR='${LC_BASE_DIR}/.cache/composer' COMPOSER_MEMORY_LIMIT=-1 GIT_TERMINAL_PROMPT=0;"
         su -s /bin/bash "${LC_USER}" -c "${composer_env} cd '${LC_PANEL_DIR}' && ${composer_bin} install --no-dev -o --no-interaction --no-progress"

@@ -163,13 +163,18 @@ EOF
             php_bin="$(command -v php 2>/dev/null || echo "/usr/bin/php")"
         fi
         local run_composer=""
-        if command -v composer >/dev/null 2>&1; then
-            run_composer="${php_bin} -d memory_limit=-1 $(command -v composer)"
+        local system_composer
+        system_composer="$(command -v composer 2>/dev/null || true)"
+        if [[ -n "${system_composer}" ]] && "${php_bin}" "${system_composer}" --version >/dev/null 2>&1; then
+            log_info "Using system Composer at ${system_composer}."
+            run_composer="${php_bin} -d memory_limit=-1 ${system_composer}"
         else
-            if [[ ! -f "${composer_bin}" ]] || ! "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+            if [[ -f "${composer_bin}" ]] && "${php_bin}" "${composer_bin}" --version >/dev/null 2>&1; then
+                log_info "Reusing isolated Composer at ${composer_bin}."
+            else
                 log_info "Fetching verified Composer standalone binary..."
                 mkdir -p "${LC_BASE_DIR}/bin"
-                curl -4 -fsSL --connect-timeout 15 --max-time 120 -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar || true
+                curl -fsSL --connect-timeout 15 --max-time 30 -o "${composer_bin}" https://getcomposer.org/download/latest-stable/composer.phar || true
                 chmod 755 "${composer_bin}"
             fi
             run_composer="${php_bin} -d memory_limit=-1 ${composer_bin}"
