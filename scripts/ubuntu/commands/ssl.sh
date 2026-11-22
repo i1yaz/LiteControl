@@ -287,6 +287,7 @@ setup_panel_proxy_vhost() {
 
     mkdir -p "${ACME_WEBROOT}/.well-known/acme-challenge" "${vh_dir}"
     if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+        chown -R "${LC_USER}:${LC_GROUP}" "${ACME_WEBROOT}" 2>/dev/null || true
         chmod 755 "${ACME_WEBROOT}" "${ACME_WEBROOT}/.well-known" "${ACME_WEBROOT}/.well-known/acme-challenge"
     fi
 
