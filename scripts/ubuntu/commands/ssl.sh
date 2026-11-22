@@ -388,13 +388,27 @@ cmd_ssl_panel() {
             else
                 local acme_email="${email:-admin@${hostname}}"
                 "${ACME_BIN}" --register-account -m "${acme_email}" --server letsencrypt >/dev/null 2>&1 || true
-                "${ACME_BIN}" --issue -d "${hostname}" -w "${ACME_WEBROOT}" --server letsencrypt --keylength ec-256 --force || \
-                    emit_error "Failed to issue certificate for panel hostname ${hostname}."
 
-                "${ACME_BIN}" --install-cert -d "${hostname}" --ecc \
-                    --key-file "${panel_key}" \
-                    --fullchain-file "${panel_cert}" \
-                    --reloadcmd "systemctl reload ${PANEL_SYSTEMD_SERVICE} 2>/dev/null || true; ${OLS_CTRL} reload 2>/dev/null || true"
+                local acme_out=""
+                if [[ "${LC_JSON_OUTPUT:-0}" == "1" ]]; then
+                    if ! acme_out=$("${ACME_BIN}" --issue -d "${hostname}" -w "${ACME_WEBROOT}" --server letsencrypt --keylength ec-256 --force 2>&1); then
+                        local acme_err
+                        acme_err=$(printf "%s\n" "${acme_out}" | grep -E "Invalid response|error|Error|detail" | tail -n 1 || true)
+                        emit_error "Failed to issue certificate for panel hostname ${hostname}.${acme_err:+ (${acme_err})}"
+                    fi
+                    "${ACME_BIN}" --install-cert -d "${hostname}" --ecc \
+                        --key-file "${panel_key}" \
+                        --fullchain-file "${panel_cert}" \
+                        --reloadcmd "systemctl reload ${PANEL_SYSTEMD_SERVICE} 2>/dev/null || true; ${OLS_CTRL} reload 2>/dev/null || true" >/dev/null 2>&1
+                else
+                    "${ACME_BIN}" --issue -d "${hostname}" -w "${ACME_WEBROOT}" --server letsencrypt --keylength ec-256 --force || \
+                        emit_error "Failed to issue certificate for panel hostname ${hostname}."
+
+                    "${ACME_BIN}" --install-cert -d "${hostname}" --ecc \
+                        --key-file "${panel_key}" \
+                        --fullchain-file "${panel_cert}" \
+                        --reloadcmd "systemctl reload ${PANEL_SYSTEMD_SERVICE} 2>/dev/null || true; ${OLS_CTRL} reload 2>/dev/null || true"
+                fi
             fi
 
             persist_panel_domain "${hostname}"

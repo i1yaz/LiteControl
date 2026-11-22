@@ -28,7 +28,7 @@ extprocessor lc_panel_backend {
 }
 
 context /.well-known/acme-challenge/ {
-  location                __ACME_WEBROOT__/.well-known/acme-challenge/
+  location                $DOC_ROOT/.well-known/acme-challenge/
   allowBrowse             1
   rewrite  {
     enable                0
