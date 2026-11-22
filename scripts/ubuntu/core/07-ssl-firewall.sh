@@ -57,7 +57,7 @@ configure_ufw_firewall() {
         fi
     fi
 
-    log_info "Configuring UFW firewall rules (SSH: ${ssh_port}, HTTP: 80, HTTPS/QUIC: 443, Panel: ${panel_port}, OLS WebAdmin: 7080)..."
+    log_info "Configuring UFW firewall rules (SSH: ${ssh_port}, HTTP: 80, HTTPS/QUIC: 443, Panel: ${panel_port}, OLS WebAdmin: 7080, DNS: 53, Mail: 25/465/587/110/143/993/995)..."
 
     ufw allow "${ssh_port}/tcp" comment "SSH" >/dev/null 2>&1 || true
     ufw allow 22/tcp comment "SSH Default" >/dev/null 2>&1 || true
@@ -66,6 +66,11 @@ configure_ufw_firewall() {
     ufw allow 443/udp comment "HTTP3 QUIC" >/dev/null 2>&1 || true
     ufw allow "${panel_port}/tcp" comment "LiteControl Panel" >/dev/null 2>&1 || true
     ufw allow 7080/tcp comment "OLS WebAdmin" >/dev/null 2>&1 || true
+    ufw allow 53/tcp comment "DNS TCP" >/dev/null 2>&1 || true
+    ufw allow 53/udp comment "DNS UDP" >/dev/null 2>&1 || true
+    for mail_port in 25 587 465 110 143 993 995; do
+        ufw allow "${mail_port}/tcp" comment "Mail Port ${mail_port}" >/dev/null 2>&1 || true
+    done
 
     systemctl enable ufw >/dev/null 2>&1 || true
     ufw --force enable >/dev/null 2>&1 || true
