@@ -225,9 +225,7 @@ class RunAtomicDeploymentJob implements ShouldBeUnique, ShouldQueue
                 File::delete($oldPayload);
             }
 
-            if ($old->log_path !== null) {
-                $old->update(['log_path' => null]);
-            }
+            $old->delete();
         }
     }
 

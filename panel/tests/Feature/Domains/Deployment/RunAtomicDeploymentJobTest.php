@@ -145,7 +145,7 @@ it('marks deployment failed and records log when an exception is thrown during s
     expect(file_get_contents($fresh->log_path))->toContain('Permission denied writing payload');
 });
 
-it('purges logs for deployments older than keep_releases after a successful deploy', function () {
+it('purges logs and records for deployments older than keep_releases after a successful deploy', function () {
     [$domain, $config, $previous, $current] = makeDeploymentFixture();
     $config->update(['keep_releases' => 2]);
 
@@ -183,7 +183,8 @@ it('purges logs for deployments older than keep_releases after a successful depl
     (new RunAtomicDeploymentJob($config, $current))->handle($builder);
 
     expect(\Illuminate\Support\Facades\File::exists($oldLogPath))->toBeFalse();
-    expect($oldest->fresh()->log_path)->toBeNull();
+    expect($oldest->fresh())->toBeNull();
+    expect(DomainDeployment::where('domain_id', $domain->id)->count())->toBe(2);
     expect($current->fresh()->log_path)->not->toBeNull();
 });
 

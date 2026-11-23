@@ -327,14 +327,14 @@ const executeRollback = () => {
 
 <template>
     <UiCard title="Releases History" subtitle="Recent atomic deployments, live logs, and 1-click rollback.">
-        <div v-if="deployments.length === 0" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            No deployments have been triggered yet. Click <strong>Deploy Now</strong> to create your first release.
+        <div v-if="deployments.length === 0" class="py-8 text-center text-sm text-theme-text-muted">
+            No deployments have been triggered yet. Click <strong class="text-theme-text-primary">Deploy Now</strong> to create your first release.
         </div>
 
         <div v-else class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
+            <table class="min-w-full divide-y divide-theme-border text-sm">
                 <thead>
-                    <tr class="text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    <tr class="text-left text-xs font-semibold uppercase tracking-wider text-theme-text-muted">
                         <th class="py-3 pr-4">Release ID</th>
                         <th class="py-3 pr-4">Commit</th>
                         <th class="py-3 pr-4">Trigger</th>
@@ -343,26 +343,30 @@ const executeRollback = () => {
                         <th class="py-3 text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                    <tr v-for="deployment in deployments" :key="deployment.id" class="hover:bg-gray-50/50 dark:hover:bg-gray-800/40">
-                        <td class="whitespace-nowrap py-3 pr-4 font-mono text-xs font-medium text-[var(--theme-text)]">
+                <tbody class="divide-y divide-theme-border-subtle">
+                    <tr
+                        v-for="deployment in deployments"
+                        :key="deployment.id"
+                        class="transition-colors hover:bg-theme-bg-surface/60"
+                    >
+                        <td class="whitespace-nowrap py-3 pr-4 font-mono text-xs font-medium text-theme-text-primary">
                             {{ deployment.release_id }}
                         </td>
                         <td class="max-w-xs py-3 pr-4">
                             <div v-if="deployment.commit_sha" class="flex flex-col">
                                 <div class="flex items-center gap-2">
-                                    <span class="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                    <span class="rounded-theme-sm border border-theme-border bg-theme-bg-surface px-1.5 py-0.5 font-mono text-xs text-theme-text-secondary">
                                         {{ deployment.commit_sha.slice(0, 7) }}
                                     </span>
-                                    <span class="truncate font-medium text-gray-900 dark:text-gray-100">
+                                    <span class="truncate font-medium text-theme-text-primary">
                                         {{ deployment.commit_message || 'No commit message' }}
                                     </span>
                                 </div>
-                                <span v-if="deployment.commit_author" class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                <span v-if="deployment.commit_author" class="mt-0.5 text-xs text-theme-text-muted">
                                     by {{ deployment.commit_author }}
                                 </span>
                             </div>
-                            <span v-else class="text-xs text-gray-400">—</span>
+                            <span v-else class="text-xs text-theme-text-muted">—</span>
                         </td>
                         <td class="whitespace-nowrap py-3 pr-4">
                             <UiBadge variant="neutral">{{ triggerLabel(deployment.trigger_type) }}</UiBadge>
@@ -372,7 +376,7 @@ const executeRollback = () => {
                                 {{ statusLabel(deployment.status) }}
                             </UiBadge>
                         </td>
-                        <td class="whitespace-nowrap py-3 pr-4 text-xs text-gray-600 dark:text-gray-400">
+                        <td class="whitespace-nowrap py-3 pr-4 text-xs text-theme-text-secondary">
                             {{ formatDuration(deployment) }}
                         </td>
                         <td class="whitespace-nowrap py-3 text-right">
@@ -406,14 +410,14 @@ const executeRollback = () => {
     </UiCard>
 
     <!-- Live Log Drawer Modal -->
-    <UiModal :show="logDrawerOpen" max-width="3xl" @close="closeLogs">
-        <div class="p-6">
+    <UiModal :show="logDrawerOpen" max-width="4xl" @close="closeLogs">
+        <div>
             <div class="mb-4 flex items-center justify-between">
                 <div>
-                    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+                    <h3 class="text-base font-semibold text-theme-text-primary">
                         Deployment Logs — <span class="font-mono">{{ activeLogDeployment?.release_id }}</span>
                     </h3>
-                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p class="mt-0.5 text-xs text-theme-text-muted">
                         <span v-if="logStatus === 'running' || logStatus === 'queued'">
                             Live streaming (polling every 2s)...
                         </span>
@@ -431,8 +435,8 @@ const executeRollback = () => {
                 {{ logError }}
             </UiAlert>
 
-            <div class="max-h-96 overflow-y-auto rounded-lg bg-gray-950 p-4 font-mono text-xs leading-relaxed text-gray-100">
-                <div v-if="logLoading" class="text-gray-400">Loading deployment log...</div>
+            <div class="max-h-[32rem] overflow-y-auto rounded-theme-md border border-theme-border bg-theme-bg-surface p-4 font-mono text-xs leading-relaxed text-theme-text-primary">
+                <div v-if="logLoading" class="text-theme-text-muted">Loading deployment log...</div>
                 <pre v-else class="whitespace-pre-wrap break-words">{{ logContent }}</pre>
             </div>
 
@@ -452,13 +456,13 @@ const executeRollback = () => {
 
     <!-- Cancel Deployment Confirmation Modal -->
     <UiModal :show="cancelTarget !== null" max-width="md" @close="cancelTarget = null">
-        <div class="p-6">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+        <div>
+            <h3 class="text-base font-semibold text-theme-text-primary">
                 Cancel Deployment
             </h3>
-            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <p class="mt-2 text-sm text-theme-text-secondary">
                 Are you sure you want to cancel deployment
-                <span class="font-mono font-semibold text-gray-900 dark:text-gray-100">{{ cancelTarget?.release_id }}</span>?
+                <span class="font-mono font-semibold text-theme-text-primary">{{ cancelTarget?.release_id }}</span>?
                 It will be marked as failed and the deployment lock will be released.
             </p>
             <div class="mt-6 flex justify-end gap-3">
@@ -474,13 +478,13 @@ const executeRollback = () => {
 
     <!-- Rollback Confirmation Modal -->
     <UiModal :show="rollbackTarget !== null" max-width="md" @close="rollbackTarget = null">
-        <div class="p-6">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+        <div>
+            <h3 class="text-base font-semibold text-theme-text-primary">
                 Confirm Rollback
             </h3>
-            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <p class="mt-2 text-sm text-theme-text-secondary">
                 Are you sure you want to atomically switch the live symlink back to release
-                <span class="font-mono font-semibold text-gray-900 dark:text-gray-100">{{ rollbackTarget?.release_id }}</span>?
+                <span class="font-mono font-semibold text-theme-text-primary">{{ rollbackTarget?.release_id }}</span>?
             </p>
             <div class="mt-6 flex justify-end gap-3">
                 <UiButton variant="secondary" :disabled="isRollingBack" @click="rollbackTarget = null">
