@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import UiAlert from '@/Shared/Ui/UiAlert.vue';
 import UiBadge from '@/Shared/Ui/UiBadge.vue';
 import UiButton from '@/Shared/Ui/UiButton.vue';
@@ -188,12 +188,14 @@ function submit(): void {
                 <ol class="list-decimal space-y-2 pl-5 text-xs text-[var(--theme-text-muted)]">
                     <li>
                         <strong class="text-[var(--theme-text)]">Prepare the SSH Deploy Key:</strong>
-                        Ensure the domain's Linux user has an SSH key pair (or save this configuration to initialize the atomic directory structure), then copy the
-                        <strong class="text-[var(--theme-text)]">SSH Public Deploy Key</strong> below.
+                        Ensure the domain's Linux user has an SSH key pair in
+                        <Link href="/users" class="font-medium text-[var(--theme-accent)] underline hover:opacity-80">Users</Link>
+                        (or use the domain's generated <strong class="text-[var(--theme-text)]">SSH Public Deploy Key</strong> shown below once initialized).
                     </li>
                     <li>
-                        <strong class="text-[var(--theme-text)]">Add the Key to GitHub / GitLab / Bitbucket:</strong>
-                        Open your repository's <em>Settings &rarr; Deploy keys &rarr; Add deploy key</em> and paste the public key (read-only access is sufficient).
+                        <strong class="text-[var(--theme-text)]">Add the Public Key to GitHub / GitLab / Bitbucket:</strong>
+                        Open your repository's <em>Settings &rarr; Deploy keys &rarr; Add deploy key</em> and paste the <strong class="text-[var(--theme-text)]">public key</strong>
+                        (starts with <code>ssh-ed25519</code> or <code>ssh-rsa</code> — either the <strong>SSH Public Deploy Key</strong> below, or the Linux user's <code>~/.ssh/id_ed25519.pub</code> key; never paste the private key). Read-only access is sufficient.
                     </li>
                     <li>
                         <strong class="text-[var(--theme-text)]">Configure Repository &amp; Preset:</strong>
