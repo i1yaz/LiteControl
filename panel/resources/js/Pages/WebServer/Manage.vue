@@ -136,9 +136,9 @@ const toggleSuspend = async () => {
 
 const deleteDomain = async () => {
     if (await confirmDialog({
-        title: 'Terminate Domain',
-        message: `Terminate domain '${props.domain.domain}'? This removes VirtualHost configuration and website files.`,
-        confirmText: 'Terminate',
+        title: 'Delete Domain',
+        message: `Delete domain '${props.domain.domain}'? This removes VirtualHost configuration and website files.`,
+        confirmText: 'Delete',
         variant: 'danger',
     })) {
         router.delete(`/domains/${props.domain.id}`);

@@ -277,6 +277,23 @@ cmd_vhost_remove() {
     fi
 
     rm -f "${VHOSTS_META_DIR}/${domain}.conf"
+    rm -f "${LC_CONF_DIR}/domains/${domain}.conf"
+
+    # Clean up installed SSL certificates and acme.sh renewal entries
+    if [[ -n "${LC_SSL_DIR:-}" && -d "${LC_SSL_DIR}/domains/${domain}" ]]; then
+        rm -rf "${LC_SSL_DIR}/domains/${domain}"
+    fi
+
+    if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+        local acme_bin="${ACME_BIN:-/root/.acme.sh/acme.sh}"
+        local acme_home
+        acme_home="$(dirname "${acme_bin}")"
+        if [[ -x "${acme_bin}" ]]; then
+            "${acme_bin}" --remove -d "${domain}" --ecc >/dev/null 2>&1 || true
+            "${acme_bin}" --remove -d "${domain}" >/dev/null 2>&1 || true
+        fi
+        rm -rf "${acme_home}/${domain}_ecc" "${acme_home}/${domain}"
+    fi
 
     local data_json
     data_json=$(printf '{"domain":"%s","removed":true}' "$(json_escape "${domain}")")

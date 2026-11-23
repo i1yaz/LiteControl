@@ -131,9 +131,9 @@ const submitEdit = () => {
 
 const deleteDomain = async (id, name) => {
     if (await confirmDialog({
-        title: 'Terminate Domain',
-        message: `Are you sure you want to terminate domain '${name}'? This removes the vhost configuration and website files.`,
-        confirmText: 'Terminate',
+        title: 'Delete Domain',
+        message: `Are you sure you want to delete domain '${name}'? This removes the vhost configuration and website files.`,
+        confirmText: 'Delete',
         variant: 'danger',
     })) {
         router.delete(`/domains/${id}`);
@@ -370,7 +370,7 @@ const copySshCommand = (username) => {
                             size="xs"
                             variant="danger-soft"
                             @click="deleteDomain(dom.id, dom.domain)"
-                            :title="__('Terminate VHost')"
+                            :title="__('Delete VHost')"
                         >
                             <Trash2 class="w-3.5 h-3.5" />
                             <span>{{ __('Delete') }}</span>
