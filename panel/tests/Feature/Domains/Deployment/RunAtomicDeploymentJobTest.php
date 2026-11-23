@@ -188,6 +188,41 @@ it('purges logs and records for deployments older than keep_releases after a suc
     expect($current->fresh()->log_path)->not->toBeNull();
 });
 
+it('purges logs and records for deployments older than keep_releases even when a deploy fails', function () {
+    [$domain, $config, $previous, $current] = makeDeploymentFixture();
+    $config->update(['keep_releases' => 2]);
+
+    $oldLogPath = storage_path('logs/deployments/test_old_failed_release.log');
+    \Illuminate\Support\Facades\File::ensureDirectoryExists(dirname($oldLogPath));
+    \Illuminate\Support\Facades\File::put($oldLogPath, 'old failed deployment log');
+
+    $oldest = DomainDeployment::create([
+        'domain_id' => $domain->id,
+        'release_id' => '20261118_010000_oldest_failed',
+        'trigger_type' => 'manual',
+        'status' => 'failed',
+        'log_path' => $oldLogPath,
+    ]);
+    DomainDeployment::where('id', $oldest->id)->update(['id' => $previous->id - 1]);
+    $oldest = DomainDeployment::find($previous->id - 1);
+
+    $builder = Mockery::mock(BuildDeploymentPayloadAction::class);
+    $builder->shouldReceive('execute')
+        ->once()
+        ->andReturn(['domain_root' => '/home/client1/example.com']);
+
+    Process::fake([
+        '*' => Process::result(output: '', errorOutput: 'build failed', exitCode: 1),
+    ]);
+
+    (new RunAtomicDeploymentJob($config, $current))->handle($builder);
+
+    expect($current->fresh()->status)->toBe('failed');
+    expect(\Illuminate\Support\Facades\File::exists($oldLogPath))->toBeFalse();
+    expect($oldest->fresh())->toBeNull();
+    expect(DomainDeployment::where('domain_id', $domain->id)->count())->toBe(2);
+});
+
 it('truncates long stderr into a concise error_summary within column limits', function () {
     [$domain, $config, $previous, $current] = makeDeploymentFixture();
 

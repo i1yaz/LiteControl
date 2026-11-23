@@ -145,8 +145,6 @@ class RunAtomicDeploymentJob implements ShouldBeUnique, ShouldQueue
                     $this->deployment->release_id,
                 ));
 
-                $this->pruneOldDeploymentArtifacts();
-
                 return;
             }
 
@@ -187,6 +185,12 @@ class RunAtomicDeploymentJob implements ShouldBeUnique, ShouldQueue
         } finally {
             if ($stagedKeyPath !== null && File::exists($stagedKeyPath)) {
                 File::delete($stagedKeyPath);
+            }
+
+            try {
+                $this->pruneOldDeploymentArtifacts();
+            } catch (Throwable) {
+                // Best-effort cleanup; never mask deployment outcome.
             }
         }
     }

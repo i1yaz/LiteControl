@@ -80,6 +80,20 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 	currentLink := filepath.Join(spec.DomainRoot, "current")
 	previousReleaseDir, _ := os.Readlink(currentLink)
 
+	purged := false
+	defer func() {
+		if purged {
+			return
+		}
+		activeDir, _ := os.Readlink(currentLink)
+		if activeDir == "" {
+			activeDir = previousReleaseDir
+		}
+		if err := purgeOldReleases(spec.DomainRoot, spec.KeepReleases, activeDir); err != nil {
+			logStep(logWriter, fmt.Sprintf("Warning: failed to purge old releases: %v", err))
+		}
+	}()
+
 	releaseDir := filepath.Join(spec.DomainRoot, "releases", spec.ReleaseID)
 	var meta CommitMeta
 
@@ -159,6 +173,7 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 	if err := purgeOldReleases(spec.DomainRoot, spec.KeepReleases, releaseDir); err != nil {
 		return DeployResult{}, fmt.Errorf("purge old releases: %w", err)
 	}
+	purged = true
 	if err := RunHooks(ctx, "after_purge", spec.Hooks.AfterPurge, spec, releaseDir, meta, logWriter); err != nil {
 		return DeployResult{}, err
 	}

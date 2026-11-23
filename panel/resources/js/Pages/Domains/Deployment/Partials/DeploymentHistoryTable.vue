@@ -396,7 +396,7 @@ const executeRollback = () => {
                                 <UiButton
                                     v-if="rollbackEligibleIds.has(deployment.id)"
                                     size="sm"
-                                    variant="danger"
+                                    variant="warning"
                                     @click="confirmRollback(deployment)"
                                 >
                                     Rollback to Here
@@ -490,7 +490,7 @@ const executeRollback = () => {
                 <UiButton variant="secondary" :disabled="isRollingBack" @click="rollbackTarget = null">
                     Cancel
                 </UiButton>
-                <UiButton variant="danger" :disabled="isRollingBack" @click="executeRollback">
+                <UiButton variant="warning" :disabled="isRollingBack" @click="executeRollback">
                     {{ isRollingBack ? 'Rolling back...' : 'Rollback to Here' }}
                 </UiButton>
             </div>
