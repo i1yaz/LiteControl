@@ -62,7 +62,7 @@ const form = useForm({
     keep_releases: props.config.keep_releases ?? 5,
     shared_dirs: props.config.shared_dirs ?? [],
     shared_files: props.config.shared_files ?? [],
-    health_check_enabled: props.config.health_check_enabled ?? true,
+    health_check_enabled: props.config.health_check_enabled ?? false,
     health_check_path: props.config.health_check_path ?? '/',
     auto_rollback: props.config.auto_rollback ?? true,
     api_token: '',

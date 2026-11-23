@@ -44,7 +44,7 @@ class DomainDeploymentConfig extends Model
         'keep_releases' => 5,
         'shared_dirs' => '["storage"]',
         'shared_files' => '[".env"]',
-        'health_check_enabled' => true,
+        'health_check_enabled' => false,
         'health_check_path' => '/',
         'auto_rollback' => true,
     ];
