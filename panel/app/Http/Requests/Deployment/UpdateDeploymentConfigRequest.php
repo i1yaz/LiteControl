@@ -38,6 +38,8 @@ class UpdateDeploymentConfigRequest extends FormRequest
             'auto_rollback' => ['required', 'boolean'],
             'api_token' => ['nullable', 'string', 'max:500'],
             'webhook_secret' => ['nullable', 'string', 'max:255'],
+            'deploy_key_public' => ['nullable', 'string', 'max:2000'],
+            'deploy_key_private' => ['nullable', 'string', 'max:8000'],
         ];
     }
 }

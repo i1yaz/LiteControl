@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Deployment;
 
+use App\Domains\Deployment\Actions\GenerateDeployKeyAction;
 use App\Domains\Deployment\Actions\RollbackDeploymentAction;
 use App\Domains\Deployment\Jobs\RunAtomicDeploymentJob;
 use App\Domains\Deployment\Models\DomainDeployment;
@@ -59,14 +60,22 @@ class DomainDeploymentController extends Controller
 
         $wasSimple = $config->mode === 'simple';
 
-        $updateData = collect($validated)->except(['api_token', 'webhook_secret'])->all();
+        $updateData = collect($validated)->except(['api_token', 'webhook_secret', 'deploy_key_private', 'deploy_key_public'])->all();
 
         if (! empty($validated['api_token'])) {
-            $updateData['api_token_encrypted'] = encrypt($validated['api_token']);
+            $updateData['api_token_encrypted'] = $validated['api_token'];
         }
 
         if (! empty($validated['webhook_secret'])) {
-            $updateData['webhook_secret_encrypted'] = encrypt($validated['webhook_secret']);
+            $updateData['webhook_secret_encrypted'] = $validated['webhook_secret'];
+        }
+
+        if (! empty($validated['deploy_key_public'])) {
+            $updateData['deploy_key_public'] = trim($validated['deploy_key_public']);
+        }
+
+        if (! empty($validated['deploy_key_private'])) {
+            $updateData['deploy_key_private_encrypted'] = trim($validated['deploy_key_private']);
         }
 
         $config->update($updateData);
@@ -86,6 +95,13 @@ class DomainDeploymentController extends Controller
         }
 
         return back()->with('success', 'Deployment configuration updated.');
+    }
+
+    public function generateDeployKey(Domain $domain, GenerateDeployKeyAction $action): RedirectResponse
+    {
+        $action->execute($domain);
+
+        return back()->with('success', 'SSH deploy key generated. Add the public key to your Git repository.');
     }
 
     public function deploy(Domain $domain): RedirectResponse

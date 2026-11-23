@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { Link, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import UiAlert from '@/Shared/Ui/UiAlert.vue';
 import UiBadge from '@/Shared/Ui/UiBadge.vue';
 import UiButton from '@/Shared/Ui/UiButton.vue';
@@ -47,6 +47,8 @@ const props = defineProps<{
 
 const seedShared = ref(true);
 const copiedField = ref<'deploy_key' | 'webhook_url' | null>(null);
+const generatingKey = ref(false);
+const showManualKey = ref(false);
 
 const form = useForm({
     mode: props.config.mode ?? 'simple',
@@ -65,6 +67,8 @@ const form = useForm({
     auto_rollback: props.config.auto_rollback ?? true,
     api_token: '',
     webhook_secret: '',
+    deploy_key_public: '',
+    deploy_key_private: '',
     seed_shared: true,
 });
 
@@ -114,9 +118,28 @@ function copyToClipboard(text: string, field: 'deploy_key' | 'webhook_url'): voi
     });
 }
 
+function generateDeployKey(): void {
+    generatingKey.value = true;
+    router.post(
+        `/domains/${props.domain.id}/deploy/key`,
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                generatingKey.value = false;
+            },
+        },
+    );
+}
+
 function submit(): void {
     form.put(`/domains/${props.domain.id}/deploy/config`, {
         preserveScroll: true,
+        onSuccess: () => {
+            form.deploy_key_public = '';
+            form.deploy_key_private = '';
+            showManualKey.value = false;
+        },
     });
 }
 </script>
@@ -187,15 +210,15 @@ function submit(): void {
             >
                 <ol class="list-decimal space-y-2 pl-5 text-xs text-[var(--theme-text-muted)]">
                     <li>
-                        <strong class="text-[var(--theme-text)]">Prepare the SSH Deploy Key:</strong>
-                        Ensure the domain's Linux user has an SSH key pair in
+                        <strong class="text-[var(--theme-text)]">Generate or Paste an Outbound SSH Deploy Key:</strong>
+                        This key is <strong class="text-[var(--theme-text)]">separate</strong> from the inbound SSH key in
                         <Link href="/users" class="font-medium text-[var(--theme-accent)] underline hover:opacity-80">Users</Link>
-                        (or use the domain's generated <strong class="text-[var(--theme-text)]">SSH Public Deploy Key</strong> shown below once initialized).
+                        (which lets you SSH <em>into</em> the server). Click <strong class="text-[var(--theme-text)]">Generate SSH Deploy Key</strong> below (or paste your own key pair). If you prefer generating a key manually on the server via CLI, run:
+                        <code class="mt-1 block rounded bg-[var(--theme-surface)] px-2 py-1 font-mono text-[11px] text-[var(--theme-text)]">ssh-keygen -t ed25519 -C "deploy@{{ domain.name }}" -f ~/.ssh/id_ed25519 -N "" &amp;&amp; cat ~/.ssh/id_ed25519.pub</code>
                     </li>
                     <li>
                         <strong class="text-[var(--theme-text)]">Add the Public Key to GitHub / GitLab / Bitbucket:</strong>
-                        Open your repository's <em>Settings &rarr; Deploy keys &rarr; Add deploy key</em> and paste the <strong class="text-[var(--theme-text)]">public key</strong>
-                        (starts with <code>ssh-ed25519</code> or <code>ssh-rsa</code> — either the <strong>SSH Public Deploy Key</strong> below, or the Linux user's <code>~/.ssh/id_ed25519.pub</code> key; never paste the private key). Read-only access is sufficient.
+                        Open your repository's <em>Settings &rarr; Deploy keys &rarr; Add deploy key</em> and paste the <strong class="text-[var(--theme-text)]">SSH Public Deploy Key</strong> (starts with <code>ssh-ed25519</code> or <code>ssh-rsa</code>; never paste the private key). Read-only access is sufficient.
                     </li>
                     <li>
                         <strong class="text-[var(--theme-text)]">Configure Repository &amp; Preset:</strong>
@@ -306,10 +329,32 @@ function submit(): void {
             </div>
 
             <!-- Copyable Deploy Key & Webhook URL -->
-            <div class="mt-6 space-y-3 border-t border-[var(--theme-border)] pt-4">
-                <div v-if="config.deploy_key_public">
-                    <label class="mb-1 block text-xs font-medium text-[var(--theme-text-muted)]">SSH Public Deploy Key</label>
-                    <div class="flex items-center gap-2">
+            <div class="mt-6 space-y-4 border-t border-[var(--theme-border)] pt-4">
+                <div class="space-y-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <label class="block text-xs font-medium text-[var(--theme-text-muted)]">SSH Public Deploy Key</label>
+                        <div class="flex items-center gap-2">
+                            <UiButton
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                :loading="generatingKey"
+                                @click="generateDeployKey"
+                            >
+                                {{ config.deploy_key_public ? 'Regenerate Key' : 'Generate SSH Deploy Key' }}
+                            </UiButton>
+                            <UiButton
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                @click="showManualKey = !showManualKey"
+                            >
+                                {{ showManualKey ? 'Hide Manual Entry' : 'Paste Custom Key' }}
+                            </UiButton>
+                        </div>
+                    </div>
+
+                    <div v-if="config.deploy_key_public" class="flex items-center gap-2">
                         <input
                             type="text"
                             readonly
@@ -324,6 +369,33 @@ function submit(): void {
                         >
                             {{ copiedField === 'deploy_key' ? 'Copied' : 'Copy' }}
                         </UiButton>
+                    </div>
+                    <p v-else class="text-xs text-[var(--theme-text-muted)]">
+                        No deploy key configured yet. Click <strong>Generate SSH Deploy Key</strong> to create an Ed25519 key pair for this domain.
+                    </p>
+
+                    <div v-if="showManualKey" class="mt-3 space-y-3 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3">
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-[var(--theme-text-muted)]">Custom Public Key (<code>ssh-ed25519 ...</code>)</label>
+                            <textarea
+                                v-model="form.deploy_key_public"
+                                rows="2"
+                                placeholder="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... deploy@example.com"
+                                class="w-full rounded border border-[var(--theme-border)] bg-[var(--theme-bg)] px-3 py-1.5 font-mono text-xs text-[var(--theme-text)]"
+                            />
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-[var(--theme-text-muted)]">Custom Private Key (stored encrypted)</label>
+                            <textarea
+                                v-model="form.deploy_key_private"
+                                rows="4"
+                                placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
+                                class="w-full rounded border border-[var(--theme-border)] bg-[var(--theme-bg)] px-3 py-1.5 font-mono text-xs text-[var(--theme-text)]"
+                            />
+                        </div>
+                        <p class="text-[11px] text-[var(--theme-text-muted)]">
+                            Click <strong>Save Deployment Configuration</strong> below to store your custom key pair.
+                        </p>
                     </div>
                 </div>
 
