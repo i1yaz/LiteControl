@@ -37,6 +37,7 @@ class DomainDeploymentController extends Controller
 
         $deployments = DomainDeployment::query()
             ->where('domain_id', $domain->id)
+            ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
             ->latest('id')
             ->limit(15)
             ->get();

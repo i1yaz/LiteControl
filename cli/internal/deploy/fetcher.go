@@ -3,11 +3,15 @@ package deploy
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // FetchReleaseCode fetches the release source into releaseDir using the configured
@@ -85,7 +89,178 @@ func fetchTarball(ctx context.Context, spec Payload, releaseDir string, logWrite
 		return CommitMeta{}, err
 	}
 
-	return CommitMeta{}, nil
+	meta := fetchTarballCommitMeta(ctx, spec.Repo.TarballURL, spec.Repo.AuthToken)
+	return meta, nil
+}
+
+// fetchTarballCommitMeta attempts a best-effort provider API lookup to retrieve
+// commit SHA, message, and author for GitHub, GitLab, and Bitbucket tarballs.
+func fetchTarballCommitMeta(ctx context.Context, tarballURL, authToken string) CommitMeta {
+	provider, apiURL := resolveCommitMetaAPIURL(tarballURL)
+	if provider == "" || apiURL == "" {
+		return CommitMeta{}
+	}
+
+	reqCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return CommitMeta{}
+	}
+	req.Header.Set("User-Agent", "LiteControl-Deploy")
+	req.Header.Set("Accept", "application/json")
+	if authToken != "" {
+		req.Header.Set("Authorization", "Bearer "+authToken)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return CommitMeta{}
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return CommitMeta{}
+	}
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return CommitMeta{}
+	}
+
+	return parseProviderCommitMeta(provider, body)
+}
+
+func resolveCommitMetaAPIURL(tarballURL string) (provider, apiURL string) {
+	u, err := url.Parse(strings.TrimSpace(tarballURL))
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return "", ""
+	}
+
+	host := strings.ToLower(u.Host)
+	path := u.EscapedPath()
+
+	// GitHub: https://api.github.com/repos/{owner}/{repo}/tarball/{ref}
+	if strings.Contains(host, "github.com") {
+		if idx := strings.Index(path, "/tarball/"); idx != -1 {
+			prefix := path[:idx]
+			ref := strings.TrimPrefix(path[idx+len("/tarball/"):], "/")
+			if prefix != "" && ref != "" {
+				return "github", fmt.Sprintf("%s://%s%s/commits/%s", u.Scheme, u.Host, prefix, ref)
+			}
+		}
+	}
+
+	// GitLab: https://{host}/api/v4/projects/{encoded_path}/repository/archive.tar.gz?sha={ref}
+	if strings.Contains(path, "/api/v4/projects/") && strings.HasSuffix(path, "/repository/archive.tar.gz") {
+		ref := u.Query().Get("sha")
+		if ref == "" {
+			ref = "HEAD"
+		}
+		prefix := strings.TrimSuffix(path, "/archive.tar.gz")
+		return "gitlab", fmt.Sprintf("%s://%s%s/commits/%s", u.Scheme, u.Host, prefix, url.PathEscape(ref))
+	}
+
+	// Bitbucket: https://bitbucket.org/{owner}/{repo}/get/{ref}.tar.gz
+	if strings.Contains(host, "bitbucket.org") {
+		if idx := strings.Index(path, "/get/"); idx != -1 && strings.HasSuffix(path, ".tar.gz") {
+			repoPath := strings.Trim(path[:idx], "/")
+			ref := strings.TrimSuffix(path[idx+len("/get/"):], ".tar.gz")
+			if repoPath != "" && ref != "" {
+				return "bitbucket", fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%s/commits/%s?pagelen=1", repoPath, ref)
+			}
+		}
+	}
+
+	return "", ""
+}
+
+func parseProviderCommitMeta(provider string, body []byte) CommitMeta {
+	switch provider {
+	case "github":
+		var payload struct {
+			SHA    string `json:"sha"`
+			Commit struct {
+				Message string `json:"message"`
+				Author  struct {
+					Name string `json:"name"`
+				} `json:"author"`
+			} `json:"commit"`
+			Author struct {
+				Login string `json:"login"`
+			} `json:"author"`
+		}
+		if err := json.Unmarshal(body, &payload); err != nil {
+			return CommitMeta{}
+		}
+		author := strings.TrimSpace(payload.Commit.Author.Name)
+		if author == "" {
+			author = strings.TrimSpace(payload.Author.Login)
+		}
+		return CommitMeta{
+			SHA:     strings.TrimSpace(payload.SHA),
+			Message: firstLine(payload.Commit.Message),
+			Author:  author,
+		}
+
+	case "gitlab":
+		var payload struct {
+			ID         string `json:"id"`
+			Title      string `json:"title"`
+			Message    string `json:"message"`
+			AuthorName string `json:"author_name"`
+		}
+		if err := json.Unmarshal(body, &payload); err != nil {
+			return CommitMeta{}
+		}
+		msg := strings.TrimSpace(payload.Title)
+		if msg == "" {
+			msg = firstLine(payload.Message)
+		}
+		return CommitMeta{
+			SHA:     strings.TrimSpace(payload.ID),
+			Message: msg,
+			Author:  strings.TrimSpace(payload.AuthorName),
+		}
+
+	case "bitbucket":
+		var payload struct {
+			Values []struct {
+				Hash    string `json:"hash"`
+				Message string `json:"message"`
+				Author  struct {
+					Raw  string `json:"raw"`
+					User struct {
+						DisplayName string `json:"display_name"`
+					} `json:"user"`
+				} `json:"author"`
+			} `json:"values"`
+		}
+		if err := json.Unmarshal(body, &payload); err != nil || len(payload.Values) == 0 {
+			return CommitMeta{}
+		}
+		c := payload.Values[0]
+		author := strings.TrimSpace(c.Author.User.DisplayName)
+		if author == "" {
+			author = strings.TrimSpace(c.Author.Raw)
+		}
+		return CommitMeta{
+			SHA:     strings.TrimSpace(c.Hash),
+			Message: firstLine(c.Message),
+			Author:  author,
+		}
+	}
+
+	return CommitMeta{}
+}
+
+func firstLine(s string) string {
+	s = strings.TrimSpace(s)
+	if idx := strings.IndexAny(s, "\r\n"); idx != -1 {
+		return strings.TrimSpace(s[:idx])
+	}
+	return s
 }
 
 func removeAndVerifyNoGit(releaseDir string) error {
