@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import UiBadge from '@/Shared/Ui/UiBadge.vue';
 import UiButton from '@/Shared/Ui/UiButton.vue';
@@ -8,14 +8,14 @@ import UiInput from '@/Shared/Ui/UiInput.vue';
 import UiModal from '@/Shared/Ui/UiModal.vue';
 
 export type HookStage = 'clone' | 'install' | 'activate' | 'cleanup';
-export type HookPosition = 'before' | 'after';
+export type HookPosition = 'before' | 'run' | 'after';
 
 export interface DeploymentHook {
     id: number;
     config_id?: number;
     name: string;
     stage: HookStage | 'build';
-    position: HookPosition | 'run';
+    position: HookPosition;
     script: string;
     sort_order: number;
     is_active: boolean;
@@ -80,17 +80,27 @@ const scriptTextarea = ref<HTMLTextAreaElement | null>(null);
 const hookForm = useForm({
     name: '',
     stage: 'install' as HookStage,
-    position: 'after' as HookPosition,
+    position: 'run' as HookPosition,
     script: '',
     sort_order: 0,
     is_active: true,
 });
 
+watch(
+    () => hookForm.stage,
+    (newStage) => {
+        if (newStage !== 'install' && hookForm.position === 'run') {
+            hookForm.position = 'after';
+        }
+    },
+);
+
 function hooksFor(stage: HookStage, position: HookPosition): DeploymentHook[] {
     return props.hooks
         .filter((h) => {
             const normalizedStage = h.stage === 'build' ? 'install' : h.stage;
-            const normalizedPos = h.position === 'run' ? 'after' : h.position;
+            const normalizedPos =
+                h.position === 'run' && normalizedStage !== 'install' ? 'after' : h.position;
             return normalizedStage === stage && normalizedPos === position;
         })
         .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.id - b.id);
@@ -116,8 +126,11 @@ function openEditModal(hook: DeploymentHook) {
     editingHook.value = hook;
     hookForm.clearErrors();
     hookForm.name = hook.name;
-    hookForm.stage = (hook.stage === 'build' ? 'install' : hook.stage) as HookStage;
-    hookForm.position = (hook.position === 'run' ? 'after' : hook.position) as HookPosition;
+    const normalizedStage = (hook.stage === 'build' ? 'install' : hook.stage) as HookStage;
+    hookForm.stage = normalizedStage;
+    hookForm.position = (
+        hook.position === 'run' && normalizedStage !== 'install' ? 'after' : hook.position
+    ) as HookPosition;
     hookForm.script = hook.script;
     hookForm.sort_order = hook.sort_order ?? 0;
     hookForm.is_active = hook.is_active ?? true;
@@ -265,6 +278,14 @@ function moveHook(stage: HookStage, position: HookPosition, index: number, direc
                             + Before
                         </UiButton>
                         <UiButton
+                            v-if="stage.key === 'install'"
+                            size="xs"
+                            variant="primary"
+                            @click="openCreateModal(stage.key, 'run')"
+                        >
+                            + Install Step
+                        </UiButton>
+                        <UiButton
                             size="xs"
                             variant="secondary"
                             @click="openCreateModal(stage.key, 'after')"
@@ -342,8 +363,91 @@ function moveHook(stage: HookStage, position: HookPosition, index: number, direc
                     </div>
                 </div>
 
-                <!-- Locked Core Action -->
-                <div class="mt-3 rounded-md border border-dashed border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2.5">
+                <!-- Stage 2: Custom Install Steps (run slot) -->
+                <div
+                    v-if="stage.key === 'install'"
+                    class="mt-3 rounded-md border border-dashed border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2.5"
+                >
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-semibold text-[var(--theme-text)]">
+                            Install Steps
+                        </span>
+                        <UiBadge variant="neutral">Custom</UiBadge>
+                    </div>
+
+                    <div v-if="hooksFor('install', 'run').length > 0" class="mt-2 space-y-2">
+                        <div
+                            v-for="(hook, idx) in hooksFor('install', 'run')"
+                            :key="hook.id"
+                            class="flex items-center justify-between gap-2 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface-muted)] px-3 py-2"
+                        >
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="truncate text-xs font-medium"
+                                        :class="hook.is_active ? 'text-[var(--theme-text)]' : 'text-[var(--theme-text-muted)] line-through'"
+                                    >
+                                        {{ hook.name }}
+                                    </span>
+                                    <UiBadge v-if="!hook.is_active" variant="neutral">Paused</UiBadge>
+                                </div>
+                                <p class="mt-0.5 truncate font-mono text-[11px] text-[var(--theme-text-muted)]">
+                                    {{ hook.script }}
+                                </p>
+                            </div>
+                            <div class="flex shrink-0 items-center gap-1">
+                                <UiButton
+                                    size="xs"
+                                    variant="ghost"
+                                    :disabled="idx === 0"
+                                    title="Move Up"
+                                    @click="moveHook('install', 'run', idx, -1)"
+                                >
+                                    ↑
+                                </UiButton>
+                                <UiButton
+                                    size="xs"
+                                    variant="ghost"
+                                    :disabled="idx === hooksFor('install', 'run').length - 1"
+                                    title="Move Down"
+                                    @click="moveHook('install', 'run', idx, 1)"
+                                >
+                                    ↓
+                                </UiButton>
+                                <UiButton
+                                    size="xs"
+                                    variant="ghost"
+                                    @click="toggleHookActive(hook)"
+                                >
+                                    {{ hook.is_active ? 'Pause' : 'Enable' }}
+                                </UiButton>
+                                <UiButton
+                                    size="xs"
+                                    variant="ghost"
+                                    @click="openEditModal(hook)"
+                                >
+                                    Edit
+                                </UiButton>
+                                <UiButton
+                                    size="xs"
+                                    variant="danger"
+                                    @click="deleteHook(hook)"
+                                >
+                                    Delete
+                                </UiButton>
+                            </div>
+                        </div>
+                    </div>
+                    <p v-else class="mt-1 text-xs text-[var(--theme-text-muted)]">
+                        No install steps configured yet. Click <strong>+ Install Step</strong> to run commands like <code v-pre>{{composer}} install --no-dev</code> or <code>npm ci</code>.
+                    </p>
+                </div>
+
+                <!-- Locked Core Action (Stages 1, 3, 4) -->
+                <div
+                    v-else
+                    class="mt-3 rounded-md border border-dashed border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2.5"
+                >
                     <div class="flex items-center justify-between gap-2">
                         <span class="text-xs font-semibold text-[var(--theme-text)]">
                             Core Action
@@ -465,6 +569,7 @@ function moveHook(stage: HookStage, position: HookPosition, index: number, direc
                         class="w-full rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm text-[var(--theme-text)] focus:border-[var(--theme-primary)] focus:outline-none"
                     >
                         <option value="before">Before Stage</option>
+                        <option v-if="hookForm.stage === 'install'" value="run">Install Step (Core)</option>
                         <option value="after">After Stage</option>
                     </select>
                 </div>
