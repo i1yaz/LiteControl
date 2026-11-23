@@ -16,6 +16,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Str;
 use Throwable;
 
 class RunAtomicDeploymentJob implements ShouldBeUnique, ShouldQueue
@@ -128,8 +129,12 @@ class RunAtomicDeploymentJob implements ShouldBeUnique, ShouldQueue
                     $this->deployment->update([
                         'status' => 'active',
                         'commit_sha' => $data['commit_sha'] ?? $this->deployment->commit_sha,
-                        'commit_message' => $data['commit_message'] ?? $this->deployment->commit_message,
-                        'commit_author' => $data['commit_author'] ?? $this->deployment->commit_author,
+                        'commit_message' => isset($data['commit_message'])
+                            ? Str::limit((string) $data['commit_message'], 490)
+                            : $this->deployment->commit_message,
+                        'commit_author' => isset($data['commit_author'])
+                            ? Str::limit((string) $data['commit_author'], 140)
+                            : $this->deployment->commit_author,
                         'finished_at' => now(),
                     ]);
                 });
@@ -161,9 +166,10 @@ class RunAtomicDeploymentJob implements ShouldBeUnique, ShouldQueue
                 return;
             }
 
-            $errorSummary = trim($result->errorOutput() ?: $result->output()) ?: "Deployment failed with exit code {$exitCode}.";
-            if (! $streamedStderr) {
-                $this->appendLog($logPath, $errorSummary."\n");
+            $rawError = trim($result->errorOutput() ?: $result->output());
+            $errorSummary = $this->summarizeError($rawError, (int) $exitCode);
+            if (! $streamedStderr && $rawError !== '') {
+                $this->appendLog($logPath, $rawError."\n");
             }
             $this->appendLog($logPath, sprintf(
                 "[%s] Deployment failed (exit code %d).\n",
@@ -238,10 +244,32 @@ class RunAtomicDeploymentJob implements ShouldBeUnique, ShouldQueue
         if (in_array($this->deployment->fresh()?->status, ['queued', 'running'], true)) {
             $this->deployment->update([
                 'status' => 'failed',
-                'error_summary' => $e->getMessage(),
+                'error_summary' => Str::limit($e->getMessage(), 480),
                 'finished_at' => now(),
             ]);
         }
+    }
+
+    private function summarizeError(string $rawError, int $exitCode): string
+    {
+        if ($rawError === '') {
+            return "Deployment failed with exit code {$exitCode}.";
+        }
+
+        $lines = array_values(array_filter(
+            array_map('trim', preg_split('/\R/', $rawError) ?: []),
+            static fn (string $line): bool => $line !== '',
+        ));
+
+        for ($i = count($lines) - 1; $i >= 0; $i--) {
+            if (str_starts_with($lines[$i], 'error:')) {
+                return Str::limit($lines[$i], 480);
+            }
+        }
+
+        $lastLine = $lines !== [] ? $lines[count($lines) - 1] : $rawError;
+
+        return Str::limit($lastLine, 480);
     }
 
     private function appendLog(string $logPath, string $content): void

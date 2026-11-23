@@ -186,3 +186,25 @@ it('purges logs for deployments older than keep_releases after a successful depl
     expect($oldest->fresh()->log_path)->toBeNull();
     expect($current->fresh()->log_path)->not->toBeNull();
 });
+
+it('truncates long stderr into a concise error_summary within column limits', function () {
+    [$domain, $config, $previous, $current] = makeDeploymentFixture();
+
+    $builder = Mockery::mock(BuildDeploymentPayloadAction::class);
+    $builder->shouldReceive('execute')
+        ->once()
+        ->andReturn(['domain_root' => '/home/client1/example.com']);
+
+    $longStderr = str_repeat("Installing dependencies...\n", 100).'error: hook install[0] failed: exit status 100';
+
+    Process::fake([
+        '*' => Process::result(output: '', errorOutput: $longStderr, exitCode: 1),
+    ]);
+
+    (new RunAtomicDeploymentJob($config, $current))->handle($builder);
+
+    $fresh = $current->fresh();
+    expect($fresh->status)->toBe('failed');
+    expect($fresh->error_summary)->toBe('error: hook install[0] failed: exit status 100');
+    expect(strlen((string) $fresh->error_summary))->toBeLessThanOrEqual(500);
+});

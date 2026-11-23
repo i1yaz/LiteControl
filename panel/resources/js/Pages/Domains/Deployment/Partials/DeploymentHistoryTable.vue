@@ -265,23 +265,30 @@ onBeforeUnmount(() => {
     stopHistoryPolling();
 });
 
-// Cancel in-flight deployment state
+// Cancel in-flight deployment confirmation modal state
+const cancelTarget = ref<DeploymentRecord | null>(null);
 const cancellingId = ref<number | null>(null);
 
-const cancelDeployment = (deployment: DeploymentRecord) => {
-    if (cancellingId.value !== null) {
+const confirmCancel = (deployment: DeploymentRecord) => {
+    cancelTarget.value = deployment;
+};
+
+const executeCancel = () => {
+    if (!cancelTarget.value || cancellingId.value !== null) {
         return;
     }
 
-    cancellingId.value = deployment.id;
+    const target = cancelTarget.value;
+    cancellingId.value = target.id;
     router.post(
-        `/domains/${props.domain.id}/deploy/cancel/${deployment.id}`,
+        `/domains/${props.domain.id}/deploy/cancel/${target.id}`,
         {},
         {
             preserveScroll: true,
             onFinish: () => {
                 cancellingId.value = null;
-                if (activeLogDeployment.value?.id === deployment.id) {
+                cancelTarget.value = null;
+                if (activeLogDeployment.value?.id === target.id) {
                     logStatus.value = 'failed';
                     stopPolling();
                 }
@@ -378,7 +385,7 @@ const executeRollback = () => {
                                     size="sm"
                                     variant="danger"
                                     :disabled="cancellingId === deployment.id"
-                                    @click="cancelDeployment(deployment)"
+                                    @click="confirmCancel(deployment)"
                                 >
                                     {{ cancellingId === deployment.id ? 'Cancelling...' : 'Cancel' }}
                                 </UiButton>
@@ -434,11 +441,33 @@ const executeRollback = () => {
                     v-if="activeLogDeployment && (logStatus === 'running' || logStatus === 'queued')"
                     variant="danger"
                     :disabled="cancellingId === activeLogDeployment.id"
-                    @click="cancelDeployment(activeLogDeployment)"
+                    @click="confirmCancel(activeLogDeployment)"
                 >
                     {{ cancellingId === activeLogDeployment.id ? 'Cancelling...' : 'Cancel Deployment' }}
                 </UiButton>
                 <UiButton variant="secondary" @click="closeLogs">Close</UiButton>
+            </div>
+        </div>
+    </UiModal>
+
+    <!-- Cancel Deployment Confirmation Modal -->
+    <UiModal :show="cancelTarget !== null" max-width="md" @close="cancelTarget = null">
+        <div class="p-6">
+            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+                Cancel Deployment
+            </h3>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                Are you sure you want to cancel deployment
+                <span class="font-mono font-semibold text-gray-900 dark:text-gray-100">{{ cancelTarget?.release_id }}</span>?
+                It will be marked as failed and the deployment lock will be released.
+            </p>
+            <div class="mt-6 flex justify-end gap-3">
+                <UiButton variant="secondary" :disabled="cancellingId !== null" @click="cancelTarget = null">
+                    Keep Running
+                </UiButton>
+                <UiButton variant="danger" :disabled="cancellingId !== null" @click="executeCancel">
+                    {{ cancellingId !== null ? 'Cancelling...' : 'Yes, Cancel Deployment' }}
+                </UiButton>
             </div>
         </div>
     </UiModal>
