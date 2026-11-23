@@ -124,7 +124,7 @@ function submit(): void {
 <template>
     <form class="space-y-6" @submit.prevent="submit">
         <!-- Deployment Mode Switcher -->
-        <UiCard title="Deployment Mode" subtitle="Choose between simple manual pulls or Envoyer-style atomic zero-downtime releases.">
+        <UiCard title="Deployment Mode" subtitle="Choose between manual deployment or atomic zero-downtime releases.">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <button
                     type="button"
@@ -137,7 +137,7 @@ function submit(): void {
                     @click="form.mode = 'simple'"
                 >
                     <div class="flex w-full items-center justify-between">
-                        <span class="font-semibold text-[var(--theme-text)]">Simple Manual / Pull</span>
+                        <span class="font-semibold text-[var(--theme-text)]">Manual Deployment</span>
                         <UiBadge v-if="form.mode === 'simple'" variant="info">Selected</UiBadge>
                     </div>
                     <p class="mt-1 text-xs text-[var(--theme-text-muted)]">
@@ -156,7 +156,7 @@ function submit(): void {
                     @click="form.mode = 'atomic'"
                 >
                     <div class="flex w-full items-center justify-between">
-                        <span class="font-semibold text-[var(--theme-text)]">Atomic Zero-Downtime (Envoyer Style)</span>
+                        <span class="font-semibold text-[var(--theme-text)]">Atomic Zero Downtime</span>
                         <UiBadge v-if="form.mode === 'atomic'" variant="success">Recommended</UiBadge>
                     </div>
                     <p class="mt-1 text-xs text-[var(--theme-text-muted)]">
@@ -179,7 +179,53 @@ function submit(): void {
             </div>
         </UiCard>
 
-        <!-- Framework Preset & Repository Configuration -->
+        <template v-if="form.mode === 'atomic'">
+            <!-- Zero-Downtime Setup Guide -->
+            <UiCard
+                title="Zero-Downtime Setup Guide"
+                subtitle="Follow these steps to connect your repository and enable atomic deployments."
+            >
+                <ol class="list-decimal space-y-2 pl-5 text-xs text-[var(--theme-text-muted)]">
+                    <li>
+                        <strong class="text-[var(--theme-text)]">Prepare the SSH Deploy Key:</strong>
+                        Ensure the domain's Linux user has an SSH key pair (or save this configuration to initialize the atomic directory structure), then copy the
+                        <strong class="text-[var(--theme-text)]">SSH Public Deploy Key</strong> below.
+                    </li>
+                    <li>
+                        <strong class="text-[var(--theme-text)]">Add the Key to GitHub / GitLab / Bitbucket:</strong>
+                        Open your repository's <em>Settings &rarr; Deploy keys &rarr; Add deploy key</em> and paste the public key (read-only access is sufficient).
+                    </li>
+                    <li>
+                        <strong class="text-[var(--theme-text)]">Configure Repository &amp; Preset:</strong>
+                        Enter your repository SSH URL (e.g., <code>git@github.com:org/repo.git</code>), branch, and framework preset. Presets automatically configure <code>web_subpath</code> and persistent <code>shared/</code> files like <code>.env</code>.
+                    </li>
+                    <li>
+                        <strong class="text-[var(--theme-text)]">Optional Auto-Deploy Webhook:</strong>
+                        Copy the <strong class="text-[var(--theme-text)]">Webhook URL</strong> into your Git provider's <em>Settings &rarr; Webhooks</em> (push events) to deploy automatically on every push.
+                    </li>
+                    <li>
+                        <strong class="text-[var(--theme-text)]">Save &amp; Deploy:</strong>
+                        Click <strong class="text-[var(--theme-text)]">Save Deployment Configuration</strong> to initialize <code>releases/</code>, <code>shared/</code>, and <code>current</code>, then trigger a deployment.
+                    </li>
+                </ol>
+
+                <div class="mt-4 grid grid-cols-1 gap-3 border-t border-[var(--theme-border)] pt-4 md:grid-cols-2">
+                    <div class="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3">
+                        <div class="text-xs font-semibold text-[var(--theme-text)]">Shallow Clone + Purge .git</div>
+                        <p class="mt-1 text-xs text-[var(--theme-text-muted)]">
+                            Runs <code>git clone --depth=1 --single-branch</code> using your SSH deploy key, records the commit metadata, and deletes <code>.git</code> so no repository metadata is exposed. Best for most Git repositories.
+                        </p>
+                    </div>
+                    <div class="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3">
+                        <div class="text-xs font-semibold text-[var(--theme-text)]">Provider Tarball</div>
+                        <p class="mt-1 text-xs text-[var(--theme-text-muted)]">
+                            Downloads a compressed <code>.tar.gz</code> archive directly from your Git provider's API (using a bearer token for private repos) and extracts it without running Git or needing an SSH key. Faster for large repos.
+                        </p>
+                    </div>
+                </div>
+            </UiCard>
+
+            <!-- Framework Preset & Repository Configuration -->
         <UiCard title="Repository & Framework Preset" subtitle="Configure your Git source, branch, fetch driver, and framework defaults.">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <UiSelect
@@ -325,6 +371,7 @@ function submit(): void {
                 />
             </div>
         </UiCard>
+        </template>
 
         <div class="flex justify-end">
             <UiButton type="submit" :loading="form.processing">
