@@ -54,38 +54,36 @@ const triggerDeploy = () => {
     <Head :title="`Zero-Downtime Deployment — ${domainName}`" />
 
     <PanelLayout>
-        <template #header>
-            <div class="flex flex-wrap items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                    <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                        Deployment — {{ domainName }}
-                    </h2>
-                    <UiBadge :variant="isAtomic ? 'success' : 'neutral'">
-                        {{ isAtomic ? 'Atomic Mode' : 'Simple Mode' }}
-                    </UiBadge>
-                </div>
-
-                <div class="flex items-center gap-3">
-                    <UiButton
-                        v-if="isAtomic"
-                        variant="secondary"
-                        @click="showEnvModal = true"
-                    >
-                        Shared .env &amp; Paths
-                    </UiButton>
-                    <UiButton
-                        variant="primary"
-                        :disabled="!isAtomic || isDeploying"
-                        @click="triggerDeploy"
-                    >
-                        {{ isDeploying ? 'Queueing...' : 'Deploy Now' }}
-                    </UiButton>
-                </div>
-            </div>
-        </template>
-
         <div class="py-8">
             <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <h2 class="text-xl font-semibold leading-tight text-[var(--theme-text)]">
+                            Deployment — {{ domainName }}
+                        </h2>
+                        <UiBadge :variant="isAtomic ? 'success' : 'neutral'">
+                            {{ isAtomic ? 'Atomic Mode' : 'Simple Mode' }}
+                        </UiBadge>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <UiButton
+                            v-if="isAtomic"
+                            variant="secondary"
+                            @click="showEnvModal = true"
+                        >
+                            Shared .env &amp; Paths
+                        </UiButton>
+                        <UiButton
+                            variant="primary"
+                            :disabled="!isAtomic || isDeploying"
+                            @click="triggerDeploy"
+                        >
+                            {{ isDeploying ? 'Queueing...' : 'Deploy Now' }}
+                        </UiButton>
+                    </div>
+                </div>
+
                 <DeploymentConfigForm
                     :domain="{ id: domain.id, name: domainName, php_version: domain.php_version }"
                     :config="config"
