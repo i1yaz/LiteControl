@@ -46,7 +46,7 @@ const props = defineProps<{
 }>();
 
 const seedShared = ref(true);
-const copiedField = ref<'deploy_key' | 'webhook_url' | null>(null);
+const copiedField = ref<'deploy_key' | 'webhook_url' | 'webhook_secret' | null>(null);
 const generatingKey = ref(false);
 const showManualKey = ref(false);
 
@@ -104,7 +104,7 @@ watch(seedShared, (val) => {
     form.seed_shared = val;
 });
 
-function copyToClipboard(text: string, field: 'deploy_key' | 'webhook_url'): void {
+function copyToClipboard(text: string, field: 'deploy_key' | 'webhook_url' | 'webhook_secret'): void {
     if (!text || typeof navigator === 'undefined' || !navigator.clipboard) {
         return;
     }
@@ -116,6 +116,12 @@ function copyToClipboard(text: string, field: 'deploy_key' | 'webhook_url'): voi
             }
         }, 2000);
     });
+}
+
+function generateWebhookSecret(): void {
+    const bytes = new Uint8Array(24);
+    crypto.getRandomValues(bytes);
+    form.webhook_secret = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 function generateDeployKey(): void {
@@ -224,7 +230,11 @@ function submit(): void {
                     </li>
                     <li>
                         <strong class="text-[var(--theme-text)]">Optional Auto-Deploy Webhook:</strong>
-                        Copy the <strong class="text-[var(--theme-text)]">Webhook URL</strong> into your Git provider's <em>Settings &rarr; Webhooks</em> (push events) to deploy automatically on every push.
+                        In GitHub <em>Settings &rarr; Webhooks &rarr; Add webhook</em>, set:
+                        <strong>Payload URL</strong> = Webhook URL below,
+                        <strong>Content type</strong> = <code>application/json</code>,
+                        <strong>Secret</strong> = your Webhook Secret below (prevents fake requests via HMAC signature),
+                        and <strong>Events</strong> = <em>Just the push event</em>.
                     </li>
                     <li>
                         <strong class="text-[var(--theme-text)]">Save &amp; Deploy:</strong>
@@ -397,23 +407,59 @@ function submit(): void {
                     </div>
                 </div>
 
-                <div v-if="webhookUrl">
-                    <label class="mb-1 block text-xs font-medium text-[var(--theme-text-muted)]">Webhook URL</label>
-                    <div class="flex items-center gap-2">
-                        <input
-                            type="text"
-                            readonly
-                            :value="webhookUrl"
-                            class="w-full rounded border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-1.5 font-mono text-xs text-[var(--theme-text)]"
-                        />
-                        <UiButton
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            @click="copyToClipboard(webhookUrl, 'webhook_url')"
-                        >
-                            {{ copiedField === 'webhook_url' ? 'Copied' : 'Copy' }}
-                        </UiButton>
+                <div v-if="webhookUrl" class="space-y-3">
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-[var(--theme-text-muted)]">Webhook URL</label>
+                        <div class="flex items-center gap-2">
+                            <input
+                                type="text"
+                                readonly
+                                :value="webhookUrl"
+                                class="w-full rounded border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-1.5 font-mono text-xs text-[var(--theme-text)]"
+                            />
+                            <UiButton
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                @click="copyToClipboard(webhookUrl, 'webhook_url')"
+                            >
+                                {{ copiedField === 'webhook_url' ? 'Copied' : 'Copy' }}
+                            </UiButton>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="mb-1 flex items-center justify-between">
+                            <label class="block text-xs font-medium text-[var(--theme-text-muted)]">Webhook Secret (optional, recommended)</label>
+                            <UiButton
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                @click="generateWebhookSecret"
+                            >
+                                Generate Secret
+                            </UiButton>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input
+                                v-model="form.webhook_secret"
+                                type="text"
+                                placeholder="Leave blank to keep existing secret, or click Generate Secret"
+                                class="w-full rounded border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-1.5 font-mono text-xs text-[var(--theme-text)]"
+                            />
+                            <UiButton
+                                v-if="form.webhook_secret"
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                @click="copyToClipboard(form.webhook_secret, 'webhook_secret')"
+                            >
+                                {{ copiedField === 'webhook_secret' ? 'Copied' : 'Copy' }}
+                            </UiButton>
+                        </div>
+                        <p class="mt-1 text-[11px] text-[var(--theme-text-muted)]">
+                            Paste the same secret into GitHub's <strong>Secret</strong> field (and click Save below). LiteControl verifies <code>X-Hub-Signature-256</code> and rejects unsigned or forged payloads with HTTP 403.
+                        </p>
                     </div>
                 </div>
             </div>

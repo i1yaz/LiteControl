@@ -56,7 +56,7 @@ class DeploymentWebhookController extends Controller
             return true;
         }
 
-        $secret = decrypt($config->webhook_secret_encrypted);
+        $secret = (string) $config->webhook_secret_encrypted;
         $rawBody = $request->getContent();
 
         if ($signature = $request->header('X-Hub-Signature-256')) {
