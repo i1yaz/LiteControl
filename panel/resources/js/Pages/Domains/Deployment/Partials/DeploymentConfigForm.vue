@@ -142,6 +142,7 @@ function submit(): void {
     form.put(`/domains/${props.domain.id}/deploy/config`, {
         preserveScroll: true,
         onSuccess: () => {
+            form.api_token = '';
             form.deploy_key_public = '';
             form.deploy_key_private = '';
             showManualKey.value = false;
@@ -312,6 +313,19 @@ function submit(): void {
                     label="Keep Releases"
                     :error="form.errors.keep_releases"
                 />
+
+                <div v-if="form.fetch_driver === 'provider_tarball'" class="md:col-span-2">
+                    <UiInput
+                        v-model="form.api_token"
+                        type="password"
+                        label="Provider API Token (PAT)"
+                        placeholder="ghp_... (leave blank to keep existing token)"
+                        :error="form.errors.api_token"
+                    />
+                    <p class="mt-1 text-[11px] text-[var(--theme-text-muted)]">
+                        Required for private repositories when using <strong>Provider Tarball</strong> (GitHub PAT with <code>Contents: Read</code> or <code>repo</code> scope). Stored encrypted.
+                    </p>
+                </div>
             </div>
 
             <!-- Shared Dirs & Files Preview -->
@@ -349,7 +363,7 @@ function submit(): void {
                                 :loading="generatingKey"
                                 @click="generateDeployKey"
                             >
-                                {{ config.deploy_key_public ? 'Regenerate Key' : 'Generate SSH Deploy Key' }}
+                                {{ config.deploy_key_public ? 'Generate Key' : 'Generate SSH Deploy Key' }}
                             </UiButton>
                             <UiButton
                                 type="button"
