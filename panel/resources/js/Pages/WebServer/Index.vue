@@ -201,6 +201,24 @@ const copySshCommand = (username) => {
         }, 2000);
     });
 };
+
+const issuingSslId = shallowRef(null);
+const issueSsl = async (dom) => {
+    const actionLabel = dom.ssl_enabled ? 'Reissue SSL' : 'Issue SSL';
+    if (await confirmDialog({
+        title: actionLabel,
+        message: `Issue a Let's Encrypt SSL certificate for '${dom.domain}'? Ensure DNS points to this server.`,
+        confirmText: actionLabel,
+        variant: 'primary',
+    })) {
+        issuingSslId.value = dom.id;
+        router.post('/security/ssl/issue', { domain_id: dom.id }, {
+            onFinish: () => {
+                issuingSslId.value = null;
+            },
+        });
+    }
+};
 </script>
 
 <template>
@@ -264,8 +282,9 @@ const copySshCommand = (username) => {
                 <td class="py-3.5 px-4 font-bold text-theme-text-primary flex items-center gap-2">
                     <span class="w-1.5 h-1.5 rounded-full bg-theme-accent"></span>
                     <a
-                        :href="'http://' + dom.domain"
+                        :href="(dom.ssl_enabled ? 'https://' : 'http://') + dom.domain"
                         target="_blank"
+                        rel="noopener noreferrer"
                         class="hover:text-theme-accent transition-colors underline decoration-theme-border underline-offset-4"
                     >
                         {{ dom.domain }}
@@ -340,6 +359,19 @@ const copySshCommand = (username) => {
                             <Check v-if="copiedUser === (dom.user?.username || currentUsername)" class="w-3.5 h-3.5 text-theme-success-text" />
                             <Terminal v-else class="w-3.5 h-3.5 text-theme-accent" />
                             <span>{{ copiedUser === (dom.user?.username || currentUsername) ? 'Copied!' : 'SSH' }}</span>
+                        </UiButton>
+
+                        <!-- Issue / Reissue SSL Button -->
+                        <UiButton
+                            size="xs"
+                            variant="secondary"
+                            :loading="issuingSslId === dom.id"
+                            :disabled="issuingSslId !== null"
+                            @click="issueSsl(dom)"
+                            :title="dom.ssl_enabled ? __('Reissue Let\'s Encrypt SSL') : __('Issue Let\'s Encrypt SSL')"
+                        >
+                            <ShieldCheck class="w-3.5 h-3.5 text-theme-success-text" />
+                            <span>{{ dom.ssl_enabled ? __('Reissue SSL') : __('Issue SSL') }}</span>
                         </UiButton>
 
                         <!-- Modify (Quick Edit Modal) -->

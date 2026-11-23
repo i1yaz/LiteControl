@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { Server, Play, Square, RotateCw, ShieldCheck, ShieldAlert, ExternalLink, Lock } from '@lucide/vue';
 import { confirmDialog } from '@shared/Composables/useDialog';
@@ -49,6 +50,12 @@ const toggleWebAdmin = async () => {
 const updateWebAdminIps = () => {
     form.post('/server/webadmin/enable');
 };
+
+const webAdminUrl = computed(() => {
+    const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    const port = props.webAdmin?.port || 7080;
+    return `https://${host}:${port}/`;
+});
 </script>
 
 <template>
@@ -118,7 +125,7 @@ const updateWebAdminIps = () => {
                 <div class="flex items-center gap-3">
                     <a
                         v-if="webAdmin?.enabled"
-                        :href="`https://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:${webAdmin?.port || 7080}/`"
+                        :href="webAdminUrl"
                         target="_blank"
                         rel="noopener noreferrer"
                         class="px-4 py-2 rounded-theme-md bg-theme-info-bg hover:bg-theme-info/20 text-theme-info-text border border-theme-info-border text-xs font-semibold flex items-center gap-2 transition-all theme-ui-control"

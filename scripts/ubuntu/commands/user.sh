@@ -301,10 +301,16 @@ cmd_user_ssh_key() {
 
     if [[ -z "${key_data}" || "${key_data}" == "-" || "${key_data}" == "clear" ]]; then
         rm -f "${auth_file}"
+        if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+            usermod -s /usr/sbin/nologin "${user}" 2>/dev/null || true
+        fi
     else
         # Normalize and write key
         printf "%s\n" "${key_data}" > "${auth_file}"
         chmod 600 "${auth_file}"
+        if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+            usermod -s /bin/bash "${user}" 2>/dev/null || true
+        fi
     fi
 
     chmod 700 "${ssh_dir}"
