@@ -4,9 +4,11 @@ namespace App\Http\Middleware;
 
 use App\Domains\PanelConfig\Queries\ThemeManager;
 use App\Domains\PhpRuntime\ValueObjects\PhpVersion;
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use App\Domains\Shared\Contracts\ModuleRegistryQueryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -78,7 +80,7 @@ class HandleInertiaRequests extends Middleware
                 'is_mock_mode' => (bool) env('LC_DEV_MOCK', true),
                 'theme' => $activeTheme,
                 'available_themes' => $availableThemes,
-                'server_ip' => $request->server('SERVER_ADDR', '127.0.0.1'),
+                'server_ip' => fn () => $this->resolveServerIp($request),
             ],
             'locale' => App::getLocale(),
             'available_locales' => collect(config('app.available_locales', []))
@@ -116,5 +118,38 @@ class HandleInertiaRequests extends Middleware
             : [];
 
         return array_merge($fallback, $current);
+    }
+
+    /**
+     * Resolve the server's public IP address, falling back to ServerDriverInterface
+     * when behind the local OpenLiteSpeed reverse proxy (SERVER_ADDR = 127.0.0.1 / ::1).
+     */
+    protected function resolveServerIp(Request $request): string
+    {
+        $serverAddr = (string) $request->server('SERVER_ADDR', '');
+
+        if ($serverAddr !== '' && ! in_array($serverAddr, ['127.0.0.1', '::1'], true)) {
+            return $serverAddr;
+        }
+
+        $cached = Cache::get('panel.server_ip');
+        if (is_string($cached) && $cached !== '') {
+            return $cached;
+        }
+
+        try {
+            $stats = app(ServerDriverInterface::class)->getStats();
+            $resolved = trim((string) ($stats['server_ip'] ?? ''));
+
+            if ($resolved !== '' && ! in_array($resolved, ['127.0.0.1', '::1'], true)) {
+                Cache::put('panel.server_ip', $resolved, now()->addMinutes(10));
+
+                return $resolved;
+            }
+        } catch (\Throwable) {
+            // Fall through to default below so a CLI failure never breaks page rendering.
+        }
+
+        return $serverAddr !== '' ? $serverAddr : '127.0.0.1';
     }
 }
