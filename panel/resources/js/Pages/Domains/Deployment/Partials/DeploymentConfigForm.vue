@@ -218,8 +218,7 @@ function submit(): void {
                 <ol class="list-decimal space-y-2 pl-5 text-xs text-[var(--theme-text-muted)]">
                     <li>
                         <strong class="text-[var(--theme-text)]">Generate SSH Deploy Key:</strong>
-                        Click <strong class="text-[var(--theme-text)]">Generate SSH Deploy Key</strong> below (or paste your own key pair). This is a domain-specific deploy key, separate from your SSH login key in
-                        <Link href="/users" class="font-medium text-[var(--theme-accent)] underline hover:opacity-80">Users</Link>.
+                        Click <strong class="text-[var(--theme-text)]">Generate Key</strong> below (or paste your own key pair).
                     </li>
                     <li>
                         <strong class="text-[var(--theme-text)]">Add Key to GitHub / GitLab / Bitbucket:</strong>
@@ -227,7 +226,7 @@ function submit(): void {
                     </li>
                     <li>
                         <strong class="text-[var(--theme-text)]">Configure Repository &amp; Preset:</strong>
-                        Enter your repository SSH URL (e.g., <code>git@github.com:org/repo.git</code>), branch, and framework preset. Presets automatically configure <code>web_subpath</code> and persistent <code>shared/</code> files like <code>.env</code>.
+                        Enter your repository SSH URL (e.g., <code>git@github.com:org/repo.git</code>), branch, and framework preset.
                     </li>
                     <li>
                         <strong class="text-[var(--theme-text)]">Optional Auto-Deploy Webhook:</strong>
@@ -239,7 +238,7 @@ function submit(): void {
                     </li>
                     <li>
                         <strong class="text-[var(--theme-text)]">Save &amp; Deploy:</strong>
-                        Click <strong class="text-[var(--theme-text)]">Save Deployment Configuration</strong> to initialize <code>releases/</code>, <code>shared/</code>, and <code>current</code>, then trigger a deployment.
+                        Click <strong class="text-[var(--theme-text)]">Save Deployment Configuration</strong>.
                     </li>
                 </ol>
 
