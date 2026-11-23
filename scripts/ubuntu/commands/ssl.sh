@@ -151,6 +151,31 @@ EOF
 # Subcommands
 # ------------------------------------------------------------------------------
 
+domain_resolves_public() {
+    local hostname="$1"
+    local resolved=""
+    if command -v dig >/dev/null 2>&1; then
+        resolved=$(dig +time=2 +tries=1 +short A "${hostname}" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || true)
+        if [[ -z "${resolved}" ]]; then
+            resolved=$(dig +time=2 +tries=1 +short AAAA "${hostname}" 2>/dev/null | grep -E '^[0-9a-fA-F:]+$' || true)
+        fi
+    elif command -v getent >/dev/null 2>&1; then
+        resolved=$(getent ahosts "${hostname}" 2>/dev/null | awk '{print $1}' | sort -u || true)
+    else
+        return 1
+    fi
+
+    [[ -n "${resolved}" ]] || return 1
+
+    local first_ip
+    first_ip=$(printf "%s\n" "${resolved}" | head -n 1)
+    if [[ "${first_ip}" =~ ^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.) || "${first_ip}" == "::1" ]]; then
+        return 1
+    fi
+
+    return 0
+}
+
 cmd_ssl_issue() {
     local domain="${1:-}"
     local doc_root="${2:-}"
@@ -159,6 +184,8 @@ cmd_ssl_issue() {
     [[ -n "${domain}" ]] || emit_error "Missing domain name."
     [[ -n "${doc_root}" ]] || emit_error "Missing document root directory."
     validate_domain "${domain}"
+    domain="${domain,,}"
+    verify_dns_precheck "${domain}"
 
     local domain_ssl_dir="${LC_SSL_DIR}/domains/${domain}"
     mkdir -p "${domain_ssl_dir}"
@@ -180,19 +207,38 @@ cmd_ssl_issue() {
             emit_error "acme.sh is not installed at ${ACME_BIN}."
         fi
 
-        local email_arg=""
-        if [[ -n "${email}" ]]; then
-            "${ACME_BIN}" --register-account -m "${email}" >/dev/null 2>&1 || true
+        local acme_email="${email:-admin@${domain}}"
+        "${ACME_BIN}" --register-account -m "${acme_email}" --server letsencrypt >/dev/null 2>&1 || true
+
+        local -a domain_args=(-d "${domain}")
+        if [[ "${domain}" != www.* ]] && domain_resolves_public "www.${domain}"; then
+            domain_args+=(-d "www.${domain}")
         fi
 
-        log_info "Requesting Let's Encrypt certificate for ${domain} via acme.sh..."
-        if ! "${ACME_BIN}" --issue -d "${domain}" -d "www.${domain}" -w "${doc_root}" --keylength ec-256 --force; then
-            emit_error "Let's Encrypt issuance failed for ${domain}. Please verify DNS points to this server and webroot is accessible."
+        if [[ "${LC_JSON_OUTPUT:-0}" == "1" ]]; then
+            local acme_out=""
+            if ! acme_out=$("${ACME_BIN}" --issue "${domain_args[@]}" -w "${doc_root}" --server letsencrypt --keylength ec-256 --force 2>&1); then
+                local acme_err
+                acme_err=$(printf "%s\n" "${acme_out}" | grep -E "Invalid response|error|Error|detail" | tail -n 1 || true)
+                emit_error "Let's Encrypt issuance failed for ${domain}. Please verify DNS points to this server and webroot is accessible.${acme_err:+ (${acme_err})}"
+            fi
+
+            "${ACME_BIN}" --install-cert -d "${domain}" --ecc \
+                --key-file "${key_file}" \
+                --fullchain-file "${cert_file}" >/dev/null 2>&1
+        else
+            log_info "Requesting Let's Encrypt certificate for ${domain} via acme.sh..."
+            if ! "${ACME_BIN}" --issue "${domain_args[@]}" -w "${doc_root}" --server letsencrypt --keylength ec-256 --force; then
+                emit_error "Let's Encrypt issuance failed for ${domain}. Please verify DNS points to this server and webroot is accessible."
+            fi
+
+            "${ACME_BIN}" --install-cert -d "${domain}" --ecc \
+                --key-file "${key_file}" \
+                --fullchain-file "${cert_file}"
         fi
 
-        "${ACME_BIN}" --install-cert -d "${domain}" --ecc \
-            --key-file "${key_file}" \
-            --fullchain-file "${cert_file}"
+        chmod 600 "${key_file}" 2>/dev/null || true
+        chmod 644 "${cert_file}" 2>/dev/null || true
     fi
 
     apply_vhost_ssl "${domain}" "${cert_file}" "${key_file}"

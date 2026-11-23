@@ -129,7 +129,12 @@ class DomainController extends Controller
             ]);
         }
 
-        $redirect = redirect()->route('domains.index')->with('success', "Domain '{$validated['domain']}' added successfully.");
+        $successMessage = "Domain '{$validated['domain']}' added successfully.";
+        if (! empty($res['ssl_queued']) && empty($res['ssl_issued'])) {
+            $successMessage .= ' SSL certificate issuance has been queued in the background.';
+        }
+
+        $redirect = redirect()->route('domains.index')->with('success', $successMessage);
         if (! empty($res['warning'])) {
             $redirect->with('warning', $res['warning']);
         }

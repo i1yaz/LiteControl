@@ -6,9 +6,11 @@ use App\Domains\Identity\Models\User;
 use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Domains\WebServer\Contracts\SslDriverInterface;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
+use App\Domains\WebServer\Jobs\IssueSslJob;
 use App\Domains\WebServer\Models\Domain;
 use App\Exceptions\System\LcCliException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
@@ -77,19 +79,19 @@ class CreateDomainAction
         $this->relinkExistingChildren($domain);
 
         $sslIssued = false;
+        $sslQueued = false;
         $sslWarning = null;
 
-        // 3. Issue SSL certificate if requested (default ON)
+        // 3. Queue SSL certificate issuance asynchronously if requested (default ON)
+        //    so website provisioning returns immediately without blocking on ACME HTTP-01 validation.
         $requestSsl = filter_var($data['ssl_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN);
         if ($requestSsl) {
             try {
-                $this->sslDriver->issue($domainName, $docRoot, $user->email ?? '');
-                $domain->update([
-                    'ssl_enabled' => true,
-                    'ssl_expires_at' => now()->addDays(90),
-                ]);
-                $sslIssued = true;
-            } catch (LcCliException $e) {
+                Cache::put("ssl_issue_{$domain->id}", 'pending', now()->addMinutes(30));
+                IssueSslJob::dispatch($domain, $user->email ?? '');
+                $sslQueued = true;
+                $sslIssued = (bool) ($domain->fresh()?->ssl_enabled ?? false);
+            } catch (\Throwable $e) {
                 $sslWarning = 'SSL certificate could not be issued automatically (DNS records may not have propagated yet). You can issue it later from the SSL page once DNS is pointed.';
                 Log::warning("CreateDomainAction: SSL auto-issue failed for {$domainName}: {$e->getMessage()}");
             }
@@ -108,12 +110,14 @@ class CreateDomainAction
                 'php_version' => $phpVersion,
                 'doc_root' => $docRoot,
                 'ssl_issued' => $sslIssued,
+                'ssl_queued' => $sslQueued,
             ],
         ]);
 
         return [
-            'domain' => $domain,
+            'domain' => $domain->fresh() ?? $domain,
             'ssl_issued' => $sslIssued,
+            'ssl_queued' => $sslQueued,
             'warning' => $sslWarning,
         ];
     }
