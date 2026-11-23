@@ -265,6 +265,31 @@ onBeforeUnmount(() => {
     stopHistoryPolling();
 });
 
+// Cancel in-flight deployment state
+const cancellingId = ref<number | null>(null);
+
+const cancelDeployment = (deployment: DeploymentRecord) => {
+    if (cancellingId.value !== null) {
+        return;
+    }
+
+    cancellingId.value = deployment.id;
+    router.post(
+        `/domains/${props.domain.id}/deploy/cancel/${deployment.id}`,
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                cancellingId.value = null;
+                if (activeLogDeployment.value?.id === deployment.id) {
+                    logStatus.value = 'failed';
+                    stopPolling();
+                }
+            },
+        },
+    );
+};
+
 // Rollback confirmation modal state
 const rollbackTarget = ref<DeploymentRecord | null>(null);
 const isRollingBack = ref(false);
@@ -349,6 +374,15 @@ const executeRollback = () => {
                                     View Logs
                                 </UiButton>
                                 <UiButton
+                                    v-if="deployment.status === 'running' || deployment.status === 'queued'"
+                                    size="sm"
+                                    variant="danger"
+                                    :disabled="cancellingId === deployment.id"
+                                    @click="cancelDeployment(deployment)"
+                                >
+                                    {{ cancellingId === deployment.id ? 'Cancelling...' : 'Cancel' }}
+                                </UiButton>
+                                <UiButton
                                     v-if="rollbackEligibleIds.has(deployment.id)"
                                     size="sm"
                                     variant="danger"
@@ -395,7 +429,15 @@ const executeRollback = () => {
                 <pre v-else class="whitespace-pre-wrap break-words">{{ logContent }}</pre>
             </div>
 
-            <div class="mt-4 flex justify-end">
+            <div class="mt-4 flex justify-end gap-2">
+                <UiButton
+                    v-if="activeLogDeployment && (logStatus === 'running' || logStatus === 'queued')"
+                    variant="danger"
+                    :disabled="cancellingId === activeLogDeployment.id"
+                    @click="cancelDeployment(activeLogDeployment)"
+                >
+                    {{ cancellingId === activeLogDeployment.id ? 'Cancelling...' : 'Cancel Deployment' }}
+                </UiButton>
                 <UiButton variant="secondary" @click="closeLogs">Close</UiButton>
             </div>
         </div>

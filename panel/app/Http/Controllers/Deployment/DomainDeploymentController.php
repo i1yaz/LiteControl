@@ -15,6 +15,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Deployment\UpdateDeploymentConfigRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
@@ -134,6 +135,35 @@ class DomainDeploymentController extends Controller
         $action->execute($domain, $deployment);
 
         return back()->with('success', "Rolled back to release {$deployment->release_id}.");
+    }
+
+    public function cancel(Domain $domain, DomainDeployment $deployment): RedirectResponse
+    {
+        abort_unless($deployment->domain_id === $domain->id, 404);
+
+        if (! in_array($deployment->status, ['queued', 'running'], true)) {
+            return back()->with('success', "Deployment {$deployment->release_id} is already {$deployment->status}.");
+        }
+
+        $cancelDir = storage_path("app/deployments/domain_{$domain->id}");
+        File::ensureDirectoryExists($cancelDir, 0750);
+        File::put("{$cancelDir}/cancel_{$deployment->release_id}", (string) now()->toIso8601String());
+
+        $summary = 'Deployment cancelled by user.';
+        if ($deployment->log_path && File::exists($deployment->log_path)) {
+            File::append($deployment->log_path, sprintf("[%s] %s\n", now()->format('Y-m-d H:i:s'), $summary));
+        }
+
+        $deployment->update([
+            'status' => 'failed',
+            'error_summary' => $summary,
+            'finished_at' => now(),
+        ]);
+
+        // Release ShouldBeUnique lock so a new deployment can be triggered immediately.
+        Cache::lock('laravel_unique_job:'.RunAtomicDeploymentJob::class.':'.$domain->id)->forceRelease();
+
+        return back()->with('success', "Deployment {$deployment->release_id} cancelled.");
     }
 
     public function log(Domain $domain, DomainDeployment $deployment): JsonResponse

@@ -80,7 +80,7 @@ class BuildDeploymentPayloadAction
                 'url' => (string) $config->repo_url,
                 'branch' => (string) $config->branch,
                 'ssh_key_path' => $sshKeyPath,
-                'tarball_url' => '',
+                'tarball_url' => $this->resolveTarballUrl($config),
                 'auth_token' => (string) ($config->api_token_encrypted ?? ''),
             ],
             'shared_dirs' => array_values($config->shared_dirs ?? []),
@@ -125,5 +125,62 @@ class BuildDeploymentPayloadAction
         }
 
         return $grouped;
+    }
+
+    /**
+     * Resolve a provider archive tarball URL from repo_provider, repo_url, and branch
+     * when fetch_driver is set to provider_tarball.
+     */
+    private function resolveTarballUrl(DomainDeploymentConfig $config): string
+    {
+        if ($config->fetch_driver !== 'provider_tarball') {
+            return '';
+        }
+
+        $repoUrl = trim((string) $config->repo_url);
+        $branch = trim((string) ($config->branch ?: 'main'));
+        $provider = strtolower((string) ($config->repo_provider ?? ''));
+
+        if ($repoUrl === '') {
+            return '';
+        }
+
+        // Extract host and owner/repo path from SSH (git@host:owner/repo.git) or HTTPS URLs.
+        $host = '';
+        $repoPath = '';
+        if (preg_match('#^[^@]+@([^:]+):(.+?)(?:\.git)?$#', $repoUrl, $matches)) {
+            $host = strtolower($matches[1]);
+            $repoPath = trim($matches[2], '/');
+        } elseif (preg_match('#^https?://([^/]+)/(.+?)(?:\.git)?/?$#i', $repoUrl, $matches)) {
+            $host = strtolower($matches[1]);
+            $repoPath = trim($matches[2], '/');
+        }
+
+        if ($repoPath !== '') {
+            if ($provider === 'github' || str_contains($host, 'github.com')) {
+                return sprintf('https://api.github.com/repos/%s/tarball/%s', $repoPath, rawurlencode($branch));
+            }
+
+            if ($provider === 'gitlab' || str_contains($host, 'gitlab.com')) {
+                $baseHost = $host !== '' ? $host : 'gitlab.com';
+
+                return sprintf(
+                    'https://%s/api/v4/projects/%s/repository/archive.tar.gz?sha=%s',
+                    $baseHost,
+                    rawurlencode($repoPath),
+                    rawurlencode($branch),
+                );
+            }
+
+            if ($provider === 'bitbucket' || str_contains($host, 'bitbucket.org')) {
+                return sprintf('https://bitbucket.org/%s/get/%s.tar.gz', $repoPath, rawurlencode($branch));
+            }
+        }
+
+        if (str_starts_with($repoUrl, 'http://') || str_starts_with($repoUrl, 'https://')) {
+            return $repoUrl;
+        }
+
+        return '';
     }
 }

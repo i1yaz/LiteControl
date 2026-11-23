@@ -43,6 +43,13 @@ class RunAtomicDeploymentJob implements ShouldBeUnique, ShouldQueue
 
     public function handle(BuildDeploymentPayloadAction $builder): void
     {
+        $cancelFlagPath = storage_path("app/deployments/domain_{$this->config->domain_id}/cancel_{$this->deployment->release_id}");
+        if (File::exists($cancelFlagPath) || $this->deployment->fresh()?->status === 'failed') {
+            File::delete($cancelFlagPath);
+
+            return;
+        }
+
         $logDir = storage_path('logs/deployments');
         File::ensureDirectoryExists($logDir, 0750);
         $logPath = "{$logDir}/domain_{$this->config->domain_id}_{$this->deployment->release_id}.log";
@@ -71,7 +78,7 @@ class RunAtomicDeploymentJob implements ShouldBeUnique, ShouldQueue
             $cliPath = (string) env('LC_CLI_PATH', '/usr/local/litecontrol/bin/lc-cli');
 
             $streamedStderr = false;
-            $result = Process::timeout(580)->run([
+            $running = Process::timeout(580)->start([
                 'sudo',
                 $cliPath,
                 'deploy',
@@ -83,6 +90,28 @@ class RunAtomicDeploymentJob implements ShouldBeUnique, ShouldQueue
                     $this->appendLog($logPath, $output);
                 }
             });
+
+            while ($running->running()) {
+                if (File::exists($cancelFlagPath)) {
+                    try {
+                        $running->stop(2);
+                    } catch (Throwable) {
+                        // Process may be elevated under sudo; still stop waiting and respect cancellation.
+                    }
+                    File::delete($cancelFlagPath);
+
+                    return;
+                }
+                usleep(250_000);
+            }
+
+            $result = $running->wait();
+
+            if (File::exists($cancelFlagPath) || $this->deployment->fresh()?->status === 'failed') {
+                File::delete($cancelFlagPath);
+
+                return;
+            }
 
             $decoded = json_decode($result->output(), true);
             $data = is_array($decoded) ? $decoded : [];

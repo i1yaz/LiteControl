@@ -16,7 +16,7 @@ func FetchReleaseCode(ctx context.Context, spec Payload, releaseDir string, logW
 	switch spec.Repo.Driver {
 	case "", "shallow_git":
 		return fetchShallowGit(ctx, spec, releaseDir, logWriter)
-	case "tarball":
+	case "tarball", "provider_tarball":
 		return fetchTarball(ctx, spec, releaseDir, logWriter)
 	default:
 		return CommitMeta{}, fmt.Errorf("unsupported repo driver: %q", spec.Repo.Driver)
@@ -65,17 +65,14 @@ func fetchTarball(ctx context.Context, spec Payload, releaseDir string, logWrite
 		return CommitMeta{}, fmt.Errorf("repo.tarball_url is required for tarball driver")
 	}
 
-	if err := os.MkdirAll(releaseDir, 0o755); err != nil {
-		return CommitMeta{}, fmt.Errorf("mkdir releaseDir %s: %w", releaseDir, err)
-	}
-
 	var authHeader string
 	if spec.Repo.AuthToken != "" {
 		authHeader = fmt.Sprintf("-H %s ", shellQuote("Authorization: Bearer "+spec.Repo.AuthToken))
 	}
 
 	script := fmt.Sprintf(
-		"curl -fsSL %s%s | tar -xzf - --strip-components=1 -C %s",
+		"mkdir -p %s && curl -fsSL -H 'User-Agent: LiteControl-Deploy' %s%s | tar -xzf - --strip-components=1 -C %s",
+		shellQuote(releaseDir),
 		authHeader,
 		shellQuote(spec.Repo.TarballURL),
 		shellQuote(releaseDir),

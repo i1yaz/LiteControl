@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/domains/{domain}/deploy/config', [DomainDeploymentController::class, 'updateConfig'])->name('domains.deploy.config');
     Route::post('/domains/{domain}/deploy/key', [DomainDeploymentController::class, 'generateDeployKey'])->name('domains.deploy.key');
     Route::post('/domains/{domain}/deploy/run', [DomainDeploymentController::class, 'deploy'])->name('domains.deploy.run');
+    Route::post('/domains/{domain}/deploy/cancel/{deployment}', [DomainDeploymentController::class, 'cancel'])->name('domains.deploy.cancel');
     Route::post('/domains/{domain}/deploy/rollback/{deployment}', [DomainDeploymentController::class, 'rollback'])->name('domains.deploy.rollback');
     Route::get('/domains/{domain}/deploy/logs/{deployment}', [DomainDeploymentController::class, 'log'])->name('domains.deploy.log');
     Route::get('/domains/{domain}/deploy/env', [DomainDeploymentEnvController::class, 'show'])->name('domains.deploy.env.show');

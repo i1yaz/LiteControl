@@ -118,3 +118,42 @@ it('assembles the lc-cli payload json, writes deploy key, and groups active hook
         File::deleteDirectory($tempHome);
     }
 });
+
+it('resolves github tarball_url when fetch_driver is provider_tarball', function () {
+    $user = User::factory()->create(['username' => 'client2']);
+    $domain = Domain::create([
+        'user_id' => $user->id,
+        'domain' => 'tarball.example.com',
+        'document_root' => '/home/client2/tarball.example.com/public_html',
+        'php_version' => '8.3',
+    ]);
+
+    $config = DomainDeploymentConfig::create([
+        'domain_id' => $domain->id,
+        'mode' => 'atomic',
+        'preset' => 'laravel',
+        'repo_provider' => 'github',
+        'repo_url' => 'git@github.com:org/repo.git',
+        'branch' => 'main',
+        'fetch_driver' => 'provider_tarball',
+        'webhook_token' => 'test-webhook-token-2',
+    ]);
+
+    $deployment = DomainDeployment::create([
+        'domain_id' => $domain->id,
+        'release_id' => '20261123_221500',
+        'trigger_type' => 'manual',
+        'status' => 'queued',
+    ]);
+
+    $tempHome = sys_get_temp_dir().DIRECTORY_SEPARATOR.'lc_deploy_tarball_'.uniqid();
+
+    try {
+        $payload = (new BuildDeploymentPayloadAction)->execute($config, $deployment, $tempHome);
+
+        expect($payload['repo']['driver'])->toBe('provider_tarball');
+        expect($payload['repo']['tarball_url'])->toBe('https://api.github.com/repos/org/repo/tarball/main');
+    } finally {
+        File::deleteDirectory($tempHome);
+    }
+});
