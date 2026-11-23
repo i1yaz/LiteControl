@@ -56,6 +56,7 @@ Management Subcommands:
   backup   <create|restore|list|schedule>
   module   <list|status|install|remove> <ftp|dns|mail|csf|modsecurity|imunifyav>
   pdns     <status|apply-config>
+  deploy   <init|run|rollback|env>
 EOF
 }
 
@@ -196,7 +197,7 @@ case "${COMMAND}" in
             exit 1
         fi
         ;;
-    user|vhost|php|tuning|server|db|ssl|security|backup|module|filemanager|pdns)
+    user|vhost|php|tuning|server|db|ssl|security|backup|module|filemanager|pdns|deploy)
         dispatch_subcommand "${COMMAND}" "$@"
         ;;
     help|--help|-h)

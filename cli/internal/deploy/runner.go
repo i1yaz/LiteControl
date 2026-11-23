@@ -45,11 +45,32 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 		return DeployResult{}, err
 	}
 
-	lockDir := filepath.Join(spec.DomainRoot, ".deploy", "locks")
-	if err := os.MkdirAll(lockDir, 0o755); err != nil {
-		return DeployResult{}, fmt.Errorf("create lock dir %s: %w", lockDir, err)
+	requiredDirs := []string{
+		filepath.Join(spec.DomainRoot, "releases"),
+		filepath.Join(spec.DomainRoot, "shared"),
+		filepath.Join(spec.DomainRoot, ".deploy"),
+		filepath.Join(spec.DomainRoot, ".deploy", "locks"),
+		filepath.Join(spec.DomainRoot, ".deploy", "logs"),
+		filepath.Join(spec.DomainRoot, ".deploy", "keys"),
+		filepath.Join(spec.DomainRoot, ".deploy", "payloads"),
+	}
+	for _, d := range requiredDirs {
+		if err := mkdirAllOwned(d, 0o750, uid, gid); err != nil {
+			return DeployResult{}, err
+		}
 	}
 
+	if spec.Repo.SSHKeyPath != "" {
+		stagedKeyPath := filepath.Join(spec.DomainRoot, ".deploy", "keys", "deploy_key")
+		if filepath.Clean(spec.Repo.SSHKeyPath) != filepath.Clean(stagedKeyPath) {
+			if err := copyFileOwned(spec.Repo.SSHKeyPath, stagedKeyPath, 0o600, uid, gid); err != nil {
+				return DeployResult{}, fmt.Errorf("stage ssh deploy key: %w", err)
+			}
+			spec.Repo.SSHKeyPath = stagedKeyPath
+		}
+	}
+
+	lockDir := filepath.Join(spec.DomainRoot, ".deploy", "locks")
 	lockFile, err := acquireDeployLock(filepath.Join(lockDir, "deploy.lock"))
 	if err != nil {
 		return DeployResult{}, err
@@ -61,6 +82,8 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 
 	releaseDir := filepath.Join(spec.DomainRoot, "releases", spec.ReleaseID)
 	var meta CommitMeta
+
+	logStep(logWriter, fmt.Sprintf("Stage 1/4: Fetching release %s from %s (%s)...", spec.ReleaseID, spec.Repo.URL, spec.Repo.Branch))
 
 	// Stage 1: Clone
 	if err := RunHooks(ctx, "before_clone", spec.Hooks.BeforeClone, spec, releaseDir, meta, logWriter); err != nil {
@@ -80,6 +103,7 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 	}
 
 	// Stage 2: Install
+	logStep(logWriter, "Stage 2/4: Running install hooks...")
 	if err := RunHooks(ctx, "before_install", spec.Hooks.BeforeInstall, spec, releaseDir, meta, logWriter); err != nil {
 		return DeployResult{}, err
 	}
@@ -91,6 +115,7 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 	}
 
 	// Stage 3: Activate
+	logStep(logWriter, "Stage 3/4: Activating release and reloading lsphp workers...")
 	if err := RunHooks(ctx, "before_activate", spec.Hooks.BeforeActivate, spec, releaseDir, meta, logWriter); err != nil {
 		return DeployResult{}, err
 	}
@@ -110,9 +135,11 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 	}
 
 	// Stage 4: Health Check & Purge
+	logStep(logWriter, "Stage 4/4: Running health checks and purging old releases...")
 	if spec.HealthCheck.Enabled {
 		if err := CheckHealth(ctx, spec.Domain, spec.HealthCheck); err != nil {
 			if spec.HealthCheck.AutoRollback && previousReleaseDir != "" {
+				logStep(logWriter, fmt.Sprintf("Health check failed (%v); rolling back to previous release...", err))
 				_ = AtomicSymlink(previousReleaseDir, currentLink, uid, gid)
 				_ = resetLsphpWorkers(ctx, spec.LinuxUser)
 				return DeployResult{
@@ -136,12 +163,20 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 		return DeployResult{}, err
 	}
 
+	logStep(logWriter, fmt.Sprintf("Deployment %s activated successfully.", spec.ReleaseID))
+
 	return DeployResult{
 		Status:        "active",
 		CommitSHA:     meta.SHA,
 		CommitMessage: meta.Message,
 		CommitAuthor:  meta.Author,
 	}, nil
+}
+
+func logStep(w io.Writer, msg string) {
+	if w != nil {
+		_, _ = fmt.Fprintf(w, "[%s] %s\n", time.Now().UTC().Format("15:04:05"), msg)
+	}
 }
 
 func ensurePublicHTMLSymlink(domainRoot, webSubpath string, uid, gid int) error {

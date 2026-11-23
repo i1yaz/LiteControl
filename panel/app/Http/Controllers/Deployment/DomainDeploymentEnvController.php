@@ -18,9 +18,11 @@ class DomainDeploymentEnvController extends Controller
         $domain->loadMissing('user');
         $linuxUser = $domain->user->username ?? $domain->user->name ?? 'www-data';
 
+        $cliPath = (string) env('LC_CLI_PATH', '/usr/local/litecontrol/bin/lc-cli');
+
         $result = Process::timeout(30)->run([
             'sudo',
-            '/usr/local/bin/lc-cli',
+            $cliPath,
             'deploy',
             'env',
             "--user={$linuxUser}",
@@ -48,11 +50,13 @@ class DomainDeploymentEnvController extends Controller
         $domain->loadMissing('user');
         $linuxUser = $domain->user->username ?? $domain->user->name ?? 'www-data';
 
+        $cliPath = (string) env('LC_CLI_PATH', '/usr/local/litecontrol/bin/lc-cli');
+
         $result = Process::timeout(30)
             ->input($validated['content'])
             ->run([
                 'sudo',
-                '/usr/local/bin/lc-cli',
+                $cliPath,
                 'deploy',
                 'env',
                 "--user={$linuxUser}",

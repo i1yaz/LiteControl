@@ -26,9 +26,11 @@ final class RollbackDeploymentAction
         $phpVersion = preg_replace('/[^0-9]/', '', (string) ($config?->php_version ?? $domain->php_version ?? '83')) ?: '83';
         $phpBin = "/usr/local/lsws/lsphp{$phpVersion}/bin/php";
 
+        $cliPath = (string) env('LC_CLI_PATH', '/usr/local/litecontrol/bin/lc-cli');
+
         $result = Process::timeout(120)->run([
             'sudo',
-            '/usr/local/bin/lc-cli',
+            $cliPath,
             'deploy',
             'rollback',
             "--user={$linuxUser}",

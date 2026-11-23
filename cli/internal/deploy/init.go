@@ -45,6 +45,7 @@ func InitDomain(opts InitOptions) error {
 	dirs := []string{
 		filepath.Join(domainRoot, "releases"),
 		filepath.Join(domainRoot, "shared"),
+		filepath.Join(domainRoot, ".deploy"),
 		filepath.Join(domainRoot, ".deploy", "locks"),
 		filepath.Join(domainRoot, ".deploy", "logs"),
 		filepath.Join(domainRoot, ".deploy", "keys"),

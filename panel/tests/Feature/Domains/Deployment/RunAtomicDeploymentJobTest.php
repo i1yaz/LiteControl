@@ -120,5 +120,69 @@ it('marks deployment failed on other non-zero exit codes', function () {
     expect($current->fresh())
         ->status->toBe('failed')
         ->error_summary->toBe('composer install failed')
+        ->log_path->not->toBeNull()
         ->finished_at->not->toBeNull();
+    expect(file_get_contents($current->fresh()->log_path))->toContain('composer install failed');
+});
+
+it('marks deployment failed and records log when an exception is thrown during setup', function () {
+    [$domain, $config, $previous, $current] = makeDeploymentFixture();
+
+    $builder = Mockery::mock(BuildDeploymentPayloadAction::class);
+    $builder->shouldReceive('execute')
+        ->once()
+        ->andThrow(new RuntimeException('Permission denied writing payload'));
+
+    (new RunAtomicDeploymentJob($config, $current))->handle($builder);
+
+    $fresh = $current->fresh();
+    expect($previous->fresh()->status)->toBe('active');
+    expect($fresh)
+        ->status->toBe('failed')
+        ->error_summary->toBe('Permission denied writing payload')
+        ->log_path->not->toBeNull()
+        ->finished_at->not->toBeNull();
+    expect(file_get_contents($fresh->log_path))->toContain('Permission denied writing payload');
+});
+
+it('purges logs for deployments older than keep_releases after a successful deploy', function () {
+    [$domain, $config, $previous, $current] = makeDeploymentFixture();
+    $config->update(['keep_releases' => 2]);
+
+    $oldLogPath = storage_path('logs/deployments/test_old_release.log');
+    \Illuminate\Support\Facades\File::ensureDirectoryExists(dirname($oldLogPath));
+    \Illuminate\Support\Facades\File::put($oldLogPath, 'old deployment log');
+
+    $oldest = DomainDeployment::create([
+        'domain_id' => $domain->id,
+        'release_id' => '20261118_010000_oldest',
+        'trigger_type' => 'manual',
+        'status' => 'superseded',
+        'log_path' => $oldLogPath,
+    ]);
+    // Ensure $oldest has an ID older than $previous and $current
+    DomainDeployment::where('id', $oldest->id)->update(['id' => $previous->id - 1]);
+    $oldest = DomainDeployment::find($previous->id - 1);
+
+    $builder = Mockery::mock(BuildDeploymentPayloadAction::class);
+    $builder->shouldReceive('execute')
+        ->once()
+        ->andReturn(['domain_root' => '/home/client1/example.com']);
+
+    Process::fake([
+        '*' => Process::result(
+            output: json_encode([
+                'commit_sha' => 'f00ba77',
+                'commit_message' => 'feat: prune',
+                'commit_author' => 'Jane Doe',
+            ]),
+            exitCode: 0,
+        ),
+    ]);
+
+    (new RunAtomicDeploymentJob($config, $current))->handle($builder);
+
+    expect(\Illuminate\Support\Facades\File::exists($oldLogPath))->toBeFalse();
+    expect($oldest->fresh()->log_path)->toBeNull();
+    expect($current->fresh()->log_path)->not->toBeNull();
 });

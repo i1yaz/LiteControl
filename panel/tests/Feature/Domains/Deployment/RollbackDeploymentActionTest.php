@@ -55,7 +55,7 @@ it('rolls back to target release via lc-cli and updates deployment history', fun
     Process::assertRan(function ($process) {
         return $process->command === [
             'sudo',
-            '/usr/local/bin/lc-cli',
+            (string) env('LC_CLI_PATH', '/usr/local/litecontrol/bin/lc-cli'),
             'deploy',
             'rollback',
             '--user=client1',

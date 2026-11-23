@@ -113,16 +113,26 @@ const logContent = ref('');
 const logStatus = ref('');
 const logLoading = ref(false);
 const logError = ref<string | null>(null);
-let pollTimer: ReturnType<typeof setInterval> | null = null;
+let pollTimer: ReturnType<typeof setTimeout> | null = null;
+let logPollInFlight = false;
+let logPollGeneration = 0;
 
 const stopPolling = () => {
+    logPollGeneration += 1;
     if (pollTimer !== null) {
-        clearInterval(pollTimer);
+        clearTimeout(pollTimer);
         pollTimer = null;
     }
 };
 
-const fetchLog = async (deploymentId: number) => {
+const fetchLog = async (deploymentId: number, generation: number) => {
+    if (logPollInFlight || generation !== logPollGeneration) {
+        return;
+    }
+
+    logPollInFlight = true;
+    let shouldContinuePolling = false;
+
     try {
         const response = await fetch(`/domains/${props.domain.id}/deploy/logs/${deploymentId}`, {
             headers: {
@@ -131,28 +141,50 @@ const fetchLog = async (deploymentId: number) => {
             },
         });
 
+        if (generation !== logPollGeneration) {
+            return;
+        }
+
         if (!response.ok) {
             throw new Error(`Failed to load logs (${response.status})`);
         }
 
         const data = (await response.json()) as { status: string; log: string };
+        if (generation !== logPollGeneration) {
+            return;
+        }
+
         logStatus.value = data.status;
         logContent.value = data.log || 'No log output yet...';
         logError.value = null;
 
-        if (data.status !== 'running' && data.status !== 'queued') {
+        if (data.status === 'running' || data.status === 'queued') {
+            shouldContinuePolling = true;
+        } else {
             stopPolling();
+            router.reload({ only: ['deployments'] });
         }
     } catch (err) {
-        logError.value = err instanceof Error ? err.message : 'Unable to fetch deployment logs.';
-        stopPolling();
+        if (generation === logPollGeneration) {
+            logError.value = err instanceof Error ? err.message : 'Unable to fetch deployment logs.';
+            stopPolling();
+        }
     } finally {
+        logPollInFlight = false;
         logLoading.value = false;
+
+        if (shouldContinuePolling && logDrawerOpen.value && generation === logPollGeneration) {
+            pollTimer = setTimeout(() => {
+                pollTimer = null;
+                void fetchLog(deploymentId, generation);
+            }, 2000);
+        }
     }
 };
 
 const openLogs = (deployment: DeploymentRecord) => {
     stopPolling();
+    const generation = logPollGeneration;
     activeLogDeployment.value = deployment;
     logStatus.value = deployment.status;
     logContent.value = '';
@@ -160,13 +192,7 @@ const openLogs = (deployment: DeploymentRecord) => {
     logLoading.value = true;
     logDrawerOpen.value = true;
 
-    void fetchLog(deployment.id);
-
-    if (deployment.status === 'running' || deployment.status === 'queued') {
-        pollTimer = setInterval(() => {
-            void fetchLog(deployment.id);
-        }, 2000);
-    }
+    void fetchLog(deployment.id, generation);
 };
 
 const closeLogs = () => {
@@ -175,6 +201,58 @@ const closeLogs = () => {
     activeLogDeployment.value = null;
 };
 
+const hasInFlightDeployment = computed(() =>
+    props.deployments.some((d) => d.status === 'running' || d.status === 'queued'),
+);
+
+let historyPollTimer: ReturnType<typeof setTimeout> | null = null;
+let historyPollInFlight = false;
+let isUnmounted = false;
+
+const stopHistoryPolling = () => {
+    if (historyPollTimer !== null) {
+        clearTimeout(historyPollTimer);
+        historyPollTimer = null;
+    }
+};
+
+const scheduleHistoryPoll = () => {
+    stopHistoryPolling();
+    if (isUnmounted || !hasInFlightDeployment.value || historyPollInFlight) {
+        return;
+    }
+
+    historyPollTimer = setTimeout(() => {
+        historyPollTimer = null;
+        if (isUnmounted || !hasInFlightDeployment.value || historyPollInFlight) {
+            return;
+        }
+
+        historyPollInFlight = true;
+        router.reload({
+            only: ['deployments'],
+            onFinish: () => {
+                historyPollInFlight = false;
+                if (!isUnmounted && hasInFlightDeployment.value) {
+                    scheduleHistoryPoll();
+                }
+            },
+        });
+    }, 4000);
+};
+
+watch(
+    hasInFlightDeployment,
+    (active) => {
+        if (active) {
+            scheduleHistoryPoll();
+        } else {
+            stopHistoryPolling();
+        }
+    },
+    { immediate: true },
+);
+
 watch(logDrawerOpen, (open) => {
     if (!open) {
         stopPolling();
@@ -182,7 +260,9 @@ watch(logDrawerOpen, (open) => {
 });
 
 onBeforeUnmount(() => {
+    isUnmounted = true;
     stopPolling();
+    stopHistoryPolling();
 });
 
 // Rollback confirmation modal state
@@ -233,7 +313,7 @@ const executeRollback = () => {
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                     <tr v-for="deployment in deployments" :key="deployment.id" class="hover:bg-gray-50/50 dark:hover:bg-gray-800/40">
-                        <td class="whitespace-nowrap py-3 pr-4 font-mono text-xs font-medium text-gray-900 dark:text-gray-100">
+                        <td class="whitespace-nowrap py-3 pr-4 font-mono text-xs font-medium text-[var(--theme-text)]">
                             {{ deployment.release_id }}
                         </td>
                         <td class="max-w-xs py-3 pr-4">

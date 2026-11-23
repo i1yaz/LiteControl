@@ -40,7 +40,12 @@ class BuildDeploymentPayloadAction
         $domainName = $domain->domain;
         $homeBase = rtrim($baseHomePath ?? '/home', '/');
         $domainRoot = "{$homeBase}/{$linuxUser}/{$domainName}";
-        $deployDir = "{$domainRoot}/.deploy";
+        // Stage payloads and keys inside Laravel storage in production because the panel user
+        // cannot write directly into tenant-owned /home/{user}/{domain}/.deploy (0750).
+        // lc-cli (running as root) copies the key to the tenant's .deploy/keys/ with 0600 ownership.
+        $deployDir = $baseHomePath !== null
+            ? "{$domainRoot}/.deploy"
+            : storage_path("app/deployments/domain_{$domain->id}");
 
         $sshKeyPath = '';
         $privateKey = $config->deploy_key_private_encrypted;
@@ -56,12 +61,17 @@ class BuildDeploymentPayloadAction
         $phpBinary = "/usr/local/lsws/lsphp{$phpVersion}/bin/php";
         $composerCmd = "{$phpBinary} /usr/local/bin/composer";
 
+        $payloadsDir = "{$deployDir}/payloads";
+        File::ensureDirectoryExists($payloadsDir, 0750);
+        $payloadPath = "{$payloadsDir}/deploy_{$deployment->release_id}.json";
+
         $payload = [
             'deployment_id' => $deployment->id,
             'release_id' => $deployment->release_id,
             'linux_user' => $linuxUser,
             'domain' => $domainName,
             'domain_root' => $domainRoot,
+            'spec_path' => $payloadPath,
             'web_subpath' => (string) $config->web_subpath,
             'php_binary' => $phpBinary,
             'composer_cmd' => $composerCmd,
@@ -86,9 +96,6 @@ class BuildDeploymentPayloadAction
             'hooks' => $this->groupHooks($config),
         ];
 
-        $payloadsDir = "{$deployDir}/payloads";
-        File::ensureDirectoryExists($payloadsDir, 0750);
-        $payloadPath = "{$payloadsDir}/deploy_{$deployment->release_id}.json";
         File::put($payloadPath, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
 
         return $payload;

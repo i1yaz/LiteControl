@@ -83,10 +83,11 @@ class DomainDeploymentController extends Controller
         if ($wasSimple && $config->mode === 'atomic') {
             $domain->loadMissing('user');
             $linuxUser = $domain->user->username ?? $domain->user->name ?? 'www-data';
+            $cliPath = (string) env('LC_CLI_PATH', '/usr/local/litecontrol/bin/lc-cli');
 
             Process::timeout(60)->run([
                 'sudo',
-                '/usr/local/bin/lc-cli',
+                $cliPath,
                 'deploy',
                 'init',
                 "--user={$linuxUser}",
