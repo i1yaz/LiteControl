@@ -255,10 +255,10 @@ cmd_panel_port() {
         fi
     done
 
-    # Keep OLS panel reverse proxy backend port in sync if configured
+    # Keep OLS panel ACME/redirect vhost target port in sync if configured
     local panel_proxy_vhconf="${OLS_VHOSTS_DIR}/lc_panel_proxy/vhconf.conf"
     if [[ -f "${panel_proxy_vhconf}" ]]; then
-        sed -i -E "s|https://127\.0\.0\.1:[0-9]+|https://127.0.0.1:${new_port}|g" "${panel_proxy_vhconf}"
+        sed -i -E "s|(https://[^/:]+):[0-9]+|\1:${new_port}|g" "${panel_proxy_vhconf}"
         ols_safe_reload || true
     fi
 
@@ -377,13 +377,13 @@ cmd_panel_ip_access() {
                 emit_error "Failed to reload Panel Nginx after disabling direct IP access."
             fi
             if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
-                ufw delete allow "${panel_port}/tcp" >/dev/null 2>&1 || true
+                ufw allow "${panel_port}/tcp" comment "LiteControl Panel" >/dev/null 2>&1 || true
             fi
             local data_json
             data_json=$(printf '{"ip_access":"disabled","panel_port":%s,"panel_domain":"%s"}' \
                 "${panel_port}" \
                 "$(json_escape "${panel_domain}")")
-            emit_success "Direct IP access to LiteControl panel disabled. Access panel via https://${panel_domain}." "${data_json}"
+            emit_success "Direct IP access to LiteControl panel disabled. Access panel via https://${panel_domain}:${panel_port}." "${data_json}"
             ;;
         status)
             local current_state

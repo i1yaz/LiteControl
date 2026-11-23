@@ -410,17 +410,40 @@ EOF
 
 persist_panel_domain() {
     local hostname="$1"
+    local panel_port
+    panel_port=$(get_panel_port)
+
     mkdir -p "${LC_CONF_DIR}"
     printf "%s\n" "${hostname}" > "${LC_CONF_DIR}/panel_domain"
     chmod 644 "${LC_CONF_DIR}/panel_domain" 2>/dev/null || true
 
     if [[ -f "${LC_PANEL_DIR}/.env" ]]; then
         if grep -qE '^APP_URL=' "${LC_PANEL_DIR}/.env"; then
-            sed -i -E "s|^APP_URL=.*|APP_URL=https://${hostname}|" "${LC_PANEL_DIR}/.env"
+            sed -i -E "s|^APP_URL=.*|APP_URL=https://${hostname}:${panel_port}|" "${LC_PANEL_DIR}/.env"
         else
-            printf "\nAPP_URL=https://%s\n" "${hostname}" >> "${LC_PANEL_DIR}/.env"
+            printf "\nAPP_URL=https://%s:%s\n" "${hostname}" "${panel_port}" >> "${LC_PANEL_DIR}/.env"
         fi
     fi
+}
+
+sync_webadmin_ssl() {
+    local admin_conf="${OLS_DIR}/admin/conf/admin_config.conf"
+    local panel_key="${LC_SSL_DIR}/privkey.pem"
+    local panel_cert="${LC_SSL_DIR}/fullchain.pem"
+
+    [[ -f "${admin_conf}" && -f "${panel_key}" && -f "${panel_cert}" ]] || return 0
+
+    awk -v key="${panel_key}" -v cert="${panel_cert}" '
+        /^[[:space:]]*listener[[:space:]]+adminListener/ { in_admin=1 }
+        in_admin && /^[[:space:]]*keyFile[[:space:]]+/ {
+            sub(/keyFile[[:space:]]+.*/, "keyFile               " key)
+        }
+        in_admin && /^[[:space:]]*certFile[[:space:]]+/ {
+            sub(/certFile[[:space:]]+.*/, "certFile              " cert)
+        }
+        in_admin && /^[[:space:]]*}[[:space:]]*$/ { in_admin=0 }
+        { print }
+    ' "${admin_conf}" > "${admin_conf}.tmp" && mv "${admin_conf}.tmp" "${admin_conf}"
 }
 
 cmd_ssl_panel() {
@@ -438,9 +461,11 @@ cmd_ssl_panel() {
 
             local panel_cert="${LC_SSL_DIR}/fullchain.pem"
             local panel_key="${LC_SSL_DIR}/privkey.pem"
+            local panel_port
+            panel_port=$(get_panel_port)
             mkdir -p "${LC_SSL_DIR}"
 
-            # Configure OLS system reverse-proxy vhost first so port 80 serves ACME HTTP-01 challenges
+            # Configure lightweight OLS ACME + redirect vhost so port 80 serves ACME HTTP-01 challenges
             setup_panel_proxy_vhost "${hostname}"
 
             if [[ "${LC_TEST_MODE:-0}" == "1" ]]; then
@@ -475,20 +500,21 @@ cmd_ssl_panel() {
             fi
 
             persist_panel_domain "${hostname}"
+            sync_webadmin_ssl
             apply_panel_ip_access_config "disabled"
             ols_safe_reload
             panel_safe_reload
             if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
-                local panel_port
-                panel_port=$(get_panel_port)
-                (sleep 3 && ufw delete allow "${panel_port}/tcp" >/dev/null 2>&1 || true) </dev/null >/dev/null 2>&1 &
+                ufw allow "${panel_port}/tcp" comment "LiteControl Panel" >/dev/null 2>&1 || true
             fi
-            emit_success "Panel SSL certificate issued and HTTPS proxy enabled for '${hostname}'. Direct IP access has been disabled." "{\"hostname\":\"${hostname}\",\"proxy_enabled\":true,\"ip_access\":\"disabled\",\"url\":\"https://${hostname}\"}"
+            emit_success "Panel SSL certificate issued for '${hostname}'. LiteControl is served directly on https://${hostname}:${panel_port} and OLS WebAdmin shares the same SSL on https://${hostname}:7080. Direct IP access has been disabled." "{\"hostname\":\"${hostname}\",\"panel_port\":${panel_port},\"proxy_enabled\":false,\"ip_access\":\"disabled\",\"url\":\"https://${hostname}:${panel_port}\",\"webadmin_url\":\"https://${hostname}:7080\"}"
             ;;
         custom)
             local cert_src="${1:-}"
             local key_src="${2:-}"
             local hostname="${3:-}"
+            local panel_port
+            panel_port=$(get_panel_port)
             [[ -n "${cert_src}" ]] || emit_error "Missing panel certificate file."
             [[ -n "${key_src}" ]] || emit_error "Missing panel private key file."
             validate_ssl_pair "${cert_src}" "${key_src}"
@@ -507,15 +533,14 @@ cmd_ssl_panel() {
                 apply_panel_ip_access_config "disabled"
             fi
 
+            sync_webadmin_ssl
             ols_safe_reload
             panel_safe_reload
             if [[ -n "${hostname}" ]]; then
                 if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
-                    local panel_port
-                    panel_port=$(get_panel_port)
-                    (sleep 3 && ufw delete allow "${panel_port}/tcp" >/dev/null 2>&1 || true) </dev/null >/dev/null 2>&1 &
+                    ufw allow "${panel_port}/tcp" comment "LiteControl Panel" >/dev/null 2>&1 || true
                 fi
-                emit_success "Panel custom SSL certificate updated and HTTPS proxy enabled for '${hostname}'. Direct IP access has been disabled." "{\"installed\":true,\"hostname\":\"${hostname}\",\"proxy_enabled\":true,\"ip_access\":\"disabled\",\"url\":\"https://${hostname}\"}"
+                emit_success "Panel custom SSL certificate updated for '${hostname}'. LiteControl is served directly on https://${hostname}:${panel_port} and OLS WebAdmin shares the same SSL on https://${hostname}:7080. Direct IP access has been disabled." "{\"installed\":true,\"hostname\":\"${hostname}\",\"panel_port\":${panel_port},\"proxy_enabled\":false,\"ip_access\":\"disabled\",\"url\":\"https://${hostname}:${panel_port}\",\"webadmin_url\":\"https://${hostname}:7080\"}"
             else
                 emit_success "Panel custom SSL certificate updated successfully." '{"installed":true}'
             fi

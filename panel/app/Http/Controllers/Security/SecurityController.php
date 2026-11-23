@@ -332,12 +332,17 @@ class SecurityController extends Controller
             $action->handle($validated, Auth::user(), $request->ip());
 
             $domain = ! empty($validated['domain']) ? strtolower(trim((string) $validated['domain'])) : null;
+            $panelPort = is_readable('/etc/litecontrol/port')
+                ? (int) trim((string) file_get_contents('/etc/litecontrol/port'))
+                : 8090;
+            $panelPort = $panelPort > 0 ? $panelPort : 8090;
+
             $message = $domain
-                ? "LiteControl panel SSL updated. Direct IP access has been disabled; access the panel at https://{$domain}."
+                ? "LiteControl panel SSL updated. Access the panel at https://{$domain}:{$panelPort} and OLS WebAdmin at https://{$domain}:7080. Direct IP access has been disabled."
                 : 'LiteControl panel SSL certificate updated successfully.';
 
             if ($domain) {
-                $targetUrl = "https://{$domain}/security/panel-ssl";
+                $targetUrl = "https://{$domain}:{$panelPort}/security/panel-ssl";
                 $request->session()->flash('success', $message);
 
                 if ($request->header('X-Inertia')) {

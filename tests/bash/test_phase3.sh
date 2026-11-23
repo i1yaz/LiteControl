@@ -235,14 +235,18 @@ assert_contains "${out}" '"status":"success"' "ssl issue succeeds in sandbox tes
 out=$(bash "${CLI}" --json ssl panel-ssl custom "${TEST_CERT}" "${TEST_KEY}")
 assert_contains "${out}" '"status":"success"' "ssl panel-ssl custom succeeds"
 
-# Test panel-ssl issue configures lc_panel_proxy without inline comments on map lines and disables direct IP access
+# Test panel-ssl issue configures lightweight lc_panel_proxy (ACME + redirect), enforces panel hostname, and syncs WebAdmin SSL
 out=$(bash "${CLI}" --json ssl panel-ssl issue panel.example.com)
 assert_contains "${out}" '"status":"success"' "ssl panel-ssl issue succeeds"
 assert_contains "${out}" '"ip_access":"disabled"' "ssl panel-ssl issue disables direct IP access"
+assert_contains "${out}" '"webadmin_url":"https://panel.example.com:7080"' "ssl panel-ssl issue returns WebAdmin URL"
 assert_contains "$(cat "${OLS_CONF}")" "virtualhost lc_panel_proxy {" "httpd_config.conf contains lc_panel_proxy virtualhost"
 assert_contains "$(cat "${OLS_CONF}")" "map                     lc_panel_proxy panel.example.com" "httpd_config.conf maps lc_panel_proxy to panel.example.com"
 assert_not_contains "$(cat "${OLS_CONF}")" "panel.example.com # MAP_" "httpd_config.conf map line has no trailing inline comment"
-assert_contains "$(cat "${PANEL_NGINX_CONF}")" "return 444;" "PANEL_NGINX_CONF blocks non-loopback direct IP connections"
+assert_not_contains "$(cat "${OLS_VHOSTS_DIR}/lc_panel_proxy/vhconf.conf")" "extprocessor lc_panel_backend" "lc_panel_proxy no longer reverse-proxies panel traffic through OLS"
+assert_contains "$(cat "${OLS_VHOSTS_DIR}/lc_panel_proxy/vhconf.conf")" "https://panel.example.com:8090/" "lc_panel_proxy redirects to out-of-band Nginx panel port"
+assert_contains "$(cat "${PANEL_NGINX_CONF}")" 'if ($host != "panel.example.com")' "PANEL_NGINX_CONF restricts direct IP access by hostname"
+assert_contains "$(cat "${PANEL_NGINX_CONF}")" "return 444;" "PANEL_NGINX_CONF blocks non-matching host/IP connections"
 
 # Test security panel-ip-access status / enable / disable
 out=$(bash "${CLI}" --json security panel-ip-access status)

@@ -34,8 +34,8 @@ const submit = () => {
 
     form.post('/security/panel-ssl', {
         onSuccess: () => {
-            if (targetDomain && window.location.hostname.toLowerCase() !== targetDomain) {
-                window.location.href = `https://${targetDomain}/security/panel-ssl`;
+            if (targetDomain && (window.location.hostname.toLowerCase() !== targetDomain || window.location.port !== String(props.panelPort))) {
+                window.location.href = `https://${targetDomain}:${props.panelPort}/security/panel-ssl`;
             }
         },
     });
@@ -48,7 +48,7 @@ const submit = () => {
     <div class="max-w-3xl mx-auto space-y-6">
         <UiPageHeader
             :title="__('Panel SSL Certificate')"
-            subtitle="Bind a domain to LiteControl with automated HTTPS on port 443 (with direct port fallback)."
+            subtitle="Bind a domain to LiteControl and OpenLiteSpeed WebAdmin with shared HTTPS SSL while keeping the panel isolated on its dedicated Nginx port."
         >
             <template #icon>
                 <Lock class="w-6 h-6 text-theme-accent" />
@@ -58,21 +58,32 @@ const submit = () => {
         <!-- Active Panel Domain Banner -->
         <UiCard v-if="configuredDomain" class="border-theme-accent/30">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div class="space-y-1">
+                <div class="space-y-2">
                     <p class="text-xs font-medium uppercase tracking-wider text-theme-muted">
-                        {{ __('Active Panel Domain') }}
+                        {{ __('Active Panel URLs (Shared SSL)') }}
                     </p>
-                    <a
-                        :href="`https://${configuredDomain}`"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="inline-flex items-center gap-1.5 font-mono text-sm font-semibold text-theme-accent hover:underline"
-                    >
-                        <span>https://{{ configuredDomain }}</span>
-                        <ExternalLink class="w-3.5 h-3.5" />
-                    </a>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <a
+                            :href="`https://${configuredDomain}:${panelPort}`"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1.5 font-mono text-sm font-semibold text-theme-accent hover:underline"
+                        >
+                            <span>https://{{ configuredDomain }}:{{ panelPort }}</span>
+                            <ExternalLink class="w-3.5 h-3.5" />
+                        </a>
+                        <a
+                            :href="`https://${configuredDomain}:7080`"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1.5 font-mono text-sm font-medium text-theme-secondary hover:text-theme-accent hover:underline"
+                        >
+                            <span>OLS WebAdmin: https://{{ configuredDomain }}:7080</span>
+                            <ExternalLink class="w-3.5 h-3.5" />
+                        </a>
+                    </div>
                     <p class="text-xs text-theme-muted">
-                        {{ __('Direct IP access on port') }} <span class="font-mono">{{ panelPort }}</span> {{ __('is disabled once Panel SSL is active. To re-enable direct IP access via SSH, run:') }}
+                        {{ __('Direct IP access on port') }} <span class="font-mono">{{ panelPort }}</span> {{ __('is restricted to your configured hostname. Visiting') }} <span class="font-mono">https://{{ configuredDomain }}</span> {{ __('redirects automatically to port') }} <span class="font-mono">{{ panelPort }}</span>. {{ __('To re-enable direct IP access via SSH, run:') }}
                         <span class="font-mono">lc-cli security panel-ip-access enable</span>
                     </p>
                 </div>
@@ -99,7 +110,7 @@ const submit = () => {
                         :label="__('Hostname / Panel Domain')"
                         :placeholder="__('panel.yourdomain.com')"
                         :error="form.errors.domain"
-                        hint="Point an A record to this server IP first. LiteControl will configure a system HTTPS proxy on port 443 and issue a Let's Encrypt certificate."
+                        :hint="`Point an A record to this server IP first. LiteControl will issue a Let's Encrypt certificate via port 80, serve the panel directly on https://your-domain:${panelPort}, share the certificate with OLS WebAdmin (:7080), and redirect port 80/443 to :${panelPort}.`"
                         class="font-mono"
                     />
                 </div>
@@ -108,10 +119,10 @@ const submit = () => {
                     <UiInput
                         v-model="form.domain"
                         type="text"
-                        :label="__('Panel Domain (Optional — enables HTTPS on port 443)')"
+                        :label="__('Panel Domain (Optional — configures redirect & hostname enforcement)')"
                         :placeholder="__('panel.yourdomain.com')"
                         :error="form.errors.domain"
-                        hint="Leave blank to install the certificate on the direct panel port only."
+                        hint="Leave blank to install the certificate on the panel port and OLS WebAdmin (:7080) without hostname enforcement."
                         class="font-mono"
                     />
 

@@ -194,7 +194,7 @@ class SecurityAndModuleTest extends TestCase
             'domain' => 'panel.example.com',
         ]);
 
-        $response->assertRedirect('https://panel.example.com/security/panel-ssl');
+        $response->assertRedirect('https://panel.example.com:8090/security/panel-ssl');
         $response->assertSessionHas('success');
 
         $inertiaResponse = $this->actingAs($admin)
@@ -205,7 +205,7 @@ class SecurityAndModuleTest extends TestCase
             ]);
 
         $inertiaResponse->assertStatus(409);
-        $inertiaResponse->assertHeader('X-Inertia-Location', 'https://panel.example.com/security/panel-ssl');
+        $inertiaResponse->assertHeader('X-Inertia-Location', 'https://panel.example.com:8090/security/panel-ssl');
     }
 
     public function test_user_can_update_own_password(): void

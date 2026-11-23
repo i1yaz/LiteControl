@@ -1,5 +1,7 @@
 # ==============================================================================
-# LiteControl System VirtualHost: Panel Reverse Proxy (lc_panel_proxy)
+# LiteControl System VirtualHost: Panel ACME & Redirect (lc_panel_proxy)
+# Serves ACME HTTP-01 challenges on port 80 and redirects to the out-of-band
+# Nginx panel on port __PANEL_PORT__ so OLS reloads never interrupt panel requests.
 # Managed by LiteControl (/usr/local/litecontrol/bin/lc-cli ssl panel-ssl)
 # ==============================================================================
 
@@ -17,16 +19,6 @@ accessControl  {
   allow                   *
 }
 
-extprocessor lc_panel_backend {
-  type                    proxy
-  address                 https://127.0.0.1:__PANEL_PORT__
-  maxConns                100
-  pcKeepAliveTimeout      60
-  initTimeout             300
-  retryTimeout            0
-  respBuffer              0
-}
-
 context /.well-known/acme-challenge/ {
   location                $DOC_ROOT/.well-known/acme-challenge/
   allowBrowse             1
@@ -36,19 +28,12 @@ context /.well-known/acme-challenge/ {
   addDefaultCharset       off
 }
 
-context / {
-  type                    proxy
-  handler                 lc_panel_backend
-  addDefaultCharset       off
-}
-
 rewrite  {
   enable                  1
   autoLoadHtaccess        0
   rules                   <<<END_rules
-RewriteCond %{HTTPS} !=on
 RewriteCond %{REQUEST_URI} !^/\.well-known/acme-challenge/
-RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+RewriteRule ^(.*)$ https://__PANEL_DOMAIN__:__PANEL_PORT__/$1 [R=301,L]
   END_rules
 }
 

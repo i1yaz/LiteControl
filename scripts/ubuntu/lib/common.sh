@@ -478,22 +478,46 @@ apply_panel_ip_access_config() {
     fi
 
     if [[ "${state}" == "disabled" ]]; then
-        awk '
-            /# BEGIN LITECONTROL IP ACCESS/{
-                print
-                print "        if ($remote_addr !~ ^(127\\.0\\.0\\.1|::1)$) {"
-                print "            return 444;"
-                print "        }"
-                skip=1
-                next
-            }
-            /# END LITECONTROL IP ACCESS/{
-                skip=0
-                print
-                next
-            }
-            !skip { print }
-        ' "${PANEL_NGINX_CONF}" > "${PANEL_NGINX_CONF}.tmp" && mv "${PANEL_NGINX_CONF}.tmp" "${PANEL_NGINX_CONF}"
+        local panel_domain=""
+        if [[ -s "${LC_CONF_DIR}/panel_domain" ]]; then
+            panel_domain=$(tr -d ' \t\r\n' < "${LC_CONF_DIR}/panel_domain")
+        fi
+
+        if [[ -n "${panel_domain}" ]]; then
+            awk -v dom="${panel_domain}" '
+                /# BEGIN LITECONTROL IP ACCESS/{
+                    print
+                    print "        if ($host != \"" dom "\") {"
+                    print "            return 444;"
+                    print "        }"
+                    skip=1
+                    next
+                }
+                /# END LITECONTROL IP ACCESS/{
+                    skip=0
+                    print
+                    next
+                }
+                !skip { print }
+            ' "${PANEL_NGINX_CONF}" > "${PANEL_NGINX_CONF}.tmp" && mv "${PANEL_NGINX_CONF}.tmp" "${PANEL_NGINX_CONF}"
+        else
+            awk '
+                /# BEGIN LITECONTROL IP ACCESS/{
+                    print
+                    print "        if ($remote_addr !~ ^(127\\.0\\.0\\.1|::1)$) {"
+                    print "            return 444;"
+                    print "        }"
+                    skip=1
+                    next
+                }
+                /# END LITECONTROL IP ACCESS/{
+                    skip=0
+                    print
+                    next
+                }
+                !skip { print }
+            ' "${PANEL_NGINX_CONF}" > "${PANEL_NGINX_CONF}.tmp" && mv "${PANEL_NGINX_CONF}.tmp" "${PANEL_NGINX_CONF}"
+        fi
     else
         awk '
             /# BEGIN LITECONTROL IP ACCESS/{
