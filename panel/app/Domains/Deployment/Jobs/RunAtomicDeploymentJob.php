@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Deployment\Jobs;
 
 use App\Domains\Deployment\Actions\BuildDeploymentPayloadAction;
+use App\Domains\Deployment\Actions\DispatchDomainDeploymentAction;
 use App\Domains\Deployment\Models\DomainDeployment;
 use App\Domains\Deployment\Models\DomainDeploymentConfig;
 use Illuminate\Bus\Queueable;
@@ -192,12 +193,24 @@ class RunAtomicDeploymentJob implements ShouldBeUnique, ShouldQueue
             } catch (Throwable) {
                 // Best-effort cleanup; never mask deployment outcome.
             }
+
+            try {
+                app(DispatchDomainDeploymentAction::class)->releaseAndDispatchPending($this->config);
+            } catch (Throwable) {
+                // Best-effort lock release and coalesced follow-up dispatch.
+            }
         }
     }
 
     public function failed(Throwable $exception): void
     {
         $this->markFailed($exception, $this->deployment->log_path);
+
+        try {
+            app(DispatchDomainDeploymentAction::class)->releaseAndDispatchPending($this->config);
+        } catch (Throwable) {
+            // Best-effort lock release.
+        }
     }
 
     private function pruneOldDeploymentArtifacts(): void
