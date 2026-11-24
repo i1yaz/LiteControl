@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
-import { ChevronDown } from 'lucide-vue-next';
 import UiAlert from '@/Shared/Ui/UiAlert.vue';
 import UiBadge from '@/Shared/Ui/UiBadge.vue';
 import UiButton from '@/Shared/Ui/UiButton.vue';
@@ -226,10 +225,19 @@ function submit(): void {
                             Follow these steps to connect your repository and enable atomic deployments.
                         </p>
                     </div>
-                    <ChevronDown
+                    <svg
                         class="h-4 w-4 shrink-0 text-[var(--theme-text-muted)] transition-transform duration-200"
                         :class="{ 'rotate-180': showSetupGuide }"
-                    />
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
                 </button>
 
                 <div v-if="showSetupGuide" class="mt-4 border-t border-[var(--theme-border)] pt-4">
