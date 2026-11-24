@@ -462,6 +462,23 @@ lc-cli backup restore john /var/litecontrol/backups/john_20261107_120000.tar.gz
 lc-cli backup schedule add john "0 2 * * *" 7
 ```
 
+### Zero-Downtime Deployment
+
+```bash
+# Initialize atomic release structure for a domain
+lc-cli deploy init --user john --domain example.com --web-subpath public
+
+# Execute an atomic deployment from a JSON spec
+lc-cli deploy run --spec /path/to/deploy_spec.json
+
+# Roll back a domain to a previous release
+lc-cli deploy rollback --user john --domain example.com --release 20261123_214104
+
+# Read or write the shared .env file
+lc-cli deploy env --user john --domain example.com
+```
+
+
 ### JSON Mode Contract
 
 All `lc-cli` commands support the `--json` flag, outputting RFC-compliant JSON for integration with APIs, webhooks, or automation pipelines:
