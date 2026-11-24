@@ -35,7 +35,7 @@ class GitHubAppDriverAdapter implements GitProviderDriverInterface
     {
         $url = rtrim($baseUrl, '/').'/app-manifests/'.rawurlencode($code).'/conversions';
 
-        $response = $this->baseClient()->post($url);
+        $response = $this->baseClient()->send('POST', $url);
 
         if (! $response->successful()) {
             $status = $response->status();
