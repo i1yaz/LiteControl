@@ -38,9 +38,30 @@ class GitHubAppDriverAdapter implements GitProviderDriverInterface
         $response = $this->baseClient()->post($url);
 
         if (! $response->successful()) {
+            $status = $response->status();
+            $githubMessage = $response->json('message');
+            $githubErrors = $response->json('errors');
+            $responseBody = is_string($githubMessage) && trim($githubMessage) !== ''
+                ? trim($githubMessage)
+                : trim(substr($response->body(), 0, 500));
+
+            $logContext = [
+                'status_code' => $status,
+                'github_message' => is_string($githubMessage) ? $githubMessage : null,
+                'github_errors' => is_array($githubErrors) ? $githubErrors : null,
+                'response_body' => $responseBody !== '' ? $responseBody : null,
+            ];
+
+            Log::warning('GitHub App manifest conversion failed.', $logContext);
+            Log::channel('errorlog')->warning('GitHub App manifest conversion failed.', $logContext);
+
+            $errorMessage = is_string($githubMessage) && trim($githubMessage) !== ''
+                ? "GitHub App manifest conversion failed with HTTP {$status}: ".trim($githubMessage)
+                : "GitHub App manifest conversion failed with HTTP {$status}.";
+
             throw new GitProviderApiException(
-                message: "GitHub App manifest conversion failed with HTTP {$response->status()}.",
-                statusCode: $response->status(),
+                message: $errorMessage,
+                statusCode: $status,
             );
         }
 
