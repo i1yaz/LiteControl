@@ -79,7 +79,7 @@ class SecurityController extends Controller
             return redirect()->back()->with('error', $res['message'] ?? 'Failed to issue SSL certificate.');
         }
 
-        return redirect()->back()->with('success', $res['message'] ?? "Let's Encrypt SSL certificate successfully issued.");
+        return redirect()->back()->with('success', $res['message'] ?? 'SSL certificate issuance has been queued in the background.');
     }
 
     /**

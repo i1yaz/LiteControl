@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
+import { ChevronDown } from 'lucide-vue-next';
 import UiAlert from '@/Shared/Ui/UiAlert.vue';
 import UiBadge from '@/Shared/Ui/UiBadge.vue';
 import UiButton from '@/Shared/Ui/UiButton.vue';
@@ -49,6 +50,7 @@ const seedShared = ref(true);
 const copiedField = ref<'deploy_key' | 'webhook_url' | 'webhook_secret' | null>(null);
 const generatingKey = ref(false);
 const showManualKey = ref(false);
+const showSetupGuide = ref(false);
 
 const form = useForm({
     mode: props.config.mode ?? 'simple',
@@ -211,49 +213,57 @@ function submit(): void {
 
         <template v-if="form.mode === 'atomic'">
             <!-- Zero-Downtime Setup Guide -->
-            <UiCard
-                title="Zero-Downtime Setup Guide"
-                subtitle="Follow these steps to connect your repository and enable atomic deployments."
-            >
-                <ol class="list-decimal space-y-2 pl-5 text-xs text-[var(--theme-text-muted)]">
-                    <li>
-                        <strong class="text-[var(--theme-text)]">Generate SSH Deploy Key:</strong>
-                        Click <strong class="text-[var(--theme-text)]">Generate Key</strong> below (or paste your own key pair).
-                    </li>
-                    <li>
-                        <strong class="text-[var(--theme-text)]">Add Key to GitHub / GitLab / Bitbucket:</strong>
-                        Open your repository's <em>Settings &rarr; Deploy keys &rarr; Add deploy key</em> and paste the <strong class="text-[var(--theme-text)]">SSH Public Deploy Key</strong>.
-                    </li>
-                    <li>
-                        <strong class="text-[var(--theme-text)]">Configure Repository &amp; Preset:</strong>
-                        Enter your repository SSH URL (e.g., <code>git@github.com:org/repo.git</code>), branch, and framework preset.
-                    </li>
-                    <li>
-                        <strong class="text-[var(--theme-text)]">Optional Auto-Deploy Webhook:</strong>
-                        In GitHub <em>Settings &rarr; Webhooks &rarr; Add webhook</em>, set:
-                        <strong>Payload URL</strong> = Webhook URL below,
-                        <strong>Content type</strong> = <code>application/json</code>,
-                        <strong>Secret</strong> = your Webhook Secret below (prevents fake requests via HMAC signature),
-                        and <strong>Events</strong> = <em>Just the push event</em>.
-                    </li>
-                    <li>
-                        <strong class="text-[var(--theme-text)]">Save &amp; Deploy:</strong>
-                        Click <strong class="text-[var(--theme-text)]">Save Deployment Configuration</strong>.
-                    </li>
-                </ol>
-
-                <div class="mt-4 grid grid-cols-1 gap-3 border-t border-[var(--theme-border)] pt-4 md:grid-cols-2">
-                    <div class="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3">
-                        <div class="text-xs font-semibold text-[var(--theme-text)]">Shallow Clone + Purge .git</div>
-                        <p class="mt-1 text-xs text-[var(--theme-text-muted)]">
-                            Runs <code>git clone --depth=1 --single-branch</code> using your SSH deploy key, records the commit metadata, and deletes <code>.git</code> so no repository metadata is exposed. Best for most Git repositories.
+            <UiCard>
+                <button
+                    type="button"
+                    class="flex w-full items-center justify-between gap-3 text-left"
+                    :aria-expanded="showSetupGuide"
+                    @click="showSetupGuide = !showSetupGuide"
+                >
+                    <div>
+                        <h3 class="text-sm font-semibold text-[var(--theme-text)]">Zero-Downtime Setup Guide</h3>
+                        <p class="mt-0.5 text-xs text-[var(--theme-text-muted)]">
+                            Follow these steps to connect your repository and enable atomic deployments.
                         </p>
                     </div>
-                    <div class="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3">
-                        <div class="text-xs font-semibold text-[var(--theme-text)]">Provider Tarball</div>
-                        <p class="mt-1 text-xs text-[var(--theme-text-muted)]">
-                            Downloads a compressed <code>.tar.gz</code> archive directly from your Git provider's API (using a bearer token for private repos) and extracts it without running Git or needing an SSH key. Faster for large repos.
-                        </p>
+                    <ChevronDown
+                        class="h-4 w-4 shrink-0 text-[var(--theme-text-muted)] transition-transform duration-200"
+                        :class="{ 'rotate-180': showSetupGuide }"
+                    />
+                </button>
+
+                <div v-if="showSetupGuide" class="mt-4 border-t border-[var(--theme-border)] pt-4">
+                    <ol class="list-decimal space-y-2 pl-5 text-xs text-[var(--theme-text-muted)]">
+                        <li>
+                            Click <strong class="text-[var(--theme-text)]">Generate Key</strong> below (or paste your own SSH key pair).
+                        </li>
+                        <li>
+                            Add the <strong class="text-[var(--theme-text)]">SSH Public Deploy Key</strong> in your Git provider under <em>Settings &rarr; Deploy keys &rarr; Add deploy key</em>.
+                        </li>
+                        <li>
+                            Enter your repository SSH URL (e.g., <code>git@github.com:org/repo.git</code>), branch, and framework preset.
+                        </li>
+                        <li>
+                            (Optional) For auto-deploy, add a webhook under <em>Settings &rarr; Webhooks &rarr; Add webhook</em> with <strong>Payload URL</strong> = Webhook URL, <strong>Content type</strong> = <code>application/json</code>, <strong>Secret</strong> = Webhook Secret, and <strong>Events</strong> = <em>Just the push event</em>.
+                        </li>
+                        <li>
+                            Click <strong class="text-[var(--theme-text)]">Save Deployment Configuration</strong>.
+                        </li>
+                    </ol>
+
+                    <div class="mt-4 grid grid-cols-1 gap-3 border-t border-[var(--theme-border)] pt-4 md:grid-cols-2">
+                        <div class="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3">
+                            <div class="text-xs font-semibold text-[var(--theme-text)]">Shallow Clone + Purge .git</div>
+                            <p class="mt-1 text-xs text-[var(--theme-text-muted)]">
+                                Runs <code>git clone --depth=1 --single-branch</code> using your SSH deploy key, records the commit metadata, and deletes <code>.git</code> so no repository metadata is exposed. Best for most Git repositories.
+                            </p>
+                        </div>
+                        <div class="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3">
+                            <div class="text-xs font-semibold text-[var(--theme-text)]">Provider Tarball</div>
+                            <p class="mt-1 text-xs text-[var(--theme-text-muted)]">
+                                Downloads a compressed <code>.tar.gz</code> archive directly from your Git provider's API (using a bearer token for private repos) and extracts it without running Git or needing an SSH key. Faster for large repos.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </UiCard>

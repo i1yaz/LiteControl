@@ -49,8 +49,8 @@ class IssueSslAction
         return [
             'status' => 'success',
             'message' => $action === 'renew'
-                ? "SSL certificate renewed successfully for {$domain->domain}."
-                : "Let's Encrypt SSL certificate issued successfully for {$domain->domain}.",
+                ? "SSL certificate renewal for {$domain->domain} has been queued in the background."
+                : "SSL certificate issuance for {$domain->domain} has been queued in the background.",
             'domain' => $domain->fresh() ?? $domain,
         ];
     }
