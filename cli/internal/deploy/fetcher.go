@@ -17,6 +17,48 @@ import (
 // FetchReleaseCode fetches the release source into releaseDir using the configured
 // driver and guarantees no .git directory remains on disk.
 func FetchReleaseCode(ctx context.Context, spec Payload, releaseDir string, logWriter io.Writer) (CommitMeta, error) {
+	return FetchReleaseCodeWithPayload(ctx, spec, nil, releaseDir, logWriter)
+}
+
+// FetchReleaseCodeWithPayload fetches release code using either a versioned provider
+// FetchPayload (received over stdin) or the legacy manual-mode RepoConfig.
+func FetchReleaseCodeWithPayload(
+	ctx context.Context,
+	spec Payload,
+	fetchPayload *FetchPayload,
+	releaseDir string,
+	logWriter io.Writer,
+) (CommitMeta, error) {
+	if fetchPayload != nil {
+		if err := fetchPayload.Validate(); err != nil {
+			return CommitMeta{}, err
+		}
+
+		switch fetchPayload.Mode {
+		case "tarball":
+			_, err := DownloadAndExtractTarball(ctx, TarballFetchOptions{
+				URL:             fetchPayload.TarballURL,
+				Credentials:     fetchPayload.Credentials,
+				ReleaseDir:      releaseDir,
+				LinuxUser:       spec.LinuxUser,
+				StripComponents: 1,
+			}, logWriter)
+			if err != nil {
+				return CommitMeta{}, err
+			}
+
+			return CommitMeta{
+				SHA: fetchPayload.CommitSHA,
+			}, nil
+
+		case "shallow_clone":
+			return FetchProviderShallowClone(ctx, spec, *fetchPayload, releaseDir, logWriter)
+
+		default:
+			return CommitMeta{}, fmt.Errorf("unsupported provider fetch mode: %q", fetchPayload.Mode)
+		}
+	}
+
 	switch spec.Repo.Driver {
 	case "", "shallow_git":
 		return fetchShallowGit(ctx, spec, releaseDir, logWriter)

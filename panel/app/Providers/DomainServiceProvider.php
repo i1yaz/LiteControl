@@ -12,6 +12,8 @@ use App\Domains\Database\Infrastructure\CliDatabaseAdapter;
 use App\Domains\Database\Listeners\CleanupUserDatabasesListener;
 use App\Domains\Database\Models\Database;
 use App\Domains\Database\Policies\DatabasePolicy;
+use App\Domains\Deployment\Contracts\DeploymentDriverInterface;
+use App\Domains\Deployment\Infrastructure\CliDeploymentAdapter;
 use App\Domains\Deployment\Infrastructure\EloquentProviderDeploymentWebhookBridge;
 use App\Domains\Deployment\Listeners\DetachGitProviderOnDomainOwnershipTransferredListener;
 use App\Domains\Dns\Contracts\PdnsDaemonDriverInterface;
@@ -113,6 +115,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(SslCertificateInspectorInterface::class, OpenSslCertificateInspectorAdapter::class);
         $this->app->bind(GitProviderDriverInterface::class, GitHubAppDriverAdapter::class);
         $this->app->bind(ProviderDeploymentWebhookBridgeInterface::class, EloquentProviderDeploymentWebhookBridge::class);
+        $this->app->bind(DeploymentDriverInterface::class, CliDeploymentAdapter::class);
         $this->app->bind(FileManagerDriverInterface::class, CliFileManagerAdapter::class);
         $this->app->bind(ServerDriverInterface::class, CliServerAdapter::class);
         $this->app->bind(ModuleDriverInterface::class, CliModuleAdapter::class);

@@ -99,6 +99,38 @@ class GitHubAppDriverAdapter implements GitProviderDriverInterface
         return $token;
     }
 
+    public function resolveHeadCommitSha(
+        GitProvider $provider,
+        string $owner,
+        string $repo,
+        string $branch,
+        int|string|null $repositoryId = null,
+        ?string $token = null,
+    ): string {
+        $resolvedToken = ($token !== null && $token !== '')
+            ? $token
+            : ($repositoryId !== null
+                ? $this->mintInstallationToken($provider, $repositoryId)
+                : $this->mintMetadataToken($provider, ['contents' => 'read', 'metadata' => 'read']));
+
+        $encodedBranch = implode('/', array_map('rawurlencode', explode('/', $branch)));
+        $url = $this->baseUrl($provider)
+            .'/repos/'.rawurlencode($owner).'/'.rawurlencode($repo).'/commits/'.$encodedBranch;
+
+        $response = $this->baseClient()
+            ->withToken($resolvedToken)
+            ->get($url);
+
+        $this->assertResponseSuccessful($provider, $response, 'resolve branch head commit SHA');
+
+        $sha = $response->json('sha');
+        if (! is_string($sha) || trim($sha) === '') {
+            throw new GitProviderApiException('GitHub did not return a valid commit SHA for the requested branch.');
+        }
+
+        return trim($sha);
+    }
+
     public function listRepositories(GitProvider $provider, ?string $search = null, bool $forceRefresh = false): array
     {
         $cacheKey = self::reposCacheKey($provider->id);

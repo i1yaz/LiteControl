@@ -30,6 +30,14 @@ type DeployResult struct {
 
 // RunDeploy executes the 4-stage zero-downtime deployment pipeline for specPath.
 func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (DeployResult, error) {
+	return RunDeployWithFetch(ctx, specPath, nil, logWriter)
+}
+
+// RunDeployWithFetch executes the 4-stage zero-downtime deployment pipeline for specPath,
+// optionally using a versioned stdin FetchPayload for provider-mode fetches.
+func RunDeployWithFetch(ctx context.Context, specPath string, fetchPayload *FetchPayload, logWriter io.Writer) (DeployResult, error) {
+	_ = SweepStaleAskpassDirs("", DefaultStaleAskpassAge)
+
 	raw, err := os.ReadFile(specPath)
 	if err != nil {
 		return DeployResult{}, fmt.Errorf("read spec %s: %w", specPath, err)
@@ -103,7 +111,7 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 	if err := RunHooks(ctx, "before_clone", spec.Hooks.BeforeClone, spec, releaseDir, meta, logWriter); err != nil {
 		return DeployResult{}, err
 	}
-	meta, err = FetchReleaseCode(ctx, spec, releaseDir, logWriter)
+	meta, err = FetchReleaseCodeWithPayload(ctx, spec, fetchPayload, releaseDir, logWriter)
 	if err != nil {
 		return DeployResult{}, fmt.Errorf("fetch release code: %w", err)
 	}

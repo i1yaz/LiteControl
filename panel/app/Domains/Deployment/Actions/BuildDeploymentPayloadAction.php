@@ -6,6 +6,7 @@ namespace App\Domains\Deployment\Actions;
 
 use App\Domains\Deployment\Models\DomainDeployment;
 use App\Domains\Deployment\Models\DomainDeploymentConfig;
+use App\Domains\SourceControl\Enums\SourceMode;
 use Illuminate\Support\Facades\File;
 
 class BuildDeploymentPayloadAction
@@ -47,8 +48,10 @@ class BuildDeploymentPayloadAction
             ? "{$domainRoot}/.deploy"
             : storage_path("app/deployments/domain_{$domain->id}");
 
+        $isProviderMode = $config->source_mode === SourceMode::Provider;
+
         $sshKeyPath = '';
-        $privateKey = $config->deploy_key_private_encrypted;
+        $privateKey = $isProviderMode ? null : $config->deploy_key_private_encrypted;
         if (is_string($privateKey) && $privateKey !== '') {
             $keysDir = "{$deployDir}/keys";
             File::ensureDirectoryExists($keysDir, 0700);
@@ -80,8 +83,8 @@ class BuildDeploymentPayloadAction
                 'url' => (string) $config->repo_url,
                 'branch' => (string) $config->branch,
                 'ssh_key_path' => $sshKeyPath,
-                'tarball_url' => $this->resolveTarballUrl($config),
-                'auth_token' => (string) ($config->api_token_encrypted ?? ''),
+                'tarball_url' => $isProviderMode ? '' : $this->resolveTarballUrl($config),
+                'auth_token' => $isProviderMode ? '' : (string) ($config->api_token_encrypted ?? ''),
             ],
             'shared_dirs' => array_values($config->shared_dirs ?? []),
             'shared_files' => array_values($config->shared_files ?? []),

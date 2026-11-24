@@ -29,6 +29,18 @@ interface GitProviderDriverInterface
     public function mintInstallationToken(GitProvider $provider, int|string $repositoryId): string;
 
     /**
+     * Resolve the immutable HEAD commit SHA for a repository branch via GET /repos/{owner}/{repo}/commits/{branch}.
+     */
+    public function resolveHeadCommitSha(
+        GitProvider $provider,
+        string $owner,
+        string $repo,
+        string $branch,
+        int|string|null $repositoryId = null,
+        ?string $token = null,
+    ): string;
+
+    /**
      * List repositories accessible to the installation with encrypted 5-minute caching and local search filtering.
      *
      * @return list<array<string, mixed>>
