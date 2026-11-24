@@ -26,3 +26,7 @@ Schedule::call(function (): void {
 Schedule::command('source-control:check-panel-ssl-expiry')
     ->daily()
     ->withoutOverlapping();
+
+Schedule::command('source-control:prune-abandoned-providers')
+    ->weekly()
+    ->withoutOverlapping();

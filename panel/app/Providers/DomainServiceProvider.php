@@ -68,7 +68,9 @@ use App\Domains\Shared\Events\BackupRestored;
 use App\Domains\Shared\Events\DomainOwnershipTransferred;
 use App\Domains\Shared\Events\MailDnsRecordsChanged;
 use App\Domains\Shared\Events\SslCertificateIssued;
+use App\Domains\SourceControl\Contracts\GitProviderDriverInterface;
 use App\Domains\SourceControl\Contracts\SslCertificateInspectorInterface;
+use App\Domains\SourceControl\Infrastructure\GitHubAppDriverAdapter;
 use App\Domains\SourceControl\Infrastructure\OpenSslCertificateInspectorAdapter;
 use App\Domains\SourceControl\Listeners\CleanupUserGitProvidersListener;
 use App\Domains\SourceControl\Models\GitProvider;
@@ -107,6 +109,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(FirewallDriverInterface::class, CliFirewallAdapter::class);
         $this->app->bind(PanelSslDriverInterface::class, CliPanelSslAdapter::class);
         $this->app->bind(SslCertificateInspectorInterface::class, OpenSslCertificateInspectorAdapter::class);
+        $this->app->bind(GitProviderDriverInterface::class, GitHubAppDriverAdapter::class);
         $this->app->bind(FileManagerDriverInterface::class, CliFileManagerAdapter::class);
         $this->app->bind(ServerDriverInterface::class, CliServerAdapter::class);
         $this->app->bind(ModuleDriverInterface::class, CliModuleAdapter::class);

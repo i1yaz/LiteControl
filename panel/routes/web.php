@@ -28,12 +28,15 @@ use App\Http\Controllers\Security\SecurityController;
 use App\Http\Controllers\ServerOps\DashboardController;
 use App\Http\Controllers\ServerOps\ModuleController;
 use App\Http\Controllers\ServerOps\ServerController;
+use App\Http\Controllers\SourceControl\GitHubAppController;
 use App\Http\Controllers\WebServer\DomainController;
 use App\Http\Controllers\WebServer\FtpController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/theme/switch', [ThemeController::class, 'switch'])->name('theme.switch');
 Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
+Route::get('/settings/source-control/github/callback', [GitHubAppController::class, 'callback'])
+    ->name('source-control.github.callback');
 
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
@@ -166,6 +169,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/security/two-factor', [SecurityController::class, 'twoFactor'])->name('security.two-factor');
     Route::post('/security/two-factor/confirm', [SecurityController::class, 'confirmTwoFactor'])->name('security.two-factor.confirm');
     Route::post('/security/two-factor/toggle', [SecurityController::class, 'toggleTwoFactor'])->name('security.two-factor.toggle');
+
+    // Source Control — GitHub App Manifest & Setup Flow
+    Route::post('/settings/source-control/github/manifest', [GitHubAppController::class, 'manifest'])
+        ->name('source-control.github.manifest');
+    Route::get('/settings/source-control/github/setup', [GitHubAppController::class, 'setup'])
+        ->name('source-control.github.setup');
+    Route::post('/settings/source-control/providers/{gitProvider}/repair-webhook', [GitHubAppController::class, 'repairWebhook'])
+        ->name('source-control.providers.repair-webhook');
+    Route::get('/settings/source-control/providers/{gitProvider}/health', [GitHubAppController::class, 'health'])
+        ->name('source-control.providers.health');
 
     // Admin Only Routes
     Route::middleware('admin')->group(function () {
