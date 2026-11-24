@@ -22,3 +22,7 @@ Schedule::call(function (): void {
         SyncMailboxQuotasJob::dispatch();
     }
 })->name('mail:sync-quotas')->everyFifteenMinutes()->withoutOverlapping();
+
+Schedule::command('source-control:check-panel-ssl-expiry')
+    ->daily()
+    ->withoutOverlapping();
