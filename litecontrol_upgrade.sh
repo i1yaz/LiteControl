@@ -520,6 +520,17 @@ reconcile_panel_services() {
     mkdir -p /tmp/litecontrol-nginx-body /tmp/litecontrol-nginx-proxy /tmp/litecontrol-nginx-fastcgi /tmp/litecontrol-nginx-uwsgi /tmp/litecontrol-nginx-scgi
     chown -R "${LC_USER}:${LC_GROUP}" /tmp/litecontrol-nginx-* 2>/dev/null || true
 
+    if [[ -d "${LC_CONF_DIR}" ]]; then
+        chgrp "${LC_GROUP}" "${LC_CONF_DIR}" 2>/dev/null || true
+        chmod 750 "${LC_CONF_DIR}" 2>/dev/null || true
+    fi
+    if [[ -d "${LC_CONF_DIR}/ssl" ]]; then
+        chgrp "${LC_GROUP}" "${LC_CONF_DIR}/ssl" 2>/dev/null || true
+        chmod 750 "${LC_CONF_DIR}/ssl" 2>/dev/null || true
+        [[ -f "${LC_CONF_DIR}/ssl/fullchain.pem" ]] && chmod 644 "${LC_CONF_DIR}/ssl/fullchain.pem" 2>/dev/null || true
+        [[ -f "${LC_CONF_DIR}/ssl/privkey.pem" ]] && chmod 600 "${LC_CONF_DIR}/ssl/privkey.pem" 2>/dev/null || true
+    fi
+
     cp "${LC_BASE_DIR}/templates/panel/fastcgi_params.tpl" "${PANEL_NGINX_DIR}/fastcgi_params"
     sed "s/__PANEL_PORT__/${panel_port}/g" "${LC_BASE_DIR}/templates/panel/nginx.conf.tpl" > "${PANEL_NGINX_CONF}"
     apply_panel_ip_access_config "$(get_panel_ip_access)"

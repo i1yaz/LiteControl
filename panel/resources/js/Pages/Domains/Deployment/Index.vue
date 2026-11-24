@@ -226,9 +226,9 @@ function triggerDeploy() {
                             <UiAlert v-if="!gateAllowed" variant="warning">
                                 <div class="space-y-2">
                                     <p class="font-medium">
-                                        Source control integration requires your panel to be served over HTTPS on a domain name. Set your panel URL and issue an SSL certificate first, then return here.
+                                        Source control integration requires your panel to be served over HTTPS on a domain name.
                                     </p>
-                                    <p v-if="sourceControl.gate?.message" class="text-xs opacity-90">
+                                    <p v-if="sourceControl.gate?.message && sourceControl.gate?.code !== 'cert_missing'" class="text-xs opacity-90">
                                         {{ sourceControl.gate.message }}
                                     </p>
                                     <div class="pt-1">

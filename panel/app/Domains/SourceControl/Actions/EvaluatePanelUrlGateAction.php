@@ -67,7 +67,7 @@ class EvaluatePanelUrlGateAction
         if (! $certificate->present) {
             return PanelUrlGateResult::denied(
                 code: PanelUrlGateResult::CODE_CERT_MISSING,
-                message: 'No readable TLS certificate was found for the panel. Issue or install a trusted SSL certificate in Security → Panel SSL.',
+                message: 'Panel TLS certificate could not be verified.',
                 configuredUrl: $url,
             );
         }

@@ -499,6 +499,11 @@ cmd_ssl_panel() {
                 fi
             fi
 
+            chmod 600 "${panel_key}" 2>/dev/null || true
+            chmod 644 "${panel_cert}" 2>/dev/null || true
+            chgrp "${LC_GROUP}" "${LC_CONF_DIR}" "${LC_SSL_DIR}" 2>/dev/null || true
+            chmod 750 "${LC_CONF_DIR}" "${LC_SSL_DIR}" 2>/dev/null || true
+
             persist_panel_domain "${hostname}"
             sync_webadmin_ssl
             apply_panel_ip_access_config "disabled"
@@ -524,6 +529,8 @@ cmd_ssl_panel() {
             cp -f "${key_src}" "${LC_SSL_DIR}/privkey.pem"
             chmod 600 "${LC_SSL_DIR}/privkey.pem"
             chmod 644 "${LC_SSL_DIR}/fullchain.pem"
+            chgrp "${LC_GROUP}" "${LC_CONF_DIR}" "${LC_SSL_DIR}" 2>/dev/null || true
+            chmod 750 "${LC_CONF_DIR}" "${LC_SSL_DIR}" 2>/dev/null || true
 
             if [[ -n "${hostname}" ]]; then
                 validate_domain "${hostname}"

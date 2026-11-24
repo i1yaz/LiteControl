@@ -15,29 +15,46 @@ class OpenSslCertificateInspectorAdapter implements SslCertificateInspectorInter
     {
         $path = $certPath ?? (string) config('litecontrol.panel_ssl_cert_path', '/etc/litecontrol/ssl/fullchain.pem');
 
-        if ($path === '' || ! is_file($path) || ! is_readable($path)) {
-            return SslCertificateInspectionResult::missing("Panel SSL certificate file not found or unreadable at [{$path}].");
+        if ($path !== '' && is_file($path) && is_readable($path)) {
+            $pemContent = @file_get_contents($path);
+            if (! is_string($pemContent) || trim($pemContent) === '') {
+                return SslCertificateInspectionResult::missing("Panel SSL certificate file at [{$path}] is empty.");
+            }
+
+            $pemBlocks = $this->extractPemCertificates($pemContent);
+            if ($pemBlocks === []) {
+                return SslCertificateInspectionResult::missing("No valid PEM certificate blocks found at [{$path}].");
+            }
+
+            return $this->inspectPemBlocks($pemBlocks, $path);
         }
 
-        $pemContent = @file_get_contents($path);
-        if (! is_string($pemContent) || trim($pemContent) === '') {
-            return SslCertificateInspectionResult::missing("Panel SSL certificate file at [{$path}] is empty.");
+        // When no explicit file path was requested and the local cert file is unreadable
+        // (e.g. root-only directory permissions or external TLS termination), inspect the live TLS peer.
+        if ($certPath === null && trim($expectedHost) !== '') {
+            $liveResult = $this->inspectLiveTlsPeer($expectedHost);
+            if ($liveResult !== null) {
+                return $liveResult;
+            }
         }
 
-        $pemBlocks = $this->extractPemCertificates($pemContent);
-        if ($pemBlocks === []) {
-            return SslCertificateInspectionResult::missing("No valid PEM certificate blocks found at [{$path}].");
-        }
+        return SslCertificateInspectionResult::missing("Panel SSL certificate file not found or unreadable at [{$path}].");
+    }
 
+    /**
+     * @param  list<string>  $pemBlocks
+     */
+    private function inspectPemBlocks(array $pemBlocks, string $source): SslCertificateInspectionResult
+    {
         $leafPem = $pemBlocks[0];
         $x509 = @openssl_x509_read($leafPem);
         if ($x509 === false) {
-            return SslCertificateInspectionResult::missing("Unable to parse X.509 certificate at [{$path}].");
+            return SslCertificateInspectionResult::missing("Unable to parse X.509 certificate from [{$source}].");
         }
 
         $parsed = @openssl_x509_parse($x509);
         if (! is_array($parsed)) {
-            return SslCertificateInspectionResult::missing("Unable to decode X.509 certificate metadata at [{$path}].");
+            return SslCertificateInspectionResult::missing("Unable to decode X.509 certificate metadata from [{$source}].");
         }
 
         $validFrom = isset($parsed['validFrom_time_t']) && is_int($parsed['validFrom_time_t'])
@@ -63,6 +80,80 @@ class OpenSslCertificateInspectorAdapter implements SslCertificateInspectorInter
             subject: $subjectDn,
             issuer: $issuerDn,
         );
+    }
+
+    private function inspectLiveTlsPeer(string $expectedHost): ?SslCertificateInspectionResult
+    {
+        $port = $this->resolvePanelPort();
+        $targets = array_values(array_unique([
+            "ssl://127.0.0.1:{$port}",
+            "ssl://{$expectedHost}:{$port}",
+        ]));
+
+        foreach ($targets as $target) {
+            $context = stream_context_create([
+                'ssl' => [
+                    'peer_name' => $expectedHost,
+                    'SNI_enabled' => true,
+                    'capture_peer_cert' => true,
+                    'capture_peer_cert_chain' => true,
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                ],
+            ]);
+
+            $errno = 0;
+            $errstr = '';
+            $stream = @stream_socket_client($target, $errno, $errstr, 3.0, STREAM_CLIENT_CONNECT, $context);
+            if ($stream === false) {
+                continue;
+            }
+
+            $params = stream_context_get_params($stream);
+            @fclose($stream);
+
+            $sslOptions = is_array($params['options']['ssl'] ?? null) ? $params['options']['ssl'] : [];
+            $pemBlocks = [];
+
+            if (is_array($sslOptions['peer_certificate_chain'] ?? null) && $sslOptions['peer_certificate_chain'] !== []) {
+                foreach ($sslOptions['peer_certificate_chain'] as $cert) {
+                    $exported = '';
+                    if (@openssl_x509_export($cert, $exported) && trim($exported) !== '') {
+                        $pemBlocks[] = $exported;
+                    }
+                }
+            } elseif (isset($sslOptions['peer_certificate'])) {
+                $exported = '';
+                if (@openssl_x509_export($sslOptions['peer_certificate'], $exported) && trim($exported) !== '') {
+                    $pemBlocks[] = $exported;
+                }
+            }
+
+            if ($pemBlocks !== []) {
+                return $this->inspectPemBlocks($pemBlocks, $target);
+            }
+        }
+
+        return null;
+    }
+
+    private function resolvePanelPort(): int
+    {
+        $configuredUrl = trim((string) config('app.url', ''));
+        $port = $configuredUrl !== '' ? parse_url($configuredUrl, PHP_URL_PORT) : null;
+        if (is_int($port) && $port > 0 && $port <= 65535) {
+            return $port;
+        }
+
+        if (is_readable('/etc/litecontrol/port')) {
+            $filePort = (int) trim((string) @file_get_contents('/etc/litecontrol/port'));
+            if ($filePort > 0 && $filePort <= 65535) {
+                return $filePort;
+            }
+        }
+
+        return 443;
     }
 
     /**

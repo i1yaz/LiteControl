@@ -235,7 +235,10 @@ init_litecontrol_dirs() {
              "${LC_MODULES_DIR}" \
              "${LC_LOG_DIR}"
     chmod 700 "${LC_SECRETS_DIR}"
-    chmod 750 "${LC_CONF_DIR}" "${LC_LOG_DIR}"
+    chmod 750 "${LC_CONF_DIR}" "${LC_SSL_DIR}" "${LC_LOG_DIR}"
+    if getent group "${LC_GROUP}" >/dev/null 2>&1; then
+        chgrp "${LC_GROUP}" "${LC_CONF_DIR}" "${LC_SSL_DIR}" "${LC_LOG_DIR}" 2>/dev/null || true
+    fi
 }
 
 generate_password() {
