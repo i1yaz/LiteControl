@@ -12,6 +12,7 @@ use App\Domains\Database\Infrastructure\CliDatabaseAdapter;
 use App\Domains\Database\Listeners\CleanupUserDatabasesListener;
 use App\Domains\Database\Models\Database;
 use App\Domains\Database\Policies\DatabasePolicy;
+use App\Domains\Deployment\Listeners\DetachGitProviderOnDomainOwnershipTransferredListener;
 use App\Domains\Dns\Contracts\PdnsDaemonDriverInterface;
 use App\Domains\Dns\Contracts\PowerDnsClientInterface;
 use App\Domains\Dns\Infrastructure\CliPdnsDaemonAdapter;
@@ -64,8 +65,12 @@ use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Domains\Shared\Contracts\DomainOwnershipCheckerInterface;
 use App\Domains\Shared\Contracts\ModuleRegistryQueryInterface;
 use App\Domains\Shared\Events\BackupRestored;
+use App\Domains\Shared\Events\DomainOwnershipTransferred;
 use App\Domains\Shared\Events\MailDnsRecordsChanged;
 use App\Domains\Shared\Events\SslCertificateIssued;
+use App\Domains\SourceControl\Listeners\CleanupUserGitProvidersListener;
+use App\Domains\SourceControl\Models\GitProvider;
+use App\Domains\SourceControl\Policies\GitProviderPolicy;
 use App\Domains\WebServer\Contracts\FtpDriverInterface;
 use App\Domains\WebServer\Contracts\SslDriverInterface;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
@@ -136,6 +141,8 @@ class DomainServiceProvider extends ServiceProvider
         Event::listen(UserDeleted::class, function (UserDeleted $event): void {
             Domain::where('user_id', $event->userId)->delete();
         });
+        Event::listen(UserDeleted::class, CleanupUserGitProvidersListener::class);
+        Event::listen(DomainOwnershipTransferred::class, DetachGitProviderOnDomainOwnershipTransferredListener::class);
         Event::listen(BackupRestored::class, ReconcileMailOnBackupRestoredListener::class);
         Event::listen(SslCertificateIssued::class, SyncMailSniOnSslIssuedListener::class);
         Event::listen(MailDnsRecordsChanged::class, SyncMailDnsRecordsOnChangedListener::class);
@@ -148,5 +155,6 @@ class DomainServiceProvider extends ServiceProvider
         Gate::policy(MailDomain::class, MailDomainPolicy::class);
         Gate::policy(MailAccount::class, MailAccountPolicy::class);
         Gate::policy(MailAlias::class, MailAliasPolicy::class);
+        Gate::policy(GitProvider::class, GitProviderPolicy::class);
     }
 }
