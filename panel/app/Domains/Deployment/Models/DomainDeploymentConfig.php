@@ -41,6 +41,12 @@ class DomainDeploymentConfig extends Model
         'auto_rollback',
     ];
 
+    protected $hidden = [
+        'deploy_key_private_encrypted',
+        'api_token_encrypted',
+        'webhook_secret_encrypted',
+    ];
+
     protected $attributes = [
         'mode' => 'simple',
         'source_mode' => SourceMode::Manual->value,

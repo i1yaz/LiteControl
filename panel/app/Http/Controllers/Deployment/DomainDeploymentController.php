@@ -10,13 +10,23 @@ use App\Domains\Deployment\Jobs\RunAtomicDeploymentJob;
 use App\Domains\Deployment\Models\DomainDeployment;
 use App\Domains\Deployment\Models\DomainDeploymentConfig;
 use App\Domains\Deployment\Services\DeploymentPresetService;
+use App\Domains\SourceControl\Actions\BindDomainSourceControlAction;
+use App\Domains\SourceControl\Actions\EvaluatePanelUrlGateAction;
+use App\Domains\SourceControl\Actions\SwitchDomainSourceModeAction;
+use App\Domains\SourceControl\Enums\GitProviderStatus;
+use App\Domains\SourceControl\Enums\SourceMode;
+use App\Domains\SourceControl\Models\GitProvider;
 use App\Domains\WebServer\Models\Domain;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Deployment\UpdateDeploymentConfigRequest;
+use App\Http\Requests\SourceControl\BindDomainSourceControlRequest;
+use App\Http\Requests\SourceControl\SwitchSourceModeRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -24,8 +34,12 @@ use Inertia\Response;
 
 class DomainDeploymentController extends Controller
 {
-    public function show(Domain $domain, DeploymentPresetService $presets): Response
-    {
+    public function show(
+        Request $request,
+        Domain $domain,
+        DeploymentPresetService $presets,
+        EvaluatePanelUrlGateAction $evaluateGate,
+    ): Response {
         $config = DomainDeploymentConfig::with('hooks')
             ->firstOrCreate(
                 ['domain_id' => $domain->id],
@@ -42,13 +56,174 @@ class DomainDeploymentController extends Controller
             ->limit(15)
             ->get();
 
+        $gate = $evaluateGate->handle(requestHost: $request->getHost());
+
+        $providersQuery = GitProvider::query()
+            ->forUser((int) $domain->user_id)
+            ->where(function ($query) use ($config): void {
+                $query->where('status', GitProviderStatus::Active->value);
+                if ($config->git_provider_id !== null) {
+                    $query->orWhere('id', $config->git_provider_id);
+                }
+            })
+            ->latest('id')
+            ->get();
+
+        $providers = $providersQuery->map(function (GitProvider $provider): array {
+            $accountLogin = $provider->external_account_login;
+            $accountType = $provider->external_account_type;
+            $isOrg = is_string($accountType) && strtolower($accountType) === 'organization' && is_string($accountLogin) && $accountLogin !== '';
+
+            $manageReposUrl = null;
+            if ($provider->installation_id !== null) {
+                $manageReposUrl = $isOrg
+                    ? "https://github.com/organizations/{$accountLogin}/settings/installations/{$provider->installation_id}"
+                    : "https://github.com/settings/installations/{$provider->installation_id}";
+            }
+
+            return [
+                'id' => $provider->id,
+                'uuid' => $provider->uuid,
+                'label' => $provider->label,
+                'external_account_login' => $accountLogin,
+                'external_account_type' => $accountType,
+                'installation_id' => $provider->installation_id,
+                'status' => $provider->status instanceof GitProviderStatus
+                    ? $provider->status->value
+                    : (string) $provider->status,
+                'webhook_verified_at' => $provider->webhook_verified_at?->toIso8601String(),
+                'last_webhook_at' => $provider->last_webhook_at?->toIso8601String(),
+                'manage_repos_url' => $manageReposUrl,
+            ];
+        })->values()->all();
+
+        $hasApiToken = ! empty($config->getRawOriginal('api_token_encrypted'));
+        $hasDeployKey = ! empty($config->deploy_key_public) || ! empty($config->getRawOriginal('deploy_key_private_encrypted'));
+        $hasWebhookSecret = ! empty($config->getRawOriginal('webhook_secret_encrypted'));
+        $hasManualCredentials = $hasApiToken || $hasDeployKey || $hasWebhookSecret;
+
+        $sourceMode = $config->source_mode instanceof SourceMode
+            ? $config->source_mode->value
+            : (string) ($config->source_mode ?: SourceMode::Manual->value);
+
+        $isConfigured = $sourceMode === SourceMode::Provider->value
+            ? ($config->git_provider_id !== null && ! empty($config->remote_repo_id))
+            : (! empty($config->repo_url) || $hasManualCredentials);
+
         return Inertia::render('Domains/Deployment/Index', [
             'domain' => $domain,
             'config' => $config,
             'hooks' => $config->hooks,
             'deployments' => $deployments,
             'presets' => $presets->all(),
+            'sourceControl' => [
+                'gate' => $gate->toArray(),
+                'panel_ssl_url' => "/security/panel-ssl?return_to=/domains/{$domain->id}/deploy",
+                'providers' => $providers,
+                'source_mode' => $sourceMode,
+                'is_configured' => $isConfigured,
+                'has_manual_credentials' => $hasManualCredentials,
+                'has_api_token' => $hasApiToken,
+                'has_deploy_key' => $hasDeployKey,
+            ],
         ]);
+    }
+
+    public function bindSourceControl(
+        BindDomainSourceControlRequest $request,
+        Domain $domain,
+        BindDomainSourceControlAction $action,
+    ): RedirectResponse {
+        $validated = $request->validated();
+        $provider = GitProvider::query()->findOrFail((int) $validated['git_provider_id']);
+
+        Gate::authorize('bind', $provider);
+
+        $deploymentSettings = collect($validated)
+            ->only([
+                'mode',
+                'preset',
+                'fetch_driver',
+                'web_subpath',
+                'php_version',
+                'keep_releases',
+                'shared_dirs',
+                'shared_files',
+                'health_check_enabled',
+                'health_check_path',
+                'auto_rollback',
+            ])
+            ->all();
+
+        $result = $action->handle(
+            actor: $request->user(),
+            domainId: (int) $domain->id,
+            domainUserId: (int) $domain->user_id,
+            domainName: (string) $domain->domain,
+            provider: $provider,
+            remoteRepoId: (string) $validated['remote_repo_id'],
+            remoteRepoFullName: (string) $validated['remote_repo_full_name'],
+            branch: (string) $validated['branch'],
+            autoDeploy: array_key_exists('auto_deploy', $validated) ? (bool) $validated['auto_deploy'] : true,
+            confirmClearManualCredentials: (bool) ($validated['confirm_clear_credentials'] ?? false),
+            deploymentSettings: $deploymentSettings,
+            ipAddress: $request->ip(),
+        );
+
+        if ($result['was_simple_mode'] && (($deploymentSettings['mode'] ?? 'atomic') === 'atomic')) {
+            $domain->loadMissing('user');
+            $linuxUser = $domain->user->username ?? $domain->user->name ?? 'www-data';
+            $cliPath = (string) env('LC_CLI_PATH', '/usr/local/litecontrol/bin/lc-cli');
+
+            Process::timeout(60)->run([
+                'sudo',
+                $cliPath,
+                'deploy',
+                'init',
+                "--user={$linuxUser}",
+                "--domain={$domain->domain}",
+            ]);
+        }
+
+        return back()->with('success', 'Source Control provider binding saved.');
+    }
+
+    public function switchSourceMode(
+        SwitchSourceModeRequest $request,
+        Domain $domain,
+        SwitchDomainSourceModeAction $action,
+    ): RedirectResponse {
+        $validated = $request->validated();
+        $targetMode = SourceMode::from((string) $validated['target_mode']);
+
+        $provider = null;
+        if (! empty($validated['git_provider_id'])) {
+            $provider = GitProvider::query()->findOrFail((int) $validated['git_provider_id']);
+            Gate::authorize('bind', $provider);
+        }
+
+        $result = $action->handle(
+            actor: $request->user(),
+            domainId: (int) $domain->id,
+            domainUserId: (int) $domain->user_id,
+            domainName: (string) $domain->domain,
+            targetMode: $targetMode,
+            confirmClearManualCredentials: (bool) ($validated['confirm_clear_credentials'] ?? false),
+            provider: $provider,
+            remoteRepoId: isset($validated['remote_repo_id']) ? (string) $validated['remote_repo_id'] : null,
+            remoteRepoFullName: isset($validated['remote_repo_full_name']) ? (string) $validated['remote_repo_full_name'] : null,
+            branch: isset($validated['branch']) ? (string) $validated['branch'] : null,
+            autoDeploy: array_key_exists('auto_deploy', $validated) ? (bool) $validated['auto_deploy'] : true,
+            ipAddress: $request->ip(),
+        );
+
+        $message = $targetMode === SourceMode::Manual
+            ? 'Switched domain to Manual Git Mode.'
+            : ($result['cleared_manual_credentials']
+                ? 'Switched domain to Connected Provider Mode and cleared stored manual credentials.'
+                : 'Switched domain to Connected Provider Mode.');
+
+        return back()->with('success', $message);
     }
 
     public function updateConfig(UpdateDeploymentConfigRequest $request, Domain $domain): RedirectResponse
