@@ -18,6 +18,11 @@ function loadCanonicalSlotsMigration(): object
     return require database_path('migrations/2026_11_26_000002_migrate_domain_deployment_hooks_to_canonical_slots.php');
 }
 
+function loadDropLegacyColumnsMigration(): object
+{
+    return require database_path('migrations/2026_11_26_000003_drop_legacy_stage_position_from_domain_deployment_hooks_table.php');
+}
+
 function createDeploymentConfigFor(string $domainName, string $username): DomainDeploymentConfig
 {
     $user = User::factory()->create(['username' => $username]);
@@ -36,9 +41,21 @@ function createDeploymentConfigFor(string $domainName, string $username): Domain
     ]);
 }
 
-it('adds nullable install_script column to domain_deployment_configs and composite index on hooks', function () {
+it('enforces the final 5-slot schema contract with install_script, non-null slot/sort_order, canonical index, and dropped legacy columns', function () {
     expect(Schema::hasColumn('domain_deployment_configs', 'install_script'))->toBeTrue();
     expect(Schema::hasColumn('domain_deployment_hooks', 'slot'))->toBeTrue();
+    expect(Schema::hasColumn('domain_deployment_hooks', 'sort_order'))->toBeTrue();
+    expect(Schema::hasColumn('domain_deployment_hooks', 'stage'))->toBeFalse();
+    expect(Schema::hasColumn('domain_deployment_hooks', 'position'))->toBeFalse();
+
+    $columns = collect(Schema::getColumns('domain_deployment_hooks'))->keyBy('name');
+    expect($columns->get('slot')['nullable'])->toBeFalse();
+    expect($columns->get('sort_order')['nullable'])->toBeFalse();
+
+    $indexes = Schema::getIndexes('domain_deployment_hooks');
+    $indexNames = array_column($indexes, 'name');
+    expect($indexNames)->toContain('dd_hooks_config_slot_sort_idx');
+    expect($indexNames)->not->toContain('dd_hooks_config_stage_pos_sort_idx');
 
     $config = createDeploymentConfigFor('install-script.example.com', 'installuser');
     expect($config->fresh()->install_script)->toBeNull();
@@ -54,29 +71,34 @@ it('adds nullable install_script column to domain_deployment_configs and composi
 
     expect($hook->fresh()->slot)->toBe(DeploymentHookSlot::AfterPurge);
     expect($hook->fresh()->sort_order)->toBe(0);
-
-    $indexes = Schema::getIndexes('domain_deployment_hooks');
-    $indexNames = array_column($indexes, 'name');
-    expect($indexNames)->toContain('dd_hooks_config_slot_sort_idx');
 });
 
-it('runs cleanly on an empty domain_deployment_hooks table', function () {
-    $migration = loadCanonicalSlotsMigration();
+it('runs the full Phase 1 -> Phase 5 migration sequence cleanly on an empty domain_deployment_hooks table', function () {
+    $phase1 = loadCanonicalSlotsMigration();
+    $phase5 = loadDropLegacyColumnsMigration();
 
-    $migration->down();
+    $phase5->down();
+    $phase1->down();
     expect(Schema::hasColumn('domain_deployment_hooks', 'slot'))->toBeFalse();
+    expect(Schema::hasColumn('domain_deployment_hooks', 'stage'))->toBeTrue();
+    expect(Schema::hasColumn('domain_deployment_hooks', 'position'))->toBeTrue();
     expect(DB::table('domain_deployment_hooks')->count())->toBe(0);
 
-    $migration->up();
+    $phase1->up();
+    $phase5->up();
     expect(Schema::hasColumn('domain_deployment_hooks', 'slot'))->toBeTrue();
+    expect(Schema::hasColumn('domain_deployment_hooks', 'stage'))->toBeFalse();
+    expect(Schema::hasColumn('domain_deployment_hooks', 'position'))->toBeFalse();
     expect(DB::table('domain_deployment_hooks')->count())->toBe(0);
 });
 
-it('maps all 8 legacy slot positions deterministically with Stage N After preceding Stage N+1 Before', function () {
+it('maps all 8 legacy slot positions deterministically with Stage N After preceding Stage N+1 Before and drops legacy columns in Phase 5', function () {
     $config = createDeploymentConfigFor('pipeline.example.com', 'pipeuser');
-    $migration = loadCanonicalSlotsMigration();
+    $phase1 = loadCanonicalSlotsMigration();
+    $phase5 = loadDropLegacyColumnsMigration();
 
-    $migration->down();
+    $phase5->down();
+    $phase1->down();
 
     $now = now();
     // Intentionally give Stage N+1 Before lower legacy sort_order numbers than Stage N After
@@ -105,7 +127,11 @@ it('maps all 8 legacy slot positions deterministically with Stage N After preced
         ['config_id' => $config->id, 'name' => 'S4 After Purge', 'stage' => 'purge', 'position' => 'after', 'script' => 'echo s4a2', 'sort_order' => 20, 'is_active' => true, 'created_at' => $now, 'updated_at' => $now],
     ]);
 
-    $migration->up();
+    $phase1->up();
+    $phase5->up();
+
+    expect(Schema::hasColumn('domain_deployment_hooks', 'stage'))->toBeFalse();
+    expect(Schema::hasColumn('domain_deployment_hooks', 'position'))->toBeFalse();
 
     $bySlot = fn (string $slot): array => DB::table('domain_deployment_hooks')
         ->where('config_id', $config->id)
@@ -146,9 +172,11 @@ it('maps all 8 legacy slot positions deterministically with Stage N After preced
 it('re-indexes sort_order cleanly per site and slot and handles duplicates and unknown values safely', function () {
     $configA = createDeploymentConfigFor('site-a.example.com', 'sitea');
     $configB = createDeploymentConfigFor('site-b.example.com', 'siteb');
-    $migration = loadCanonicalSlotsMigration();
+    $phase1 = loadCanonicalSlotsMigration();
+    $phase5 = loadDropLegacyColumnsMigration();
 
-    $migration->down();
+    $phase5->down();
+    $phase1->down();
 
     $now = now();
     DB::table('domain_deployment_hooks')->insert([
@@ -163,7 +191,8 @@ it('re-indexes sort_order cleanly per site and slot and handles duplicates and u
         ['config_id' => $configB->id, 'name' => 'B Only Hook', 'stage' => 'install', 'position' => 'after', 'script' => 'echo b1', 'sort_order' => 77, 'is_active' => true, 'created_at' => $now, 'updated_at' => $now],
     ]);
 
-    $migration->up();
+    $phase1->up();
+    $phase5->up();
 
     $siteAAfterInstall = DB::table('domain_deployment_hooks')
         ->where('config_id', $configA->id)
@@ -202,4 +231,38 @@ it('re-indexes sort_order cleanly per site and slot and handles duplicates and u
     expect($siteBAfterInstall)->toBe([
         ['B Only Hook', 0],
     ]);
+});
+
+it('defensively backfills invalid slot values during the Phase 5 contract migration and supports rollback', function () {
+    $config = createDeploymentConfigFor('defensive.example.com', 'defuser');
+    $phase5 = loadDropLegacyColumnsMigration();
+
+    $phase5->down();
+    expect(Schema::hasColumn('domain_deployment_hooks', 'stage'))->toBeTrue();
+    expect(Schema::hasColumn('domain_deployment_hooks', 'position'))->toBeTrue();
+    expect(array_column(Schema::getIndexes('domain_deployment_hooks'), 'name'))
+        ->toContain('dd_hooks_config_stage_pos_sort_idx');
+
+    $now = now();
+    DB::table('domain_deployment_hooks')->insert([
+        'config_id' => $config->id,
+        'name' => 'Corrupt Slot Row',
+        'slot' => 'legacy_before_install',
+        'script' => 'echo fallback',
+        'sort_order' => 0,
+        'is_active' => true,
+        'created_at' => $now,
+        'updated_at' => $now,
+    ]);
+
+    $phase5->up();
+
+    expect(Schema::hasColumn('domain_deployment_hooks', 'stage'))->toBeFalse();
+    expect(Schema::hasColumn('domain_deployment_hooks', 'position'))->toBeFalse();
+    expect(array_column(Schema::getIndexes('domain_deployment_hooks'), 'name'))
+        ->not->toContain('dd_hooks_config_stage_pos_sort_idx');
+
+    $row = DB::table('domain_deployment_hooks')->where('config_id', $config->id)->first();
+    expect($row->slot)->toBe(DeploymentHookSlot::AfterPurge->value);
+    expect((int) $row->sort_order)->toBe(0);
 });
