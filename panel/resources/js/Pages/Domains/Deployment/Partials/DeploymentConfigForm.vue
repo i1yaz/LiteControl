@@ -317,7 +317,7 @@ function submit(): void {
 
                 <UiInput
                     v-model="form.web_subpath"
-                    label="Web Subpath"
+                    label="Doc Root"
                     placeholder="public"
                     :error="form.errors.web_subpath"
                 />
