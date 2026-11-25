@@ -215,8 +215,8 @@ func DownloadAndExtractTarball(ctx context.Context, opts TarballFetchOptions, lo
 	return warnings, nil
 }
 
-// runUnprivilegedTarballExtract re-invokes the current lc-cli binary with
-// `deploy extract-tarball` strictly under the tenant's UID/GID.
+// runUnprivilegedTarballExtract extracts archivePath into releaseDir strictly under
+// the tenant's UID/GID using system `tar` so `lc-cli-go` can remain 0750 root:root.
 func runUnprivilegedTarballExtract(
 	ctx context.Context,
 	linuxUser string,
@@ -225,19 +225,16 @@ func runUnprivilegedTarballExtract(
 	opts TarExtractOptions,
 	logWriter io.Writer,
 ) error {
-	selfBin, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("resolve lc-cli executable path: %w", err)
+	strip := opts.StripComponents
+	if strip < 0 {
+		strip = 0
 	}
 
 	cmdStr := fmt.Sprintf(
-		"%s deploy extract-tarball --archive %s --dest %s --strip-components %d --max-bytes %d --max-files %d",
-		shellQuote(selfBin),
+		"tar -xzf %s --strip-components=%d --no-same-owner --no-same-permissions -C %s",
 		shellQuote(archivePath),
+		strip,
 		shellQuote(releaseDir),
-		opts.StripComponents,
-		opts.MaxDecompressedBytes,
-		opts.MaxFiles,
 	)
 
 	if err := RunAsTenantUser(ctx, linuxUser, releaseDir, nil, cmdStr, logWriter); err != nil {
