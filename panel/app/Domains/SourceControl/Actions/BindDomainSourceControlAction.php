@@ -40,8 +40,12 @@ class BindDomainSourceControlAction
         array $deploymentSettings = [],
         ?string $ipAddress = null,
     ): array {
-        if ($provider->user_id !== $actor->id || $domainUserId !== $provider->user_id) {
+        if (! $actor->isAdmin() && ($provider->user_id !== $actor->id || $domainUserId !== $provider->user_id)) {
             throw new AuthorizationException('You may only bind a domain to a Source Control provider that belongs to the same account.');
+        }
+
+        if ($actor->isAdmin() && $domainUserId !== $provider->user_id && ! $provider->user?->isAdmin()) {
+            throw new AuthorizationException('You may only bind a domain to a Source Control provider owned by the domain owner or an administrator.');
         }
 
         if ($provider->status !== GitProviderStatus::Active) {

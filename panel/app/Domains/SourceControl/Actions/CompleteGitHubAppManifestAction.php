@@ -88,9 +88,12 @@ class CompleteGitHubAppManifestAction
             is_string($statePayload['return_to'] ?? null) ? $statePayload['return_to'] : null
         )->value;
 
+        $ownerUserId = (int) ($statePayload['owner_user_id'] ?? $user->id);
+
         try {
             $provider = DB::transaction(function () use (
                 $user,
+                $ownerUserId,
                 $providerUuid,
                 $label,
                 $externalAppId,
@@ -104,7 +107,7 @@ class CompleteGitHubAppManifestAction
             ): GitProvider {
                 $provider = GitProvider::create([
                     'uuid' => $providerUuid,
-                    'user_id' => $user->id,
+                    'user_id' => $ownerUserId,
                     'provider' => 'github_app',
                     'label' => $label,
                     'base_url' => 'https://api.github.com',
@@ -162,6 +165,7 @@ class CompleteGitHubAppManifestAction
             self::INSTALL_STATE_CACHE_PREFIX.$installState,
             [
                 'user_id' => $user->id,
+                'owner_user_id' => $ownerUserId,
                 'git_provider_id' => $provider->id,
                 'return_to' => $returnTo,
             ],

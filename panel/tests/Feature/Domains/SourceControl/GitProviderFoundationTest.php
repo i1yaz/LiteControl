@@ -154,12 +154,15 @@ it('forbids User B from viewing, deleting, or binding User A git provider (403)'
     expect(Gate::forUser($userA)->allows('delete', $provider))->toBeTrue();
     expect(Gate::forUser($userA)->allows('bind', $provider))->toBeTrue();
 
-    foreach ([$userB, $admin] as $otherUser) {
-        expect(Gate::forUser($otherUser)->denies('view', $provider))->toBeTrue();
-        expect(Gate::forUser($otherUser)->denies('update', $provider))->toBeTrue();
-        expect(Gate::forUser($otherUser)->denies('delete', $provider))->toBeTrue();
-        expect(Gate::forUser($otherUser)->denies('bind', $provider))->toBeTrue();
-    }
+    expect(Gate::forUser($userB)->denies('view', $provider))->toBeTrue();
+    expect(Gate::forUser($userB)->denies('update', $provider))->toBeTrue();
+    expect(Gate::forUser($userB)->denies('delete', $provider))->toBeTrue();
+    expect(Gate::forUser($userB)->denies('bind', $provider))->toBeTrue();
+
+    expect(Gate::forUser($admin)->allows('view', $provider))->toBeTrue();
+    expect(Gate::forUser($admin)->allows('update', $provider))->toBeTrue();
+    expect(Gate::forUser($admin)->allows('delete', $provider))->toBeTrue();
+    expect(Gate::forUser($admin)->allows('bind', $provider))->toBeTrue();
 
     // Verify per-user provider cap enforcement
     config()->set('litecontrol.max_git_providers_per_user', 1);

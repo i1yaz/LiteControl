@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\SourceControl;
 
+use App\Domains\Identity\Models\User;
 use App\Domains\SourceControl\Actions\CheckGitProviderHealthAction;
 use App\Domains\SourceControl\Actions\CompleteGitHubAppInstallationAction;
 use App\Domains\SourceControl\Actions\CompleteGitHubAppManifestAction;
@@ -30,13 +31,18 @@ class GitHubAppController extends Controller
         InitiateGitHubAppManifestAction $action,
     ): JsonResponse {
         $validated = $request->validated();
+        $actor = $request->user();
+        $owner = ($actor->isAdmin() && isset($validated['owner_user_id']))
+            ? User::query()->findOrFail((int) $validated['owner_user_id'])
+            : $actor;
 
         $result = $action->handle(
-            user: $request->user(),
+            user: $actor,
             requestHost: $request->getHost(),
             label: $validated['label'] ?? null,
             orgName: GitHubOrgName::fromNullable($validated['org_name'] ?? null),
             returnTo: SafeReturnPath::fromNullable($validated['return_to'] ?? null),
+            owner: $owner,
         );
 
         return response()->json($result);

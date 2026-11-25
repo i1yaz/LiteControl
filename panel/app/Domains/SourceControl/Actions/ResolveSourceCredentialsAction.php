@@ -33,7 +33,7 @@ class ResolveSourceCredentialsAction
         string $fetchDriver = 'provider_tarball',
         ?string $commitSha = null,
     ): ResolvedFetchPayload {
-        if ((int) $provider->user_id !== $domainOwnerUserId) {
+        if ((int) $provider->user_id !== $domainOwnerUserId && ! $provider->user?->isAdmin()) {
             Log::alert('Blocked provider-mode deployment due to domain/provider owner mismatch.', [
                 'git_provider_id' => $provider->id,
                 'provider_user_id' => $provider->user_id,

@@ -55,7 +55,7 @@ class SourceControlController extends Controller
             : rtrim((string) config('app.url', ''), '/');
 
         $providers = GitProvider::query()
-            ->forUser($user->id)
+            ->when(! $user->isAdmin(), static fn ($query) => $query->forUser($user->id))
             ->latest('id')
             ->get();
 

@@ -133,6 +133,7 @@ async function connectGitHubFromDeploy() {
             credentials: 'same-origin',
             body: JSON.stringify({
                 return_to: `/domains/${props.domain.id}/deploy`,
+                owner_user_id: props.domain.user_id,
             }),
         });
 

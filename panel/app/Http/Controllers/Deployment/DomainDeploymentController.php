@@ -58,8 +58,14 @@ class DomainDeploymentController extends Controller
 
         $gate = $evaluateGate->handle(requestHost: $request->getHost());
 
+        $viewer = $request->user();
+        $allowedOwnerIds = [(int) $domain->user_id];
+        if ($viewer !== null && $viewer->isAdmin() && ! in_array((int) $viewer->id, $allowedOwnerIds, true)) {
+            $allowedOwnerIds[] = (int) $viewer->id;
+        }
+
         $providersQuery = GitProvider::query()
-            ->forUser((int) $domain->user_id)
+            ->whereIn('user_id', $allowedOwnerIds)
             ->where(function ($query) use ($config): void {
                 $query->where('status', GitProviderStatus::Active->value);
                 if ($config->git_provider_id !== null) {

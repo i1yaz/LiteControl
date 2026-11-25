@@ -38,7 +38,10 @@ class InitiateGitHubAppManifestAction
         ?string $label = null,
         ?GitHubOrgName $orgName = null,
         ?SafeReturnPath $returnTo = null,
+        ?User $owner = null,
     ): array {
+        $ownerUser = $owner ?? $user;
+
         $gate = $this->evaluatePanelUrlGate->handle(requestHost: $requestHost);
         if (! $gate->allowed || $gate->configuredUrl === null) {
             throw ValidationException::withMessages([
@@ -47,7 +50,7 @@ class InitiateGitHubAppManifestAction
         }
 
         $maxProviders = (int) config('litecontrol.max_git_providers_per_user', 10);
-        $currentCount = GitProvider::query()->forUser($user->id)->count();
+        $currentCount = GitProvider::query()->forUser($ownerUser->id)->count();
         if ($currentCount >= $maxProviders) {
             throw ValidationException::withMessages([
                 'provider' => ["You have reached the maximum limit of {$maxProviders} connected Source Control providers."],
@@ -92,6 +95,7 @@ class InitiateGitHubAppManifestAction
             self::STATE_CACHE_PREFIX.$state,
             [
                 'user_id' => $user->id,
+                'owner_user_id' => $ownerUser->id,
                 'provider_uuid' => $providerUuid,
                 'label' => $normalizedLabel,
                 'return_to' => $safeReturnPath,

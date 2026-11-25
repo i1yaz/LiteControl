@@ -18,21 +18,21 @@ class GitProviderPolicy
 
     public function view(User $user, GitProvider $provider): bool
     {
-        return $provider->user_id === $user->id;
+        return $user->isAdmin() || $provider->user_id === $user->id;
     }
 
     public function update(User $user, GitProvider $provider): bool
     {
-        return $provider->user_id === $user->id;
+        return $user->isAdmin() || $provider->user_id === $user->id;
     }
 
     public function delete(User $user, GitProvider $provider): bool
     {
-        return $provider->user_id === $user->id;
+        return $user->isAdmin() || $provider->user_id === $user->id;
     }
 
     public function bind(User $user, GitProvider $provider): bool
     {
-        return $provider->user_id === $user->id;
+        return $user->isAdmin() || $provider->user_id === $user->id;
     }
 }

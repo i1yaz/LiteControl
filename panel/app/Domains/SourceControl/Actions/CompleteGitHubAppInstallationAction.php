@@ -124,8 +124,9 @@ class CompleteGitHubAppInstallationAction
         }
 
         $providerId = (int) ($statePayload['git_provider_id'] ?? 0);
+        $ownerUserId = (int) ($statePayload['owner_user_id'] ?? $user->id);
         $provider = GitProvider::query()
-            ->forUser($user->id)
+            ->when(! $user->isAdmin(), static fn ($query) => $query->forUser($ownerUserId))
             ->where('provider', 'github_app')
             ->find($providerId);
 

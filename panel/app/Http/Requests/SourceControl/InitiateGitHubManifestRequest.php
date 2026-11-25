@@ -23,6 +23,7 @@ class InitiateGitHubManifestRequest extends FormRequest
     {
         return [
             'label' => ['nullable', 'string', 'max:120'],
+            'owner_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'org_name' => [
                 'nullable',
                 'string',
