@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Deployment;
 
 use App\Domains\Deployment\Actions\GenerateDeployKeyAction;
+use App\Domains\Deployment\Actions\GetDeploymentPipelineAction;
 use App\Domains\Deployment\Actions\RollbackDeploymentAction;
 use App\Domains\Deployment\Jobs\RunAtomicDeploymentJob;
 use App\Domains\Deployment\Models\DomainDeployment;
 use App\Domains\Deployment\Models\DomainDeploymentConfig;
+use App\Domains\Deployment\Services\DeploymentPipelineService;
 use App\Domains\Deployment\Services\DeploymentPresetService;
 use App\Domains\SourceControl\Actions\BindDomainSourceControlAction;
 use App\Domains\SourceControl\Actions\EvaluatePanelUrlGateAction;
@@ -39,6 +41,7 @@ class DomainDeploymentController extends Controller
         Domain $domain,
         DeploymentPresetService $presets,
         EvaluatePanelUrlGateAction $evaluateGate,
+        GetDeploymentPipelineAction $getPipeline,
     ): Response {
         $config = DomainDeploymentConfig::with('hooks')
             ->firstOrCreate(
@@ -120,6 +123,7 @@ class DomainDeploymentController extends Controller
             'domain' => $domain,
             'config' => $config,
             'hooks' => $config->hooks,
+            'pipeline' => $getPipeline->execute($config),
             'deployments' => $deployments,
             'presets' => $presets->all(),
             'sourceControl' => [
@@ -232,8 +236,11 @@ class DomainDeploymentController extends Controller
         return back()->with('success', $message);
     }
 
-    public function updateConfig(UpdateDeploymentConfigRequest $request, Domain $domain): RedirectResponse
-    {
+    public function updateConfig(
+        UpdateDeploymentConfigRequest $request,
+        Domain $domain,
+        DeploymentPipelineService $pipelineService,
+    ): RedirectResponse {
         $validated = $request->validated();
 
         $config = DomainDeploymentConfig::firstOrCreate(
@@ -244,6 +251,10 @@ class DomainDeploymentController extends Controller
         $wasSimple = $config->mode === 'simple';
 
         $updateData = collect($validated)->except(['api_token', 'webhook_secret', 'deploy_key_private', 'deploy_key_public'])->all();
+
+        if (array_key_exists('install_script', $validated)) {
+            $updateData['install_script'] = $pipelineService->normalizeScript($validated['install_script']);
+        }
 
         if (! empty($validated['api_token'])) {
             $updateData['api_token_encrypted'] = $validated['api_token'];

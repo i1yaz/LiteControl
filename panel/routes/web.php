@@ -94,7 +94,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/domains/{domain}/deploy/logs/{deployment}', [DomainDeploymentController::class, 'log'])->name('domains.deploy.log');
     Route::get('/domains/{domain}/deploy/env', [DomainDeploymentEnvController::class, 'show'])->name('domains.deploy.env.show');
     Route::put('/domains/{domain}/deploy/env', [DomainDeploymentEnvController::class, 'update'])->name('domains.deploy.env.update');
+    Route::get('/domains/{domain}/deploy/pipeline', [DomainDeploymentHookController::class, 'pipeline'])->name('domains.deploy.pipeline.show');
+    Route::put('/domains/{domain}/deploy/pipeline/install-script', [DomainDeploymentHookController::class, 'updateInstallScript'])->name('domains.deploy.pipeline.install-script');
     Route::post('/domains/{domain}/deploy/hooks', [DomainDeploymentHookController::class, 'store'])->name('domains.deploy.hooks.store');
+    Route::put('/domains/{domain}/deploy/hooks/reorder', [DomainDeploymentHookController::class, 'reorder'])->name('domains.deploy.hooks.reorder');
     Route::put('/domains/{domain}/deploy/hooks/{hook}', [DomainDeploymentHookController::class, 'update'])->name('domains.deploy.hooks.update');
     Route::delete('/domains/{domain}/deploy/hooks/{hook}', [DomainDeploymentHookController::class, 'destroy'])->name('domains.deploy.hooks.destroy');
 
