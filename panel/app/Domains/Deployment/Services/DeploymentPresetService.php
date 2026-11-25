@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Deployment\Services;
 
+use App\Domains\Deployment\Enums\DeploymentHookSlot;
+
 final class DeploymentPresetService
 {
     /**
@@ -14,7 +16,8 @@ final class DeploymentPresetService
      *     web_subpath: string,
      *     shared_dirs: list<string>,
      *     shared_files: list<string>,
-     *     hooks: list<array{name: string, stage: string, position: string, script: string, sort_order: int}>
+     *     install_script: ?string,
+     *     hooks: list<array{name: string, slot: string, script: string, sort_order: int}>
      * }>
      */
     public function all(): array
@@ -25,48 +28,37 @@ final class DeploymentPresetService
                 'web_subpath' => 'public',
                 'shared_dirs' => ['storage'],
                 'shared_files' => ['.env'],
+                'install_script' => '{{composer}} install --no-dev --optimize-autoloader --no-interaction',
                 'hooks' => [
                     [
-                        'name' => 'Install Composer Dependencies',
-                        'stage' => 'install',
-                        'position' => 'run',
-                        'script' => '{{composer}} install --no-dev --optimize-autoloader --no-interaction',
-                        'sort_order' => 10,
-                    ],
-                    [
                         'name' => 'Run Database Migrations',
-                        'stage' => 'install',
-                        'position' => 'after',
+                        'slot' => DeploymentHookSlot::AfterInstall->value,
                         'script' => '{{php}} {{release}}/artisan migrate --force',
-                        'sort_order' => 20,
+                        'sort_order' => 0,
                     ],
                     [
                         'name' => 'Cache Configuration',
-                        'stage' => 'install',
-                        'position' => 'after',
+                        'slot' => DeploymentHookSlot::AfterInstall->value,
                         'script' => '{{php}} {{release}}/artisan config:cache',
-                        'sort_order' => 30,
+                        'sort_order' => 1,
                     ],
                     [
                         'name' => 'Cache Routes',
-                        'stage' => 'install',
-                        'position' => 'after',
+                        'slot' => DeploymentHookSlot::AfterInstall->value,
                         'script' => '{{php}} {{release}}/artisan route:cache',
-                        'sort_order' => 40,
+                        'sort_order' => 2,
                     ],
                     [
                         'name' => 'Cache Views',
-                        'stage' => 'install',
-                        'position' => 'after',
+                        'slot' => DeploymentHookSlot::AfterInstall->value,
                         'script' => '{{php}} {{release}}/artisan view:cache',
-                        'sort_order' => 50,
+                        'sort_order' => 3,
                     ],
                     [
                         'name' => 'Restart Queue Workers',
-                        'stage' => 'activate',
-                        'position' => 'after',
+                        'slot' => DeploymentHookSlot::AfterActivate->value,
                         'script' => '{{php}} {{release}}/artisan queue:restart',
-                        'sort_order' => 60,
+                        'sort_order' => 0,
                     ],
                 ],
             ],
@@ -75,6 +67,7 @@ final class DeploymentPresetService
                 'web_subpath' => '',
                 'shared_dirs' => ['wp-content/uploads', 'wp-content/upgrade', 'wp-content/cache'],
                 'shared_files' => ['wp-config.php', '.htaccess'],
+                'install_script' => null,
                 'hooks' => [],
             ],
             'node' => [
@@ -82,28 +75,15 @@ final class DeploymentPresetService
                 'web_subpath' => 'public',
                 'shared_dirs' => ['storage', 'logs'],
                 'shared_files' => ['.env'],
-                'hooks' => [
-                    [
-                        'name' => 'Install NPM Dependencies',
-                        'stage' => 'install',
-                        'position' => 'run',
-                        'script' => 'npm ci',
-                        'sort_order' => 10,
-                    ],
-                    [
-                        'name' => 'Build Application',
-                        'stage' => 'install',
-                        'position' => 'after',
-                        'script' => 'npm run build',
-                        'sort_order' => 20,
-                    ],
-                ],
+                'install_script' => "npm ci\nnpm run build",
+                'hooks' => [],
             ],
             'custom' => [
                 'label' => 'Custom',
                 'web_subpath' => '',
                 'shared_dirs' => [],
                 'shared_files' => ['.env'],
+                'install_script' => null,
                 'hooks' => [],
             ],
         ];
@@ -117,7 +97,8 @@ final class DeploymentPresetService
      *     web_subpath: string,
      *     shared_dirs: list<string>,
      *     shared_files: list<string>,
-     *     hooks: list<array{name: string, stage: string, position: string, script: string, sort_order: int}>
+     *     install_script: ?string,
+     *     hooks: list<array{name: string, slot: string, script: string, sort_order: int}>
      * }
      */
     public function get(string $preset): array

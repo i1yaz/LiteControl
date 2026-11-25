@@ -43,14 +43,13 @@ class DomainDeploymentController extends Controller
         EvaluatePanelUrlGateAction $evaluateGate,
         GetDeploymentPipelineAction $getPipeline,
     ): Response {
-        $config = DomainDeploymentConfig::with('hooks')
-            ->firstOrCreate(
-                ['domain_id' => $domain->id],
-                [
-                    'webhook_token' => Str::random(40),
-                    'php_version' => preg_replace('/[^0-9]/', '', (string) ($domain->php_version ?? '83')) ?: '83',
-                ],
-            );
+        $config = DomainDeploymentConfig::firstOrCreate(
+            ['domain_id' => $domain->id],
+            [
+                'webhook_token' => Str::random(40),
+                'php_version' => preg_replace('/[^0-9]/', '', (string) ($domain->php_version ?? '83')) ?: '83',
+            ],
+        );
 
         $deployments = DomainDeployment::query()
             ->where('domain_id', $domain->id)
@@ -122,7 +121,6 @@ class DomainDeploymentController extends Controller
         return Inertia::render('Domains/Deployment/Index', [
             'domain' => $domain,
             'config' => $config,
-            'hooks' => $config->hooks,
             'pipeline' => $getPipeline->execute($config),
             'deployments' => $deployments,
             'presets' => $presets->all(),

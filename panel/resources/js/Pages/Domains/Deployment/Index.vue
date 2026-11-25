@@ -22,9 +22,15 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    hooks: {
-        type: Array,
-        default: () => [],
+    pipeline: {
+        type: Object,
+        default: () => ({
+            stages: [],
+            slots: [],
+            placeholders: [],
+            install_script: null,
+            hooks: [],
+        }),
     },
     deployments: {
         type: Array,
@@ -323,7 +329,7 @@ function triggerDeploy() {
                 <DeploymentHooksPipeline
                     v-if="isAtomic"
                     :domain="{ id: domain.id, name: domainName }"
-                    :hooks="hooks"
+                    :pipeline="pipeline"
                 />
 
                 <DeploymentHistoryTable

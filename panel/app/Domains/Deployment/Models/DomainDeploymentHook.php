@@ -14,8 +14,6 @@ class DomainDeploymentHook extends Model
         'config_id',
         'name',
         'slot',
-        'stage',
-        'position',
         'script',
         'sort_order',
         'is_active',
