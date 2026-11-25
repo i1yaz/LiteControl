@@ -51,6 +51,11 @@ const props = defineProps({
 
 const domainName = computed(() => props.domain.domain ?? props.domain.name ?? `Domain #${props.domain.id}`);
 const isAtomic = computed(() => props.config.mode === 'atomic');
+const isProviderBound = computed(() =>
+    props.config.source_mode !== 'provider'
+    || (Boolean(props.config.git_provider_id) && Boolean(props.config.remote_repo_id)),
+);
+const canDeploy = computed(() => isAtomic.value && isProviderBound.value);
 
 const activeProviders = computed(() =>
     (props.sourceControl?.providers ?? []).filter((p) => p.status === 'active'),
@@ -158,7 +163,7 @@ function openSwitchModal(targetMode) {
 }
 
 function triggerDeploy() {
-    if (!isAtomic.value || isDeploying.value) {
+    if (!canDeploy.value || isDeploying.value) {
         return;
     }
 
@@ -205,7 +210,7 @@ function triggerDeploy() {
                         </UiButton>
                         <UiButton
                             variant="primary"
-                            :disabled="!isAtomic || isDeploying"
+                            :disabled="!canDeploy || isDeploying"
                             @click="triggerDeploy"
                         >
                             {{ isDeploying ? 'Queueing...' : 'Deploy Now' }}

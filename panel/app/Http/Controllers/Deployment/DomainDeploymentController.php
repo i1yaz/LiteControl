@@ -296,6 +296,10 @@ class DomainDeploymentController extends Controller
             return back()->withErrors(['mode' => 'Switch deployment mode to Atomic before triggering an atomic deployment.']);
         }
 
+        if ($config->source_mode === SourceMode::Provider && ($config->git_provider_id === null || empty($config->remote_repo_id))) {
+            return back()->withErrors(['source_mode' => 'Select a connected Git provider and repository, then save your Source Control binding before deploying.']);
+        }
+
         $deployment = DomainDeployment::create([
             'domain_id' => $domain->id,
             'release_id' => now()->format('Ymd_His'),
