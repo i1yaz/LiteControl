@@ -24,7 +24,7 @@ class EvaluatePanelUrlGateAction
 
     public function handle(?string $requestHost = null, ?string $configuredUrl = null): PanelUrlGateResult
     {
-        $url = trim($configuredUrl ?? (string) config('app.url', ''));
+        $url = $this->resolveConfiguredUrl($configuredUrl);
 
         $parsed = $url !== '' ? parse_url($url) : false;
         $scheme = is_array($parsed) && is_string($parsed['scheme'] ?? null)
@@ -103,6 +103,112 @@ class EvaluatePanelUrlGateAction
             configuredUrl: $url,
             certExpiresAt: $certificate->expiresAt,
         );
+    }
+
+    private function resolveConfiguredUrl(?string $configuredUrl): string
+    {
+        if ($configuredUrl !== null) {
+            return trim($configuredUrl);
+        }
+
+        $url = trim((string) config('app.url', ''));
+        if ($this->isHttpsPublicFqdnUrl($url)) {
+            return $url;
+        }
+
+        // If config:cache is stale (e.g. still holding the initial server IP after Panel SSL was issued),
+        // read APP_URL directly from .env so the live configured domain is honored immediately.
+        if (function_exists('app') && app()->configurationIsCached()) {
+            $envUrl = $this->readAppUrlFromEnvFile();
+            if ($envUrl !== null && $this->isHttpsPublicFqdnUrl($envUrl)) {
+                return $envUrl;
+            }
+        }
+
+        // Fall back to /etc/litecontrol/panel_domain (written by lc-cli ssl panel-ssl) when present.
+        $panelDomainUrl = $this->readPanelDomainUrl($url);
+        if ($panelDomainUrl !== null) {
+            return $panelDomainUrl;
+        }
+
+        return $url;
+    }
+
+    private function isHttpsPublicFqdnUrl(string $url): bool
+    {
+        if ($url === '') {
+            return false;
+        }
+
+        $parsed = parse_url($url);
+        if (! is_array($parsed)) {
+            return false;
+        }
+
+        $scheme = is_string($parsed['scheme'] ?? null) ? strtolower($parsed['scheme']) : '';
+        $host = is_string($parsed['host'] ?? null) ? $this->normalizeHost($parsed['host']) : '';
+
+        return $scheme === 'https' && $this->isValidPublicFqdn($host);
+    }
+
+    private function readAppUrlFromEnvFile(): ?string
+    {
+        $envPath = base_path('.env');
+        if (! is_file($envPath) || ! is_readable($envPath)) {
+            return null;
+        }
+
+        $contents = @file_get_contents($envPath);
+        if (! is_string($contents) || $contents === '') {
+            return null;
+        }
+
+        if (! preg_match('/^\s*APP_URL\s*=\s*(.+)$/m', $contents, $matches)) {
+            return null;
+        }
+
+        $value = trim($matches[1]);
+        if (
+            (str_starts_with($value, '"') && str_ends_with($value, '"'))
+            || (str_starts_with($value, "'") && str_ends_with($value, "'"))
+        ) {
+            $value = substr($value, 1, -1);
+        }
+
+        return trim($value) !== '' ? trim($value) : null;
+    }
+
+    private function readPanelDomainUrl(string $fallbackUrl): ?string
+    {
+        $domainFile = (string) config('litecontrol.panel_domain_file', '/etc/litecontrol/panel_domain');
+        if ($domainFile === '' || ! is_file($domainFile) || ! is_readable($domainFile)) {
+            return null;
+        }
+
+        $domain = $this->normalizeHost(trim((string) @file_get_contents($domainFile)));
+        if (! $this->isValidPublicFqdn($domain)) {
+            return null;
+        }
+
+        $port = null;
+        $portFile = (string) config('litecontrol.panel_port_file', '/etc/litecontrol/port');
+        if ($portFile !== '' && is_file($portFile) && is_readable($portFile)) {
+            $filePort = (int) trim((string) @file_get_contents($portFile));
+            if ($filePort > 0 && $filePort <= 65535) {
+                $port = $filePort;
+            }
+        }
+
+        if ($port === null && $fallbackUrl !== '') {
+            $parsedPort = parse_url($fallbackUrl, PHP_URL_PORT);
+            if (is_int($parsedPort) && $parsedPort > 0 && $parsedPort <= 65535) {
+                $port = $parsedPort;
+            }
+        }
+
+        return ($port !== null && $port !== 443)
+            ? "https://{$domain}:{$port}"
+            : "https://{$domain}";
     }
 
     private function normalizeHost(string $host): string

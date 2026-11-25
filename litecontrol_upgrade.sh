@@ -492,6 +492,19 @@ upgrade_laravel_panel() {
             fi
         fi
 
+        if [[ -s "${LC_CONF_DIR}/panel_domain" && -f "${LC_PANEL_DIR}/.env" ]]; then
+            local saved_domain saved_port
+            saved_domain=$(tr -d ' \t\r\n' < "${LC_CONF_DIR}/panel_domain")
+            saved_port=$(get_panel_port)
+            if [[ -n "${saved_domain}" ]]; then
+                if grep -qE '^APP_URL=' "${LC_PANEL_DIR}/.env"; then
+                    sed -i -E "s|^APP_URL=.*|APP_URL=https://${saved_domain}:${saved_port}|" "${LC_PANEL_DIR}/.env"
+                else
+                    printf "\nAPP_URL=https://%s:%s\n" "${saved_domain}" "${saved_port}" >> "${LC_PANEL_DIR}/.env"
+                fi
+            fi
+        fi
+
         log_info "Running database migrations and refreshing caches..."
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan migrate --force"
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan optimize:clear"

@@ -200,6 +200,29 @@ it('clears SSL renewal warning when certificate has more than 14 days remaining'
     expect(Cache::get(CheckPanelSslExpiryCommand::WARNING_CACHE_KEY))->toBeNull();
 });
 
+it('falls back to panel_domain file when cached app.url still holds an IP address', function () {
+    $domainFile = tempnam(sys_get_temp_dir(), 'lc_panel_domain_');
+    $portFile = tempnam(sys_get_temp_dir(), 'lc_panel_port_');
+    file_put_contents($domainFile, "panel.example.com\n");
+    file_put_contents($portFile, "8090\n");
+
+    try {
+        config()->set('app.url', 'https://95.111.196.243:8090');
+        config()->set('litecontrol.panel_domain_file', $domainFile);
+        config()->set('litecontrol.panel_port_file', $portFile);
+
+        $action = new EvaluatePanelUrlGateAction(fakeSslInspector(validTrustedCert(['panel.example.com'])));
+        $result = $action->handle(requestHost: 'panel.example.com');
+
+        expect($result->allowed)->toBeTrue();
+        expect($result->code)->toBe(PanelUrlGateResult::CODE_OK);
+        expect($result->configuredUrl)->toBe('https://panel.example.com:8090');
+    } finally {
+        @unlink($domainFile);
+        @unlink($portFile);
+    }
+});
+
 it('returns missing inspection result cleanly when certificate file does not exist', function () {
     $adapter = new OpenSslCertificateInspectorAdapter;
     $result = $adapter->inspect('panel.example.com', sys_get_temp_dir().DIRECTORY_SEPARATOR.'nonexistent_lc_cert_'.uniqid().'.pem');
