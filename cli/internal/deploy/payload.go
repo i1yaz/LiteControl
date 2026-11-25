@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -18,6 +20,9 @@ const (
 
 	// MaxStdinPayloadBytes caps the size of the JSON stdin fetch payload.
 	MaxStdinPayloadBytes = 1 << 20 // 1 MiB
+
+	// DefaultHookTimeout is the fallback per-hook execution timeout when not configured in the payload or environment.
+	DefaultHookTimeout = 300 * time.Second
 )
 
 // FetchCredentials holds short-lived execution-time credentials received over stdin.
@@ -201,20 +206,38 @@ func ReadFetchPayload(r io.Reader, timeout time.Duration) (FetchPayload, error) 
 
 // Payload represents the JSON execution spec written by Laravel (deploy_{release_id}.json).
 type Payload struct {
-	DeploymentID int64             `json:"deployment_id"`
-	ReleaseID    string            `json:"release_id"`
-	LinuxUser    string            `json:"linux_user"`
-	Domain       string            `json:"domain"`
-	DomainRoot   string            `json:"domain_root"`
-	WebSubpath   string            `json:"web_subpath"`
-	PhpBinary    string            `json:"php_binary"`
-	ComposerCmd  string            `json:"composer_cmd"`
-	Repo         RepoConfig        `json:"repo"`
-	SharedDirs   []string          `json:"shared_dirs"`
-	SharedFiles  []string          `json:"shared_files"`
-	KeepReleases int               `json:"keep_releases"`
-	HealthCheck  HealthCheckConfig `json:"health_check"`
-	Hooks        HooksConfig       `json:"hooks"`
+	SiteID             int64             `json:"site_id"`
+	DeploymentID       int64             `json:"deployment_id"`
+	ReleaseID          string            `json:"release_id"`
+	LinuxUser          string            `json:"linux_user"`
+	Domain             string            `json:"domain"`
+	DomainRoot         string            `json:"domain_root"`
+	WebSubpath         string            `json:"web_subpath"`
+	PhpBinary          string            `json:"php_binary"`
+	ComposerCmd        string            `json:"composer_cmd"`
+	InstallScript      *string           `json:"install_script,omitempty"`
+	HookTimeoutSeconds int               `json:"hook_timeout_seconds,omitempty"`
+	Repo               RepoConfig        `json:"repo"`
+	SharedDirs         []string          `json:"shared_dirs"`
+	SharedFiles        []string          `json:"shared_files"`
+	KeepReleases       int               `json:"keep_releases"`
+	HealthCheck        HealthCheckConfig `json:"health_check"`
+	Hooks              HooksConfig       `json:"hooks"`
+}
+
+// HookTimeout returns the effective per-hook execution timeout for this deployment.
+func (p Payload) HookTimeout() time.Duration {
+	if p.HookTimeoutSeconds > 0 {
+		return time.Duration(p.HookTimeoutSeconds) * time.Second
+	}
+
+	if raw := strings.TrimSpace(os.Getenv("LC_DEPLOY_HOOK_TIMEOUT_SECONDS")); raw != "" {
+		if secs, err := strconv.Atoi(raw); err == nil && secs > 0 {
+			return time.Duration(secs) * time.Second
+		}
+	}
+
+	return DefaultHookTimeout
 }
 
 // RepoConfig describes the repository source and fetch driver.
@@ -236,17 +259,43 @@ type HealthCheckConfig struct {
 	AutoRollback   bool   `json:"auto_rollback"`
 }
 
-// HooksConfig holds ordered shell commands for each lifecycle stage.
+// HookSpec represents a custom hook entry in one of the 5 canonical slots.
+type HookSpec struct {
+	ID     int64  `json:"id"`
+	Name   string `json:"name"`
+	Script string `json:"script"`
+}
+
+// UnmarshalJSON accepts either a structured HookSpec object or a plain script string.
+func (h *HookSpec) UnmarshalJSON(data []byte) error {
+	trimmed := strings.TrimSpace(string(data))
+	if strings.HasPrefix(trimmed, "\"") {
+		var script string
+		if err := json.Unmarshal(data, &script); err != nil {
+			return err
+		}
+		h.ID = 0
+		h.Name = ""
+		h.Script = script
+		return nil
+	}
+
+	type hookSpecAlias HookSpec
+	var alias hookSpecAlias
+	if err := json.Unmarshal(data, &alias); err != nil {
+		return err
+	}
+	*h = HookSpec(alias)
+	return nil
+}
+
+// HooksConfig holds ordered custom hooks strictly across the 5 canonical slots.
 type HooksConfig struct {
-	BeforeClone    []string `json:"before_clone"`
-	AfterClone     []string `json:"after_clone"`
-	BeforeInstall  []string `json:"before_install"`
-	Install        []string `json:"install"`
-	AfterInstall   []string `json:"after_install"`
-	BeforeActivate []string `json:"before_activate"`
-	AfterActivate  []string `json:"after_activate"`
-	BeforePurge    []string `json:"before_purge"`
-	AfterPurge     []string `json:"after_purge"`
+	BeforeClone   []HookSpec `json:"before_clone"`
+	AfterClone    []HookSpec `json:"after_clone"`
+	AfterInstall  []HookSpec `json:"after_install"`
+	AfterActivate []HookSpec `json:"after_activate"`
+	AfterPurge    []HookSpec `json:"after_purge"`
 }
 
 // CommitMeta holds git commit metadata extracted before .git is removed.

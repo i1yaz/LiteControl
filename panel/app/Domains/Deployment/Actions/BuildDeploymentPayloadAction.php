@@ -4,24 +4,19 @@ declare(strict_types=1);
 
 namespace App\Domains\Deployment\Actions;
 
+use App\Domains\Deployment\Enums\DeploymentHookSlot;
 use App\Domains\Deployment\Models\DomainDeployment;
 use App\Domains\Deployment\Models\DomainDeploymentConfig;
+use App\Domains\Deployment\Models\DomainDeploymentHook;
+use App\Domains\Deployment\Services\DeploymentPipelineService;
 use App\Domains\SourceControl\Enums\SourceMode;
 use Illuminate\Support\Facades\File;
 
 class BuildDeploymentPayloadAction
 {
-    private const HOOK_SLOTS = [
-        'before_clone',
-        'after_clone',
-        'before_install',
-        'install',
-        'after_install',
-        'before_activate',
-        'after_activate',
-        'before_purge',
-        'after_purge',
-    ];
+    public function __construct(
+        private readonly DeploymentPipelineService $pipelineService = new DeploymentPipelineService,
+    ) {}
 
     /**
      * Assemble the JSON deployment spec for lc-cli and write it (plus any SSH deploy key)
@@ -69,6 +64,7 @@ class BuildDeploymentPayloadAction
         $payloadPath = "{$payloadsDir}/deploy_{$deployment->release_id}.json";
 
         $payload = [
+            'site_id' => (int) $domain->id,
             'deployment_id' => $deployment->id,
             'release_id' => $deployment->release_id,
             'linux_user' => $linuxUser,
@@ -78,6 +74,8 @@ class BuildDeploymentPayloadAction
             'web_subpath' => (string) $config->web_subpath,
             'php_binary' => $phpBinary,
             'composer_cmd' => $composerCmd,
+            'install_script' => $this->pipelineService->normalizeScript($config->install_script),
+            'hook_timeout_seconds' => max(1, (int) config('litecontrol.deployment_hook_timeout_seconds', 300)),
             'repo' => [
                 'driver' => (string) $config->fetch_driver,
                 'url' => (string) $config->repo_url,
@@ -105,26 +103,43 @@ class BuildDeploymentPayloadAction
     }
 
     /**
-     * Group active hooks into the 9 lc-cli hook slots.
+     * Group active hooks into the 5 canonical lc-cli hook slots, ordered by sort_order ASC, id ASC.
      *
-     * @return array<string, list<string>>
+     * @return array<string, list<array{id: int, name: string, script: string}>>
      */
     private function groupHooks(DomainDeploymentConfig $config): array
     {
-        $grouped = array_fill_keys(self::HOOK_SLOTS, []);
+        $grouped = array_fill_keys(DeploymentHookSlot::values(), []);
 
-        foreach ($config->hooks as $hook) {
+        $orderedHooks = $config->hooks->sortBy([
+            ['sort_order', 'asc'],
+            ['id', 'asc'],
+        ]);
+
+        /** @var DomainDeploymentHook $hook */
+        foreach ($orderedHooks as $hook) {
             if (! $hook->is_active) {
                 continue;
             }
 
-            $slot = $hook->position === 'run'
-                ? $hook->stage
-                : "{$hook->position}_{$hook->stage}";
+            $slot = $hook->slot instanceof DeploymentHookSlot
+                ? $hook->slot->value
+                : (string) $hook->slot;
 
-            if (array_key_exists($slot, $grouped)) {
-                $grouped[$slot][] = $hook->script;
+            if (! array_key_exists($slot, $grouped)) {
+                continue;
             }
+
+            $script = $this->pipelineService->normalizeScript($hook->script);
+            if ($script === null) {
+                continue;
+            }
+
+            $grouped[$slot][] = [
+                'id' => (int) $hook->id,
+                'name' => (string) $hook->name,
+                'script' => $script,
+            ];
         }
 
         return $grouped;

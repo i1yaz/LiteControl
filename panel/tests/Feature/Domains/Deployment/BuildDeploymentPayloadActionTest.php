@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Deployment\Actions\BuildDeploymentPayloadAction;
+use App\Domains\Deployment\Enums\DeploymentHookSlot;
 use App\Domains\Deployment\Models\DomainDeployment;
 use App\Domains\Deployment\Models\DomainDeploymentConfig;
 use App\Domains\Deployment\Models\DomainDeploymentHook;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\File;
 
 uses(Tests\TestCase::class, RefreshDatabase::class);
 
-it('assembles the lc-cli payload json, writes deploy key, and groups active hooks', function () {
+it('assembles the 5-slot lc-cli payload json with install_script, site_id, hook metadata, and deterministic ordering', function () {
     $user = User::factory()->create(['username' => 'client1']);
     $domain = Domain::create([
         'user_id' => $user->id,
@@ -36,36 +37,43 @@ it('assembles the lc-cli payload json, writes deploy key, and groups active hook
         'keep_releases' => 5,
         'shared_dirs' => ['storage'],
         'shared_files' => ['.env'],
+        'install_script' => "{{composer}} install --no-dev\r\n{{php}} {{release}}/artisan package:discover",
         'health_check_enabled' => true,
         'health_check_path' => '/',
         'auto_rollback' => true,
     ]);
 
-    DomainDeploymentHook::create([
+    $secondMigrate = DomainDeploymentHook::create([
         'config_id' => $config->id,
-        'name' => 'Composer Install',
-        'stage' => 'install',
-        'position' => 'run',
-        'script' => '{{composer}} install --no-dev',
+        'name' => 'Optimize',
+        'slot' => DeploymentHookSlot::AfterInstall,
+        'script' => '{{php}} {{release}}/artisan optimize',
+        'sort_order' => 20,
+        'is_active' => true,
+    ]);
+
+    $firstMigrate = DomainDeploymentHook::create([
+        'config_id' => $config->id,
+        'name' => 'Migrate',
+        'slot' => DeploymentHookSlot::AfterInstall,
+        'script' => "{{php}} {{release}}/artisan migrate --force\r\n",
         'sort_order' => 10,
         'is_active' => true,
     ]);
 
-    DomainDeploymentHook::create([
+    $beforeClone = DomainDeploymentHook::create([
         'config_id' => $config->id,
-        'name' => 'Migrate',
-        'stage' => 'install',
-        'position' => 'after',
-        'script' => '{{php}} {{release}}/artisan migrate --force',
-        'sort_order' => 20,
+        'name' => 'Pre-flight',
+        'slot' => DeploymentHookSlot::BeforeClone,
+        'script' => 'echo {{project}}',
+        'sort_order' => 1,
         'is_active' => true,
     ]);
 
     DomainDeploymentHook::create([
         'config_id' => $config->id,
         'name' => 'Disabled Hook',
-        'stage' => 'activate',
-        'position' => 'after',
+        'slot' => DeploymentHookSlot::AfterActivate,
         'script' => 'echo should-not-run',
         'sort_order' => 30,
         'is_active' => false,
@@ -85,6 +93,7 @@ it('assembles the lc-cli payload json, writes deploy key, and groups active hook
         $payload = $action->execute($config, $deployment, $tempHome);
 
         expect($payload)->toMatchArray([
+            'site_id' => $domain->id,
             'deployment_id' => $deployment->id,
             'release_id' => '20261119_020500_abc123',
             'linux_user' => 'client1',
@@ -92,6 +101,8 @@ it('assembles the lc-cli payload json, writes deploy key, and groups active hook
             'web_subpath' => 'public',
             'php_binary' => '/usr/local/lsws/lsphp83/bin/php',
             'composer_cmd' => '/usr/local/lsws/lsphp83/bin/php /usr/local/bin/composer',
+            'install_script' => "{{composer}} install --no-dev\n{{php}} {{release}}/artisan package:discover",
+            'hook_timeout_seconds' => 300,
             'shared_dirs' => ['storage'],
             'shared_files' => ['.env'],
             'keep_releases' => 5,
@@ -104,9 +115,29 @@ it('assembles the lc-cli payload json, writes deploy key, and groups active hook
             ],
         ]);
 
-        expect($payload['hooks']['install'])->toBe(['{{composer}} install --no-dev']);
-        expect($payload['hooks']['after_install'])->toBe(['{{php}} {{release}}/artisan migrate --force']);
+        expect(array_keys($payload['hooks']))->toBe(DeploymentHookSlot::values());
+        expect($payload['hooks']['before_clone'])->toBe([
+            [
+                'id' => $beforeClone->id,
+                'name' => 'Pre-flight',
+                'script' => 'echo {{project}}',
+            ],
+        ]);
+        expect($payload['hooks']['after_install'])->toBe([
+            [
+                'id' => $firstMigrate->id,
+                'name' => 'Migrate',
+                'script' => "{{php}} {{release}}/artisan migrate --force\n",
+            ],
+            [
+                'id' => $secondMigrate->id,
+                'name' => 'Optimize',
+                'script' => '{{php}} {{release}}/artisan optimize',
+            ],
+        ]);
+        expect($payload['hooks']['after_clone'])->toBe([]);
         expect($payload['hooks']['after_activate'])->toBe([]);
+        expect($payload['hooks']['after_purge'])->toBe([]);
 
         $expectedKeyPath = "{$tempHome}/client1/example.com/.deploy/keys/deploy_key";
         $expectedPayloadPath = "{$tempHome}/client1/example.com/.deploy/payloads/deploy_20261119_020500_abc123.json";
@@ -114,6 +145,43 @@ it('assembles the lc-cli payload json, writes deploy key, and groups active hook
         expect(File::exists($expectedKeyPath))->toBeTrue();
         expect(File::exists($expectedPayloadPath))->toBeTrue();
         expect(json_decode(File::get($expectedPayloadPath), true))->toBe($payload);
+    } finally {
+        File::deleteDirectory($tempHome);
+    }
+});
+
+it('normalizes whitespace-only install_script to null in payload', function () {
+    $user = User::factory()->create(['username' => 'client3']);
+    $domain = Domain::create([
+        'user_id' => $user->id,
+        'domain' => 'skip.example.com',
+        'document_root' => '/home/client3/skip.example.com/public_html',
+        'php_version' => '8.3',
+    ]);
+
+    $config = DomainDeploymentConfig::create([
+        'domain_id' => $domain->id,
+        'mode' => 'atomic',
+        'preset' => 'laravel',
+        'repo_url' => 'git@github.com:org/repo.git',
+        'branch' => 'main',
+        'fetch_driver' => 'shallow_git',
+        'webhook_token' => 'test-webhook-token-3',
+        'install_script' => "   \r\n\t  ",
+    ]);
+
+    $deployment = DomainDeployment::create([
+        'domain_id' => $domain->id,
+        'release_id' => '20261126_010000_skip',
+        'trigger_type' => 'manual',
+        'status' => 'queued',
+    ]);
+
+    $tempHome = sys_get_temp_dir().DIRECTORY_SEPARATOR.'lc_deploy_skip_'.uniqid();
+
+    try {
+        $payload = (new BuildDeploymentPayloadAction)->execute($config, $deployment, $tempHome);
+        expect($payload['install_script'])->toBeNull();
     } finally {
         File::deleteDirectory($tempHome);
     }
