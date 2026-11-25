@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Deployment\Models;
 
+use App\Domains\Deployment\Enums\DeploymentHookSlot;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -12,6 +13,7 @@ class DomainDeploymentHook extends Model
     protected $fillable = [
         'config_id',
         'name',
+        'slot',
         'stage',
         'position',
         'script',
@@ -20,6 +22,7 @@ class DomainDeploymentHook extends Model
     ];
 
     protected $attributes = [
+        'slot' => DeploymentHookSlot::AfterPurge->value,
         'sort_order' => 0,
         'is_active' => true,
     ];
@@ -27,6 +30,7 @@ class DomainDeploymentHook extends Model
     protected function casts(): array
     {
         return [
+            'slot' => DeploymentHookSlot::class,
             'sort_order' => 'integer',
             'is_active' => 'boolean',
         ];

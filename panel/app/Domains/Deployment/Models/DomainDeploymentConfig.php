@@ -36,6 +36,7 @@ class DomainDeploymentConfig extends Model
         'keep_releases',
         'shared_dirs',
         'shared_files',
+        'install_script',
         'health_check_enabled',
         'health_check_path',
         'auto_rollback',
@@ -93,7 +94,9 @@ class DomainDeploymentConfig extends Model
 
     public function hooks(): HasMany
     {
-        return $this->hasMany(DomainDeploymentHook::class, 'config_id')->orderBy('sort_order');
+        return $this->hasMany(DomainDeploymentHook::class, 'config_id')
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     public function deployments(): HasMany
