@@ -318,6 +318,8 @@ var mailReadonlyViews = []string{
 	"v_postfix_sender_mailboxes",
 	"v_postfix_sender_aliases",
 	"v_dovecot_users",
+	"mail_domains",
+	"mail_dkim_keys",
 }
 
 func ensureReadonlyDBUser(ctx context.Context, runner CommandRunner, dbHost, dbName, dbUser, dbPassword string) error {
@@ -332,16 +334,25 @@ func ensureReadonlyDBUser(ctx context.Context, runner CommandRunner, dbHost, dbN
 		return fmt.Errorf("neither mariadb nor mysql client found in PATH")
 	}
 
+	hosts := []string{dbHost}
+	if dbHost == "127.0.0.1" {
+		hosts = append(hosts, "localhost")
+	} else if dbHost == "localhost" {
+		hosts = append(hosts, "127.0.0.1")
+	}
+
 	escUser := escapeSQLString(dbUser)
-	escHost := escapeSQLString(dbHost)
 	escPass := escapeSQLString(dbPassword)
 	escDB := strings.ReplaceAll(dbName, "`", "``")
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "CREATE USER IF NOT EXISTS '%s'@'%s' IDENTIFIED BY '%s'; ", escUser, escHost, escPass)
-	fmt.Fprintf(&b, "ALTER USER '%s'@'%s' IDENTIFIED BY '%s'; ", escUser, escHost, escPass)
-	for _, view := range mailReadonlyViews {
-		fmt.Fprintf(&b, "GRANT SELECT ON `%s`.`%s` TO '%s'@'%s'; ", escDB, view, escUser, escHost)
+	for _, h := range hosts {
+		escHost := escapeSQLString(h)
+		fmt.Fprintf(&b, "CREATE USER IF NOT EXISTS '%s'@'%s' IDENTIFIED BY '%s'; ", escUser, escHost, escPass)
+		fmt.Fprintf(&b, "ALTER USER '%s'@'%s' IDENTIFIED BY '%s'; ", escUser, escHost, escPass)
+		for _, view := range mailReadonlyViews {
+			fmt.Fprintf(&b, "GRANT SELECT ON `%s`.`%s` TO '%s'@'%s'; ", escDB, view, escUser, escHost)
+		}
 	}
 	b.WriteString("FLUSH PRIVILEGES;")
 

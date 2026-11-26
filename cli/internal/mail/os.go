@@ -7,9 +7,40 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 )
+
+var sqlIdentifiedByRe = regexp.MustCompile(`(?i)(IDENTIFIED\s+BY\s+)'(?:\\.|[^'])*'`)
+
+// redactArgs strips sensitive credentials (e.g. -p<pass>, --password=..., SQL IDENTIFIED BY)
+// before formatting command arguments into error messages or logs.
+func redactArgs(args []string) []string {
+	out := make([]string, len(args))
+	redactNext := false
+	for i, a := range args {
+		if redactNext {
+			out[i] = "[REDACTED]"
+			redactNext = false
+			continue
+		}
+		switch {
+		case a == "-p" || a == "--password" || a == "--db-password":
+			out[i] = a
+			redactNext = true
+		case strings.HasPrefix(a, "-p") && len(a) > 2:
+			out[i] = "-p[REDACTED]"
+		case strings.HasPrefix(a, "--password="):
+			out[i] = "--password=[REDACTED]"
+		case strings.HasPrefix(a, "--db-password="):
+			out[i] = "--db-password=[REDACTED]"
+		default:
+			out[i] = sqlIdentifiedByRe.ReplaceAllString(a, "${1}'[REDACTED]'")
+		}
+	}
+	return out
+}
 
 // CommandRunner executes OS commands. Abstracted for deterministic testing.
 type CommandRunner interface {
@@ -31,7 +62,7 @@ func (ExecRunner) Run(ctx context.Context, name string, args ...string) (string,
 	cmd.Stderr = &buf
 	err := cmd.Run()
 	if err != nil {
-		return buf.String(), fmt.Errorf("%s %s: %w (%s)", name, strings.Join(args, " "), err, strings.TrimSpace(buf.String()))
+		return buf.String(), fmt.Errorf("%s %s: %w (%s)", name, strings.Join(redactArgs(args), " "), err, strings.TrimSpace(buf.String()))
 	}
 	return buf.String(), nil
 }

@@ -97,16 +97,42 @@ func (r MariaDBStateReader) ReadState(ctx context.Context) (ReconcileState, erro
 		mysqlBin = "mysql"
 	}
 
+	var defaultsFile string
+	if r.DBPassword != "" {
+		f, err := os.CreateTemp("", ".lc-mail-mycnf-*")
+		if err != nil {
+			return ReconcileState{}, fmt.Errorf("create temp mariadb defaults file: %w", err)
+		}
+		defaultsFile = f.Name()
+		defer os.Remove(defaultsFile)
+
+		escapedPwd := strings.ReplaceAll(r.DBPassword, `\`, `\\`)
+		escapedPwd = strings.ReplaceAll(escapedPwd, `"`, `\"`)
+		cnfContent := fmt.Sprintf("[client]\npassword=\"%s\"\n", escapedPwd)
+		if err := f.Chmod(0o600); err != nil {
+			_ = f.Close()
+			return ReconcileState{}, fmt.Errorf("chmod temp mariadb defaults file: %w", err)
+		}
+		if _, err := f.WriteString(cnfContent); err != nil {
+			_ = f.Close()
+			return ReconcileState{}, fmt.Errorf("write temp mariadb defaults file: %w", err)
+		}
+		if err := f.Close(); err != nil {
+			return ReconcileState{}, fmt.Errorf("close temp mariadb defaults file: %w", err)
+		}
+	}
+
 	runQuery := func(sql string) (string, error) {
-		args := []string{
+		var args []string
+		if defaultsFile != "" {
+			args = append(args, "--defaults-extra-file="+defaultsFile)
+		}
+		args = append(args,
 			"--batch", "--raw", "--skip-column-names",
 			"-h", dbHost,
 			"-u", dbUser,
-		}
-		if r.DBPassword != "" {
-			args = append(args, fmt.Sprintf("-p%s", r.DBPassword))
-		}
-		args = append(args, dbName, "-e", sql)
+			dbName, "-e", sql,
+		)
 		return runner.Run(ctx, mysqlBin, args...)
 	}
 
