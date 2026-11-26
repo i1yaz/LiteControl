@@ -59,11 +59,18 @@ func ExecuteMail(args []string) error {
 	}
 }
 
+func envOrDefault(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
 func runMailInstallCore(args []string) error {
 	fs := flag.NewFlagSet("mail install-core", flag.ContinueOnError)
 	hostname := fs.String("hostname", "", "Mail server FQDN hostname (required)")
-	dbHost := fs.String("db-host", "127.0.0.1", "MariaDB host")
-	dbName := fs.String("db-name", "litecontrol", "MariaDB database name")
+	dbHost := fs.String("db-host", envOrDefault("MAIL_DB_HOST", "127.0.0.1"), "MariaDB host")
+	dbName := fs.String("db-name", envOrDefault("MAIL_DB_NAME", "litecontrol"), "MariaDB database name")
 	dbUser := fs.String("db-user", "lc_mail_ro", "MariaDB read-only mail user")
 	dbPassword := fs.String("db-password", os.Getenv("MAIL_RO_DB_PASSWORD"), "MariaDB read-only mail password")
 	fallbackCert := fs.String("fallback-cert", "", "Fallback TLS certificate path")
@@ -135,8 +142,8 @@ func runMailUninstallCore(args []string) error {
 func runMailReconcile(args []string) error {
 	fs := flag.NewFlagSet("mail reconcile", flag.ContinueOnError)
 	scope := fs.String("scope", "all", "Reconcile scope: all, sni, dkim, filter, srs")
-	dbHost := fs.String("db-host", "127.0.0.1", "MariaDB host")
-	dbName := fs.String("db-name", "litecontrol", "MariaDB database name")
+	dbHost := fs.String("db-host", envOrDefault("MAIL_DB_HOST", "127.0.0.1"), "MariaDB host")
+	dbName := fs.String("db-name", envOrDefault("MAIL_DB_NAME", "litecontrol"), "MariaDB database name")
 	dbUser := fs.String("db-user", "lc_mail_ro", "MariaDB read-only mail user")
 	dbPassword := fs.String("db-password", os.Getenv("MAIL_RO_DB_PASSWORD"), "MariaDB read-only mail password")
 	certStore := fs.String("cert-store", "", "TLS certificate store directory (defaults to /etc/letsencrypt/live)")
@@ -277,8 +284,8 @@ func runMailDkimRemove(args []string) error {
 	fs := flag.NewFlagSet("mail dkim-remove", flag.ContinueOnError)
 	domain := fs.String("domain", "", "Mail domain (required)")
 	selector := fs.String("selector", "", "DKIM selector (required)")
-	dbHost := fs.String("db-host", "127.0.0.1", "MariaDB host")
-	dbName := fs.String("db-name", "litecontrol", "MariaDB database name")
+	dbHost := fs.String("db-host", envOrDefault("MAIL_DB_HOST", "127.0.0.1"), "MariaDB host")
+	dbName := fs.String("db-name", envOrDefault("MAIL_DB_NAME", "litecontrol"), "MariaDB database name")
 	dbUser := fs.String("db-user", "lc_mail_ro", "MariaDB read-only mail user")
 	dbPassword := fs.String("db-password", os.Getenv("MAIL_RO_DB_PASSWORD"), "MariaDB read-only mail password")
 	skipReconcile := fs.Bool("skip-reconcile", false, "Skip post-removal DKIM reconcile")
@@ -321,8 +328,8 @@ func runMailFilterEnable(args []string) error {
 	fs := flag.NewFlagSet("mail filter-enable", flag.ContinueOnError)
 	driver := fs.String("driver", "rspamd", "Anti-spam filter driver (rspamd)")
 	withClamAV := fs.Bool("with-clamav", false, "Also enable ClamAV antivirus scanning (requires >= 4096 MB RAM)")
-	dbHost := fs.String("db-host", "127.0.0.1", "MariaDB host")
-	dbName := fs.String("db-name", "litecontrol", "MariaDB database name")
+	dbHost := fs.String("db-host", envOrDefault("MAIL_DB_HOST", "127.0.0.1"), "MariaDB host")
+	dbName := fs.String("db-name", envOrDefault("MAIL_DB_NAME", "litecontrol"), "MariaDB database name")
 	dbUser := fs.String("db-user", "lc_mail_ro", "MariaDB read-only mail user")
 	dbPassword := fs.String("db-password", os.Getenv("MAIL_RO_DB_PASSWORD"), "MariaDB read-only mail password")
 	skipPackages := fs.Bool("skip-packages", false, "Skip ClamAV OS package installation")
@@ -361,8 +368,8 @@ func runMailFilterEnable(args []string) error {
 func runMailFilterDemote(args []string) error {
 	fs := flag.NewFlagSet("mail filter-demote", flag.ContinueOnError)
 	driver := fs.String("driver", "rspamd", "Anti-spam filter driver (rspamd)")
-	dbHost := fs.String("db-host", "127.0.0.1", "MariaDB host")
-	dbName := fs.String("db-name", "litecontrol", "MariaDB database name")
+	dbHost := fs.String("db-host", envOrDefault("MAIL_DB_HOST", "127.0.0.1"), "MariaDB host")
+	dbName := fs.String("db-name", envOrDefault("MAIL_DB_NAME", "litecontrol"), "MariaDB database name")
 	dbUser := fs.String("db-user", "lc_mail_ro", "MariaDB read-only mail user")
 	dbPassword := fs.String("db-password", os.Getenv("MAIL_RO_DB_PASSWORD"), "MariaDB read-only mail password")
 	skipReconcile := fs.Bool("skip-reconcile", false, "Skip post-demote filter reconcile")

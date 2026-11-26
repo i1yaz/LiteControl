@@ -77,4 +77,32 @@ class LcCliServiceTest extends TestCase
         $this->assertEquals('error', $response['status']);
         $this->assertStringContainsString('Invalid command arguments', $response['message']);
     }
+
+    public function test_run_mail_routes_through_lc_cli_mail_without_silent_mock_fallback(): void
+    {
+        Process::fake([
+            '*lc-cli*mail*install-core*--hostname=mail.example.com*' => Process::result(
+                output: json_encode([
+                    'status' => 'success',
+                    'hostname' => 'mail.example.com',
+                ]),
+            ),
+        ]);
+
+        $service = new LcCliService('/usr/local/litecontrol/bin/lc-cli', false, '');
+        $response = $service->runMail('install-core', ['--hostname=mail.example.com']);
+
+        $this->assertEquals('success', $response['status']);
+        $this->assertEquals('mail.example.com', $response['data']['hostname']);
+
+        Process::assertRan(function ($process): bool {
+            return $process->command === [
+                'sudo',
+                '/usr/local/litecontrol/bin/lc-cli',
+                'mail',
+                'install-core',
+                '--hostname=mail.example.com',
+            ];
+        });
+    }
 }

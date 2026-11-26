@@ -19,17 +19,9 @@ it('maps every lc-cli module registry key and legacy alias to a module supported
     preg_match_all('/"([^"]+)"/', $matches[1], $modMatches);
     $supportedInBash = $modMatches[1];
 
-    expect($supportedInBash)->toContain('ftp', 'dns', 'mail', 'modsecurity', 'imunifyav');
+    expect($supportedInBash)->toContain('ftp', 'dns', 'mail', 'mail_core', 'mail_filter', 'clamav', 'mail_webmail', 'modsecurity', 'imunifyav');
 
-    // Modules managed by dedicated mail-stack jobs rather than `lc-cli module`
-    $dedicatedMailModules = ['mail_core', 'mail_filter', 'clamav', 'mail_webmail'];
-
-    $cliBackedKeys = array_values(array_diff(
-        array_keys(ModuleRegistry::definitions()),
-        $dedicatedMailModules
-    ));
-
-    foreach (array_merge($cliBackedKeys, ['powerdns']) as $key) {
+    foreach (array_merge(array_keys(ModuleRegistry::definitions()), ['powerdns']) as $key) {
         $normalized = ModuleRegistry::normalizeKey($key);
         expect($supportedInBash)->toContain($normalized);
     }

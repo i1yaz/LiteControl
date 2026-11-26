@@ -23,6 +23,9 @@ type ExecRunner struct{}
 // Run executes a command and returns its combined stdout/stderr output.
 func (ExecRunner) Run(ctx context.Context, name string, args ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, name, args...)
+	if os.Getenv("DEBIAN_FRONTEND") == "" {
+		cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
+	}
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf

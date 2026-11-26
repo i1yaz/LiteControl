@@ -16,7 +16,7 @@ class LcCliService
     public function __construct(?string $cliPath = null, ?bool $mockMode = null, ?string $mailCliPath = null)
     {
         $this->cliPath = $cliPath ?? env('LC_CLI_PATH', '/usr/local/litecontrol/bin/lc-cli');
-        $this->mailCliPath = $mailCliPath ?? env('LC_MAIL_CLI_PATH', '/usr/local/litecontrol/bin/lc-mail');
+        $this->mailCliPath = $mailCliPath ?? (string) env('LC_MAIL_CLI_PATH', '');
         // Force mock mode if explicit or if we are not running on Linux or CLI binary doesn't exist
         $this->mockMode = $mockMode ?? (
             (bool) env('LC_DEV_MOCK', false) ||
@@ -89,13 +89,15 @@ class LcCliService
      */
     public function runMail(string $subcommand, array $args = []): array
     {
-        if ($this->mockMode || ! file_exists($this->mailCliPath)) {
+        if ($this->mockMode) {
             return $this->mockMailResponse($subcommand, $args);
         }
 
         try {
-            $cmd = array_merge(['sudo', $this->mailCliPath, $subcommand], $args);
-            $timeout = in_array($subcommand, ['install-core', 'uninstall-core'], true) ? 1800 : 300;
+            $cmd = ($this->mailCliPath !== '' && file_exists($this->mailCliPath))
+                ? array_merge(['sudo', $this->mailCliPath, $subcommand], $args)
+                : array_merge(['sudo', $this->cliPath, 'mail', $subcommand], $args);
+            $timeout = in_array($subcommand, ['install-core', 'uninstall-core', 'filter-enable', 'webmail-install'], true) ? 1800 : 300;
             $result = Process::timeout($timeout)->run($cmd);
 
             $output = trim($result->output());

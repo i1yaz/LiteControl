@@ -16,7 +16,7 @@ source "${SCRIPT_DIR}/../lib/common.sh"
 
 MODULES_INSTALLERS_DIR="${SCRIPT_DIR}/../modules"
 
-SUPPORTED_MODULES=("ftp" "dns" "mail" "modsecurity" "imunifyav")
+SUPPORTED_MODULES=("ftp" "dns" "mail" "mail_core" "mail_filter" "clamav" "mail_webmail" "modsecurity" "imunifyav")
 
 emit_error() {
     local msg="$1"
@@ -60,6 +60,10 @@ get_module_title() {
         ftp) echo "Pure-FTPd" ;;
         dns) echo "PowerDNS Server" ;;
         mail) echo "Mail Stack (Postfix & Dovecot)" ;;
+        mail_core) echo "Mail Server Core (Postfix & Dovecot)" ;;
+        mail_filter) echo "Mail Anti-Spam Filter (Rspamd)" ;;
+        clamav) echo "ClamAV Antivirus" ;;
+        mail_webmail) echo "Webmail (SnappyMail)" ;;
         modsecurity) echo "OpenLiteSpeed ModSecurity & OWASP CRS" ;;
         imunifyav) echo "ImunifyAV Malware Scanner" ;;
         *) echo "$1" ;;
@@ -71,9 +75,27 @@ get_module_desc() {
         ftp) echo "Secure FTP server with MySQL virtual accounts and passive port range (40110-40210)." ;;
         dns) echo "Authoritative DNS nameserver powered by PowerDNS with MySQL backend and DNSSEC." ;;
         mail) echo "Complete email server with Postfix, Dovecot IMAP/POP3, OpenDKIM signing, and MySQL virtual mailboxes." ;;
+        mail_core) echo "Core mail stack: Postfix, Dovecot, Rspamd-Light (DKIM & outbound ratelimit), and postsrsd." ;;
+        mail_filter) echo "Full inbound anti-spam filtering and Sieve Junk auto-filing via Rspamd." ;;
+        clamav) echo "Optional ClamAV virus scanner for inbound mail (requires >= 4 GB RAM)." ;;
+        mail_webmail) echo "Isolated SnappyMail webmail client served via OpenLiteSpeed." ;;
         modsecurity) echo "Web Application Firewall (WAF) integrated into OpenLiteSpeed with OWASP Core Rule Set." ;;
         imunifyav) echo "Automated Linux malware detector and web hosting security scanner." ;;
         *) echo "LiteControl extension module." ;;
+    esac
+}
+
+get_module_driver() {
+    case "$1" in
+        ftp) echo "pure-ftpd" ;;
+        dns) echo "powerdns" ;;
+        mail_core) echo "postfix_dovecot" ;;
+        mail_filter) echo "rspamd" ;;
+        clamav) echo "clamav" ;;
+        mail_webmail) echo "snappymail" ;;
+        modsecurity) echo "modsecurity" ;;
+        imunifyav) echo "imunifyav" ;;
+        *) echo "$1" ;;
     esac
 }
 
@@ -81,16 +103,58 @@ get_module_service() {
     case "$1" in
         ftp) echo "pure-ftpd-mysql" ;;
         dns) echo "pdns" ;;
-        mail) echo "postfix" ;;
+        mail|mail_core) echo "postfix" ;;
+        mail_filter) echo "rspamd" ;;
+        clamav) echo "clamav-daemon" ;;
+        mail_webmail) echo "lshttpd" ;;
         modsecurity) echo "openlitespeed" ;;
         imunifyav) echo "imunify-antivirus" ;;
         *) echo "$1" ;;
     esac
 }
 
+check_module_installed() {
+    local mod="$1"
+    if is_module_installed "${mod}"; then
+        return 0
+    fi
+    if [[ "${LC_TEST_MODE:-0}" == "1" ]]; then
+        return 1
+    fi
+    case "${mod}" in
+        mail_core)
+            [[ -f /etc/postfix/sql/domains.cf && -f /etc/dovecot/conf.d/99-litecontrol.conf ]]
+            ;;
+        mail_filter)
+            if [[ -f /etc/rspamd/local.d/lc_filter_mode ]]; then
+                local mode
+                mode=$(tr -d ' \t\r\n' < /etc/rspamd/local.d/lc_filter_mode 2>/dev/null || true)
+                [[ "${mode}" == "full" || "${mode}" == "full+clamav" ]]
+            else
+                return 1
+            fi
+            ;;
+        clamav)
+            if [[ -f /etc/rspamd/local.d/lc_filter_mode ]]; then
+                local mode
+                mode=$(tr -d ' \t\r\n' < /etc/rspamd/local.d/lc_filter_mode 2>/dev/null || true)
+                [[ "${mode}" == "full+clamav" ]]
+            else
+                return 1
+            fi
+            ;;
+        mail_webmail)
+            [[ -f /var/lib/lc-mail/webmail.json && -f /usr/local/lsws/conf/vhosts/lc-webmail/vhconf.conf ]]
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
 get_module_state() {
     local mod="$1"
-    if ! is_module_installed "${mod}"; then
+    if ! check_module_installed "${mod}"; then
         echo "not_installed"
         return 0
     fi
@@ -102,6 +166,24 @@ get_module_state() {
     svc="$(get_module_service "${mod}")"
     if [[ "${mod}" == "modsecurity" ]]; then
         if grep -q "module mod_security" "${OLS_CONF}" 2>/dev/null; then
+            echo "active"
+        else
+            echo "inactive"
+        fi
+    elif [[ "${mod}" == "mail_core" ]]; then
+        if systemctl is-active --quiet postfix 2>/dev/null && systemctl is-active --quiet dovecot 2>/dev/null; then
+            echo "active"
+        else
+            echo "inactive"
+        fi
+    elif [[ "${mod}" == "clamav" ]]; then
+        if systemctl is-active --quiet clamav-daemon 2>/dev/null || systemctl is-active --quiet clamd@scan 2>/dev/null; then
+            echo "active"
+        else
+            echo "inactive"
+        fi
+    elif [[ "${mod}" == "mail_webmail" ]]; then
+        if systemctl is-active --quiet lshttpd 2>/dev/null || systemctl is-active --quiet lsws 2>/dev/null; then
             echo "active"
         else
             echo "inactive"
@@ -120,7 +202,7 @@ cmd_module_list() {
 
     for mod in "${SUPPORTED_MODULES[@]}"; do
         local inst=false
-        if is_module_installed "${mod}"; then
+        if check_module_installed "${mod}"; then
             inst=true
         fi
         local state
@@ -129,13 +211,16 @@ cmd_module_list() {
         title="$(get_module_title "${mod}")"
         local desc
         desc="$(get_module_desc "${mod}")"
+        local driver
+        driver="$(get_module_driver "${mod}")"
         local svc
         svc="$(get_module_service "${mod}")"
 
-        items+=("$(printf '{"name":"%s","title":"%s","description":"%s","installed":%s,"status":"%s","service":"%s"}' \
+        items+=("$(printf '{"name":"%s","title":"%s","description":"%s","driver":"%s","installed":%s,"status":"%s","service":"%s"}' \
             "$(json_escape "${mod}")" \
             "$(json_escape "${title}")" \
             "$(json_escape "${desc}")" \
+            "$(json_escape "${driver}")" \
             "${inst}" \
             "$(json_escape "${state}")" \
             "$(json_escape "${svc}")")")
@@ -157,7 +242,7 @@ cmd_module_list() {
         echo "--------------------------------------------------------------------------------"
         for mod in "${SUPPORTED_MODULES[@]}"; do
             local inst="no"
-            if is_module_installed "${mod}"; then
+            if check_module_installed "${mod}"; then
                 inst="yes"
             fi
             local state
@@ -176,7 +261,7 @@ cmd_module_status() {
     validate_module "${mod}"
 
     local inst=false
-    if is_module_installed "${mod}"; then
+    if check_module_installed "${mod}"; then
         inst=true
     fi
     local state
@@ -185,14 +270,17 @@ cmd_module_status() {
     title="$(get_module_title "${mod}")"
     local desc
     desc="$(get_module_desc "${mod}")"
+    local driver
+    driver="$(get_module_driver "${mod}")"
     local svc
     svc="$(get_module_service "${mod}")"
 
     local data_json
-    data_json=$(printf '{"name":"%s","title":"%s","description":"%s","installed":%s,"status":"%s","service":"%s"}' \
+    data_json=$(printf '{"name":"%s","title":"%s","description":"%s","driver":"%s","installed":%s,"status":"%s","service":"%s"}' \
         "$(json_escape "${mod}")" \
         "$(json_escape "${title}")" \
         "$(json_escape "${desc}")" \
+        "$(json_escape "${driver}")" \
         "${inst}" \
         "$(json_escape "${state}")" \
         "$(json_escape "${svc}")")
