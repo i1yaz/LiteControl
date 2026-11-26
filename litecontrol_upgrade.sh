@@ -551,8 +551,10 @@ reconcile_panel_services() {
 
     cp "${LC_BASE_DIR}/templates/panel/php-fpm.conf.tpl" "${PANEL_FPM_CONF}"
 
+    local panel_ver="${LC_PANEL_PHP_VER:-86}"
+    local dotted_panel_ver="${panel_ver:0:1}.${panel_ver:1:1}"
     local php_fpm_bin
-    php_fpm_bin=$(command -v php-fpm"${LC_PHP_VER:0:1}.${LC_PHP_VER:1:1}" 2>/dev/null || command -v php-fpm 2>/dev/null || echo "/usr/sbin/php-fpm")
+    php_fpm_bin=$(command -v php-fpm"${dotted_panel_ver}" 2>/dev/null || command -v php-fpm"${LC_PHP_VER:0:1}.${LC_PHP_VER:1:1}" 2>/dev/null || command -v php-fpm 2>/dev/null || echo "/usr/sbin/php-fpm")
 
     sed "s|__PHP_FPM_BIN__|${php_fpm_bin}|g" "${LC_BASE_DIR}/templates/system/litecontrol-php.service" > /etc/systemd/system/litecontrol-php.service
     cp "${LC_BASE_DIR}/templates/system/litecontrol-panel.service" /etc/systemd/system/litecontrol-panel.service

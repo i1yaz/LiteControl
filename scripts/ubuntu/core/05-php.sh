@@ -94,16 +94,17 @@ install_primary_lsphp() {
 install_panel_nginx_and_fpm() {
     log_step "05b. Installing Dedicated Panel Nginx & PHP-FPM"
 
-    local panel_ver="${LC_PANEL_PHP_VER:-83}"
+    local panel_ver="${LC_PANEL_PHP_VER:-86}"
     local dotted_panel_ver="${panel_ver:0:1}.${panel_ver:1:1}"
 
-    # Ensure repository has the specific PHP version needed by panel (e.g. PHP 8.3 on Ubuntu 22.04)
+    # Ensure repository has the specific PHP version needed by panel (e.g. PHP 8.6)
     if ! apt-cache show "php${dotted_panel_ver}-fpm" >/dev/null 2>&1; then
-        log_info "Adding ppa:ondrej/php repository for PHP ${dotted_panel_ver}-fpm..."
-        if ! command -v add-apt-repository >/dev/null 2>&1; then
-            apt_install software-properties-common || true
-        fi
-        add-apt-repository -y ppa:ondrej/php >/dev/null 2>&1 || true
+        log_info "Adding packages.sury.org PHP repository for PHP ${dotted_panel_ver}-fpm..."
+        apt_install lsb-release ca-certificates curl
+        curl -sSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb
+        dpkg -i /tmp/debsuryorg-archive-keyring.deb
+        rm -f /tmp/debsuryorg-archive-keyring.deb
+        echo "deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
         apt_update
     fi
 
