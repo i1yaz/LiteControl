@@ -30,6 +30,7 @@ export const PANEL_NAVIGATION = [
         children: [
             { id: 'domains.index', label: 'Domains', route: '/domains' },
             { id: 'subdomains.index', label: 'Subdomains', route: '/subdomains' },
+            { id: 'source-control.index', label: 'Source Control', route: '/settings/source-control' },
         ],
     },
     {

@@ -27,6 +27,8 @@ func ExecuteDeploy(args []string) error {
 		return runDeployRollback(args[1:])
 	case "env":
 		return runDeployEnv(args[1:])
+	case "extract-tarball":
+		return runDeployExtractTarball(args[1:])
 	case "-h", "--help", "help":
 		printDeployUsage()
 		return nil
@@ -66,6 +68,8 @@ func runDeployInit(args []string) error {
 func runDeployRun(args []string) error {
 	fs := flag.NewFlagSet("deploy run", flag.ContinueOnError)
 	specPath := fs.String("spec", "", "Path to deploy_{release_id}.json spec file (required)")
+	fetchPayloadStdin := fs.Bool("fetch-payload-stdin", false, "Read versioned provider fetch payload JSON from stdin")
+	capabilities := fs.Bool("capabilities", false, "Print supported deploy runner capabilities as JSON and exit")
 
 	if err := fs.Parse(args); err != nil {
 		if err == flag.ErrHelp {
@@ -74,12 +78,30 @@ func runDeployRun(args []string) error {
 		return err
 	}
 
+	if *capabilities {
+		return json.NewEncoder(os.Stdout).Encode(map[string]any{
+			"stdin_fetch_payload": true,
+			"schema_versions":     []int{deploy.SupportedFetchSchemaVersion},
+		})
+	}
+
 	if *specPath == "" {
 		fs.Usage()
 		return fmt.Errorf("--spec is required")
 	}
 
-	result, err := deploy.RunDeploy(context.Background(), *specPath, os.Stderr)
+	_ = deploy.SweepStaleAskpassDirs("", deploy.DefaultStaleAskpassAge)
+
+	var fetchPayload *deploy.FetchPayload
+	if *fetchPayloadStdin {
+		parsed, err := deploy.ReadFetchPayload(os.Stdin, deploy.DefaultStdinReadTimeout)
+		if err != nil {
+			return err
+		}
+		fetchPayload = &parsed
+	}
+
+	result, err := deploy.RunDeployWithFetch(context.Background(), *specPath, fetchPayload, os.Stderr)
 	if result.Status != "" {
 		if encErr := json.NewEncoder(os.Stdout).Encode(result); encErr != nil {
 			return encErr
@@ -91,6 +113,38 @@ func runDeployRun(args []string) error {
 	}
 
 	return err
+}
+
+func runDeployExtractTarball(args []string) error {
+	fs := flag.NewFlagSet("deploy extract-tarball", flag.ContinueOnError)
+	archivePath := fs.String("archive", "", "Path to gzipped tar archive (required)")
+	destDir := fs.String("dest", "", "Destination release directory (required)")
+	stripComponents := fs.Int("strip-components", 1, "Leading path components to strip")
+	maxBytes := fs.Int64("max-bytes", deploy.DefaultMaxDecompressedBytes, "Maximum decompressed bytes")
+	maxFiles := fs.Int("max-files", deploy.DefaultMaxExtractedFiles, "Maximum extracted file count")
+
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
+		return err
+	}
+
+	if *archivePath == "" || *destDir == "" {
+		return fmt.Errorf("--archive and --dest are required")
+	}
+
+	f, err := os.Open(*archivePath)
+	if err != nil {
+		return fmt.Errorf("open archive %s: %w", *archivePath, err)
+	}
+	defer f.Close()
+
+	return deploy.ExtractTarGzSafely(f, *destDir, deploy.TarExtractOptions{
+		StripComponents:      *stripComponents,
+		MaxDecompressedBytes: *maxBytes,
+		MaxFiles:             *maxFiles,
+	})
 }
 
 func runDeployRollback(args []string) error {

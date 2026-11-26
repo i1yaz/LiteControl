@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Deployment\Models;
 
+use App\Domains\SourceControl\Enums\SourceMode;
+use App\Domains\SourceControl\Models\GitProvider;
 use App\Domains\WebServer\Models\Domain;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +16,11 @@ class DomainDeploymentConfig extends Model
     protected $fillable = [
         'domain_id',
         'mode',
+        'source_mode',
+        'git_provider_id',
+        'remote_repo_id',
+        'remote_repo_full_name',
+        'auto_deploy',
         'preset',
         'repo_provider',
         'repo_url',
@@ -29,13 +36,22 @@ class DomainDeploymentConfig extends Model
         'keep_releases',
         'shared_dirs',
         'shared_files',
+        'install_script',
         'health_check_enabled',
         'health_check_path',
         'auto_rollback',
     ];
 
+    protected $hidden = [
+        'deploy_key_private_encrypted',
+        'api_token_encrypted',
+        'webhook_secret_encrypted',
+    ];
+
     protected $attributes = [
         'mode' => 'simple',
+        'source_mode' => SourceMode::Manual->value,
+        'auto_deploy' => false,
         'preset' => 'laravel',
         'branch' => 'main',
         'fetch_driver' => 'shallow_git',
@@ -52,6 +68,9 @@ class DomainDeploymentConfig extends Model
     protected function casts(): array
     {
         return [
+            'source_mode' => SourceMode::class,
+            'git_provider_id' => 'integer',
+            'auto_deploy' => 'boolean',
             'shared_dirs' => 'array',
             'shared_files' => 'array',
             'deploy_key_private_encrypted' => 'encrypted',
@@ -68,9 +87,16 @@ class DomainDeploymentConfig extends Model
         return $this->belongsTo(Domain::class);
     }
 
+    public function gitProvider(): BelongsTo
+    {
+        return $this->belongsTo(GitProvider::class);
+    }
+
     public function hooks(): HasMany
     {
-        return $this->hasMany(DomainDeploymentHook::class, 'config_id')->orderBy('sort_order');
+        return $this->hasMany(DomainDeploymentHook::class, 'config_id')
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     public function deployments(): HasMany

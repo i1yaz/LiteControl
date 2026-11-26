@@ -37,6 +37,7 @@ $domains = [
     'PhpRuntime',
     'Security',
     'ServerOps',
+    'SourceControl',
     'WebServer',
 ];
 

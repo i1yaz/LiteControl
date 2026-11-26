@@ -123,7 +123,16 @@ http {
         }
 
         # ----------------------------------------------------------------------
-        # 2. LiteControl Laravel + Inertia.js Panel Application (/)
+        # 2. Source Control & Deployment Webhooks (/api/webhooks/*)
+        #    GitHub webhook deliveries may be up to 25 MB.
+        # ----------------------------------------------------------------------
+        location ^~ /api/webhooks/ {
+            client_max_body_size 25m;
+            try_files $uri /index.php?$query_string;
+        }
+
+        # ----------------------------------------------------------------------
+        # 3. LiteControl Laravel + Inertia.js Panel Application (/)
         # ----------------------------------------------------------------------
         location / {
             try_files $uri $uri/ /index.php?$query_string;

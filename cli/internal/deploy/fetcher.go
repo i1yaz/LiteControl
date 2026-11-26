@@ -17,6 +17,48 @@ import (
 // FetchReleaseCode fetches the release source into releaseDir using the configured
 // driver and guarantees no .git directory remains on disk.
 func FetchReleaseCode(ctx context.Context, spec Payload, releaseDir string, logWriter io.Writer) (CommitMeta, error) {
+	return FetchReleaseCodeWithPayload(ctx, spec, nil, releaseDir, logWriter)
+}
+
+// FetchReleaseCodeWithPayload fetches release code using either a versioned provider
+// FetchPayload (received over stdin) or the legacy manual-mode RepoConfig.
+func FetchReleaseCodeWithPayload(
+	ctx context.Context,
+	spec Payload,
+	fetchPayload *FetchPayload,
+	releaseDir string,
+	logWriter io.Writer,
+) (CommitMeta, error) {
+	if fetchPayload != nil {
+		if err := fetchPayload.Validate(); err != nil {
+			return CommitMeta{}, err
+		}
+
+		switch fetchPayload.Mode {
+		case "tarball":
+			_, err := DownloadAndExtractTarball(ctx, TarballFetchOptions{
+				URL:             fetchPayload.TarballURL,
+				Credentials:     fetchPayload.Credentials,
+				ReleaseDir:      releaseDir,
+				LinuxUser:       spec.LinuxUser,
+				StripComponents: 1,
+			}, logWriter)
+			if err != nil {
+				return CommitMeta{}, err
+			}
+
+			return CommitMeta{
+				SHA: fetchPayload.CommitSHA,
+			}, nil
+
+		case "shallow_clone":
+			return FetchProviderShallowClone(ctx, spec, *fetchPayload, releaseDir, logWriter)
+
+		default:
+			return CommitMeta{}, fmt.Errorf("unsupported provider fetch mode: %q", fetchPayload.Mode)
+		}
+	}
+
 	switch spec.Repo.Driver {
 	case "", "shallow_git":
 		return fetchShallowGit(ctx, spec, releaseDir, logWriter)
@@ -69,24 +111,20 @@ func fetchTarball(ctx context.Context, spec Payload, releaseDir string, logWrite
 		return CommitMeta{}, fmt.Errorf("repo.tarball_url is required for tarball driver")
 	}
 
-	var authHeader string
+	var creds FetchCredentials
 	if spec.Repo.AuthToken != "" {
-		authHeader = fmt.Sprintf("-H %s ", shellQuote("Authorization: Bearer "+spec.Repo.AuthToken))
+		creds.AuthHeader = "Bearer " + spec.Repo.AuthToken
 	}
 
-	script := fmt.Sprintf(
-		"mkdir -p %s && curl -fsSL -H 'User-Agent: LiteControl-Deploy' %s%s | tar -xzf - --strip-components=1 -C %s",
-		shellQuote(releaseDir),
-		authHeader,
-		shellQuote(spec.Repo.TarballURL),
-		shellQuote(releaseDir),
-	)
-	if err := RunAsTenantUser(ctx, spec.LinuxUser, spec.DomainRoot, nil, script, logWriter); err != nil {
+	_, err := DownloadAndExtractTarball(ctx, TarballFetchOptions{
+		URL:             spec.Repo.TarballURL,
+		Credentials:     creds,
+		ReleaseDir:      releaseDir,
+		LinuxUser:       spec.LinuxUser,
+		StripComponents: 1,
+	}, logWriter)
+	if err != nil {
 		return CommitMeta{}, fmt.Errorf("tarball fetch failed: %w", err)
-	}
-
-	if err := removeAndVerifyNoGit(releaseDir); err != nil {
-		return CommitMeta{}, err
 	}
 
 	meta := fetchTarballCommitMeta(ctx, spec.Repo.TarballURL, spec.Repo.AuthToken)

@@ -424,6 +424,20 @@ persist_panel_domain() {
             printf "\nAPP_URL=https://%s:%s\n" "${hostname}" "${panel_port}" >> "${LC_PANEL_DIR}/.env"
         fi
     fi
+
+    if [[ "${LC_TEST_MODE:-0}" != "1" && -f "${LC_PANEL_DIR}/artisan" ]]; then
+        local php_bin="/usr/local/bin/php"
+        [[ -x "${php_bin}" ]] || php_bin=$(command -v php 2>/dev/null || true)
+        if [[ -n "${php_bin}" ]]; then
+            if id -u "${LC_USER}" >/dev/null 2>&1; then
+                su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && '${php_bin}' artisan config:clear >/dev/null 2>&1 && '${php_bin}' artisan config:cache >/dev/null 2>&1" || rm -f "${LC_PANEL_DIR}/bootstrap/cache/config.php"
+            else
+                (cd "${LC_PANEL_DIR}" && "${php_bin}" artisan config:clear >/dev/null 2>&1 && "${php_bin}" artisan config:cache >/dev/null 2>&1) || rm -f "${LC_PANEL_DIR}/bootstrap/cache/config.php"
+            fi
+        else
+            rm -f "${LC_PANEL_DIR}/bootstrap/cache/config.php"
+        fi
+    fi
 }
 
 sync_webadmin_ssl() {
@@ -499,6 +513,11 @@ cmd_ssl_panel() {
                 fi
             fi
 
+            chmod 600 "${panel_key}" 2>/dev/null || true
+            chmod 644 "${panel_cert}" 2>/dev/null || true
+            chgrp "${LC_GROUP}" "${LC_CONF_DIR}" "${LC_SSL_DIR}" 2>/dev/null || true
+            chmod 750 "${LC_CONF_DIR}" "${LC_SSL_DIR}" 2>/dev/null || true
+
             persist_panel_domain "${hostname}"
             sync_webadmin_ssl
             apply_panel_ip_access_config "disabled"
@@ -524,6 +543,8 @@ cmd_ssl_panel() {
             cp -f "${key_src}" "${LC_SSL_DIR}/privkey.pem"
             chmod 600 "${LC_SSL_DIR}/privkey.pem"
             chmod 644 "${LC_SSL_DIR}/fullchain.pem"
+            chgrp "${LC_GROUP}" "${LC_CONF_DIR}" "${LC_SSL_DIR}" 2>/dev/null || true
+            chmod 750 "${LC_CONF_DIR}" "${LC_SSL_DIR}" 2>/dev/null || true
 
             if [[ -n "${hostname}" ]]; then
                 validate_domain "${hostname}"

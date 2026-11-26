@@ -12,6 +12,11 @@ use App\Domains\Database\Infrastructure\CliDatabaseAdapter;
 use App\Domains\Database\Listeners\CleanupUserDatabasesListener;
 use App\Domains\Database\Models\Database;
 use App\Domains\Database\Policies\DatabasePolicy;
+use App\Domains\Deployment\Contracts\DeploymentDriverInterface;
+use App\Domains\Deployment\Infrastructure\CliDeploymentAdapter;
+use App\Domains\Deployment\Infrastructure\EloquentProviderDeploymentBindingBridge;
+use App\Domains\Deployment\Infrastructure\EloquentProviderDeploymentWebhookBridge;
+use App\Domains\Deployment\Listeners\DetachGitProviderOnDomainOwnershipTransferredListener;
 use App\Domains\Dns\Contracts\PdnsDaemonDriverInterface;
 use App\Domains\Dns\Contracts\PowerDnsClientInterface;
 use App\Domains\Dns\Infrastructure\CliPdnsDaemonAdapter;
@@ -64,8 +69,18 @@ use App\Domains\Shared\Contracts\AuditLoggerInterface;
 use App\Domains\Shared\Contracts\DomainOwnershipCheckerInterface;
 use App\Domains\Shared\Contracts\ModuleRegistryQueryInterface;
 use App\Domains\Shared\Events\BackupRestored;
+use App\Domains\Shared\Events\DomainOwnershipTransferred;
 use App\Domains\Shared\Events\MailDnsRecordsChanged;
 use App\Domains\Shared\Events\SslCertificateIssued;
+use App\Domains\SourceControl\Contracts\GitProviderDriverInterface;
+use App\Domains\SourceControl\Contracts\ProviderDeploymentBindingBridgeInterface;
+use App\Domains\SourceControl\Contracts\ProviderDeploymentWebhookBridgeInterface;
+use App\Domains\SourceControl\Contracts\SslCertificateInspectorInterface;
+use App\Domains\SourceControl\Infrastructure\GitHubAppDriverAdapter;
+use App\Domains\SourceControl\Infrastructure\OpenSslCertificateInspectorAdapter;
+use App\Domains\SourceControl\Listeners\CleanupUserGitProvidersListener;
+use App\Domains\SourceControl\Models\GitProvider;
+use App\Domains\SourceControl\Policies\GitProviderPolicy;
 use App\Domains\WebServer\Contracts\FtpDriverInterface;
 use App\Domains\WebServer\Contracts\SslDriverInterface;
 use App\Domains\WebServer\Contracts\VhostDriverInterface;
@@ -99,6 +114,11 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(PhpRuntimeDriverInterface::class, CliPhpRuntimeAdapter::class);
         $this->app->bind(FirewallDriverInterface::class, CliFirewallAdapter::class);
         $this->app->bind(PanelSslDriverInterface::class, CliPanelSslAdapter::class);
+        $this->app->bind(SslCertificateInspectorInterface::class, OpenSslCertificateInspectorAdapter::class);
+        $this->app->bind(GitProviderDriverInterface::class, GitHubAppDriverAdapter::class);
+        $this->app->bind(ProviderDeploymentBindingBridgeInterface::class, EloquentProviderDeploymentBindingBridge::class);
+        $this->app->bind(ProviderDeploymentWebhookBridgeInterface::class, EloquentProviderDeploymentWebhookBridge::class);
+        $this->app->bind(DeploymentDriverInterface::class, CliDeploymentAdapter::class);
         $this->app->bind(FileManagerDriverInterface::class, CliFileManagerAdapter::class);
         $this->app->bind(ServerDriverInterface::class, CliServerAdapter::class);
         $this->app->bind(ModuleDriverInterface::class, CliModuleAdapter::class);
@@ -136,6 +156,8 @@ class DomainServiceProvider extends ServiceProvider
         Event::listen(UserDeleted::class, function (UserDeleted $event): void {
             Domain::where('user_id', $event->userId)->delete();
         });
+        Event::listen(UserDeleted::class, CleanupUserGitProvidersListener::class);
+        Event::listen(DomainOwnershipTransferred::class, DetachGitProviderOnDomainOwnershipTransferredListener::class);
         Event::listen(BackupRestored::class, ReconcileMailOnBackupRestoredListener::class);
         Event::listen(SslCertificateIssued::class, SyncMailSniOnSslIssuedListener::class);
         Event::listen(MailDnsRecordsChanged::class, SyncMailDnsRecordsOnChangedListener::class);
@@ -148,5 +170,6 @@ class DomainServiceProvider extends ServiceProvider
         Gate::policy(MailDomain::class, MailDomainPolicy::class);
         Gate::policy(MailAccount::class, MailAccountPolicy::class);
         Gate::policy(MailAlias::class, MailAliasPolicy::class);
+        Gate::policy(GitProvider::class, GitProviderPolicy::class);
     }
 }

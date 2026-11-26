@@ -33,6 +33,7 @@ class UpdateDeploymentConfigRequest extends FormRequest
             'shared_dirs.*' => ['string', 'max:255'],
             'shared_files' => ['nullable', 'array'],
             'shared_files.*' => ['string', 'max:255'],
+            'install_script' => ['sometimes', 'nullable', 'string', 'max:65535'],
             'health_check_enabled' => ['required', 'boolean'],
             'health_check_path' => ['required', 'string', 'max:255'],
             'auto_rollback' => ['required', 'boolean'],

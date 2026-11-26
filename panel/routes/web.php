@@ -28,12 +28,16 @@ use App\Http\Controllers\Security\SecurityController;
 use App\Http\Controllers\ServerOps\DashboardController;
 use App\Http\Controllers\ServerOps\ModuleController;
 use App\Http\Controllers\ServerOps\ServerController;
+use App\Http\Controllers\SourceControl\GitHubAppController;
+use App\Http\Controllers\SourceControl\SourceControlController;
 use App\Http\Controllers\WebServer\DomainController;
 use App\Http\Controllers\WebServer\FtpController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/theme/switch', [ThemeController::class, 'switch'])->name('theme.switch');
 Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
+Route::get('/settings/source-control/github/callback', [GitHubAppController::class, 'callback'])
+    ->name('source-control.github.callback');
 
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
@@ -81,6 +85,8 @@ Route::middleware('auth')->group(function () {
     // Domain Zero-Downtime Deployment
     Route::get('/domains/{domain}/deploy', [DomainDeploymentController::class, 'show'])->name('domains.deploy.show');
     Route::put('/domains/{domain}/deploy/config', [DomainDeploymentController::class, 'updateConfig'])->name('domains.deploy.config');
+    Route::put('/domains/{domain}/deploy/source-control', [DomainDeploymentController::class, 'bindSourceControl'])->name('domains.deploy.source-control.bind');
+    Route::post('/domains/{domain}/deploy/source-mode', [DomainDeploymentController::class, 'switchSourceMode'])->name('domains.deploy.source-mode.switch');
     Route::post('/domains/{domain}/deploy/key', [DomainDeploymentController::class, 'generateDeployKey'])->name('domains.deploy.key');
     Route::post('/domains/{domain}/deploy/run', [DomainDeploymentController::class, 'deploy'])->name('domains.deploy.run');
     Route::post('/domains/{domain}/deploy/cancel/{deployment}', [DomainDeploymentController::class, 'cancel'])->name('domains.deploy.cancel');
@@ -88,7 +94,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/domains/{domain}/deploy/logs/{deployment}', [DomainDeploymentController::class, 'log'])->name('domains.deploy.log');
     Route::get('/domains/{domain}/deploy/env', [DomainDeploymentEnvController::class, 'show'])->name('domains.deploy.env.show');
     Route::put('/domains/{domain}/deploy/env', [DomainDeploymentEnvController::class, 'update'])->name('domains.deploy.env.update');
+    Route::get('/domains/{domain}/deploy/pipeline', [DomainDeploymentHookController::class, 'pipeline'])->name('domains.deploy.pipeline.show');
+    Route::put('/domains/{domain}/deploy/pipeline/install-script', [DomainDeploymentHookController::class, 'updateInstallScript'])->name('domains.deploy.pipeline.install-script');
     Route::post('/domains/{domain}/deploy/hooks', [DomainDeploymentHookController::class, 'store'])->name('domains.deploy.hooks.store');
+    Route::put('/domains/{domain}/deploy/hooks/reorder', [DomainDeploymentHookController::class, 'reorder'])->name('domains.deploy.hooks.reorder');
     Route::put('/domains/{domain}/deploy/hooks/{hook}', [DomainDeploymentHookController::class, 'update'])->name('domains.deploy.hooks.update');
     Route::delete('/domains/{domain}/deploy/hooks/{hook}', [DomainDeploymentHookController::class, 'destroy'])->name('domains.deploy.hooks.destroy');
 
@@ -166,6 +175,24 @@ Route::middleware('auth')->group(function () {
     Route::get('/security/two-factor', [SecurityController::class, 'twoFactor'])->name('security.two-factor');
     Route::post('/security/two-factor/confirm', [SecurityController::class, 'confirmTwoFactor'])->name('security.two-factor.confirm');
     Route::post('/security/two-factor/toggle', [SecurityController::class, 'toggleTwoFactor'])->name('security.two-factor.toggle');
+
+    // Source Control — Settings, GitHub App Manifest & Setup Flow
+    Route::get('/settings/source-control', [SourceControlController::class, 'index'])
+        ->name('source-control.index');
+    Route::delete('/settings/source-control/providers/{gitProvider}', [SourceControlController::class, 'destroy'])
+        ->name('source-control.providers.destroy');
+    Route::get('/settings/source-control/providers/{gitProvider}/repositories', [SourceControlController::class, 'repositories'])
+        ->name('source-control.providers.repositories');
+    Route::get('/settings/source-control/providers/{gitProvider}/branches', [SourceControlController::class, 'branches'])
+        ->name('source-control.providers.branches');
+    Route::post('/settings/source-control/github/manifest', [GitHubAppController::class, 'manifest'])
+        ->name('source-control.github.manifest');
+    Route::get('/settings/source-control/github/setup', [GitHubAppController::class, 'setup'])
+        ->name('source-control.github.setup');
+    Route::post('/settings/source-control/providers/{gitProvider}/repair-webhook', [GitHubAppController::class, 'repairWebhook'])
+        ->name('source-control.providers.repair-webhook');
+    Route::get('/settings/source-control/providers/{gitProvider}/health', [GitHubAppController::class, 'health'])
+        ->name('source-control.providers.health');
 
     // Admin Only Routes
     Route::middleware('admin')->group(function () {

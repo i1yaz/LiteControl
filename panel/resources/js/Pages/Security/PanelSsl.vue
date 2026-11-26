@@ -60,7 +60,7 @@ const submit = () => {
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div class="space-y-2">
                     <p class="text-xs font-medium uppercase tracking-wider text-theme-muted">
-                        {{ __('Active Panel URLs (Shared SSL)') }}
+                        {{ __('Active Panel URLs') }}
                     </p>
                     <div class="flex flex-wrap items-center gap-4">
                         <a
@@ -82,10 +82,6 @@ const submit = () => {
                             <ExternalLink class="w-3.5 h-3.5" />
                         </a>
                     </div>
-                    <p class="text-xs text-theme-muted">
-                        {{ __('Direct IP access on port') }} <span class="font-mono">{{ panelPort }}</span> {{ __('is restricted to your configured hostname. Visiting') }} <span class="font-mono">https://{{ configuredDomain }}</span> {{ __('redirects automatically to port') }} <span class="font-mono">{{ panelPort }}</span>. {{ __('To re-enable direct IP access via SSH, run:') }}
-                        <span class="font-mono">lc-cli security panel-ip-access enable</span>
-                    </p>
                 </div>
             </div>
         </UiCard>
@@ -110,7 +106,7 @@ const submit = () => {
                         :label="__('Hostname / Panel Domain')"
                         :placeholder="__('panel.yourdomain.com')"
                         :error="form.errors.domain"
-                        :hint="`Point an A record to this server IP first. LiteControl will issue a Let's Encrypt certificate via port 80, serve the panel directly on https://your-domain:${panelPort}, share the certificate with OLS WebAdmin (:7080), and redirect port 80/443 to :${panelPort}.`"
+                        :hint="`Point an A record to this server IP first. LiteControl will issue a Let's Encrypt certificate. This domain will then serve both LitePanel and OLS WebAdmin via a shared SSL certificate.`"
                         class="font-mono"
                     />
                 </div>

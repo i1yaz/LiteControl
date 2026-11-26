@@ -148,7 +148,7 @@ EOF
 
         chown -R "${LC_USER}:${LC_GROUP}" "${LC_PANEL_DIR}"
         local composer_bin="${LC_BASE_DIR}/bin/composer.phar"
-        local panel_ver="${LC_PANEL_PHP_VER:-83}"
+        local panel_ver="${LC_PANEL_PHP_VER:-86}"
         local dotted_panel_ver="${panel_ver:0:1}.${panel_ver:1:1}"
         local php_bin="/usr/bin/php${dotted_panel_ver}"
 
@@ -302,8 +302,8 @@ configure_panel_server() {
     # Deploy php-fpm.conf
     cp "${LC_BASE_DIR}/templates/panel/php-fpm.conf.tpl" "${PANEL_FPM_CONF}"
 
-    # Locate php-fpm binary (e.g. /usr/sbin/php-fpm8.3 or /usr/sbin/php-fpm)
-    local panel_ver="${LC_PANEL_PHP_VER:-83}"
+    # Locate php-fpm binary (e.g. /usr/sbin/php-fpm8.6 or /usr/sbin/php-fpm)
+    local panel_ver="${LC_PANEL_PHP_VER:-86}"
     local dotted_panel_ver="${panel_ver:0:1}.${panel_ver:1:1}"
     local php_fpm_bin
     php_fpm_bin=$(command -v php-fpm"${dotted_panel_ver}" 2>/dev/null || command -v php-fpm"${LC_PHP_VER:0:1}.${LC_PHP_VER:1:1}" 2>/dev/null || command -v php-fpm 2>/dev/null || echo "/usr/sbin/php-fpm")

@@ -38,7 +38,7 @@ export LC_VERSION="${LC_VERSION:-$(get_lc_version 2>/dev/null || echo "0.1.0-alp
 export LC_USER="litecontrol"
 export LC_GROUP="litecontrol"
 export LC_PHP_VER="${LC_PHP_VER:-83}"
-export LC_PANEL_PHP_VER="${LC_PANEL_PHP_VER:-83}"
+export LC_PANEL_PHP_VER="${LC_PANEL_PHP_VER:-86}"
 export LC_DEFAULT_PORT="${LC_DEFAULT_PORT:-8090}"
 
 # OpenLiteSpeed Paths (overridable for unit test sandboxing)
@@ -235,7 +235,10 @@ init_litecontrol_dirs() {
              "${LC_MODULES_DIR}" \
              "${LC_LOG_DIR}"
     chmod 700 "${LC_SECRETS_DIR}"
-    chmod 750 "${LC_CONF_DIR}" "${LC_LOG_DIR}"
+    chmod 750 "${LC_CONF_DIR}" "${LC_SSL_DIR}" "${LC_LOG_DIR}"
+    if getent group "${LC_GROUP}" >/dev/null 2>&1; then
+        chgrp "${LC_GROUP}" "${LC_CONF_DIR}" "${LC_SSL_DIR}" "${LC_LOG_DIR}" 2>/dev/null || true
+    fi
 }
 
 generate_password() {

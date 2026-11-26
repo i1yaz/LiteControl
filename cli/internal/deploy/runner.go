@@ -28,8 +28,76 @@ type DeployResult struct {
 	CommitAuthor  string `json:"commit_author"`
 }
 
-// RunDeploy executes the 4-stage zero-downtime deployment pipeline for specPath.
+type runnerDeps struct {
+	executeTenant   TenantExecutor
+	cloneRelease    func(ctx context.Context, spec Payload, fetchPayload *FetchPayload, releaseDir string, uid, gid int, logWriter io.Writer) (CommitMeta, error)
+	activateRelease func(ctx context.Context, spec Payload, releaseDir, currentLink, previousReleaseDir string, uid, gid int, meta CommitMeta, logWriter io.Writer) (*DeployResult, error)
+	purgeReleases   func(domainRoot string, keepReleases int, activeReleaseDir string) error
+}
+
+func defaultRunnerDeps() runnerDeps {
+	return runnerDeps{
+		executeTenant: ExecuteAsTenantUser,
+		cloneRelease: func(ctx context.Context, spec Payload, fetchPayload *FetchPayload, releaseDir string, uid, gid int, logWriter io.Writer) (CommitMeta, error) {
+			meta, err := FetchReleaseCodeWithPayload(ctx, spec, fetchPayload, releaseDir, logWriter)
+			if err != nil {
+				return CommitMeta{}, fmt.Errorf("fetch release code: %w", err)
+			}
+			if err := LinkSharedPaths(spec, releaseDir, uid, gid); err != nil {
+				return CommitMeta{}, fmt.Errorf("link shared paths: %w", err)
+			}
+			restoreContextBestEffort(releaseDir, logWriter)
+			restoreContextBestEffort(filepath.Join(spec.DomainRoot, "shared"), logWriter)
+			return meta, nil
+		},
+		activateRelease: func(ctx context.Context, spec Payload, releaseDir, currentLink, previousReleaseDir string, uid, gid int, meta CommitMeta, logWriter io.Writer) (*DeployResult, error) {
+			if err := AtomicSymlink(releaseDir, currentLink, uid, gid); err != nil {
+				return nil, fmt.Errorf("activate current symlink: %w", err)
+			}
+			if err := ensurePublicHTMLSymlink(spec.DomainRoot, spec.WebSubpath, uid, gid); err != nil {
+				return nil, fmt.Errorf("ensure public_html symlink: %w", err)
+			}
+			restoreContextBestEffort(filepath.Join(spec.DomainRoot, "public_html"), logWriter)
+			restoreContextBestEffort(currentLink, logWriter)
+			if err := resetLsphpWorkers(ctx, spec.LinuxUser); err != nil {
+				return nil, err
+			}
+			if spec.HealthCheck.Enabled {
+				if err := CheckHealth(ctx, spec.Domain, spec.HealthCheck); err != nil {
+					if spec.HealthCheck.AutoRollback && previousReleaseDir != "" {
+						logStep(logWriter, fmt.Sprintf("Health check failed (%v); rolling back to previous release...", err))
+						_ = AtomicSymlink(previousReleaseDir, currentLink, uid, gid)
+						_ = resetLsphpWorkers(ctx, spec.LinuxUser)
+						return &DeployResult{
+							Status:        "rolled_back",
+							CommitSHA:     meta.SHA,
+							CommitMessage: meta.Message,
+							CommitAuthor:  meta.Author,
+						}, ErrRolledBack
+					}
+					return nil, fmt.Errorf("health check failed: %w", err)
+				}
+			}
+			return nil, nil
+		},
+		purgeReleases: purgeOldReleases,
+	}
+}
+
+// RunDeploy executes the 9-phase zero-downtime deployment pipeline for specPath.
 func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (DeployResult, error) {
+	return RunDeployWithFetch(ctx, specPath, nil, logWriter)
+}
+
+// RunDeployWithFetch executes the 9-phase zero-downtime deployment pipeline for specPath,
+// optionally using a versioned stdin FetchPayload for provider-mode fetches.
+func RunDeployWithFetch(ctx context.Context, specPath string, fetchPayload *FetchPayload, logWriter io.Writer) (DeployResult, error) {
+	return runDeployWithDeps(ctx, specPath, fetchPayload, logWriter, defaultRunnerDeps())
+}
+
+func runDeployWithDeps(ctx context.Context, specPath string, fetchPayload *FetchPayload, logWriter io.Writer, deps runnerDeps) (DeployResult, error) {
+	_ = SweepStaleAskpassDirs("", DefaultStaleAskpassAge)
+
 	raw, err := os.ReadFile(specPath)
 	if err != nil {
 		return DeployResult{}, fmt.Errorf("read spec %s: %w", specPath, err)
@@ -38,6 +106,10 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 	var spec Payload
 	if err := json.Unmarshal(raw, &spec); err != nil {
 		return DeployResult{}, fmt.Errorf("parse spec %s: %w", specPath, err)
+	}
+
+	if err := ValidateDomainUser(spec.LinuxUser); err != nil {
+		return DeployResult{}, err
 	}
 
 	uid, gid, err := lookupUIDGID(spec.LinuxUser)
@@ -89,7 +161,7 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 		if activeDir == "" {
 			activeDir = previousReleaseDir
 		}
-		if err := purgeOldReleases(spec.DomainRoot, spec.KeepReleases, activeDir); err != nil {
+		if err := deps.purgeReleases(spec.DomainRoot, spec.KeepReleases, activeDir); err != nil {
 			logStep(logWriter, fmt.Sprintf("Warning: failed to purge old releases: %v", err))
 		}
 	}()
@@ -97,84 +169,147 @@ func RunDeploy(ctx context.Context, specPath string, logWriter io.Writer) (Deplo
 	releaseDir := filepath.Join(spec.DomainRoot, "releases", spec.ReleaseID)
 	var meta CommitMeta
 
-	logStep(logWriter, fmt.Sprintf("Stage 1/4: Fetching release %s from %s (%s)...", spec.ReleaseID, spec.Repo.URL, spec.Repo.Branch))
-
-	// Stage 1: Clone
-	if err := RunHooks(ctx, "before_clone", spec.Hooks.BeforeClone, spec, releaseDir, meta, logWriter); err != nil {
+	// Phase 1: Custom hooks in before_clone (cwd = {{project}})
+	if err := runSlotHooks(ctx, SlotBeforeClone, StageClone, spec.Hooks.BeforeClone, spec, releaseDir, meta, deps.executeTenant, logWriter); err != nil {
 		return DeployResult{}, err
 	}
-	meta, err = FetchReleaseCode(ctx, spec, releaseDir, logWriter)
+
+	// Phase 2: Stage 1 (Clone Release)
+	logStep(logWriter, fmt.Sprintf("Stage 1/4: Cloning release %s from %s (%s)...", spec.ReleaseID, spec.Repo.URL, spec.Repo.Branch))
+	cloneStart := time.Now()
+	meta, err = deps.cloneRelease(ctx, spec, fetchPayload, releaseDir, uid, gid, logWriter)
 	if err != nil {
-		return DeployResult{}, fmt.Errorf("fetch release code: %w", err)
+		EmitStructuredLog(logWriter, ExecutionLogEntry{
+			Event:        "stage_failed",
+			Status:       "failed",
+			SiteID:       spec.SiteID,
+			DeploymentID: spec.DeploymentID,
+			Stage:        StageClone,
+			Slot:         StageClone,
+			HookID:       0,
+			HookName:     "Clone Release",
+			User:         spec.LinuxUser,
+			Cwd:          spec.DomainRoot,
+			ExitCode:     1,
+			DurationMs:   time.Since(cloneStart).Milliseconds(),
+			Error:        err.Error(),
+		})
+		return DeployResult{}, err
 	}
-	if err := LinkSharedPaths(spec, releaseDir, uid, gid); err != nil {
-		return DeployResult{}, fmt.Errorf("link shared paths: %w", err)
-	}
-	restoreContextBestEffort(releaseDir, logWriter)
-	restoreContextBestEffort(filepath.Join(spec.DomainRoot, "shared"), logWriter)
-	if err := RunHooks(ctx, "after_clone", spec.Hooks.AfterClone, spec, releaseDir, meta, logWriter); err != nil {
+	EmitStructuredLog(logWriter, ExecutionLogEntry{
+		Event:        "stage_completed",
+		Status:       "ok",
+		SiteID:       spec.SiteID,
+		DeploymentID: spec.DeploymentID,
+		Stage:        StageClone,
+		Slot:         StageClone,
+		HookID:       0,
+		HookName:     "Clone Release",
+		User:         spec.LinuxUser,
+		Cwd:          releaseDir,
+		ExitCode:     0,
+		DurationMs:   time.Since(cloneStart).Milliseconds(),
+	})
+
+	// Phase 3: Custom hooks in after_clone (cwd = {{release}})
+	if err := runSlotHooks(ctx, SlotAfterClone, StageClone, spec.Hooks.AfterClone, spec, releaseDir, meta, deps.executeTenant, logWriter); err != nil {
 		return DeployResult{}, err
 	}
 
-	// Stage 2: Install
-	logStep(logWriter, "Stage 2/4: Running install hooks...")
-	if err := RunHooks(ctx, "before_install", spec.Hooks.BeforeInstall, spec, releaseDir, meta, logWriter); err != nil {
-		return DeployResult{}, err
-	}
-	if err := RunHooks(ctx, "install", spec.Hooks.Install, spec, releaseDir, meta, logWriter); err != nil {
-		return DeployResult{}, err
-	}
-	if err := RunHooks(ctx, "after_install", spec.Hooks.AfterInstall, spec, releaseDir, meta, logWriter); err != nil {
+	// Phase 4: Stage 2 (Install Dependencies — cwd = {{release}}, Skipped if null/whitespace-only)
+	if err := runInstallStage(ctx, spec, releaseDir, meta, deps.executeTenant, logWriter); err != nil {
 		return DeployResult{}, err
 	}
 
-	// Stage 3: Activate
+	// Phase 5: Custom hooks in after_install (cwd = {{release}})
+	if err := runSlotHooks(ctx, SlotAfterInstall, StageInstall, spec.Hooks.AfterInstall, spec, releaseDir, meta, deps.executeTenant, logWriter); err != nil {
+		return DeployResult{}, err
+	}
+
+	// Phase 6: Stage 3 (Activate Release)
 	logStep(logWriter, "Stage 3/4: Activating release and reloading lsphp workers...")
-	if err := RunHooks(ctx, "before_activate", spec.Hooks.BeforeActivate, spec, releaseDir, meta, logWriter); err != nil {
-		return DeployResult{}, err
-	}
-	if err := AtomicSymlink(releaseDir, currentLink, uid, gid); err != nil {
-		return DeployResult{}, fmt.Errorf("activate current symlink: %w", err)
-	}
-	if err := ensurePublicHTMLSymlink(spec.DomainRoot, spec.WebSubpath, uid, gid); err != nil {
-		return DeployResult{}, fmt.Errorf("ensure public_html symlink: %w", err)
-	}
-	restoreContextBestEffort(filepath.Join(spec.DomainRoot, "public_html"), logWriter)
-	restoreContextBestEffort(currentLink, logWriter)
-	if err := resetLsphpWorkers(ctx, spec.LinuxUser); err != nil {
-		return DeployResult{}, err
-	}
-	if err := RunHooks(ctx, "after_activate", spec.Hooks.AfterActivate, spec, releaseDir, meta, logWriter); err != nil {
-		return DeployResult{}, err
-	}
-
-	// Stage 4: Health Check & Purge
-	logStep(logWriter, "Stage 4/4: Running health checks and purging old releases...")
-	if spec.HealthCheck.Enabled {
-		if err := CheckHealth(ctx, spec.Domain, spec.HealthCheck); err != nil {
-			if spec.HealthCheck.AutoRollback && previousReleaseDir != "" {
-				logStep(logWriter, fmt.Sprintf("Health check failed (%v); rolling back to previous release...", err))
-				_ = AtomicSymlink(previousReleaseDir, currentLink, uid, gid)
-				_ = resetLsphpWorkers(ctx, spec.LinuxUser)
-				return DeployResult{
-					Status:        "rolled_back",
-					CommitSHA:     meta.SHA,
-					CommitMessage: meta.Message,
-					CommitAuthor:  meta.Author,
-				}, ErrRolledBack
-			}
-			return DeployResult{}, fmt.Errorf("health check failed: %w", err)
+	activateStart := time.Now()
+	rolledBackResult, err := deps.activateRelease(ctx, spec, releaseDir, currentLink, previousReleaseDir, uid, gid, meta, logWriter)
+	if err != nil {
+		EmitStructuredLog(logWriter, ExecutionLogEntry{
+			Event:        "stage_failed",
+			Status:       "failed",
+			SiteID:       spec.SiteID,
+			DeploymentID: spec.DeploymentID,
+			Stage:        StageActivate,
+			Slot:         StageActivate,
+			HookID:       0,
+			HookName:     "Activate Release",
+			User:         spec.LinuxUser,
+			Cwd:          releaseDir,
+			ExitCode:     1,
+			DurationMs:   time.Since(activateStart).Milliseconds(),
+			Error:        err.Error(),
+		})
+		if rolledBackResult != nil {
+			return *rolledBackResult, err
 		}
-	}
-
-	if err := RunHooks(ctx, "before_purge", spec.Hooks.BeforePurge, spec, releaseDir, meta, logWriter); err != nil {
 		return DeployResult{}, err
 	}
-	if err := purgeOldReleases(spec.DomainRoot, spec.KeepReleases, releaseDir); err != nil {
+	EmitStructuredLog(logWriter, ExecutionLogEntry{
+		Event:        "stage_completed",
+		Status:       "ok",
+		SiteID:       spec.SiteID,
+		DeploymentID: spec.DeploymentID,
+		Stage:        StageActivate,
+		Slot:         StageActivate,
+		HookID:       0,
+		HookName:     "Activate Release",
+		User:         spec.LinuxUser,
+		Cwd:          releaseDir,
+		ExitCode:     0,
+		DurationMs:   time.Since(activateStart).Milliseconds(),
+	})
+
+	// Phase 7: Custom hooks in after_activate (cwd = {{release}})
+	if err := runSlotHooks(ctx, SlotAfterActivate, StageActivate, spec.Hooks.AfterActivate, spec, releaseDir, meta, deps.executeTenant, logWriter); err != nil {
+		return DeployResult{}, err
+	}
+
+	// Phase 8: Stage 4 (Purge Old Releases)
+	logStep(logWriter, "Stage 4/4: Purging old releases...")
+	purgeStart := time.Now()
+	if err := deps.purgeReleases(spec.DomainRoot, spec.KeepReleases, releaseDir); err != nil {
+		EmitStructuredLog(logWriter, ExecutionLogEntry{
+			Event:        "stage_failed",
+			Status:       "failed",
+			SiteID:       spec.SiteID,
+			DeploymentID: spec.DeploymentID,
+			Stage:        StagePurge,
+			Slot:         StagePurge,
+			HookID:       0,
+			HookName:     "Purge Old Releases",
+			User:         spec.LinuxUser,
+			Cwd:          spec.DomainRoot,
+			ExitCode:     1,
+			DurationMs:   time.Since(purgeStart).Milliseconds(),
+			Error:        err.Error(),
+		})
 		return DeployResult{}, fmt.Errorf("purge old releases: %w", err)
 	}
 	purged = true
-	if err := RunHooks(ctx, "after_purge", spec.Hooks.AfterPurge, spec, releaseDir, meta, logWriter); err != nil {
+	EmitStructuredLog(logWriter, ExecutionLogEntry{
+		Event:        "stage_completed",
+		Status:       "ok",
+		SiteID:       spec.SiteID,
+		DeploymentID: spec.DeploymentID,
+		Stage:        StagePurge,
+		Slot:         StagePurge,
+		HookID:       0,
+		HookName:     "Purge Old Releases",
+		User:         spec.LinuxUser,
+		Cwd:          spec.DomainRoot,
+		ExitCode:     0,
+		DurationMs:   time.Since(purgeStart).Milliseconds(),
+	})
+
+	// Phase 9: Custom hooks in after_purge (cwd = {{release}})
+	if err := runSlotHooks(ctx, SlotAfterPurge, StagePurge, spec.Hooks.AfterPurge, spec, releaseDir, meta, deps.executeTenant, logWriter); err != nil {
 		return DeployResult{}, err
 	}
 

@@ -492,6 +492,19 @@ upgrade_laravel_panel() {
             fi
         fi
 
+        if [[ -s "${LC_CONF_DIR}/panel_domain" && -f "${LC_PANEL_DIR}/.env" ]]; then
+            local saved_domain saved_port
+            saved_domain=$(tr -d ' \t\r\n' < "${LC_CONF_DIR}/panel_domain")
+            saved_port=$(get_panel_port)
+            if [[ -n "${saved_domain}" ]]; then
+                if grep -qE '^APP_URL=' "${LC_PANEL_DIR}/.env"; then
+                    sed -i -E "s|^APP_URL=.*|APP_URL=https://${saved_domain}:${saved_port}|" "${LC_PANEL_DIR}/.env"
+                else
+                    printf "\nAPP_URL=https://%s:%s\n" "${saved_domain}" "${saved_port}" >> "${LC_PANEL_DIR}/.env"
+                fi
+            fi
+        fi
+
         log_info "Running database migrations and refreshing caches..."
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan migrate --force"
         su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan optimize:clear"
@@ -520,6 +533,17 @@ reconcile_panel_services() {
     mkdir -p /tmp/litecontrol-nginx-body /tmp/litecontrol-nginx-proxy /tmp/litecontrol-nginx-fastcgi /tmp/litecontrol-nginx-uwsgi /tmp/litecontrol-nginx-scgi
     chown -R "${LC_USER}:${LC_GROUP}" /tmp/litecontrol-nginx-* 2>/dev/null || true
 
+    if [[ -d "${LC_CONF_DIR}" ]]; then
+        chgrp "${LC_GROUP}" "${LC_CONF_DIR}" 2>/dev/null || true
+        chmod 750 "${LC_CONF_DIR}" 2>/dev/null || true
+    fi
+    if [[ -d "${LC_CONF_DIR}/ssl" ]]; then
+        chgrp "${LC_GROUP}" "${LC_CONF_DIR}/ssl" 2>/dev/null || true
+        chmod 750 "${LC_CONF_DIR}/ssl" 2>/dev/null || true
+        [[ -f "${LC_CONF_DIR}/ssl/fullchain.pem" ]] && chmod 644 "${LC_CONF_DIR}/ssl/fullchain.pem" 2>/dev/null || true
+        [[ -f "${LC_CONF_DIR}/ssl/privkey.pem" ]] && chmod 600 "${LC_CONF_DIR}/ssl/privkey.pem" 2>/dev/null || true
+    fi
+
     cp "${LC_BASE_DIR}/templates/panel/fastcgi_params.tpl" "${PANEL_NGINX_DIR}/fastcgi_params"
     sed "s/__PANEL_PORT__/${panel_port}/g" "${LC_BASE_DIR}/templates/panel/nginx.conf.tpl" > "${PANEL_NGINX_CONF}"
     apply_panel_ip_access_config "$(get_panel_ip_access)"
@@ -527,8 +551,10 @@ reconcile_panel_services() {
 
     cp "${LC_BASE_DIR}/templates/panel/php-fpm.conf.tpl" "${PANEL_FPM_CONF}"
 
+    local panel_ver="${LC_PANEL_PHP_VER:-86}"
+    local dotted_panel_ver="${panel_ver:0:1}.${panel_ver:1:1}"
     local php_fpm_bin
-    php_fpm_bin=$(command -v php-fpm"${LC_PHP_VER:0:1}.${LC_PHP_VER:1:1}" 2>/dev/null || command -v php-fpm 2>/dev/null || echo "/usr/sbin/php-fpm")
+    php_fpm_bin=$(command -v php-fpm"${dotted_panel_ver}" 2>/dev/null || command -v php-fpm"${LC_PHP_VER:0:1}.${LC_PHP_VER:1:1}" 2>/dev/null || command -v php-fpm 2>/dev/null || echo "/usr/sbin/php-fpm")
 
     sed "s|__PHP_FPM_BIN__|${php_fpm_bin}|g" "${LC_BASE_DIR}/templates/system/litecontrol-php.service" > /etc/systemd/system/litecontrol-php.service
     cp "${LC_BASE_DIR}/templates/system/litecontrol-panel.service" /etc/systemd/system/litecontrol-panel.service

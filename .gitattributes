@@ -12,4 +12,3 @@ bin/lc-cli text eol=lf
 templates/** text eol=lf
 scripts/** text eol=lf
 
-graphify-out/graph.json merge=graphify

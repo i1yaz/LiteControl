@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Domains\Deployment\Enums\DeploymentHookSlot;
 use App\Domains\Deployment\Services\DeploymentPresetService;
 
-it('returns structured defaults for all supported presets', function () {
+it('returns structured canonical defaults for all supported presets', function () {
     $service = new DeploymentPresetService;
     $presets = $service->all();
 
@@ -14,13 +15,19 @@ it('returns structured defaults for all supported presets', function () {
         'web_subpath' => 'public',
         'shared_dirs' => ['storage'],
         'shared_files' => ['.env'],
+        'install_script' => '{{composer}} install --no-dev --optimize-autoloader --no-interaction',
     ]);
-    expect($presets['laravel']['hooks'])->toHaveCount(6);
+    expect($presets['laravel']['hooks'])->toHaveCount(5);
+    foreach ($presets['laravel']['hooks'] as $hook) {
+        expect($hook)->toHaveKeys(['name', 'slot', 'script', 'sort_order']);
+        expect(DeploymentHookSlot::tryFrom($hook['slot']))->not->toBeNull();
+    }
 
     expect($presets['wordpress'])->toMatchArray([
         'web_subpath' => '',
         'shared_dirs' => ['wp-content/uploads', 'wp-content/upgrade', 'wp-content/cache'],
         'shared_files' => ['wp-config.php', '.htaccess'],
+        'install_script' => null,
         'hooks' => [],
     ]);
 
@@ -28,13 +35,15 @@ it('returns structured defaults for all supported presets', function () {
         'web_subpath' => 'public',
         'shared_dirs' => ['storage', 'logs'],
         'shared_files' => ['.env'],
+        'install_script' => "npm ci\nnpm run build",
+        'hooks' => [],
     ]);
-    expect($presets['node']['hooks'])->toHaveCount(2);
 
     expect($presets['custom'])->toMatchArray([
         'web_subpath' => '',
         'shared_dirs' => [],
         'shared_files' => ['.env'],
+        'install_script' => null,
         'hooks' => [],
     ]);
 });

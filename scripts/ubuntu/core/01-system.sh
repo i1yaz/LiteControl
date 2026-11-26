@@ -96,6 +96,10 @@ create_litecontrol_user() {
         log_info "System user '${LC_USER}' already exists."
     fi
 
+    # Ensure panel user can traverse /etc/litecontrol and read public panel SSL metadata (secrets remain 700 root:root)
+    chgrp "${LC_GROUP}" "${LC_CONF_DIR}" "${LC_SSL_DIR}" "${LC_LOG_DIR}" 2>/dev/null || true
+    chmod 750 "${LC_CONF_DIR}" "${LC_SSL_DIR}" "${LC_LOG_DIR}" 2>/dev/null || true
+
     # Ensure standard nobody/nogroup exist for OLS worker compatibility
     if ! getent group nogroup >/dev/null; then
         groupadd --system nogroup || true
