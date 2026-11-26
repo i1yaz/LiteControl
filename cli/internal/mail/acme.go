@@ -92,7 +92,7 @@ func ProvisionAcmeVhost(ctx context.Context, opts ProvisionAcmeVhostOptions) (Pr
 	}
 
 	if !opts.SkipReload {
-		if _, err := runner.Run(ctx, "systemctl", "reload", "lsws"); err != nil {
+		if err := reloadOpenLiteSpeed(ctx, runner); err != nil {
 			return ProvisionAcmeVhostResult{}, fmt.Errorf("reload OpenLiteSpeed: %w", err)
 		}
 	}

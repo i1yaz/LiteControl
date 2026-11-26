@@ -342,7 +342,11 @@ func Reconcile(ctx context.Context, opts ReconcileOptions) (ReconcileResult, err
 	unchanged := make([]string, 0)
 	for _, svc := range allDaemons {
 		if changedDaemons[svc] {
-			if _, err := runner.Run(ctx, "systemctl", "reload", svc); err != nil {
+			action := "reload-or-restart"
+			if svc == "postsrsd" {
+				action = "restart"
+			}
+			if _, err := runner.Run(ctx, "systemctl", action, svc); err != nil {
 				return ReconcileResult{}, fmt.Errorf("reload %s: %w", svc, err)
 			}
 			reloaded = append(reloaded, svc)

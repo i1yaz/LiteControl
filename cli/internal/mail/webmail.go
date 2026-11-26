@@ -197,7 +197,7 @@ func WebmailInstall(ctx context.Context, opts WebmailInstallOptions) (WebmailIns
 
 	// 6. Reload OpenLiteSpeed so the new isolated vhost is live.
 	if !opts.SkipReload {
-		if _, err := runner.Run(ctx, "systemctl", "reload", "lsws"); err != nil {
+		if err := reloadOpenLiteSpeed(ctx, runner); err != nil {
 			return WebmailInstallResult{}, fmt.Errorf("reload OpenLiteSpeed: %w", err)
 		}
 	}
@@ -257,7 +257,7 @@ func WebmailUninstall(ctx context.Context, opts WebmailUninstallOptions) (Webmai
 	_ = os.Remove(statePath)
 
 	if !opts.SkipReload {
-		if _, err := runner.Run(ctx, "systemctl", "reload", "lsws"); err != nil {
+		if err := reloadOpenLiteSpeed(ctx, runner); err != nil {
 			return WebmailUninstallResult{}, fmt.Errorf("reload OpenLiteSpeed: %w", err)
 		}
 	}
@@ -319,10 +319,7 @@ func WebmailStatus(ctx context.Context, opts WebmailStatusOptions) (WebmailStatu
 		}, nil
 	}
 
-	running := false
-	if out, err := runner.Run(ctx, "systemctl", "is-active", "lsws"); err == nil {
-		running = strings.TrimSpace(out) == "active"
-	}
+	running := isOpenLiteSpeedActive(ctx, runner)
 
 	return WebmailStatusResult{
 		Driver:    driver,
@@ -330,6 +327,28 @@ func WebmailStatus(ctx context.Context, opts WebmailStatusOptions) (WebmailStatu
 		Installed: true,
 		Running:   running,
 	}, nil
+}
+
+func reloadOpenLiteSpeed(ctx context.Context, runner CommandRunner) error {
+	if _, err := runner.Run(ctx, "systemctl", "reload", "lsws"); err == nil {
+		return nil
+	}
+	if _, err := runner.Run(ctx, "systemctl", "reload", "lshttpd"); err == nil {
+		return nil
+	}
+	if _, err := runner.Run(ctx, "/usr/local/lsws/bin/lswsctrl", "reload"); err == nil {
+		return nil
+	}
+	return fmt.Errorf("failed to reload OpenLiteSpeed (tried lsws, lshttpd, lswsctrl)")
+}
+
+func isOpenLiteSpeedActive(ctx context.Context, runner CommandRunner) bool {
+	for _, svc := range []string{"lsws", "lshttpd"} {
+		if out, err := runner.Run(ctx, "systemctl", "is-active", svc); err == nil && strings.TrimSpace(out) == "active" {
+			return true
+		}
+	}
+	return false
 }
 
 func renderSnappyMailApplicationIni() string {
