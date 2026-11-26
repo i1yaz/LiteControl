@@ -125,7 +125,8 @@ func (r MariaDBStateReader) ReadState(ctx context.Context) (ReconcileState, erro
 	runQuery := func(sql string) (string, error) {
 		var args []string
 		if defaultsFile != "" {
-			args = append(args, "--defaults-extra-file="+defaultsFile)
+			// Use --defaults-file (not --defaults-extra-file) so /root/.my.cnf cannot override the password.
+			args = append(args, "--defaults-file="+defaultsFile)
 		}
 		args = append(args,
 			"--batch", "--raw", "--skip-column-names",

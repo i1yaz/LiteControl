@@ -319,6 +319,8 @@ var mailReadonlyViews = []string{
 	"v_postfix_sender_aliases",
 	"v_dovecot_users",
 	"mail_domains",
+	"mail_accounts",
+	"mail_aliases",
 	"mail_dkim_keys",
 }
 
