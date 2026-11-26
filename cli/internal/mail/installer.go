@@ -229,7 +229,7 @@ func installMailPackages(ctx context.Context, osInfo OSInfo, rootDir string, run
 		if err := os.MkdirAll(keyringDir, 0o755); err != nil {
 			return fmt.Errorf("mkdir apt keyrings: %w", err)
 		}
-		if _, err := runner.Run(ctx, "sh", "-c", "wget -O- https://rspamd.com/apt-stable/gpg.key | gpg --dearmor -o /etc/apt/keyrings/rspamd.gpg"); err != nil {
+		if _, err := runner.Run(ctx, "sh", "-c", "wget -qO- https://rspamd.com/apt-stable/gpg.key | gpg --batch --yes --dearmor -o /etc/apt/keyrings/rspamd.gpg"); err != nil {
 			return fmt.Errorf("install rspamd apt gpg key: %w", err)
 		}
 		codename := osInfo.Codename
