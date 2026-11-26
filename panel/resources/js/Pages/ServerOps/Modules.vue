@@ -44,7 +44,7 @@ const stopPolling = () => {
 const startPolling = () => {
     if (pollTimer !== null) return;
     pollTimer = setInterval(() => {
-        router.reload({ only: ['modules', 'installingModule'] });
+        router.reload({ only: ['modules', 'installingModule', 'active_modules'] });
     }, 5000);
 };
 

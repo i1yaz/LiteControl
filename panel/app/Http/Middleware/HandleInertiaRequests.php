@@ -58,7 +58,7 @@ class HandleInertiaRequests extends Middleware
             'php' => [
                 'supported_versions' => PhpVersion::SUPPORTED,
             ],
-            'modules' => fn () => $user ? [
+            'active_modules' => fn () => $user ? [
                 'mail_core' => app(ModuleRegistryQueryInterface::class)->isActive('mail_core'),
                 'dns' => app(ModuleRegistryQueryInterface::class)->isActive('dns'),
                 'ftp' => app(ModuleRegistryQueryInterface::class)->isActive('ftp'),

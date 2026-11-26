@@ -7,7 +7,7 @@ export function useNavigation() {
 
     const user = computed(() => page.props.auth?.user || {});
     const isAdmin = computed(() => user.value?.role === 'admin');
-    const activeModules = computed(() => page.props.modules || {});
+    const activeModules = computed(() => page.props.active_modules || {});
     const isModuleActive = (moduleKey) => Boolean(activeModules.value?.[moduleKey]);
     const currentUrl = computed(() => page.url);
 

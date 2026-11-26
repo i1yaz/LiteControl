@@ -49,10 +49,16 @@ it('renders mail stack module props with status, dependencies, ram, and webmail 
     $moduleMock->shouldReceive('getModuleStatus')
         ->with('mail_core')
         ->andReturn(['installed' => true, 'status' => 'active']);
+    $moduleMock->shouldReceive('getModuleStatus')
+        ->with('dns')
+        ->andReturn(['installed' => false, 'status' => 'not_installed']);
+    $moduleMock->shouldReceive('getModuleStatus')
+        ->with('ftp')
+        ->andReturn(['installed' => false, 'status' => 'not_installed']);
     $this->app->instance(ModuleDriverInterface::class, $moduleMock);
 
     $serverMock = Mockery::mock(ServerDriverInterface::class);
-    $serverMock->shouldReceive('getStats')->once()->andReturn([
+    $serverMock->shouldReceive('getStats')->andReturn([
         'ram_total_mb' => 8192,
     ]);
     $this->app->instance(ServerDriverInterface::class, $serverMock);

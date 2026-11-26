@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-it('shares modules.mail_core, dns, and ftp as false when inactive', function () {
+it('shares active_modules.mail_core, dns, and ftp as false when inactive', function () {
     $user = User::factory()->create(['username' => 'mailadmin', 'role' => 'admin']);
 
     $mock = $this->mock(ModuleRegistryQueryInterface::class);
@@ -22,13 +22,13 @@ it('shares modules.mail_core, dns, and ftp as false when inactive', function () 
         ->get('/dashboard')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('modules.mail_core', false)
-            ->where('modules.dns', false)
-            ->where('modules.ftp', false)
+            ->where('active_modules.mail_core', false)
+            ->where('active_modules.dns', false)
+            ->where('active_modules.ftp', false)
         );
 });
 
-it('shares modules.mail_core, dns, and ftp as true when active', function () {
+it('shares active_modules.mail_core, dns, and ftp as true when active', function () {
     $user = User::factory()->create(['username' => 'mailadmin', 'role' => 'admin']);
 
     $mock = $this->mock(ModuleRegistryQueryInterface::class);
@@ -40,8 +40,28 @@ it('shares modules.mail_core, dns, and ftp as true when active', function () {
         ->get('/dashboard')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('modules.mail_core', true)
-            ->where('modules.dns', true)
-            ->where('modules.ftp', true)
+            ->where('active_modules.mail_core', true)
+            ->where('active_modules.dns', true)
+            ->where('active_modules.ftp', true)
+        );
+});
+
+it('does not clobber shared active_modules on the /modules manager page', function () {
+    $user = User::factory()->create(['username' => 'mailadmin2', 'role' => 'admin']);
+
+    $mock = $this->mock(ModuleRegistryQueryInterface::class);
+    $mock->shouldReceive('isActive')->with('mail_core')->andReturn(true);
+    $mock->shouldReceive('isActive')->with('dns')->andReturn(false);
+    $mock->shouldReceive('isActive')->with('ftp')->andReturn(false);
+
+    $this->actingAs($user)
+        ->get('/modules')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('ServerOps/Modules')
+            ->has('modules')
+            ->where('active_modules.mail_core', true)
+            ->where('active_modules.dns', false)
+            ->where('active_modules.ftp', false)
         );
 });

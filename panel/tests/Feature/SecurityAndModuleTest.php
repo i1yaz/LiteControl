@@ -269,6 +269,9 @@ class SecurityAndModuleTest extends TestCase
 
         $mock = $this->mock(ModuleDriverInterface::class);
         $mock->shouldReceive('getModuleStatus')
+            ->byDefault()
+            ->andReturn(['installed' => false, 'status' => 'not_installed']);
+        $mock->shouldReceive('getModuleStatus')
             ->with('modsecurity')
             ->once()
             ->andReturn(['installed' => true, 'state' => 'not_installed']);
@@ -288,6 +291,9 @@ class SecurityAndModuleTest extends TestCase
 
         $mock = $this->mock(ModuleDriverInterface::class);
         $mock->shouldReceive('getModuleStatus')
+            ->byDefault()
+            ->andReturn(['installed' => false, 'status' => 'not_installed']);
+        $mock->shouldReceive('getModuleStatus')
             ->with('modsecurity')
             ->once()
             ->andReturn(['installed' => true, 'status' => 'active']);
@@ -306,6 +312,9 @@ class SecurityAndModuleTest extends TestCase
         $admin = User::where('role', 'admin')->first();
 
         $mock = $this->mock(ModuleDriverInterface::class);
+        $mock->shouldReceive('getModuleStatus')
+            ->byDefault()
+            ->andReturn(['installed' => false, 'status' => 'not_installed']);
         $mock->shouldReceive('getModuleStatus')
             ->with('imunifyav')
             ->once()
