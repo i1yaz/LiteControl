@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Download, ExternalLink, Loader2, Trash2 } from '@lucide/vue';
+import { Download, ExternalLink, Trash2 } from '@lucide/vue';
 import UiAlert from '@shared/Ui/UiAlert.vue';
 import UiBadge from '@shared/Ui/UiBadge.vue';
 import UiButton from '@shared/Ui/UiButton.vue';
@@ -191,8 +191,7 @@ const statusDotClass = computed(() => {
                     :disabled="installDisabled"
                     @click="emit('install', module)"
                 >
-                    <Loader2 v-if="isInFlight" class="w-3.5 h-3.5 animate-spin" />
-                    <Download v-else class="w-3.5 h-3.5" />
+                    <Download v-if="!isInFlight" class="w-3.5 h-3.5" />
                     <span>{{ isInFlight ? 'Provisioning...' : 'Install' }}</span>
                 </UiButton>
 
