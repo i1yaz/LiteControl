@@ -39,11 +39,12 @@ func UninstallCore(ctx context.Context, opts UninstallOptions) (UninstallResult,
 		_, _ = runner.Run(ctx, "systemctl", "disable", "--now", svc)
 	}
 
-	// Remove dedicated lc-rspamd-redis unit file and reload systemd.
+	// Remove dedicated lc-rspamd-redis unit file and filter mode marker, then reload systemd.
 	unitPath := filepath.Join(rootDir, "etc", "systemd", "system", "lc-rspamd-redis.service")
 	if err := os.Remove(unitPath); err != nil && !os.IsNotExist(err) {
 		return UninstallResult{}, fmt.Errorf("remove %s: %w", unitPath, err)
 	}
+	_ = os.Remove(filepath.Join(rootDir, "etc", "rspamd", "local.d", "lc_filter_mode"))
 	if _, err := runner.Run(ctx, "systemctl", "daemon-reload"); err != nil {
 		return UninstallResult{}, fmt.Errorf("systemctl daemon-reload: %w", err)
 	}

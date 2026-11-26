@@ -38,6 +38,15 @@ class RemoveModuleAction
 
         Cache::forget("module_install_{$module}");
         Cache::forget("module_install_{$module}_error");
+        if ($module === 'mail_core') {
+            Cache::forget('module_install_mail_filter');
+            Cache::forget('module_install_mail_filter_error');
+            Cache::forget('module_install_clamav');
+            Cache::forget('module_install_clamav_error');
+        } elseif ($module === 'mail_filter') {
+            Cache::forget('module_install_clamav');
+            Cache::forget('module_install_clamav_error');
+        }
 
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,

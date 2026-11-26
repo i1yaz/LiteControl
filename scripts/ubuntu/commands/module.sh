@@ -123,10 +123,10 @@ check_module_installed() {
     fi
     case "${mod}" in
         mail_core)
-            [[ -f /etc/postfix/sql/domains.cf && -f /etc/dovecot/conf.d/99-litecontrol.conf ]]
+            [[ -f /etc/systemd/system/lc-rspamd-redis.service && -f /etc/postfix/sql/domains.cf && -f /etc/dovecot/conf.d/99-litecontrol.conf ]]
             ;;
         mail_filter)
-            if [[ -f /etc/rspamd/local.d/lc_filter_mode ]]; then
+            if check_module_installed "mail_core" && [[ -f /etc/rspamd/local.d/lc_filter_mode ]]; then
                 local mode
                 mode=$(tr -d ' \t\r\n' < /etc/rspamd/local.d/lc_filter_mode 2>/dev/null || true)
                 [[ "${mode}" == "full" || "${mode}" == "full+clamav" ]]
@@ -135,7 +135,7 @@ check_module_installed() {
             fi
             ;;
         clamav)
-            if [[ -f /etc/rspamd/local.d/lc_filter_mode ]]; then
+            if check_module_installed "mail_core" && [[ -f /etc/rspamd/local.d/lc_filter_mode ]]; then
                 local mode
                 mode=$(tr -d ' \t\r\n' < /etc/rspamd/local.d/lc_filter_mode 2>/dev/null || true)
                 [[ "${mode}" == "full+clamav" ]]
