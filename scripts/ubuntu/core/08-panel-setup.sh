@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# LiteControl Core 08: Panel VirtualHost, Sudoers, CLI Symlink, Worker & MOTD
-# Configures LiteControl to run on OpenLiteSpeed via isolated litecontrol_php
+# LiteControl Core 08: Panel Server, Sudoers, CLI Engine, PHP Shim & Worker
+# Configures LiteControl on dedicated Nginx + PHP-FPM and OLS for hosted sites
 # ==============================================================================
 
 set -euo pipefail
@@ -59,6 +59,22 @@ sync_files_to_install_dir() {
             chmod 750 "${LC_BASE_DIR}/bin/lc-cli-go.tmp" && \
             mv -f "${LC_BASE_DIR}/bin/lc-cli-go.tmp" "${LC_BASE_DIR}/bin/lc-cli-go" || true
     fi
+
+    # Install per-user PHP CLI setter and Go php-shim (fallback to shell shim if Go build unavailable)
+    install -d -m 0755 -o root -g root /usr/local/lib/lc-panel
+    if [[ -f "${LC_BASE_DIR}/scripts/set-user-php-cli.sh" ]]; then
+        install -m 0750 -o root -g root "${LC_BASE_DIR}/scripts/set-user-php-cli.sh" /usr/local/lib/lc-panel/set-user-php-cli.sh
+    fi
+    if [[ -f "${LC_BASE_DIR}/scripts/bootstrap-lc-php-shim.sh" && -n "${go_bin}" && -f "${REPO_ROOT}/shim/go.mod" ]]; then
+        local default_cli_ver="${LC_PHP_VER:0:1}.${LC_PHP_VER:1:1}"
+        SHIM_SRC_DIR="${REPO_ROOT}/shim" bash "${LC_BASE_DIR}/scripts/bootstrap-lc-php-shim.sh" "${default_cli_ver}" || true
+    fi
+    if [[ ! -x /usr/local/lib/lc-panel/php-shim && -f "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" ]]; then
+        rm -f /usr/local/bin/php
+        cp "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" /usr/local/bin/php
+        sed -i 's/\r$//' /usr/local/bin/php
+        chmod 0755 /usr/local/bin/php
+    fi
 }
 
 configure_sudoers() {
@@ -88,33 +104,6 @@ bootstrap_panel_app() {
     get_or_create_secret "panel_admin_password" 16 >/dev/null
 
     mkdir -p "${LC_PANEL_DIR}/public"
-
-    # Write default .htaccess for Laravel routing if missing
-    if [[ ! -f "${LC_PANEL_DIR}/public/.htaccess" ]]; then
-        cat > "${LC_PANEL_DIR}/public/.htaccess" <<'EOF'
-<IfModule mod_rewrite.c>
-    <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
-    </IfModule>
-
-    RewriteEngine On
-
-    # Handle Authorization Header
-    RewriteCond %{HTTP:Authorization} .
-    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-
-    # Redirect Trailing Slashes If Not A Folder...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_URI} (.+)/$
-    RewriteRule ^ %1 [L,R=301]
-
-    # Send Requests To Front Controller...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
-</IfModule>
-EOF
-    fi
 
     # Ensure panel user has writable cache and config directory
     mkdir -p "${LC_BASE_DIR}/.config/composer" "${LC_BASE_DIR}/.cache/composer" "${LC_BASE_DIR}/.npm"
@@ -148,20 +137,8 @@ EOF
 
         chown -R "${LC_USER}:${LC_GROUP}" "${LC_PANEL_DIR}"
         local composer_bin="${LC_BASE_DIR}/bin/composer.phar"
-        local panel_ver="${LC_PANEL_PHP_VER:-86}"
-        local dotted_panel_ver="${panel_ver:0:1}.${panel_ver:1:1}"
-        local php_bin="/usr/bin/php${dotted_panel_ver}"
-
-        # If versioned php CLI does not exist, check primary LSPHP or system default
-        if [[ ! -x "${php_bin}" ]]; then
-            php_bin="${OLS_DIR}/lsphp${panel_ver}/bin/php"
-        fi
-        if [[ ! -x "${php_bin}" ]]; then
-            php_bin="/usr/local/bin/php"
-        fi
-        if [[ ! -x "${php_bin}" ]]; then
-            php_bin="$(command -v php 2>/dev/null || echo "/usr/bin/php")"
-        fi
+        local php_bin
+        php_bin=$(get_panel_php_bin)
         local run_composer=""
         local system_composer
         system_composer="$(command -v composer 2>/dev/null || true)"
@@ -210,9 +187,15 @@ EOF
             su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan tinker --execute=\"\\App\\Domains\\Identity\\Models\\User::where('username', 'admin')->update(['password' => \\Illuminate\\Support\\Facades\\Hash::make('${admin_pass}')]);\"" 2>/dev/null || true
         fi
 
-        # Enable Laravel queue worker service
+        log_info "Optimizing Laravel panel caches..."
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan optimize:clear"
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan config:cache"
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan route:cache"
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan view:cache"
+
+        # Enable Laravel queue worker service using Panel PHP CLI
         local worker_tpl="${LC_BASE_DIR}/templates/system/litecontrol-worker.service"
-        sed "s/__PHP_VER__/${LC_PHP_VER}/g" "${worker_tpl}" > /etc/systemd/system/litecontrol-worker.service
+        sed "s|__PANEL_PHP_BIN__|${php_bin}|g" "${worker_tpl}" > /etc/systemd/system/litecontrol-worker.service
         systemctl daemon-reload
         systemctl enable litecontrol-worker.service >/dev/null 2>&1 || true
         systemctl restart litecontrol-worker.service || true
@@ -297,6 +280,7 @@ configure_panel_server() {
 
     # Deploy nginx.conf with panel_port
     sed "s/__PANEL_PORT__/${panel_port}/g" "${LC_BASE_DIR}/templates/panel/nginx.conf.tpl" > "${PANEL_NGINX_CONF}"
+    apply_panel_ip_access_config "$(get_panel_ip_access)"
     panel_backup_config
 
     # Deploy php-fpm.conf

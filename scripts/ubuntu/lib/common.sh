@@ -41,6 +41,20 @@ export LC_PHP_VER="${LC_PHP_VER:-83}"
 export LC_PANEL_PHP_VER="${LC_PANEL_PHP_VER:-86}"
 export LC_DEFAULT_PORT="${LC_DEFAULT_PORT:-8090}"
 
+get_panel_php_bin() {
+    local panel_ver="${LC_PANEL_PHP_VER:-86}"
+    local dotted_panel_ver="${panel_ver:0:1}.${panel_ver:1:1}"
+    if [[ -x "/usr/bin/php${dotted_panel_ver}" ]]; then
+        printf "%s" "/usr/bin/php${dotted_panel_ver}"
+    elif [[ -x "/usr/bin/php" ]]; then
+        printf "%s" "/usr/bin/php"
+    elif command -v php >/dev/null 2>&1; then
+        command -v php
+    else
+        printf "%s" "/usr/bin/php"
+    fi
+}
+
 # OpenLiteSpeed Paths (overridable for unit test sandboxing)
 export OLS_DIR="${OLS_DIR:-/usr/local/lsws}"
 export OLS_CONF="${OLS_CONF:-${OLS_DIR}/conf/httpd_config.conf}"

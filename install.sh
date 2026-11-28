@@ -3,10 +3,10 @@
 # LiteControl - Modular OpenLiteSpeed Control Panel Installer (Ubuntu LTS)
 #
 # Core Stack Installed by Default:
-#   - OpenLiteSpeed Web Server (with isolated Panel LSAPI pool)
+#   - OpenLiteSpeed Web Server (hosted websites) + Default Website LSPHP (lsphp83)
+#   - Isolated Panel Nginx & PHP-FPM (out-of-band panel daemon) + Composer
 #   - MariaDB Server (hardened)
 #   - Redis Server (local cache/queue/session store)
-#   - Primary LSPHP (default: lsphp83) + Composer
 #   - phpMyAdmin (served under Panel listener /phpmyadmin/)
 #   - acme.sh (Let's Encrypt SSL) & UFW Firewall
 #

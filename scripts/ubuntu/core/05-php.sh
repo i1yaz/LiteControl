@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# LiteControl Core 05: Default LSPHP (8.3), Extensions & Composer Setup
-# Note: Only the primary PHP version is installed during core setup.
-# Additional versions (7.4 - 8.5) are installed on-demand via `lc-cli php install`.
+# LiteControl Core 05: Website LSPHP & Dedicated Panel Nginx + PHP-FPM Setup
+# Note:
+#   - Default website LSPHP (default: lsphp83) is installed for OpenLiteSpeed.
+#   - Additional website versions (7.4 - 8.6) are installed via `lc-cli php install`.
+#   - Dedicated Panel Nginx + PHP-FPM runs isolated from website LSPHP.
+#   - Pass `--panel-only` (used by upgrades) to skip website LSPHP setup/tuning.
 # ==============================================================================
 
 set -euo pipefail
@@ -15,7 +18,7 @@ install_primary_lsphp() {
     local ver="${LC_PHP_VER}"
     local dotted_ver="${ver:0:1}.${ver:1:1}"
 
-    log_step "05. Installing Primary LSPHP (PHP ${dotted_ver}) & Composer"
+    log_step "05. Installing Default Website LSPHP (PHP ${dotted_ver})"
 
     # Ensure LiteSpeed repo or PPA is available for lsphp packages
     if ! apt-cache show "lsphp${ver}" >/dev/null 2>&1; then
@@ -44,55 +47,28 @@ install_primary_lsphp() {
         return 1
     fi
 
-    # Fallback shell PHP CLI shim only if the Go php-shim binary is not installed
-    if [[ ! -x /usr/local/lib/lc-panel/php-shim && -f "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" ]]; then
-        rm -f /usr/local/bin/php
-        cp "${LC_BASE_DIR}/templates/system/php-cli-shim.sh" /usr/local/bin/php
-        sed -i 's/\r$//' /usr/local/bin/php
-        chmod 0755 /usr/local/bin/php
-    fi
-
-    # Locate and tune php.ini
+    # Locate and tune php.ini on first install only (preserve user MultiPHP INI edits on re-runs)
     local ini_file="${OLS_DIR}/lsphp${ver}/etc/php/${dotted_ver}/litespeed/php.ini"
     if [[ ! -f "${ini_file}" ]]; then
         ini_file="${OLS_DIR}/lsphp${ver}/etc/php.ini"
     fi
 
-    if [[ -f "${ini_file}" ]]; then
+    if [[ -f "${ini_file}" && ! -f "${ini_file}.bak" ]]; then
         cp -a "${ini_file}" "${ini_file}.bak"
         sed -i 's/^;\?upload_max_filesize\s*=.*/upload_max_filesize = 128M/' "${ini_file}"
         sed -i 's/^;\?post_max_size\s*=.*/post_max_size = 128M/' "${ini_file}"
         sed -i 's/^;\?memory_limit\s*=.*/memory_limit = 256M/' "${ini_file}"
         sed -i 's/^;\?max_execution_time\s*=.*/max_execution_time = 300/' "${ini_file}"
         sed -i 's/^;\?expose_php\s*=.*/expose_php = Off/' "${ini_file}"
-        log_ok "Tuned PHP configuration at ${ini_file}"
-    fi
-
-    # Install Composer globally using primary lsphp
-    if [[ ! -x /usr/local/bin/composer ]]; then
-        log_info "Installing Composer..."
-        local expected_sig
-        expected_sig=$(curl -fsSL https://composer.github.io/installer.sig)
-        "${php_bin}" -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');"
-        local actual_sig
-        actual_sig=$("${php_bin}" -r "echo hash_file('sha384', '/tmp/composer-setup.php');")
-        if [[ "${expected_sig}" == "${actual_sig}" ]]; then
-            "${php_bin}" /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet
-            chmod +x /usr/local/bin/composer
-            log_ok "Composer installed at /usr/local/bin/composer."
-        else
-            log_warn "Composer signature mismatch; falling back to apt composer package."
-            apt_install composer || true
-        fi
-        rm -f /tmp/composer-setup.php
+        log_ok "Tuned default PHP configuration at ${ini_file}"
     fi
 
     mark_module_installed "lsphp${ver}"
-    log_ok "PHP ${dotted_ver} (lsphp${ver}) and Composer ready."
+    log_ok "Default Website PHP ${dotted_ver} (lsphp${ver}) ready."
 }
 
 install_panel_nginx_and_fpm() {
-    log_step "05b. Installing Dedicated Panel Nginx & PHP-FPM"
+    log_step "05b. Installing Dedicated Panel Nginx, PHP-FPM & Composer"
 
     local panel_ver="${LC_PANEL_PHP_VER:-86}"
     local dotted_panel_ver="${panel_ver:0:1}.${panel_ver:1:1}"
@@ -134,14 +110,57 @@ install_panel_nginx_and_fpm() {
         systemctl disable "${fpm_svc}" >/dev/null 2>&1 || true
     done
 
-    log_ok "Panel Nginx and PHP-FPM packages installed; default port 80 services deactivated."
+    # Install Composer globally using Panel PHP CLI (decoupled from website LSPHP)
+    if [[ ! -x /usr/local/bin/composer ]]; then
+        local panel_php_bin
+        panel_php_bin=$(get_panel_php_bin)
+        if [[ -x "${panel_php_bin}" ]]; then
+            log_info "Installing Composer..."
+            local expected_sig
+            expected_sig=$(curl -fsSL https://composer.github.io/installer.sig || true)
+            "${panel_php_bin}" -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');" 2>/dev/null || true
+            if [[ -n "${expected_sig}" && -f /tmp/composer-setup.php ]]; then
+                local actual_sig
+                actual_sig=$("${panel_php_bin}" -r "echo hash_file('sha384', '/tmp/composer-setup.php');" 2>/dev/null || true)
+                if [[ "${expected_sig}" == "${actual_sig}" ]]; then
+                    "${panel_php_bin}" /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet
+                    chmod +x /usr/local/bin/composer
+                    log_ok "Composer installed at /usr/local/bin/composer."
+                else
+                    log_warn "Composer signature mismatch; falling back to apt composer package."
+                    apt_install composer || true
+                fi
+            else
+                apt_install composer || true
+            fi
+            rm -f /tmp/composer-setup.php
+        fi
+    fi
+
+    log_ok "Panel Nginx, PHP-FPM, and Composer ready; default port 80 services deactivated."
 }
 
 main() {
     require_root
     detect_ubuntu_os
     init_litecontrol_dirs
-    install_primary_lsphp
+
+    local panel_only=0
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --panel-only)
+                panel_only=1
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
+    if [[ "${panel_only}" -eq 0 ]]; then
+        install_primary_lsphp
+    fi
     install_panel_nginx_and_fpm
 }
 

@@ -70,15 +70,15 @@ cmd_php_list() {
         if [[ -x "${bin}" ]] || is_module_installed "lsphp${ver}"; then
             installed="true"
         fi
-        local is_panel="false"
+        local is_default="false"
         if [[ "${ver}" == "${LC_PHP_VER}" ]]; then
-            is_panel="true"
+            is_default="true"
         fi
         local ini_path
         ini_path=$(get_ini_path "${ver}")
 
-        items+="${sep}$(printf '{"version":"%s","dotted":"%s","installed":%s,"is_panel_php":%s,"ini_path":"%s"}' \
-            "${ver}" "${dotted}" "${installed}" "${is_panel}" "$(json_escape "${ini_path}")")"
+        items+="${sep}$(printf '{"version":"%s","dotted":"%s","installed":%s,"is_default_php":%s,"ini_path":"%s"}' \
+            "${ver}" "${dotted}" "${installed}" "${is_default}" "$(json_escape "${ini_path}")")"
         sep=","
     done
 
@@ -182,7 +182,7 @@ cmd_php_remove() {
     local dotted="${ver:0:1}.${ver:1:1}"
 
     if [[ "${ver}" == "${LC_PHP_VER}" ]]; then
-        emit_error "Cannot uninstall lsphp${ver} because it is the primary PHP runtime for the LiteControl Panel."
+        emit_error "Cannot uninstall lsphp${ver} because it is the default OpenLiteSpeed PHP runtime."
     fi
 
     if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then

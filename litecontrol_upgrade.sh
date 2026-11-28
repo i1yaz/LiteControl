@@ -56,8 +56,8 @@ Options:
   -v, --version <tag>    Upgrade to a specific Git release tag (e.g. v1.0.0, v1.1.0)
   -b, --branch <branch>  Upgrade to a specific Git branch (e.g. main, feat-nginx-panel-server)
   -y, --yes              Run non-interactively using latest release tag (or main)
-      --build-frontend   Compile Vue 3/Vite frontend assets on host machine (default: disabled)
-      --skip-frontend    Skip npm frontend build (default)
+      --build-frontend   Compile Vue 3/Vite frontend assets on host machine (default)
+      --skip-frontend    Skip npm frontend build
   -h, --help             Show this help message
 EOF
 }
@@ -231,8 +231,8 @@ create_pre_upgrade_backup() {
 migrate_ols_panel_to_nginx_if_needed() {
     log_step "02. Verifying Dedicated Nginx + PHP-FPM Out-of-Band Panel Architecture"
 
-    # 1. Ensure nginx and php-fpm packages are installed and stock port-80 services are disabled
-    bash "${UPGRADE_SRC_DIR}/scripts/ubuntu/core/05-php.sh"
+    # 1. Ensure panel nginx and php-fpm packages are installed and stock port-80 services are disabled
+    bash "${UPGRADE_SRC_DIR}/scripts/ubuntu/core/05-php.sh" --panel-only
 
     # 2. Non-destructively strip legacy panel blocks from OpenLiteSpeed httpd_config.conf
     #    while preserving all customer vhosts, maps, and tuning blocks!
@@ -390,10 +390,8 @@ sync_core_files_and_sudoers() {
 
 ensure_panel_composer() {
     local composer_bin="${LC_BASE_DIR}/bin/composer.phar"
-    local php_bin="/usr/bin/php"
-    if [[ ! -x "${php_bin}" ]]; then
-        php_bin="$(command -v php 2>/dev/null || echo "/usr/local/bin/php")"
-    fi
+    local php_bin
+    php_bin=$(get_panel_php_bin)
 
     local system_composer
     system_composer="$(command -v composer 2>/dev/null || true)"
@@ -436,8 +434,11 @@ upgrade_laravel_panel() {
         return 0
     fi
 
+    local php_bin
+    php_bin=$(get_panel_php_bin)
+
     if [[ -f "${LC_PANEL_DIR}/artisan" ]]; then
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan down --retry=15" 2>/dev/null || true
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan down --retry=15" 2>/dev/null || true
     fi
 
     # Sync panel code while preserving .env and storage/
@@ -461,10 +462,6 @@ upgrade_laravel_panel() {
         ensure_panel_composer
         log_info "Installing Composer dependencies..."
         local composer_bin=""
-        local php_bin="/usr/bin/php"
-        if [[ ! -x "${php_bin}" ]]; then
-            php_bin="$(command -v php 2>/dev/null || echo "/usr/local/bin/php")"
-        fi
         local system_composer
         system_composer="$(command -v composer 2>/dev/null || true)"
         if [[ -n "${system_composer}" ]] && COMPOSER_ALLOW_SUPERUSER=1 "${php_bin}" "${system_composer}" --version --no-interaction </dev/null >/dev/null 2>&1; then
@@ -506,13 +503,13 @@ upgrade_laravel_panel() {
         fi
 
         log_info "Running database migrations and refreshing caches..."
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan migrate --force"
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan optimize:clear"
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan config:cache"
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan route:cache"
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan view:cache"
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan queue:restart" 2>/dev/null || true
-        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && /usr/local/bin/php artisan up" 2>/dev/null || true
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan migrate --force"
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan optimize:clear"
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan config:cache"
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan route:cache"
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan view:cache"
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan queue:restart" 2>/dev/null || true
+        su -s /bin/bash "${LC_USER}" -c "cd '${LC_PANEL_DIR}' && ${php_bin} artisan up" 2>/dev/null || true
     fi
 
     chown -R "${LC_USER}:${LC_GROUP}" "${LC_PANEL_DIR}"
@@ -560,7 +557,9 @@ reconcile_panel_services() {
     cp "${LC_BASE_DIR}/templates/system/litecontrol-panel.service" /etc/systemd/system/litecontrol-panel.service
 
     if [[ -f "${LC_BASE_DIR}/templates/system/litecontrol-worker.service" ]]; then
-        sed "s/__PHP_VER__/${LC_PHP_VER}/g" "${LC_BASE_DIR}/templates/system/litecontrol-worker.service" > /etc/systemd/system/litecontrol-worker.service
+        local panel_php_bin
+        panel_php_bin=$(get_panel_php_bin)
+        sed "s|__PANEL_PHP_BIN__|${panel_php_bin}|g" "${LC_BASE_DIR}/templates/system/litecontrol-worker.service" > /etc/systemd/system/litecontrol-worker.service
     fi
 
     systemctl daemon-reload
