@@ -28,6 +28,8 @@ func ExecuteMail(args []string) error {
 		return runMailEvictSession(args[1:])
 	case "purge-mailbox":
 		return runMailPurgeMailbox(args[1:])
+	case "purge-domain":
+		return runMailPurgeDomain(args[1:])
 	case "quota-usage":
 		return runMailQuotaUsage(args[1:])
 	case "dkim-generate":
@@ -206,6 +208,32 @@ func runMailPurgeMailbox(args []string) error {
 	res, err := mail.PurgeMailbox(context.Background(), mail.PurgeMailboxOptions{
 		Domain: *domain,
 		User:   *user,
+	})
+	if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(os.Stdout).Encode(res)
+}
+
+func runMailPurgeDomain(args []string) error {
+	fs := flag.NewFlagSet("mail purge-domain", flag.ContinueOnError)
+	domain := fs.String("domain", "", "Mail domain (required)")
+
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return nil
+		}
+		return err
+	}
+
+	if *domain == "" {
+		fs.Usage()
+		return fmt.Errorf("--domain is required")
+	}
+
+	res, err := mail.PurgeDomain(context.Background(), mail.PurgeDomainOptions{
+		Domain: *domain,
 	})
 	if err != nil {
 		return err

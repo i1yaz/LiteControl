@@ -724,8 +724,53 @@ cmd_ssl_mail() {
                 "${expires_at}")
             emit_success "Mail SSL certificate issued successfully for '${mail_host}'." "${data_json}"
             ;;
+        delete)
+            local base_domain="${1:-}"
+            [[ -n "${base_domain}" ]] || emit_error "Missing mail domain for SSL deletion."
+            validate_domain "${base_domain}"
+            base_domain="${base_domain,,}"
+
+            local mail_host="${base_domain}"
+            if [[ "${mail_host}" != mail.* ]]; then
+                mail_host="mail.${base_domain}"
+            fi
+
+            local removed="false"
+            local vh_name="lc_mail_acme"
+
+            # Remove OpenLiteSpeed HTTP ACME map for mail.<domain> if present
+            if [[ -f "${OLS_CONF}" ]] && grep -Eq "^[[:space:]]*map[[:space:]]+${vh_name}[[:space:]]+${mail_host}([[:space:]]|$)" "${OLS_CONF}"; then
+                ols_backup_config
+                awk -v vh="${vh_name}" -v dom="${mail_host}" '
+                    $0 ~ "^[[:space:]]*# MAP_HTTP:" vh ":" dom "$" { next }
+                    $0 ~ "^[[:space:]]*map[[:space:]]+" vh "[[:space:]]+" dom "([[:space:]]|$)" { next }
+                    { print }
+                ' "${OLS_CONF}" > "${OLS_CONF}.tmp" && mv "${OLS_CONF}.tmp" "${OLS_CONF}"
+                ols_safe_reload || true
+                removed="true"
+            fi
+
+            # Remove certificate from acme.sh renewal config if installed
+            if [[ "${LC_TEST_MODE:-0}" != "1" && -x "${ACME_BIN}" ]]; then
+                "${ACME_BIN}" --remove -d "${mail_host}" --ecc >/dev/null 2>&1 || true
+                "${ACME_BIN}" --remove -d "${mail_host}" >/dev/null 2>&1 || true
+            fi
+
+            # Remove installed certificate directory /etc/letsencrypt/live/mail.<domain>
+            local cert_dir="/etc/letsencrypt/live/${mail_host}"
+            if [[ -d "${cert_dir}" ]]; then
+                rm -rf "${cert_dir}"
+                removed="true"
+            fi
+
+            local data_json
+            data_json=$(printf '{"domain":"%s","removed":%s}' \
+                "$(json_escape "${mail_host}")" \
+                "${removed}")
+            emit_success "Mail SSL certificate cleaned up for '${mail_host}'." "${data_json}"
+            ;;
         *)
-            emit_error "Usage: lc-cli ssl mail-ssl issue <domain> [email]"
+            emit_error "Usage: lc-cli ssl mail-ssl <issue|delete> <domain> [email]"
             ;;
     esac
 }

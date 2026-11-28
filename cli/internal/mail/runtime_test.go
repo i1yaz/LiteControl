@@ -115,3 +115,48 @@ func TestQuotaUsageParsing(t *testing.T) {
 		t.Fatalf("expected 524288 bytes for bob, got %d", usage["bob@example.com"])
 	}
 }
+
+func TestPurgeDomainRemovesMaildirAndDkimKeysOnlyForTargetDomain(t *testing.T) {
+	root := t.TempDir()
+	targetMaildir := filepath.Join(root, "var", "vmail", "example.com", "alice")
+	otherMaildir := filepath.Join(root, "var", "vmail", "other.com", "bob")
+	dkimDir := filepath.Join(root, "var", "lib", "rspamd", "dkim")
+
+	for _, dir := range []string{targetMaildir, otherMaildir, dkimDir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", dir, err)
+		}
+	}
+
+	targetKey1 := filepath.Join(dkimDir, "example.com.lc202601.key")
+	targetKey2 := filepath.Join(dkimDir, "example.com.lc202602.key")
+	otherKey := filepath.Join(dkimDir, "other.com.lc202601.key")
+	for _, f := range []string{targetKey1, targetKey2, otherKey} {
+		if err := os.WriteFile(f, []byte("private-key"), 0o600); err != nil {
+			t.Fatalf("write %s: %v", f, err)
+		}
+	}
+
+	res, err := PurgeDomain(context.Background(), PurgeDomainOptions{
+		Domain:  "example.com",
+		RootDir: root,
+	})
+	if err != nil {
+		t.Fatalf("PurgeDomain failed: %v", err)
+	}
+	if !res.Removed {
+		t.Fatalf("expected Removed=true")
+	}
+	if len(res.DkimKeysRemoved) != 2 {
+		t.Fatalf("expected 2 DKIM keys removed, got %d", len(res.DkimKeysRemoved))
+	}
+	if _, err := os.Stat(filepath.Join(root, "var", "vmail", "example.com")); !os.IsNotExist(err) {
+		t.Fatalf("expected example.com maildir to be removed")
+	}
+	if _, err := os.Stat(otherMaildir); err != nil {
+		t.Fatalf("expected other.com maildir to be preserved: %v", err)
+	}
+	if _, err := os.Stat(otherKey); err != nil {
+		t.Fatalf("expected other.com DKIM key to be preserved: %v", err)
+	}
+}

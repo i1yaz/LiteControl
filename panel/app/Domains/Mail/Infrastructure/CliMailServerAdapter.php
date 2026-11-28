@@ -109,6 +109,23 @@ class CliMailServerAdapter implements MailServerDriverInterface
         return is_array($res['data'] ?? null) ? $res['data'] : [];
     }
 
+    public function removeStandaloneMailTls(string $domain): array
+    {
+        $args = ['mail-ssl', 'delete', $domain];
+        $res = $this->lcCli->run('ssl', $args);
+
+        if (($res['status'] ?? '') === 'error') {
+            throw new LcCliException(
+                $res['message'] ?? "ssl mail-ssl delete failed for {$domain}.",
+                'ssl',
+                $args,
+                $res
+            );
+        }
+
+        return is_array($res['data'] ?? null) ? $res['data'] : [];
+    }
+
     /**
      * Execute an lc-mail subcommand and fail fast with LcCliException on error.
      *

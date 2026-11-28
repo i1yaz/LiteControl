@@ -144,6 +144,109 @@ func PurgeMailbox(_ context.Context, opts PurgeMailboxOptions) (PurgeMailboxResu
 	}, nil
 }
 
+// PurgeDomainOptions configures `lc-mail purge-domain`.
+type PurgeDomainOptions struct {
+	Domain  string
+	RootDir string // Defaults to "/" on Linux; overridable in tests.
+}
+
+// PurgeDomainResult is emitted as JSON by `lc-mail purge-domain`.
+type PurgeDomainResult struct {
+	Status          string   `json:"status"`
+	Domain          string   `json:"domain"`
+	Path            string   `json:"path"`
+	Removed         bool     `json:"removed"`
+	DkimKeysRemoved []string `json:"dkim_keys_removed"`
+}
+
+// PurgeDomain safely deletes /var/vmail/<domain> and any DKIM private keys
+// matching /var/lib/rspamd/dkim/<domain>.*.key after strict path containment
+// and symlink validation.
+func PurgeDomain(_ context.Context, opts PurgeDomainOptions) (PurgeDomainResult, error) {
+	domain := strings.ToLower(strings.TrimSpace(opts.Domain))
+	if err := ValidateHostname(domain); err != nil {
+		return PurgeDomainResult{}, fmt.Errorf("invalid domain %q: %w", opts.Domain, err)
+	}
+
+	rootDir := opts.RootDir
+	if rootDir == "" {
+		rootDir = string(os.PathSeparator)
+	}
+
+	vmailBase := filepath.Clean(filepath.Join(rootDir, "var", "vmail"))
+	domainDir := filepath.Clean(filepath.Join(vmailBase, domain))
+
+	if !isStrictlyUnder(domainDir, vmailBase) {
+		return PurgeDomainResult{}, fmt.Errorf("path traversal rejected: %s escapes %s", domainDir, vmailBase)
+	}
+
+	if err := rejectSymlink(vmailBase); err != nil {
+		return PurgeDomainResult{}, err
+	}
+	if err := rejectSymlink(domainDir); err != nil {
+		return PurgeDomainResult{}, err
+	}
+
+	removed := false
+	if _, err := os.Lstat(domainDir); err == nil {
+		realBase, err := filepath.EvalSymlinks(vmailBase)
+		if err != nil {
+			return PurgeDomainResult{}, fmt.Errorf("resolve vmail base %s: %w", vmailBase, err)
+		}
+		realTarget, err := filepath.EvalSymlinks(domainDir)
+		if err != nil {
+			return PurgeDomainResult{}, fmt.Errorf("resolve domain path %s: %w", domainDir, err)
+		}
+		if !isStrictlyUnder(realTarget, realBase) {
+			return PurgeDomainResult{}, fmt.Errorf("symlink escape rejected: %s resolves outside %s", realTarget, realBase)
+		}
+
+		if err := os.RemoveAll(domainDir); err != nil {
+			return PurgeDomainResult{}, fmt.Errorf("remove domain maildir %s: %w", domainDir, err)
+		}
+		removed = true
+	} else if !os.IsNotExist(err) {
+		return PurgeDomainResult{}, fmt.Errorf("stat domain maildir %s: %w", domainDir, err)
+	}
+
+	// Remove any DKIM private keys for this domain under /var/lib/rspamd/dkim.
+	dkimDir := filepath.Clean(filepath.Join(rootDir, "var", "lib", "rspamd", "dkim"))
+	dkimRemoved := []string{}
+	if err := rejectSymlink(dkimDir); err != nil {
+		return PurgeDomainResult{}, err
+	}
+	if entries, err := os.ReadDir(dkimDir); err == nil {
+		prefix := domain + "."
+		for _, entry := range entries {
+			name := entry.Name()
+			if !strings.HasPrefix(name, prefix) || !strings.HasSuffix(name, ".key") {
+				continue
+			}
+			keyPath := filepath.Clean(filepath.Join(dkimDir, name))
+			if !isStrictlyUnder(keyPath, dkimDir) {
+				continue
+			}
+			if err := rejectSymlink(keyPath); err != nil {
+				return PurgeDomainResult{}, err
+			}
+			if err := os.Remove(keyPath); err != nil && !os.IsNotExist(err) {
+				return PurgeDomainResult{}, fmt.Errorf("remove dkim key %s: %w", keyPath, err)
+			}
+			dkimRemoved = append(dkimRemoved, keyPath)
+		}
+	} else if !os.IsNotExist(err) {
+		return PurgeDomainResult{}, fmt.Errorf("read dkim dir %s: %w", dkimDir, err)
+	}
+
+	return PurgeDomainResult{
+		Status:          "success",
+		Domain:          domain,
+		Path:            domainDir,
+		Removed:         removed,
+		DkimKeysRemoved: dkimRemoved,
+	}, nil
+}
+
 func isStrictlyUnder(path, base string) bool {
 	rel, err := filepath.Rel(base, path)
 	if err != nil {

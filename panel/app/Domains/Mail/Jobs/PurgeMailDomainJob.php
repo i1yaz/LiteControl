@@ -20,6 +20,7 @@ class PurgeMailDomainJob implements ShouldQueue
     public function __construct(
         public readonly int $purgeId,
         public readonly string $domain,
+        public readonly bool $deleteSsl = false,
     ) {
         $this->afterCommit();
     }
@@ -38,6 +39,9 @@ class PurgeMailDomainJob implements ShouldQueue
 
         try {
             $mailDriver->purgeDomain($this->domain);
+            if ($this->deleteSsl) {
+                $mailDriver->removeStandaloneMailTls($this->domain);
+            }
             $purge->delete();
         } catch (\Throwable $e) {
             $purge->update([

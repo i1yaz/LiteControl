@@ -6,8 +6,10 @@ use App\Domains\Identity\Models\User;
 use App\Domains\Mail\Contracts\MailServerDriverInterface;
 use App\Domains\Mail\Models\MailDkimKey;
 use App\Domains\Mail\Models\MailDomain;
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use App\Domains\Shared\Contracts\ModuleRegistryQueryInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -168,4 +170,42 @@ it('generates and rotates DKIM keys and blocks unauthorized tenants', function (
         'algorithm' => 'rsa2048',
         'status' => 'active',
     ]);
+});
+
+it('populates Mail Host (IPv4) A record with the resolved server IPv4 address', function (): void {
+    Cache::forget('panel.server_ip');
+
+    $tenant = User::factory()->create(['username' => 'dkimip', 'role' => 'user']);
+
+    MailDomain::create([
+        'user_id' => $tenant->id,
+        'domain' => 'ipcheck.org',
+        'ownership_source' => 'webserver',
+        'active' => true,
+        'default_quota_mb' => 1024,
+        'max_accounts' => 25,
+    ]);
+
+    $mockRegistry = Mockery::mock(ModuleRegistryQueryInterface::class);
+    $mockRegistry->shouldReceive('isActive')->with('dns')->andReturn(false);
+    $mockRegistry->shouldReceive('isActive')->with('mail_core')->andReturn(true);
+    $mockRegistry->shouldReceive('isActive')->with('ftp')->andReturn(false);
+    $this->app->instance(ModuleRegistryQueryInterface::class, $mockRegistry);
+
+    $mockServerDriver = Mockery::mock(ServerDriverInterface::class);
+    $mockServerDriver->shouldReceive('getStats')->andReturn([
+        'server_ip' => '203.0.113.42',
+    ]);
+    $this->app->instance(ServerDriverInterface::class, $mockServerDriver);
+
+    $this->actingAs($tenant)
+        ->get('/email/dkim?domain=ipcheck.org')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Mail/Dkim/Index')
+            ->where('dns_records.0.purpose', 'Mail Host (IPv4)')
+            ->where('dns_records.0.type', 'A')
+            ->where('dns_records.0.host', 'mail.ipcheck.org')
+            ->where('dns_records.0.value', '203.0.113.42')
+        );
 });

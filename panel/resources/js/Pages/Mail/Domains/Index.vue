@@ -10,6 +10,7 @@ import PendingPurgeBanner from '@domains/Mail/Components/PendingPurgeBanner.vue'
 import StatusBadge from '@domains/Mail/Components/StatusBadge.vue';
 import EnableMailDomainModal from '@domains/Mail/Components/EnableMailDomainModal.vue';
 import EditMailDomainModal from '@domains/Mail/Components/EditMailDomainModal.vue';
+import DeleteMailDomainModal from '@domains/Mail/Components/DeleteMailDomainModal.vue';
 import VerifyTxtModal from '@domains/Mail/Components/VerifyTxtModal.vue';
 
 const props = defineProps({
@@ -42,6 +43,7 @@ const flashError = computed(() => page.props.flash?.error || '');
 const showEnableModal = ref(false);
 const showVerifyTxtModal = ref(false);
 const editingDomain = ref(null);
+const deletingDomain = ref(null);
 const issuingTlsDomainId = ref(null);
 
 const issueStandaloneTls = (item) => {
@@ -258,6 +260,13 @@ const formatDate = (iso) => {
                                         >
                                             Edit
                                         </UiButton>
+                                        <UiButton
+                                            size="sm"
+                                            variant="danger-soft"
+                                            @click="deletingDomain = item"
+                                        >
+                                            Delete
+                                        </UiButton>
                                     </div>
                                 </td>
                             </tr>
@@ -278,6 +287,12 @@ const formatDate = (iso) => {
             :show="Boolean(editingDomain)"
             :domain="editingDomain"
             @close="editingDomain = null"
+        />
+
+        <DeleteMailDomainModal
+            :show="Boolean(deletingDomain)"
+            :domain="deletingDomain"
+            @close="deletingDomain = null"
         />
 
         <VerifyTxtModal

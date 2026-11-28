@@ -121,6 +121,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/email/domains', [MailDomainController::class, 'index'])->name('email.domains.index');
         Route::post('/email/domains', [MailDomainController::class, 'store'])->name('email.domains.store');
         Route::put('/email/domains/{mailDomain}', [MailDomainController::class, 'update'])->name('email.domains.update');
+        Route::delete('/email/domains/{mailDomain}', [MailDomainController::class, 'destroy'])->name('email.domains.destroy');
         Route::get('/email/accounts', [MailAccountController::class, 'index'])->name('email.accounts.index');
         Route::get('/email/domains/dns-challenge', [MailAccountController::class, 'dnsVerificationChallenge'])->name('email.domains.dns-challenge');
         Route::post('/email/domains/{mailDomain}/issue-tls', [MailAccountController::class, 'issueStandaloneTls'])->name('email.domains.issue-tls');

@@ -9,12 +9,14 @@ use App\Domains\Mail\Models\MailDkimKey;
 use App\Domains\Mail\Models\MailDomain;
 use App\Domains\Mail\Queries\RequiredMailDnsRecordsQuery;
 use App\Domains\Mail\ValueObjects\DkimSelector;
+use App\Domains\ServerOps\Contracts\ServerDriverInterface;
 use App\Domains\Shared\Contracts\ModuleRegistryQueryInterface;
 use App\Domains\Shared\Exceptions\LcCliException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Mail\GenerateDkimKeyRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -72,6 +74,7 @@ class MailDkimController extends Controller
             $activeKey = $keysCollection->firstWhere('status', 'active');
             $rawRecords = $dnsRecordsQuery->execute(
                 mailDomain: $selectedDomainModel,
+                serverIpv4: $this->resolveServerIpv4($request),
                 activeDkimKey: $activeKey,
             );
 
@@ -143,5 +146,41 @@ class MailDkimController extends Controller
         }
 
         return back()->with('success', "DKIM key '{$selector->value}' ({$algorithm}) generated for {$mailDomain->domain}.");
+    }
+
+    private function resolveServerIpv4(Request $request): ?string
+    {
+        $serverAddr = trim((string) $request->server('SERVER_ADDR', ''));
+
+        if ($this->isPublicIpv4($serverAddr)) {
+            return $serverAddr;
+        }
+
+        $cached = Cache::get('panel.server_ip');
+        if (is_string($cached) && $this->isPublicIpv4(trim($cached))) {
+            return trim($cached);
+        }
+
+        try {
+            $stats = app(ServerDriverInterface::class)->getStats();
+            $resolved = trim((string) ($stats['server_ip'] ?? ''));
+
+            if ($this->isPublicIpv4($resolved)) {
+                Cache::put('panel.server_ip', $resolved, now()->addMinutes(10));
+
+                return $resolved;
+            }
+        } catch (\Throwable) {
+            // Fall through to null so RequiredMailDnsRecordsQuery uses <SERVER_IPV4>.
+        }
+
+        return null;
+    }
+
+    private function isPublicIpv4(string $ip): bool
+    {
+        return $ip !== ''
+            && $ip !== '127.0.0.1'
+            && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false;
     }
 }

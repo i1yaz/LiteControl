@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Mail;
 
+use App\Domains\Mail\Actions\DeleteMailDomainAction;
 use App\Domains\Mail\Actions\EnableMailDomainAction;
 use App\Domains\Mail\Actions\UpdateMailDomainAction;
 use App\Domains\Mail\Contracts\WebmailDriverInterface;
@@ -161,5 +162,24 @@ class MailDomainController extends Controller
         );
 
         return back()->with('success', "Mail domain {$mailDomain->domain} updated.");
+    }
+
+    public function destroy(
+        Request $request,
+        MailDomain $mailDomain,
+        DeleteMailDomainAction $action,
+    ): RedirectResponse {
+        Gate::authorize('delete', $mailDomain);
+
+        $domainName = $mailDomain->domain;
+        $deleteSsl = $request->boolean('delete_ssl', true);
+
+        $action->execute(
+            actor: $request->user(),
+            mailDomain: $mailDomain,
+            deleteSsl: $deleteSsl,
+        );
+
+        return back()->with('success', "Mail domain {$domainName} deleted. Mailbox data, DKIM keys, and mail configuration are being purged.");
     }
 }

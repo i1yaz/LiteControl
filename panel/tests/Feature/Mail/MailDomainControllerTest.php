@@ -5,7 +5,11 @@ declare(strict_types=1);
 use App\Domains\Identity\Models\User;
 use App\Domains\Mail\Contracts\DnsTxtResolverInterface;
 use App\Domains\Mail\Contracts\MailServerDriverInterface;
+use App\Domains\Mail\Jobs\PurgeMailDomainJob;
 use App\Domains\Mail\Jobs\ReconcileMailServerJob;
+use App\Domains\Mail\Models\MailAccount;
+use App\Domains\Mail\Models\MailAlias;
+use App\Domains\Mail\Models\MailDkimKey;
 use App\Domains\Mail\Models\MailDomain;
 use App\Domains\Mail\Models\MailPendingPurge;
 use App\Domains\Mail\ValueObjects\DnsTxtVerificationToken;
@@ -337,4 +341,99 @@ it('issues standalone HTTP-01 TLS for a dns_txt domain owner and forbids other t
         ->assertSessionHas('success');
 
     Event::assertDispatched(SslCertificateIssued::class);
+});
+
+it('deletes a mail domain with its accounts, aliases, DKIM keys, and dispatches purge + reconcile jobs', function () {
+    $owner = User::factory()->create(['username' => 'delowner', 'role' => 'user']);
+    $other = User::factory()->create(['username' => 'delother', 'role' => 'user']);
+
+    $mailDomain = MailDomain::create([
+        'user_id' => $owner->id,
+        'domain' => 'delete-me.org',
+        'ownership_source' => 'dns_txt',
+        'active' => true,
+        'dkim_enabled' => true,
+        'default_quota_mb' => 1024,
+        'max_accounts' => 25,
+        'outbound_hourly_limit' => 200,
+    ]);
+
+    $account = MailAccount::create([
+        'mail_domain_id' => $mailDomain->id,
+        'user_id' => $owner->id,
+        'local_part' => 'info',
+        'email' => 'info@delete-me.org',
+        'password_hash' => '{BLF-CRYPT}$2y$10$dummyhash',
+        'quota_mb' => 1024,
+        'active' => true,
+    ]);
+
+    $alias = MailAlias::create([
+        'mail_domain_id' => $mailDomain->id,
+        'user_id' => $owner->id,
+        'source_local_part' => 'sales',
+        'source_email' => 'sales@delete-me.org',
+        'destination_email' => 'info@delete-me.org',
+        'active' => true,
+    ]);
+
+    $dkim = MailDkimKey::create([
+        'mail_domain_id' => $mailDomain->id,
+        'selector' => 'lc202611',
+        'algorithm' => 'rsa2048',
+        'public_key_txt' => 'v=DKIM1; k=rsa; p=TEST',
+        'private_key_path' => '/var/lib/rspamd/dkim/delete-me.org.lc202611.key',
+        'key_sha256' => hash('sha256', 'test'),
+        'status' => 'active',
+        'created_at' => now(),
+    ]);
+
+    $driverMock = Mockery::mock(MailServerDriverInterface::class);
+    $driverMock->shouldReceive('evictSession')->once()->with('info@delete-me.org')->andReturn([]);
+    $this->app->instance(MailServerDriverInterface::class, $driverMock);
+
+    // Other tenant is forbidden
+    $this->actingAs($other)
+        ->delete("/email/domains/{$mailDomain->id}", ['delete_ssl' => true])
+        ->assertForbidden();
+
+    $this->assertDatabaseHas('mail_domains', ['id' => $mailDomain->id]);
+
+    // Owner deletes domain
+    $this->actingAs($owner)
+        ->delete("/email/domains/{$mailDomain->id}", ['delete_ssl' => true])
+        ->assertRedirect()
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseMissing('mail_domains', ['id' => $mailDomain->id]);
+    $this->assertDatabaseMissing('mail_accounts', ['id' => $account->id]);
+    $this->assertDatabaseMissing('mail_aliases', ['id' => $alias->id]);
+    $this->assertDatabaseMissing('mail_dkim_keys', ['id' => $dkim->id]);
+    $this->assertDatabaseHas('mail_pending_purges', [
+        'entity_type' => 'domain',
+        'domain' => 'delete-me.org',
+        'status' => 'pending',
+    ]);
+
+    Queue::assertPushed(PurgeMailDomainJob::class, fn (PurgeMailDomainJob $job): bool => $job->domain === 'delete-me.org' && $job->deleteSsl === true);
+    Queue::assertPushed(ReconcileMailServerJob::class, fn (ReconcileMailServerJob $job): bool => $job->scope === 'all');
+    Event::assertDispatched(MailDnsRecordsChanged::class, fn (MailDnsRecordsChanged $event): bool => $event->domain === 'delete-me.org');
+});
+
+it('purges domain maildir and standalone SSL certificate when PurgeMailDomainJob runs with deleteSsl=true', function () {
+    $tombstone = MailPendingPurge::create([
+        'entity_type' => 'domain',
+        'domain' => 'ssl-purge.org',
+        'status' => 'pending',
+        'attempts' => 0,
+    ]);
+
+    $driverMock = Mockery::mock(MailServerDriverInterface::class);
+    $driverMock->shouldReceive('purgeDomain')->once()->with('ssl-purge.org')->andReturn([]);
+    $driverMock->shouldReceive('removeStandaloneMailTls')->once()->with('ssl-purge.org')->andReturn(['removed' => true]);
+
+    $job = new PurgeMailDomainJob($tombstone->id, 'ssl-purge.org', deleteSsl: true);
+    $job->handle($driverMock);
+
+    $this->assertDatabaseMissing('mail_pending_purges', ['id' => $tombstone->id]);
 });

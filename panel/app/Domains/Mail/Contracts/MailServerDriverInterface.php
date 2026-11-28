@@ -93,4 +93,11 @@ interface MailServerDriverInterface
      * @throws LcCliException
      */
     public function issueStandaloneMailTls(string $domain, string $contactEmail): array;
+
+    /**
+     * Remove the standalone mail.{domain} TLS certificate and OpenLiteSpeed ACME map via lc-cli ssl mail-ssl delete.
+     *
+     * @throws LcCliException
+     */
+    public function removeStandaloneMailTls(string $domain): array;
 }

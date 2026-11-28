@@ -167,8 +167,7 @@ const isDkimRecord = (record) =>
                 Required mail DNS records (including DKIM keys) sync automatically to your local PowerDNS zone.
             </UiAlert>
             <UiAlert v-else variant="warning">
-                <strong>External DNS required.</strong>
-                PowerDNS is not active on this server. Copy the required DNS records below into your external DNS provider to pass SPF, DKIM, and DMARC checks.
+                Copy the required DNS records below into your DNS provider (e.g., Cloudflare, or PowerDNS if DNS is managed on this server) to pass SPF, DKIM, and DMARC checks.
             </UiAlert>
 
             <UiCard>
