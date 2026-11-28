@@ -92,17 +92,21 @@ class CliMailServerAdapter implements MailServerDriverInterface
         return $usage;
     }
 
-    public function provisionAcmeChallengeVhost(): array
-    {
-        return $this->execute('acme-vhost-provision');
-    }
-
     public function issueStandaloneMailTls(string $domain, string $contactEmail): array
     {
-        return $this->execute('tls-issue', [
-            "--domain={$domain}",
-            "--email={$contactEmail}",
-        ]);
+        $args = ['mail-ssl', 'issue', $domain, $contactEmail];
+        $res = $this->lcCli->run('ssl', $args);
+
+        if (($res['status'] ?? '') === 'error') {
+            throw new LcCliException(
+                $res['message'] ?? "ssl mail-ssl issue failed for {$domain}.",
+                'ssl',
+                $args,
+                $res
+            );
+        }
+
+        return is_array($res['data'] ?? null) ? $res['data'] : [];
     }
 
     /**

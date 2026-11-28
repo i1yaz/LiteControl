@@ -572,6 +572,164 @@ cmd_ssl_panel() {
     esac
 }
 
+resolve_mail_acme_tpl() {
+    local candidates=(
+        "${LC_BASE_DIR}/templates/ols/mail_acme_vhconf.conf.tpl"
+        "${SCRIPT_DIR}/../../../templates/ols/mail_acme_vhconf.conf.tpl"
+    )
+    local path
+    for path in "${candidates[@]}"; do
+        if [[ -f "${path}" ]]; then
+            echo "${path}"
+            return 0
+        fi
+    done
+    echo "${candidates[0]}"
+}
+
+setup_mail_acme_vhost() {
+    local mail_host="${1}"
+    local vh_name="lc_mail_acme"
+    local vh_dir="${OLS_VHOSTS_DIR}/${vh_name}"
+    local vh_conf="${vh_dir}/vhconf.conf"
+
+    mkdir -p "${ACME_WEBROOT}/.well-known/acme-challenge" "${vh_dir}"
+    if [[ "${LC_TEST_MODE:-0}" != "1" ]]; then
+        chown -R "${LC_USER}:${LC_GROUP}" "${ACME_WEBROOT}" 2>/dev/null || true
+        chmod 755 "${ACME_WEBROOT}" "${ACME_WEBROOT}/.well-known" "${ACME_WEBROOT}/.well-known/acme-challenge"
+    fi
+
+    local tpl_file
+    tpl_file=$(resolve_mail_acme_tpl)
+    if [[ ! -f "${tpl_file}" ]]; then
+        emit_error "Mail ACME vhost template not found at '${tpl_file}'."
+    fi
+
+    sed -e "s|__ACME_WEBROOT__|${ACME_WEBROOT}|g" \
+        "${tpl_file}" > "${vh_conf}"
+
+    if [[ -f "${OLS_CONF}" ]]; then
+        ols_backup_config
+
+        if ! grep -q "^virtualhost ${vh_name} {" "${OLS_CONF}"; then
+            local vhost_block
+            vhost_block=$(cat <<EOF
+# VHOST_START:${vh_name}
+virtualhost ${vh_name} {
+  vhRoot                  ${ACME_WEBROOT}
+  configFile              conf/vhosts/${vh_name}/vhconf.conf
+  allowSymbolLink         0
+  enableScript            0
+  restrained              1
+  setUIDMode              0
+}
+# VHOST_END:${vh_name}
+EOF
+)
+            awk -v block="${vhost_block}" '
+                /# END LITECONTROL VHOSTS$/ { print block }
+                { print }
+            ' "${OLS_CONF}" > "${OLS_CONF}.tmp" && mv "${OLS_CONF}.tmp" "${OLS_CONF}"
+        fi
+
+        if ! grep -Eq "^[[:space:]]*map[[:space:]]+${vh_name}[[:space:]]+${mail_host}([[:space:]]|$)" "${OLS_CONF}"; then
+            awk -v vh="${vh_name}" -v dom="${mail_host}" '
+                /# END LITECONTROL MAP_HTTP$/ {
+                    print "  # MAP_HTTP:" vh ":" dom
+                    print "  map                     " vh " " dom
+                }
+                { print }
+            ' "${OLS_CONF}" > "${OLS_CONF}.tmp" && mv "${OLS_CONF}.tmp" "${OLS_CONF}"
+        fi
+
+        if ! ols_safe_reload; then
+            local detail="${OLS_LAST_ERROR:+ (${OLS_LAST_ERROR})}"
+            emit_error "Failed to reload OpenLiteSpeed after configuring mail ACME vhost for '${mail_host}'; configuration rolled back.${detail}"
+        fi
+    fi
+}
+
+cmd_ssl_mail() {
+    local action="${1:-}"
+    shift || true
+
+    case "${action}" in
+        issue)
+            local base_domain="${1:-}"
+            local email="${2:-}"
+            [[ -n "${base_domain}" ]] || emit_error "Missing mail domain for SSL issuance."
+            validate_domain "${base_domain}"
+            base_domain="${base_domain,,}"
+
+            local mail_host="${base_domain}"
+            if [[ "${mail_host}" != mail.* ]]; then
+                mail_host="mail.${base_domain}"
+            fi
+
+            local cert_dir="/etc/letsencrypt/live/${mail_host}"
+            local cert_file="${cert_dir}/fullchain.pem"
+            local key_file="${cert_dir}/privkey.pem"
+            mkdir -p "${cert_dir}"
+
+            setup_mail_acme_vhost "${mail_host}"
+
+            if [[ "${LC_TEST_MODE:-0}" == "1" ]]; then
+                openssl req -x509 -nodes -days 90 -newkey rsa:2048 \
+                    -keyout "${key_file}" \
+                    -out "${cert_file}" \
+                    -subj "/CN=${mail_host}" >/dev/null 2>&1 || {
+                    echo "mock-cert" > "${cert_file}"
+                    echo "mock-key" > "${key_file}"
+                }
+            else
+                if [[ ! -x "${ACME_BIN}" ]]; then
+                    emit_error "acme.sh is not installed at ${ACME_BIN}."
+                fi
+
+                local acme_email="${email:-postmaster@${base_domain}}"
+                "${ACME_BIN}" --register-account -m "${acme_email}" --server letsencrypt >/dev/null 2>&1 || true
+
+                local acme_out=""
+                if [[ "${LC_JSON_OUTPUT:-0}" == "1" ]]; then
+                    if ! acme_out=$("${ACME_BIN}" --issue -d "${mail_host}" -w "${ACME_WEBROOT}" --server letsencrypt --keylength ec-256 --force 2>&1); then
+                        local acme_err
+                        acme_err=$(printf "%s\n" "${acme_out}" | grep -E "Invalid response|error|Error|detail" | tail -n 1 || true)
+                        emit_error "Failed to issue Let's Encrypt certificate for ${mail_host}.${acme_err:+ (${acme_err})}"
+                    fi
+                    "${ACME_BIN}" --install-cert -d "${mail_host}" --ecc \
+                        --key-file "${key_file}" \
+                        --fullchain-file "${cert_file}" \
+                        --reloadcmd "systemctl reload postfix 2>/dev/null || true; systemctl reload dovecot 2>/dev/null || true" >/dev/null 2>&1
+                else
+                    log_info "Requesting Let's Encrypt certificate for ${mail_host} via acme.sh..."
+                    "${ACME_BIN}" --issue -d "${mail_host}" -w "${ACME_WEBROOT}" --server letsencrypt --keylength ec-256 --force || \
+                        emit_error "Failed to issue Let's Encrypt certificate for ${mail_host}."
+                    "${ACME_BIN}" --install-cert -d "${mail_host}" --ecc \
+                        --key-file "${key_file}" \
+                        --fullchain-file "${cert_file}" \
+                        --reloadcmd "systemctl reload postfix 2>/dev/null || true; systemctl reload dovecot 2>/dev/null || true"
+                fi
+            fi
+
+            chmod 600 "${key_file}" 2>/dev/null || true
+            chmod 644 "${cert_file}" 2>/dev/null || true
+
+            local expires_at
+            expires_at=$(( $(date +%s) + 90 * 86400 ))
+            local data_json
+            data_json=$(printf '{"domain":"%s","cert_path":"%s","key_path":"%s","expires_at":%d}' \
+                "$(json_escape "${mail_host}")" \
+                "$(json_escape "${cert_file}")" \
+                "$(json_escape "${key_file}")" \
+                "${expires_at}")
+            emit_success "Mail SSL certificate issued successfully for '${mail_host}'." "${data_json}"
+            ;;
+        *)
+            emit_error "Usage: lc-cli ssl mail-ssl issue <domain> [email]"
+            ;;
+    esac
+}
+
 # ------------------------------------------------------------------------------
 # Dispatcher
 # ------------------------------------------------------------------------------
@@ -592,6 +750,9 @@ case "${ACTION}" in
     panel-ssl)
         cmd_ssl_panel "$@"
         ;;
+    mail-ssl)
+        cmd_ssl_mail "$@"
+        ;;
     help|--help|-h|"")
         cat <<EOF
 Usage: lc-cli ssl <command> [arguments...]
@@ -602,6 +763,7 @@ Commands:
   renew    [domain]                          Renew certificate(s)
   panel-ssl issue <hostname> [email]         Issue Let's Encrypt SSL for panel
   panel-ssl custom <cert_file> <key_file>    Install custom SSL for panel listener
+  mail-ssl issue <domain> [email]            Issue Let's Encrypt SSL for standalone mail.<domain>
 EOF
         ;;
     *)
