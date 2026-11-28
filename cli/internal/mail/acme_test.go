@@ -61,7 +61,7 @@ func TestProvisionAcmeVhostRendersCatchAllPort80Config(t *testing.T) {
 	}
 }
 
-func TestIssueStandaloneMailTlsProvisionsVhostAndRunsCertbot(t *testing.T) {
+func TestIssueStandaloneMailTlsProvisionsVhostAndRunsAcmeSh(t *testing.T) {
 	tmpDir := t.TempDir()
 	runner := &fakeRunner{}
 
@@ -92,15 +92,21 @@ func TestIssueStandaloneMailTlsProvisionsVhostAndRunsCertbot(t *testing.T) {
 		t.Fatalf("expected positive expires_at, got %d", res.ExpiresAt)
 	}
 
-	foundCertbot := false
+	foundIssue := false
+	foundInstall := false
 	for _, call := range runner.calls {
-		if strings.HasPrefix(call, "certbot certonly --webroot -w "+AcmeChallengeWebroot+" -d mail.tenant-mail.example.com") {
-			foundCertbot = true
-			break
+		if strings.HasPrefix(call, DefaultAcmeBin+" --issue -d mail.tenant-mail.example.com -w "+AcmeChallengeWebroot) {
+			foundIssue = true
+		}
+		if strings.HasPrefix(call, DefaultAcmeBin+" --install-cert -d mail.tenant-mail.example.com --ecc") {
+			foundInstall = true
 		}
 	}
-	if !foundCertbot {
-		t.Fatalf("expected certbot HTTP-01 call in runner calls, got %v", runner.calls)
+	if !foundIssue {
+		t.Fatalf("expected acme.sh --issue HTTP-01 call in runner calls, got %v", runner.calls)
+	}
+	if !foundInstall {
+		t.Fatalf("expected acme.sh --install-cert call in runner calls, got %v", runner.calls)
 	}
 }
 

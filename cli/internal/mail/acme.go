@@ -19,6 +19,9 @@ const (
 
 	// DefaultCertStoreDir is the standard Let's Encrypt live certificate directory.
 	DefaultCertStoreDir = "/etc/letsencrypt/live"
+
+	// DefaultAcmeBin is the standard LiteControl acme.sh binary path installed by 07-ssl-firewall.sh.
+	DefaultAcmeBin = "/root/.acme.sh/acme.sh"
 )
 
 // ProvisionAcmeVhostOptions configures `lc-mail acme-vhost-provision`.
@@ -41,6 +44,7 @@ type IssueStandaloneMailTlsOptions struct {
 	Domain       string // Base mail domain, e.g. example.com (cert issued for mail.example.com).
 	Email        string // Contact email for ACME registration.
 	CertStoreDir string // Optional override for /etc/letsencrypt/live.
+	AcmeBin      string // Optional override for /root/.acme.sh/acme.sh (falls back to ACME_BIN env var).
 	RootDir      string // Defaults to "/" on Linux; overridable in tests.
 	SkipReload   bool
 	Runner       CommandRunner
@@ -132,19 +136,13 @@ func IssueStandaloneMailTls(ctx context.Context, opts IssueStandaloneMailTlsOpti
 	}
 
 	mailHost := "mail." + domain
-	if _, err := runner.Run(
-		ctx,
-		"certbot",
-		"certonly",
-		"--webroot",
-		"-w", AcmeChallengeWebroot,
-		"-d", mailHost,
-		"--non-interactive",
-		"--agree-tos",
-		"--email", email,
-		"--keep-until-expiring",
-	); err != nil {
-		return IssueStandaloneMailTlsResult{}, fmt.Errorf("certbot HTTP-01 issuance for %s failed: %w", mailHost, err)
+
+	acmeBin := strings.TrimSpace(opts.AcmeBin)
+	if acmeBin == "" {
+		acmeBin = strings.TrimSpace(os.Getenv("ACME_BIN"))
+	}
+	if acmeBin == "" {
+		acmeBin = DefaultAcmeBin
 	}
 
 	certStore := strings.TrimSpace(opts.CertStoreDir)
@@ -152,8 +150,54 @@ func IssueStandaloneMailTls(ctx context.Context, opts IssueStandaloneMailTlsOpti
 		certStore = DefaultCertStoreDir
 	}
 
+	certDir := filepath.Join(certStore, mailHost)
+	if opts.RootDir != "" {
+		certDir = filepath.Join(opts.RootDir, strings.TrimPrefix(certStore, "/"), mailHost)
+	}
+	if err := os.MkdirAll(certDir, 0o755); err != nil {
+		return IssueStandaloneMailTlsResult{}, fmt.Errorf("create certificate directory %s: %w", certDir, err)
+	}
+
 	certPath := filepath.Join(certStore, mailHost, "fullchain.pem")
 	keyPath := filepath.Join(certStore, mailHost, "privkey.pem")
+
+	// Best-effort account registration (acme.sh may already be registered, or email may be local).
+	_, _ = runner.Run(
+		ctx,
+		acmeBin,
+		"--register-account",
+		"-m", email,
+		"--server", "letsencrypt",
+	)
+
+	if _, err := runner.Run(
+		ctx,
+		acmeBin,
+		"--issue",
+		"-d", mailHost,
+		"-w", AcmeChallengeWebroot,
+		"--server", "letsencrypt",
+		"--keylength", "ec-256",
+		"--force",
+	); err != nil {
+		return IssueStandaloneMailTlsResult{}, fmt.Errorf("acme.sh HTTP-01 issuance for %s failed: %w", mailHost, err)
+	}
+
+	if _, err := runner.Run(
+		ctx,
+		acmeBin,
+		"--install-cert",
+		"-d", mailHost,
+		"--ecc",
+		"--key-file", keyPath,
+		"--fullchain-file", certPath,
+	); err != nil {
+		return IssueStandaloneMailTlsResult{}, fmt.Errorf("acme.sh certificate install for %s failed: %w", mailHost, err)
+	}
+
+	_ = os.Chmod(filepath.Join(certDir, "privkey.pem"), 0o600)
+	_ = os.Chmod(filepath.Join(certDir, "fullchain.pem"), 0o644)
+
 	expiresAt := time.Now().Add(90 * 24 * time.Hour).Unix()
 
 	return IssueStandaloneMailTlsResult{
