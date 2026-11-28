@@ -17,6 +17,9 @@ const (
 	// AcmeOlsVhostDir is the dedicated OpenLiteSpeed vhost directory for HTTP-01 ACME challenges.
 	AcmeOlsVhostDir = "/usr/local/lsws/conf/vhosts/lc-acme-challenge"
 
+	// OlsHttpdConfigPath is the main OpenLiteSpeed server configuration file.
+	OlsHttpdConfigPath = "/usr/local/lsws/conf/httpd_config.conf"
+
 	// DefaultCertStoreDir is the standard Let's Encrypt live certificate directory.
 	DefaultCertStoreDir = "/etc/letsencrypt/live"
 
@@ -26,6 +29,7 @@ const (
 
 // ProvisionAcmeVhostOptions configures `lc-mail acme-vhost-provision`.
 type ProvisionAcmeVhostOptions struct {
+	Domain     string // Optional specific hostname (e.g. mail.example.com) to map in httpd_config.conf.
 	RootDir    string // Defaults to "/" on Linux; overridable in tests.
 	SkipReload bool
 	Runner     CommandRunner
@@ -95,6 +99,11 @@ func ProvisionAcmeVhost(ctx context.Context, opts ProvisionAcmeVhostOptions) (Pr
 		return ProvisionAcmeVhostResult{}, fmt.Errorf("write OLS ACME vhost.conf: %w", err)
 	}
 
+	httpdConfPath := filepath.Join(rootDir, strings.TrimPrefix(OlsHttpdConfigPath, "/"))
+	if err := registerAcmeVhostInHttpdConfig(httpdConfPath, strings.ToLower(strings.TrimSpace(opts.Domain))); err != nil {
+		return ProvisionAcmeVhostResult{}, fmt.Errorf("register ACME vhost in httpd_config.conf: %w", err)
+	}
+
 	if !opts.SkipReload {
 		if err := reloadOpenLiteSpeed(ctx, runner); err != nil {
 			return ProvisionAcmeVhostResult{}, fmt.Errorf("reload OpenLiteSpeed: %w", err)
@@ -127,15 +136,16 @@ func IssueStandaloneMailTls(ctx context.Context, opts IssueStandaloneMailTlsOpti
 		runner = ExecRunner{}
 	}
 
+	mailHost := "mail." + domain
+
 	if _, err := ProvisionAcmeVhost(ctx, ProvisionAcmeVhostOptions{
+		Domain:     mailHost,
 		RootDir:    opts.RootDir,
 		SkipReload: opts.SkipReload,
 		Runner:     runner,
 	}); err != nil {
 		return IssueStandaloneMailTlsResult{}, fmt.Errorf("provision ACME challenge vhost: %w", err)
 	}
-
-	mailHost := "mail." + domain
 
 	acmeBin := strings.TrimSpace(opts.AcmeBin)
 	if acmeBin == "" {
@@ -249,4 +259,51 @@ listener Default {
   map                     lc-acme-challenge *
 }
 `, AcmeChallengeWebroot, AcmeOlsVhostDir)
+}
+
+func registerAcmeVhostInHttpdConfig(httpdConfPath string, domain string) error {
+	raw, err := os.ReadFile(httpdConfPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	content := string(raw)
+	updated := content
+
+	if !strings.Contains(updated, "virtualhost lc-acme-challenge {") {
+		vhostBlock := fmt.Sprintf(`virtualhost lc-acme-challenge {
+  vhRoot                  %s
+  configFile              %s/vhconf.conf
+  allowSymbolLink         0
+  enableScript            0
+  restrained              1
+}
+`, AcmeChallengeWebroot, AcmeOlsVhostDir)
+
+		const vhostsEndMarker = "# END LITECONTROL VHOSTS"
+		if strings.Contains(updated, vhostsEndMarker) {
+			updated = strings.Replace(updated, vhostsEndMarker, vhostBlock+vhostsEndMarker, 1)
+		} else {
+			updated += "\n" + vhostBlock
+		}
+	}
+
+	if domain != "" {
+		mapLine := fmt.Sprintf("  map                     lc-acme-challenge %s", domain)
+		if !strings.Contains(updated, mapLine) {
+			const mapEndMarker = "  # END LITECONTROL MAP_HTTP"
+			if strings.Contains(updated, mapEndMarker) {
+				updated = strings.Replace(updated, mapEndMarker, mapLine+"\n"+mapEndMarker, 1)
+			}
+		}
+	}
+
+	if updated == content {
+		return nil
+	}
+
+	return os.WriteFile(httpdConfPath, []byte(updated), 0o644)
 }

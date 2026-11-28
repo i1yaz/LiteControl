@@ -65,6 +65,25 @@ func TestIssueStandaloneMailTlsProvisionsVhostAndRunsAcmeSh(t *testing.T) {
 	tmpDir := t.TempDir()
 	runner := &fakeRunner{}
 
+	httpdConfPath := filepath.Join(tmpDir, strings.TrimPrefix(OlsHttpdConfigPath, "/"))
+	if err := os.MkdirAll(filepath.Dir(httpdConfPath), 0o755); err != nil {
+		t.Fatalf("mkdir httpd_config dir: %v", err)
+	}
+	initialHttpdConf := `# BEGIN LITECONTROL VHOSTS
+# END LITECONTROL VHOSTS
+
+listener Default {
+  address                 *:80
+  secure                  0
+  # BEGIN LITECONTROL MAP_HTTP
+  # END LITECONTROL MAP_HTTP
+  map                     Example *
+}
+`
+	if err := os.WriteFile(httpdConfPath, []byte(initialHttpdConf), 0o644); err != nil {
+		t.Fatalf("write initial httpd_config.conf: %v", err)
+	}
+
 	res, err := IssueStandaloneMailTls(context.Background(), IssueStandaloneMailTlsOptions{
 		Domain:       "Tenant-Mail.Example.COM",
 		Email:        "admin@tenant-mail.example.com",
@@ -90,6 +109,17 @@ func TestIssueStandaloneMailTlsProvisionsVhostAndRunsAcmeSh(t *testing.T) {
 	}
 	if res.ExpiresAt <= 0 {
 		t.Fatalf("expected positive expires_at, got %d", res.ExpiresAt)
+	}
+
+	updatedHttpdConf, err := os.ReadFile(httpdConfPath)
+	if err != nil {
+		t.Fatalf("read updated httpd_config.conf: %v", err)
+	}
+	if !strings.Contains(string(updatedHttpdConf), "virtualhost lc-acme-challenge {") {
+		t.Fatalf("expected virtualhost lc-acme-challenge in httpd_config.conf, got:\n%s", string(updatedHttpdConf))
+	}
+	if !strings.Contains(string(updatedHttpdConf), "map                     lc-acme-challenge mail.tenant-mail.example.com") {
+		t.Fatalf("expected listener map for mail.tenant-mail.example.com in httpd_config.conf, got:\n%s", string(updatedHttpdConf))
 	}
 
 	foundIssue := false
