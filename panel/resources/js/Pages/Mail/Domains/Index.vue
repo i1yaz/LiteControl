@@ -254,14 +254,14 @@ const formatDate = (iso) => {
                                             Webmail
                                         </a>
                                         <UiButton
-                                            size="sm"
-                                            variant="ghost"
+                                            size="xs"
+                                            variant="secondary"
                                             @click="editingDomain = item"
                                         >
                                             Edit
                                         </UiButton>
                                         <UiButton
-                                            size="sm"
+                                            size="xs"
                                             variant="danger-soft"
                                             @click="deletingDomain = item"
                                         >
