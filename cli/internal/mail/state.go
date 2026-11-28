@@ -14,12 +14,23 @@ import (
 // MailDomainState represents an active mail domain row read from MariaDB.
 type MailDomainState struct {
 	Domain              string
+	MailHostname        string
+	UsesSharedMailHost  bool
 	Active              bool
 	DkimEnabled         bool
 	SpamFilterEnabled   bool
 	SpamHeaderScore     float64
 	SpamRejectScore     float64
 	OutboundHourlyLimit int
+}
+
+// EffectiveMailHost returns the configured mail hostname, or falls back to "mail.<domain>".
+func (d MailDomainState) EffectiveMailHost() string {
+	h := strings.ToLower(strings.TrimSpace(d.MailHostname))
+	if h != "" {
+		return h
+	}
+	return "mail." + d.Domain
 }
 
 // DkimKeyState represents an active or retired DKIM key row read from MariaDB.
@@ -142,51 +153,79 @@ func (r MariaDBStateReader) ReadState(ctx context.Context) (ReconcileState, erro
 		FilterMode: "light",
 	}
 
-	// 1. Read active domains.
-	domOut, err := runQuery("SELECT domain, active, dkim_enabled, spam_filter_enabled, spam_header_score, spam_reject_score, outbound_hourly_limit FROM mail_domains WHERE active = 1 ORDER BY domain ASC")
-	if err != nil {
-		// Fallback to v_postfix_domains if lc_mail_ro only has view grants.
-		viewOut, viewErr := runQuery("SELECT domain FROM v_postfix_domains ORDER BY domain ASC")
-		if viewErr != nil {
-			return ReconcileState{}, fmt.Errorf("query active mail domains: %w", err)
-		}
-		for _, line := range strings.Split(strings.TrimSpace(viewOut), "\n") {
-			d := strings.TrimSpace(line)
-			if d == "" {
-				continue
-			}
-			state.Domains = append(state.Domains, MailDomainState{
-				Domain:              d,
-				Active:              true,
-				DkimEnabled:         true,
-				SpamFilterEnabled:   false,
-				SpamHeaderScore:     6.0,
-				SpamRejectScore:     15.0,
-				OutboundHourlyLimit: 200,
-			})
-		}
-	} else {
+	// 1. Read active domains (preferring schema with mail_hostname & uses_shared_mail_host).
+	domOut, err := runQuery("SELECT domain, COALESCE(mail_hostname, ''), uses_shared_mail_host, active, dkim_enabled, spam_filter_enabled, spam_header_score, spam_reject_score, outbound_hourly_limit FROM mail_domains WHERE active = 1 ORDER BY domain ASC")
+	if err == nil {
 		for _, line := range strings.Split(strings.TrimSpace(domOut), "\n") {
 			line = strings.TrimSpace(line)
 			if line == "" {
 				continue
 			}
 			parts := strings.Split(line, "\t")
-			if len(parts) < 7 {
+			if len(parts) < 9 {
 				continue
 			}
-			hdrScore, _ := strconv.ParseFloat(parts[4], 64)
-			rejScore, _ := strconv.ParseFloat(parts[5], 64)
-			hourlyLimit, _ := strconv.Atoi(parts[6])
+			hdrScore, _ := strconv.ParseFloat(parts[6], 64)
+			rejScore, _ := strconv.ParseFloat(parts[7], 64)
+			hourlyLimit, _ := strconv.Atoi(parts[8])
 			state.Domains = append(state.Domains, MailDomainState{
 				Domain:              parts[0],
-				Active:              parts[1] == "1",
-				DkimEnabled:         parts[2] == "1",
-				SpamFilterEnabled:   parts[3] == "1",
+				MailHostname:        strings.TrimSpace(parts[1]),
+				UsesSharedMailHost:  parts[2] == "1",
+				Active:              parts[3] == "1",
+				DkimEnabled:         parts[4] == "1",
+				SpamFilterEnabled:   parts[5] == "1",
 				SpamHeaderScore:     hdrScore,
 				SpamRejectScore:     rejScore,
 				OutboundHourlyLimit: hourlyLimit,
 			})
+		}
+	} else {
+		// Fallback to legacy 7-column mail_domains schema or v_postfix_domains view.
+		legacyOut, legacyErr := runQuery("SELECT domain, active, dkim_enabled, spam_filter_enabled, spam_header_score, spam_reject_score, outbound_hourly_limit FROM mail_domains WHERE active = 1 ORDER BY domain ASC")
+		if legacyErr != nil {
+			viewOut, viewErr := runQuery("SELECT domain FROM v_postfix_domains ORDER BY domain ASC")
+			if viewErr != nil {
+				return ReconcileState{}, fmt.Errorf("query active mail domains: %w", viewErr)
+			}
+			for _, line := range strings.Split(strings.TrimSpace(viewOut), "\n") {
+				d := strings.TrimSpace(line)
+				if d == "" {
+					continue
+				}
+				state.Domains = append(state.Domains, MailDomainState{
+					Domain:              d,
+					Active:              true,
+					DkimEnabled:         true,
+					SpamFilterEnabled:   false,
+					SpamHeaderScore:     6.0,
+					SpamRejectScore:     15.0,
+					OutboundHourlyLimit: 200,
+				})
+			}
+		} else {
+			for _, line := range strings.Split(strings.TrimSpace(legacyOut), "\n") {
+				line = strings.TrimSpace(line)
+				if line == "" {
+					continue
+				}
+				parts := strings.Split(line, "\t")
+				if len(parts) < 7 {
+					continue
+				}
+				hdrScore, _ := strconv.ParseFloat(parts[4], 64)
+				rejScore, _ := strconv.ParseFloat(parts[5], 64)
+				hourlyLimit, _ := strconv.Atoi(parts[6])
+				state.Domains = append(state.Domains, MailDomainState{
+					Domain:              parts[0],
+					Active:              parts[1] == "1",
+					DkimEnabled:         parts[2] == "1",
+					SpamFilterEnabled:   parts[3] == "1",
+					SpamHeaderScore:     hdrScore,
+					SpamRejectScore:     rejScore,
+					OutboundHourlyLimit: hourlyLimit,
+				})
+			}
 		}
 	}
 
@@ -219,7 +258,10 @@ func (r MariaDBStateReader) ReadState(ctx context.Context) (ReconcileState, erro
 		certStore = filepath.Join(r.RootDir, "etc", "letsencrypt", "live")
 	}
 	for _, dom := range state.Domains {
-		if pair, ok := findDomainCert(certStore, dom.Domain); ok {
+		if dom.UsesSharedMailHost {
+			continue
+		}
+		if pair, ok := findDomainCert(certStore, dom.Domain, dom.EffectiveMailHost()); ok {
 			state.Certs[dom.Domain] = pair
 		}
 	}
@@ -227,12 +269,21 @@ func (r MariaDBStateReader) ReadState(ctx context.Context) (ReconcileState, erro
 	return state, nil
 }
 
-// findDomainCert checks mail.<domain> first, then <domain> in the cert store.
-func findDomainCert(certStoreDir, domain string) (CertPair, bool) {
-	candidates := []string{
-		filepath.Join(certStoreDir, "mail."+domain),
-		filepath.Join(certStoreDir, domain),
+// findDomainCert checks <mailHost> first, then mail.<domain>, then <domain> in the cert store.
+func findDomainCert(certStoreDir, domain, mailHost string) (CertPair, bool) {
+	candidates := make([]string, 0, 3)
+	seen := make(map[string]bool)
+	addCandidate := func(host string) {
+		h := strings.ToLower(strings.TrimSpace(host))
+		if h != "" && !seen[h] {
+			seen[h] = true
+			candidates = append(candidates, filepath.Join(certStoreDir, h))
+		}
 	}
+	addCandidate(mailHost)
+	addCandidate("mail." + domain)
+	addCandidate(domain)
+
 	for _, dir := range candidates {
 		cert := filepath.Join(dir, "fullchain.pem")
 		key := filepath.Join(dir, "privkey.pem")

@@ -8,6 +8,7 @@ use App\Domains\Mail\Actions\DeleteMailDomainAction;
 use App\Domains\Mail\Actions\EnableMailDomainAction;
 use App\Domains\Mail\Actions\UpdateMailDomainAction;
 use App\Domains\Mail\Contracts\WebmailDriverInterface;
+use App\Domains\Mail\Infrastructure\CliMailServerAdapter;
 use App\Domains\Mail\Models\MailDomain;
 use App\Domains\Mail\Models\MailPendingPurge;
 use App\Domains\Shared\Contracts\ModuleRegistryQueryInterface;
@@ -55,6 +56,8 @@ class MailDomainController extends Controller
             return [
                 'id' => $mailDomain->id,
                 'domain' => $mailDomain->domain,
+                'mail_hostname' => $mailDomain->mailHost(),
+                'uses_shared_mail_host' => (bool) $mailDomain->uses_shared_mail_host,
                 'ownership_source' => $mailDomain->ownership_source,
                 'active' => (bool) $mailDomain->active,
                 'default_quota_mb' => (int) $mailDomain->default_quota_mb,
@@ -117,6 +120,7 @@ class MailDomainController extends Controller
             'available_web_domains' => $availableWebDomains,
             'pending_purges' => $pendingPurges,
             'can_admin_override' => $user->isAdmin(),
+            'server_mail_hostname' => $user->isAdmin() ? CliMailServerAdapter::resolveServerMailHostname() : null,
             'mail_core_active' => $moduleRegistry->isActive('mail_core'),
         ]);
     }
@@ -131,6 +135,9 @@ class MailDomainController extends Controller
             throw ValidationException::withMessages(['domain' => $e->getMessage()]);
         }
 
+        $hasMailSubdomain = array_key_exists('mail_subdomain', $validated);
+        $mailSubdomain = $hasMailSubdomain ? (string) ($validated['mail_subdomain'] ?? '') : 'mail';
+
         $action->execute(
             actor: $request->user(),
             owner: $request->user(),
@@ -140,6 +147,8 @@ class MailDomainController extends Controller
             maxAccounts: (int) ($validated['max_accounts'] ?? 50),
             verifyDnsTxt: (bool) ($validated['verify_dns_txt'] ?? false),
             outboundHourlyLimit: (int) ($validated['outbound_hourly_limit'] ?? 200),
+            mailSubdomain: $mailSubdomain,
+            useSharedMailHost: (bool) ($validated['use_shared_mail_host'] ?? false),
         );
 
         return back()->with('success', "Mail enabled for {$domain->value}.");

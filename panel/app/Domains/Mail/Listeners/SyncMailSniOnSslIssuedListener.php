@@ -31,9 +31,14 @@ class SyncMailSniOnSslIssuedListener implements ShouldQueue
             $candidates[] = substr($normalized, 5);
         }
 
+        $candidates = array_values(array_unique($candidates));
+
         $updated = MailDomain::query()
             ->where('active', true)
-            ->whereIn('domain', array_values(array_unique($candidates)))
+            ->where(function ($query) use ($normalized, $candidates): void {
+                $query->where('mail_hostname', $normalized)
+                    ->orWhereIn('domain', $candidates);
+            })
             ->update(['tls_sni_synced_at' => now()]);
 
         if ($updated === 0) {

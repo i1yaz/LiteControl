@@ -36,12 +36,19 @@ final class IssueStandaloneMailTlsAction
             ]);
         }
 
+        if ($mailDomain->uses_shared_mail_host) {
+            throw ValidationException::withMessages([
+                'domain' => "Mail domain '{$mailDomain->domain}' uses the server's shared mail hostname ('{$mailDomain->mailHost()}') and does not require a standalone TLS certificate.",
+            ]);
+        }
+
+        $targetHost = $mailDomain->mailHost();
         $contactEmail = (string) ($actor->email ?: "postmaster@{$mailDomain->domain}");
 
         // OS-first mutation: fail fast via LcCliException before emitting events or audit logs.
-        $result = $this->driver->issueStandaloneMailTls($mailDomain->domain, $contactEmail);
+        $result = $this->driver->issueStandaloneMailTls($targetHost, $contactEmail);
 
-        $mailHost = (string) ($result['domain'] ?? "mail.{$mailDomain->domain}");
+        $mailHost = (string) ($result['domain'] ?? $targetHost);
         $certPath = (string) ($result['cert_path'] ?? "/etc/letsencrypt/live/{$mailHost}/fullchain.pem");
         $keyPath = (string) ($result['key_path'] ?? "/etc/letsencrypt/live/{$mailHost}/privkey.pem");
         $expiresAt = (int) ($result['expires_at'] ?? now()->addDays(90)->timestamp);

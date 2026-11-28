@@ -107,7 +107,7 @@ it('issues standalone mail.{domain} TLS and automatically syncs SNI via Phase 7 
     $driver = Mockery::mock(MailServerDriverInterface::class);
     $driver->shouldReceive('issueStandaloneMailTls')
         ->once()
-        ->with('standalone-tls.example.com', 'tenant@standalone-tls.example.com')
+        ->with('mail.standalone-tls.example.com', 'tenant@standalone-tls.example.com')
         ->andReturn([
             'domain' => 'mail.standalone-tls.example.com',
             'cert_path' => '/etc/letsencrypt/live/mail.standalone-tls.example.com/fullchain.pem',

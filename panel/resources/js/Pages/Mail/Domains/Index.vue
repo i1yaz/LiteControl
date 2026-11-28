@@ -30,6 +30,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    server_mail_hostname: {
+        type: String,
+        default: '',
+    },
     mail_core_active: {
         type: Boolean,
         default: true,
@@ -168,9 +172,15 @@ const formatDate = (iso) => {
                                     <div class="font-mono font-medium text-theme-text-primary">
                                         {{ item.domain }}
                                     </div>
-                                    <div class="mt-1 flex items-center gap-1.5">
+                                    <div class="text-[11px] font-mono text-theme-text-muted mt-0.5">
+                                        Host: {{ item.mail_hostname }}
+                                    </div>
+                                    <div class="mt-1 flex flex-wrap items-center gap-1.5">
                                         <UiBadge variant="neutral">
                                             {{ ownershipLabel(item.ownership_source) }}
+                                        </UiBadge>
+                                        <UiBadge v-if="item.uses_shared_mail_host" variant="info">
+                                            Shared Host
                                         </UiBadge>
                                         <UiBadge v-if="item.dkim_enabled" variant="info">
                                             DKIM
@@ -191,37 +201,47 @@ const formatDate = (iso) => {
                                 </td>
                                 <td class="py-3 px-4">
                                     <div class="space-y-1.5">
-                                        <div class="flex flex-wrap items-center gap-1.5">
-                                            <span
-                                                v-if="item.tls_sni_synced_at"
-                                                class="text-xs text-theme-text-secondary"
-                                                :title="item.tls_sni_synced_at"
-                                            >
-                                                {{ formatDate(item.tls_sni_synced_at) }}
-                                            </span>
-                                            <UiBadge v-else variant="warning">
-                                                Pending SNI sync
+                                        <div v-if="item.uses_shared_mail_host" class="space-y-1">
+                                            <UiBadge variant="info">
+                                                Shared server TLS
                                             </UiBadge>
-                                        </div>
-                                        <div v-if="item.ownership_source === 'dns_txt'" class="space-y-1">
-                                            <div class="flex flex-wrap items-center gap-1.5">
-                                                <UiBadge :variant="item.tls_sni_synced_at ? 'success' : 'neutral'">
-                                                    mail.{{ item.domain }} HTTP-01 TLS: {{ item.tls_sni_synced_at ? 'Active' : 'Not issued' }}
-                                                </UiBadge>
-                                                <UiButton
-                                                    size="xs"
-                                                    variant="secondary"
-                                                    :loading="issuingTlsDomainId === item.id"
-                                                    :disabled="!item.active || issuingTlsDomainId !== null"
-                                                    @click="issueStandaloneTls(item)"
-                                                >
-                                                    {{ item.tls_sni_synced_at ? 'Re-issue TLS' : 'Request TLS' }}
-                                                </UiButton>
-                                            </div>
                                             <p class="text-[11px] text-theme-text-muted leading-snug max-w-xs">
-                                                Point <code class="font-mono">mail.{{ item.domain }}</code> A/AAAA to this server before requesting HTTP-01 ACME TLS.
+                                                Uses <code class="font-mono">{{ item.mail_hostname }}</code>
                                             </p>
                                         </div>
+                                        <template v-else>
+                                            <div class="flex flex-wrap items-center gap-1.5">
+                                                <span
+                                                    v-if="item.tls_sni_synced_at"
+                                                    class="text-xs text-theme-text-secondary"
+                                                    :title="item.tls_sni_synced_at"
+                                                >
+                                                    {{ formatDate(item.tls_sni_synced_at) }}
+                                                </span>
+                                                <UiBadge v-else variant="warning">
+                                                    Pending SNI sync
+                                                </UiBadge>
+                                            </div>
+                                            <div v-if="item.ownership_source === 'dns_txt'" class="space-y-1">
+                                                <div class="flex flex-wrap items-center gap-1.5">
+                                                    <UiBadge :variant="item.tls_sni_synced_at ? 'success' : 'neutral'">
+                                                        {{ item.mail_hostname }} HTTP-01 TLS: {{ item.tls_sni_synced_at ? 'Active' : 'Not issued' }}
+                                                    </UiBadge>
+                                                    <UiButton
+                                                        size="xs"
+                                                        variant="secondary"
+                                                        :loading="issuingTlsDomainId === item.id"
+                                                        :disabled="!item.active || issuingTlsDomainId !== null"
+                                                        @click="issueStandaloneTls(item)"
+                                                    >
+                                                        {{ item.tls_sni_synced_at ? 'Re-issue TLS' : 'Request TLS' }}
+                                                    </UiButton>
+                                                </div>
+                                                <p class="text-[11px] text-theme-text-muted leading-snug max-w-xs">
+                                                    Point <code class="font-mono">{{ item.mail_hostname }}</code> A/AAAA to this server before requesting HTTP-01 ACME TLS.
+                                                </p>
+                                            </div>
+                                        </template>
                                     </div>
                                 </td>
                                 <td class="py-3 px-4">
@@ -280,6 +300,7 @@ const formatDate = (iso) => {
             :show="showEnableModal"
             :available-web-domains="available_web_domains"
             :can-admin-override="can_admin_override"
+            :server-mail-hostname="server_mail_hostname || ''"
             @close="showEnableModal = false"
         />
 
@@ -297,6 +318,8 @@ const formatDate = (iso) => {
 
         <VerifyTxtModal
             :show="showVerifyTxtModal"
+            :can-use-shared-mail-host="can_admin_override"
+            :server-mail-hostname="server_mail_hostname || ''"
             @close="showVerifyTxtModal = false"
         />
 </template>

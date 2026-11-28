@@ -33,6 +33,10 @@ class InstallModuleAction
             Cache::forever('mail_webmail_hostname', $cleanHostname);
         }
 
+        if ($module === 'mail_core' && $cleanHostname !== '') {
+            Cache::forever('mail_core_hostname', strtolower($cleanHostname));
+        }
+
         ($this->auditLogger ?? app(AuditLoggerInterface::class))->log([
             'user_id' => $actor->id,
             'action' => 'install_module',

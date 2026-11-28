@@ -655,16 +655,11 @@ cmd_ssl_mail() {
 
     case "${action}" in
         issue)
-            local base_domain="${1:-}"
+            local mail_host="${1:-}"
             local email="${2:-}"
-            [[ -n "${base_domain}" ]] || emit_error "Missing mail domain for SSL issuance."
-            validate_domain "${base_domain}"
-            base_domain="${base_domain,,}"
-
-            local mail_host="${base_domain}"
-            if [[ "${mail_host}" != mail.* ]]; then
-                mail_host="mail.${base_domain}"
-            fi
+            [[ -n "${mail_host}" ]] || emit_error "Missing mail hostname for SSL issuance."
+            validate_domain "${mail_host}"
+            mail_host="${mail_host,,}"
 
             local cert_dir="/etc/letsencrypt/live/${mail_host}"
             local cert_file="${cert_dir}/fullchain.pem"
@@ -686,7 +681,7 @@ cmd_ssl_mail() {
                     emit_error "acme.sh is not installed at ${ACME_BIN}."
                 fi
 
-                local acme_email="${email:-postmaster@${base_domain}}"
+                local acme_email="${email:-postmaster@${mail_host}}"
                 "${ACME_BIN}" --register-account -m "${acme_email}" --server letsencrypt >/dev/null 2>&1 || true
 
                 local acme_out=""
@@ -725,15 +720,10 @@ cmd_ssl_mail() {
             emit_success "Mail SSL certificate issued successfully for '${mail_host}'." "${data_json}"
             ;;
         delete)
-            local base_domain="${1:-}"
-            [[ -n "${base_domain}" ]] || emit_error "Missing mail domain for SSL deletion."
-            validate_domain "${base_domain}"
-            base_domain="${base_domain,,}"
-
-            local mail_host="${base_domain}"
-            if [[ "${mail_host}" != mail.* ]]; then
-                mail_host="mail.${base_domain}"
-            fi
+            local mail_host="${1:-}"
+            [[ -n "${mail_host}" ]] || emit_error "Missing mail hostname for SSL deletion."
+            validate_domain "${mail_host}"
+            mail_host="${mail_host,,}"
 
             local removed="false"
             local vh_name="lc_mail_acme"

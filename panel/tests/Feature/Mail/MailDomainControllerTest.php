@@ -322,7 +322,7 @@ it('issues standalone HTTP-01 TLS for a dns_txt domain owner and forbids other t
     $driverMock = Mockery::mock(MailServerDriverInterface::class);
     $driverMock->shouldReceive('issueStandaloneMailTls')
         ->once()
-        ->with('tls-standalone.org', $owner->email)
+        ->with('mail.tls-standalone.org', $owner->email)
         ->andReturn([
             'domain' => 'mail.tls-standalone.org',
             'cert_path' => '/etc/letsencrypt/live/mail.tls-standalone.org/fullchain.pem',
@@ -430,10 +430,118 @@ it('purges domain maildir and standalone SSL certificate when PurgeMailDomainJob
 
     $driverMock = Mockery::mock(MailServerDriverInterface::class);
     $driverMock->shouldReceive('purgeDomain')->once()->with('ssl-purge.org')->andReturn([]);
-    $driverMock->shouldReceive('removeStandaloneMailTls')->once()->with('ssl-purge.org')->andReturn(['removed' => true]);
+    $driverMock->shouldReceive('removeStandaloneMailTls')->once()->with('mail.ssl-purge.org')->andReturn(['removed' => true]);
 
     $job = new PurgeMailDomainJob($tombstone->id, 'ssl-purge.org', deleteSsl: true);
     $job->handle($driverMock);
 
     $this->assertDatabaseMissing('mail_pending_purges', ['id' => $tombstone->id]);
+});
+
+it('allows customizing the mail subdomain or using the apex domain', function () {
+    $admin = User::factory()->create(['username' => 'subadmin', 'role' => 'admin']);
+
+    $this->actingAs($admin)
+        ->post('/email/domains', [
+            'domain' => 'i1yas.top',
+            'mail_subdomain' => 'email',
+            'admin_override' => true,
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('mail_domains', [
+        'domain' => 'i1yas.top',
+        'mail_hostname' => 'email.i1yas.top',
+        'uses_shared_mail_host' => false,
+    ]);
+
+    $this->actingAs($admin)
+        ->post('/email/domains', [
+            'domain' => 'apex-mail.org',
+            'mail_subdomain' => '',
+            'admin_override' => true,
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('mail_domains', [
+        'domain' => 'apex-mail.org',
+        'mail_hostname' => 'apex-mail.org',
+        'uses_shared_mail_host' => false,
+    ]);
+
+    $this->actingAs($admin)
+        ->post('/email/domains', [
+            'domain' => 'bad-sub.org',
+            'mail_subdomain' => 'bad_sub!',
+            'admin_override' => true,
+        ])
+        ->assertSessionHasErrors('mail_subdomain');
+});
+
+it('allows admins only to assign the server shared mail hostname and protects shared TLS on delete', function () {
+    \Illuminate\Support\Facades\Cache::forever('mail_core_hostname', 'mail.algiosofts.top');
+
+    $admin = User::factory()->create(['username' => 'sharedadmin', 'role' => 'admin']);
+    $tenant = User::factory()->create(['username' => 'sharedtenant', 'role' => 'user']);
+
+    Domain::create([
+        'user_id' => $tenant->id,
+        'domain' => 'tenant-owned.org',
+        'type' => 'primary',
+        'document_root' => '/home/t/tenant-owned.org',
+        'php_version' => '8.3',
+        'status' => 'active',
+    ]);
+
+    // Non-admin does not receive server_mail_hostname prop and cannot enable shared host
+    $this->actingAs($tenant)
+        ->get('/email/domains')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('server_mail_hostname', null)
+        );
+
+    $this->actingAs($tenant)
+        ->post('/email/domains', [
+            'domain' => 'tenant-owned.org',
+            'use_shared_mail_host' => true,
+        ])
+        ->assertSessionHasErrors('use_shared_mail_host');
+
+    $this->assertDatabaseMissing('mail_domains', ['domain' => 'tenant-owned.org']);
+
+    // Admin sees server_mail_hostname prop and can enable shared host
+    $this->actingAs($admin)
+        ->get('/email/domains')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('server_mail_hostname', 'mail.algiosofts.top')
+        );
+
+    $this->actingAs($admin)
+        ->post('/email/domains', [
+            'domain' => 'shared-client.org',
+            'admin_override' => true,
+            'use_shared_mail_host' => true,
+        ])
+        ->assertRedirect();
+
+    $mailDomain = MailDomain::where('domain', 'shared-client.org')->firstOrFail();
+    expect($mailDomain->mailHost())->toBe('mail.algiosofts.top')
+        ->and($mailDomain->uses_shared_mail_host)->toBeTrue();
+
+    // DNS records omit A/AAAA for shared host and point MX to server shared host
+    $records = app(\App\Domains\Mail\Queries\RequiredMailDnsRecordsQuery::class)
+        ->execute($mailDomain, '203.0.113.10');
+    expect(collect($records)->pluck('type')->all())->not->toContain('A')
+        ->and(collect($records)->firstWhere('type', 'MX')['value'])->toBe('mail.algiosofts.top.');
+
+    // Deleting a shared-host domain must NEVER request SSL certificate deletion
+    $this->actingAs($admin)
+        ->delete("/email/domains/{$mailDomain->id}", ['delete_ssl' => true])
+        ->assertRedirect();
+
+    Queue::assertPushed(PurgeMailDomainJob::class, fn (PurgeMailDomainJob $job): bool => $job->domain === 'shared-client.org' && $job->deleteSsl === false);
+
+    \Illuminate\Support\Facades\Cache::forget('mail_core_hostname');
 });

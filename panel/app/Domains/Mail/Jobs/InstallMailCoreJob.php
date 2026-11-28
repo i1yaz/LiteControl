@@ -35,6 +35,9 @@ class InstallMailCoreJob implements ShouldQueue
 
         try {
             $mailDriver->installCore($targetHostname);
+            if ($targetHostname !== '' && $targetHostname !== 'localhost') {
+                Cache::forever('mail_core_hostname', strtolower($targetHostname));
+            }
             Cache::put($cacheKey, 'active', now()->addMinutes(30));
             Cache::forget($errorKey);
         } catch (\Throwable $e) {

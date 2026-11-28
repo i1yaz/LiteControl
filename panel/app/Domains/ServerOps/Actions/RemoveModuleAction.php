@@ -39,6 +39,7 @@ class RemoveModuleAction
         Cache::forget("module_install_{$module}");
         Cache::forget("module_install_{$module}_error");
         if ($module === 'mail_core') {
+            Cache::forget('mail_core_hostname');
             Cache::forget('module_install_mail_filter');
             Cache::forget('module_install_mail_filter_error');
             Cache::forget('module_install_clamav');

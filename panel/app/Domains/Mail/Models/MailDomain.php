@@ -14,6 +14,8 @@ class MailDomain extends Model
     protected $fillable = [
         'user_id',
         'domain',
+        'mail_hostname',
+        'uses_shared_mail_host',
         'ownership_source',
         'active',
         'default_quota_mb',
@@ -29,6 +31,7 @@ class MailDomain extends Model
     protected function casts(): array
     {
         return [
+            'uses_shared_mail_host' => 'boolean',
             'active' => 'boolean',
             'default_quota_mb' => 'integer',
             'max_accounts' => 'integer',
@@ -39,6 +42,17 @@ class MailDomain extends Model
             'outbound_hourly_limit' => 'integer',
             'tls_sni_synced_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Effective mail server hostname for MX, SMTP/IMAP, and TLS SNI.
+     * Falls back to `mail.<domain>` when no custom hostname is stored.
+     */
+    public function mailHost(): string
+    {
+        $custom = is_string($this->mail_hostname) ? strtolower(trim($this->mail_hostname)) : '';
+
+        return $custom !== '' ? $custom : "mail.{$this->domain}";
     }
 
     public function user(): BelongsTo

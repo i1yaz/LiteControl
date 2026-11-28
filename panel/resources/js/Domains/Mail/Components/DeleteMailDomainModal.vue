@@ -89,13 +89,16 @@ const handleClose = () => {
                 </ul>
             </UiAlert>
 
-            <div class="pt-1">
+            <div v-if="!domain?.uses_shared_mail_host" class="pt-1">
                 <UiToggle
                     v-model="form.delete_ssl"
                     label="Delete standalone mail SSL certificate"
-                    :description="`Also remove the Let's Encrypt certificate and OpenLiteSpeed ACME mapping for mail.${domain?.domain ?? ''}.`"
+                    :description="`Also remove the Let's Encrypt certificate and OpenLiteSpeed ACME mapping for ${domain?.mail_hostname || `mail.${domain?.domain ?? ''}`}.`"
                 />
             </div>
+            <p v-else class="text-xs text-theme-text-muted">
+                This domain uses the server's shared mail hostname (<code class="font-mono">{{ domain.mail_hostname }}</code>). The shared server TLS certificate will not be removed.
+            </p>
 
             <UiInput
                 id="confirm-delete-mail-domain"

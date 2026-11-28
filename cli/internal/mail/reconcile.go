@@ -208,7 +208,7 @@ func Reconcile(ctx context.Context, opts ReconcileOptions) (ReconcileResult, err
 		sniDir := filepath.Join(rootDir, "etc", "dovecot", "conf.d", "sni")
 		desiredSniFiles := make(map[string]bool)
 		for _, dom := range state.Domains {
-			if !dom.Active {
+			if !dom.Active || dom.UsesSharedMailHost {
 				continue
 			}
 			pair, ok := state.Certs[dom.Domain]
@@ -217,7 +217,7 @@ func Reconcile(ctx context.Context, opts ReconcileOptions) (ReconcileResult, err
 			}
 			fileName := dom.Domain + ".conf"
 			desiredSniFiles[fileName] = true
-			confContent := renderDovecotSniConf(dom.Domain, pair, dovecotSeries)
+			confContent := renderDovecotSniConf(dom.Domain, dom.EffectiveMailHost(), pair, dovecotSeries)
 			stageWrite("etc/dovecot/conf.d/sni/"+fileName, []byte(confContent), 0o644, "dovecot")
 		}
 		if entries, err := os.ReadDir(sniDir); err == nil {
@@ -382,27 +382,41 @@ func rollbackStagedOps(applied []*stagedOp) {
 func renderPostfixSniMap(state ReconcileState) string {
 	var b strings.Builder
 	b.WriteString("# Managed by LiteControl lc-mail reconcile\n")
-	domains := make([]string, 0, len(state.Domains))
+	activeDomains := make([]MailDomainState, 0, len(state.Domains))
 	for _, d := range state.Domains {
-		if d.Active {
+		if d.Active && !d.UsesSharedMailHost {
 			if _, ok := state.Certs[d.Domain]; ok {
-				domains = append(domains, d.Domain)
+				activeDomains = append(activeDomains, d)
 			}
 		}
 	}
-	sort.Strings(domains)
-	for _, d := range domains {
-		pair := state.Certs[d]
-		fmt.Fprintf(&b, "mail.%s %s %s\n", d, pair.KeyPath, pair.CertPath)
-		fmt.Fprintf(&b, "%s %s %s\n", d, pair.KeyPath, pair.CertPath)
+	sort.Slice(activeDomains, func(i, j int) bool {
+		return activeDomains[i].Domain < activeDomains[j].Domain
+	})
+	seenHosts := make(map[string]bool)
+	for _, d := range activeDomains {
+		pair := state.Certs[d.Domain]
+		mailHost := d.EffectiveMailHost()
+		if mailHost != "" && !seenHosts[mailHost] {
+			seenHosts[mailHost] = true
+			fmt.Fprintf(&b, "%s %s %s\n", mailHost, pair.KeyPath, pair.CertPath)
+		}
+		if d.Domain != "" && !seenHosts[d.Domain] {
+			seenHosts[d.Domain] = true
+			fmt.Fprintf(&b, "%s %s %s\n", d.Domain, pair.KeyPath, pair.CertPath)
+		}
 	}
 	return b.String()
 }
 
-func renderDovecotSniConf(domain string, pair CertPair, series DovecotSeries) string {
+func renderDovecotSniConf(domain, mailHost string, pair CertPair, series DovecotSeries) string {
 	var b strings.Builder
 	b.WriteString("# Managed by LiteControl lc-mail reconcile\n")
-	fmt.Fprintf(&b, "local_name mail.%s %s {\n", domain, domain)
+	if mailHost != "" && mailHost != domain {
+		fmt.Fprintf(&b, "local_name %s %s {\n", mailHost, domain)
+	} else {
+		fmt.Fprintf(&b, "local_name %s {\n", domain)
+	}
 	if series == Dovecot24 {
 		fmt.Fprintf(&b, "  ssl_server_cert_file = %s\n", pair.CertPath)
 		fmt.Fprintf(&b, "  ssl_server_key_file = %s\n", pair.KeyPath)

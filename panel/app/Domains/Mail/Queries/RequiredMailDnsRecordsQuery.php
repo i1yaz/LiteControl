@@ -29,27 +29,29 @@ final class RequiredMailDnsRecordsQuery
         ?MailDkimKey $activeDkimKey = null,
     ): array {
         $domain = $mailDomain->domain;
-        $mailHost = "mail.{$domain}";
+        $mailHost = $mailDomain->mailHost();
         $ipv4 = $serverIpv4 !== null && trim($serverIpv4) !== '' ? trim($serverIpv4) : '<SERVER_IPV4>';
 
-        $records = [
-            [
+        $records = [];
+
+        if (! $mailDomain->uses_shared_mail_host) {
+            $records[] = [
                 'purpose' => 'Mail Host (IPv4)',
                 'type' => 'A',
                 'name' => $mailHost,
                 'value' => $ipv4,
                 'ttl' => 3600,
-            ],
-        ];
-
-        if ($serverIpv6 !== null && trim($serverIpv6) !== '') {
-            $records[] = [
-                'purpose' => 'Mail Host (IPv6)',
-                'type' => 'AAAA',
-                'name' => $mailHost,
-                'value' => trim($serverIpv6),
-                'ttl' => 3600,
             ];
+
+            if ($serverIpv6 !== null && trim($serverIpv6) !== '') {
+                $records[] = [
+                    'purpose' => 'Mail Host (IPv6)',
+                    'type' => 'AAAA',
+                    'name' => $mailHost,
+                    'value' => trim($serverIpv6),
+                    'ttl' => 3600,
+                ];
+            }
         }
 
         $records[] = [

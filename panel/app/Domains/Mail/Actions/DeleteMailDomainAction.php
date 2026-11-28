@@ -28,10 +28,12 @@ final class DeleteMailDomainAction
     public function execute(User $actor, MailDomain $mailDomain, bool $deleteSsl = true): void
     {
         $domainName = $mailDomain->domain;
+        $mailHost = $mailDomain->mailHost();
+        $effectiveDeleteSsl = $mailDomain->uses_shared_mail_host ? false : $deleteSsl;
         $domainId = $mailDomain->id;
         $emailsToEvict = [];
 
-        $tombstone = DB::transaction(function () use ($actor, $mailDomain, $domainName, $domainId, $deleteSsl, &$emailsToEvict): MailPendingPurge {
+        $tombstone = DB::transaction(function () use ($actor, $mailDomain, $domainName, $mailHost, $domainId, $effectiveDeleteSsl, &$emailsToEvict): MailPendingPurge {
             $emailsToEvict = MailAccount::query()
                 ->where('mail_domain_id', $domainId)
                 ->pluck('email')
@@ -58,15 +60,16 @@ final class DeleteMailDomainAction
                 'target_id' => $domainId,
                 'metadata' => [
                     'domain' => $domainName,
+                    'mail_hostname' => $mailHost,
                     'accounts_deleted' => count($emailsToEvict),
-                    'delete_ssl' => $deleteSsl,
+                    'delete_ssl' => $effectiveDeleteSsl,
                 ],
             ]);
 
             return $purge;
         });
 
-        PurgeMailDomainJob::dispatch($tombstone->id, $domainName, deleteSsl: $deleteSsl);
+        PurgeMailDomainJob::dispatch($tombstone->id, $domainName, deleteSsl: $effectiveDeleteSsl, sslHostname: $mailHost);
         ReconcileMailServerJob::dispatch('all');
         MailDnsRecordsChanged::dispatch($domainName, []);
 

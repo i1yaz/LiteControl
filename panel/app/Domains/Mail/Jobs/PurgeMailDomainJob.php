@@ -21,6 +21,7 @@ class PurgeMailDomainJob implements ShouldQueue
         public readonly int $purgeId,
         public readonly string $domain,
         public readonly bool $deleteSsl = false,
+        public readonly ?string $sslHostname = null,
     ) {
         $this->afterCommit();
     }
@@ -40,7 +41,10 @@ class PurgeMailDomainJob implements ShouldQueue
         try {
             $mailDriver->purgeDomain($this->domain);
             if ($this->deleteSsl) {
-                $mailDriver->removeStandaloneMailTls($this->domain);
+                $targetSslHost = is_string($this->sslHostname) && trim($this->sslHostname) !== ''
+                    ? trim($this->sslHostname)
+                    : "mail.{$this->domain}";
+                $mailDriver->removeStandaloneMailTls($targetSslHost);
             }
             $purge->delete();
         } catch (\Throwable $e) {

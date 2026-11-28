@@ -7,12 +7,38 @@ namespace App\Domains\Mail\Infrastructure;
 use App\Domains\Mail\Contracts\MailServerDriverInterface;
 use App\Exceptions\System\LcCliException;
 use App\Support\Cli\LcCliService;
+use Illuminate\Support\Facades\Cache;
 
 class CliMailServerAdapter implements MailServerDriverInterface
 {
     public function __construct(
         protected LcCliService $lcCli
     ) {}
+
+    /**
+     * Resolve the mail server's primary hostname (Postfix myhostname / mail_core install hostname).
+     */
+    public static function resolveServerMailHostname(string $postfixMainCf = '/etc/postfix/main.cf'): ?string
+    {
+        $cached = Cache::get('mail_core_hostname');
+        if (is_string($cached) && trim($cached) !== '') {
+            return strtolower(trim($cached));
+        }
+
+        if (is_file($postfixMainCf) && is_readable($postfixMainCf)) {
+            $contents = @file_get_contents($postfixMainCf);
+            if (is_string($contents) && preg_match('/^\s*myhostname\s*=\s*([^\s#]+)/m', $contents, $matches) === 1) {
+                $host = strtolower(trim($matches[1]));
+                if ($host !== '' && $host !== 'localhost') {
+                    Cache::forever('mail_core_hostname', $host);
+
+                    return $host;
+                }
+            }
+        }
+
+        return null;
+    }
 
     public function installCore(string $hostname): array
     {
