@@ -40,12 +40,6 @@ func ExecuteMail(args []string) error {
 		return runMailFilterDemote(args[1:])
 	case "filter-status":
 		return runMailFilterStatus(args[1:])
-	case "webmail-install":
-		return runMailWebmailInstall(args[1:])
-	case "webmail-uninstall":
-		return runMailWebmailUninstall(args[1:])
-	case "webmail-status":
-		return runMailWebmailStatus(args[1:])
 	case "-h", "--help", "help":
 		printMailUsage()
 		return nil
@@ -419,82 +413,6 @@ func runMailFilterStatus(args []string) error {
 	return json.NewEncoder(os.Stdout).Encode(res)
 }
 
-func runMailWebmailInstall(args []string) error {
-	fs := flag.NewFlagSet("mail webmail-install", flag.ContinueOnError)
-	driver := fs.String("driver", "snappymail", "Webmail driver (snappymail)")
-	hostname := fs.String("hostname", "", "Server-level FQDN hostname for webmail (required)")
-	lsphpBin := fs.String("lsphp-bin", "", "Path to lsphp binary")
-	skipReload := fs.Bool("skip-reload", false, "Skip OpenLiteSpeed reload")
-
-	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
-			return nil
-		}
-		return err
-	}
-
-	if *hostname == "" {
-		fs.Usage()
-		return fmt.Errorf("--hostname is required")
-	}
-
-	res, err := mail.WebmailInstall(context.Background(), mail.WebmailInstallOptions{
-		Driver:     *driver,
-		Hostname:   *hostname,
-		LsphpBin:   *lsphpBin,
-		SkipReload: *skipReload,
-	})
-	if err != nil {
-		return err
-	}
-
-	return json.NewEncoder(os.Stdout).Encode(res)
-}
-
-func runMailWebmailUninstall(args []string) error {
-	fs := flag.NewFlagSet("mail webmail-uninstall", flag.ContinueOnError)
-	driver := fs.String("driver", "snappymail", "Webmail driver (snappymail)")
-	skipReload := fs.Bool("skip-reload", false, "Skip OpenLiteSpeed reload")
-
-	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
-			return nil
-		}
-		return err
-	}
-
-	res, err := mail.WebmailUninstall(context.Background(), mail.WebmailUninstallOptions{
-		Driver:     *driver,
-		SkipReload: *skipReload,
-	})
-	if err != nil {
-		return err
-	}
-
-	return json.NewEncoder(os.Stdout).Encode(res)
-}
-
-func runMailWebmailStatus(args []string) error {
-	fs := flag.NewFlagSet("mail webmail-status", flag.ContinueOnError)
-	driver := fs.String("driver", "snappymail", "Webmail driver (snappymail)")
-
-	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
-			return nil
-		}
-		return err
-	}
-
-	res, err := mail.WebmailStatus(context.Background(), mail.WebmailStatusOptions{
-		Driver: *driver,
-	})
-	if err != nil {
-		return err
-	}
-
-	return json.NewEncoder(os.Stdout).Encode(res)
-}
-
 func printMailUsage() {
 	fmt.Fprintln(os.Stderr, "Usage: lc-mail <subcommand> [flags]")
 	fmt.Fprintln(os.Stderr, "")
@@ -510,7 +428,4 @@ func printMailUsage() {
 	fmt.Fprintln(os.Stderr, "  filter-enable   Upgrade Rspamd-Light to full inbound anti-spam (+ optional --with-clamav)")
 	fmt.Fprintln(os.Stderr, "  filter-demote   Demote Rspamd back to DKIM-Light + outbound ratelimit without touching DKIM keys")
 	fmt.Fprintln(os.Stderr, "  filter-status     Report anti-spam filter mode and running status as JSON")
-	fmt.Fprintln(os.Stderr, "  webmail-install   Provision isolated SnappyMail webmail vhost & LSAPI pool on OpenLiteSpeed")
-	fmt.Fprintln(os.Stderr, "  webmail-uninstall Remove dedicated SnappyMail OpenLiteSpeed vhost and app directory")
-	fmt.Fprintln(os.Stderr, "  webmail-status    Report webmail installation and running status as JSON")
 }

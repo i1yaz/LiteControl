@@ -72,6 +72,23 @@ read_panel_env() {
     printf "%s" "${line}"
 }
 
+SUBCMD="${1:-}"
+
+# Webmail (SnappyMail) is managed purely via shell scripts (reusing vhost.sh & ssl.sh)
+case "${SUBCMD}" in
+    webmail-install|webmail-uninstall|webmail-status)
+        # shellcheck source=../lib/webmail.sh
+        source "${SCRIPT_DIR}/../lib/webmail.sh"
+        shift
+        case "${SUBCMD}" in
+            webmail-install)   cmd_webmail_install "$@" ;;
+            webmail-uninstall) cmd_webmail_uninstall "$@" ;;
+            webmail-status)    cmd_webmail_status "$@" ;;
+        esac
+        exit $?
+        ;;
+esac
+
 ensure_go_cli_binary
 
 export DEBIAN_FRONTEND=noninteractive
@@ -114,12 +131,6 @@ if "${GO_CLI_BIN}" mail "$@"; then
         filter-demote)
             mark_module_removed "mail_filter"
             mark_module_removed "clamav"
-            ;;
-        webmail-install)
-            mark_module_installed "mail_webmail"
-            ;;
-        webmail-uninstall)
-            mark_module_removed "mail_webmail"
             ;;
     esac
     exit 0

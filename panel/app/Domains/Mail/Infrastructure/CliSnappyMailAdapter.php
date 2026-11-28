@@ -8,6 +8,7 @@ use App\Domains\Mail\Contracts\WebmailDriverInterface;
 use App\Domains\Shared\ValueObjects\DomainName;
 use App\Exceptions\System\LcCliException;
 use App\Support\Cli\LcCliService;
+use Illuminate\Support\Facades\Cache;
 
 class CliSnappyMailAdapter implements WebmailDriverInterface
 {
@@ -37,10 +38,15 @@ class CliSnappyMailAdapter implements WebmailDriverInterface
 
     public function loginUrl(DomainName $domain): string
     {
-        $configuredHost = parse_url((string) config('app.url'), PHP_URL_HOST);
-        $host = is_string($configuredHost) && $configuredHost !== '' && $configuredHost !== 'localhost'
-            ? $configuredHost
-            : "mail.{$domain->value}";
+        $webmailHost = Cache::get('mail_webmail_hostname');
+        if (is_string($webmailHost) && trim($webmailHost) !== '') {
+            $host = trim($webmailHost);
+        } else {
+            $configuredHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+            $host = is_string($configuredHost) && $configuredHost !== '' && $configuredHost !== 'localhost'
+                ? $configuredHost
+                : "mail.{$domain->value}";
+        }
 
         return sprintf('https://%s/?domain=%s', $host, rawurlencode($domain->value));
     }

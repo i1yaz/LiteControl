@@ -144,7 +144,7 @@ check_module_installed() {
             fi
             ;;
         mail_webmail)
-            [[ -f /var/lib/lc-mail/webmail.json && -f /usr/local/lsws/conf/vhosts/lc-webmail/vhconf.conf ]]
+            [[ -f /var/lib/lc-mail/webmail.json ]]
             ;;
         *)
             return 1
