@@ -20,15 +20,13 @@ context /.well-known/acme-challenge/ {
     enable                0
   }
   addDefaultCharset       off
-  accessControl  {
-    allow                 *
-  }
 }
 
-context / {
-  location                __ACME_WEBROOT__
-  allowBrowse             0
-  accessControl  {
-    deny                  *
-  }
+rewrite  {
+  enable                  1
+  autoLoadHtaccess        0
+  rules                   <<<END_rules
+RewriteCond %{REQUEST_URI} !^/\.well-known/acme-challenge/
+RewriteRule .* - [F,L]
+  END_rules
 }
