@@ -36,11 +36,32 @@ class CliSnappyMailAdapter implements WebmailDriverInterface
         ]);
     }
 
+    public static function resolveWebmailHostname(string $stateFile = '/var/lib/lc-mail/webmail.json'): ?string
+    {
+        $cached = Cache::get('mail_webmail_hostname');
+        if (is_string($cached) && trim($cached) !== '') {
+            return trim($cached);
+        }
+
+        if (is_file($stateFile) && is_readable($stateFile)) {
+            $decoded = json_decode((string) file_get_contents($stateFile), true);
+            $fromDisk = is_array($decoded) ? ($decoded['hostname'] ?? null) : null;
+            if (is_string($fromDisk) && trim($fromDisk) !== '') {
+                $host = trim($fromDisk);
+                Cache::forever('mail_webmail_hostname', $host);
+
+                return $host;
+            }
+        }
+
+        return null;
+    }
+
     public function loginUrl(DomainName $domain): string
     {
-        $webmailHost = Cache::get('mail_webmail_hostname');
-        if (is_string($webmailHost) && trim($webmailHost) !== '') {
-            $host = trim($webmailHost);
+        $webmailHost = self::resolveWebmailHostname();
+        if ($webmailHost !== null) {
+            $host = $webmailHost;
         } else {
             $configuredHost = parse_url((string) config('app.url'), PHP_URL_HOST);
             $host = is_string($configuredHost) && $configuredHost !== '' && $configuredHost !== 'localhost'

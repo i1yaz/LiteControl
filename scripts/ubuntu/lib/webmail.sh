@@ -9,7 +9,6 @@
 WEBMAIL_USER="lc-webmail"
 WEBMAIL_GROUP="lc-webmail"
 WEBMAIL_BASE_DIR="/var/lib/lc-webmail"
-WEBMAIL_APP_DIR="${WEBMAIL_BASE_DIR}/app"
 WEBMAIL_DATA_DIR="${WEBMAIL_BASE_DIR}/data"
 WEBMAIL_STATE_FILE="/var/lib/lc-mail/webmail.json"
 SNAPPYMAIL_DOWNLOAD_URL="${LC_SNAPPYMAIL_URL:-https://snappymail.eu/repository/latest.tar.gz}"
@@ -32,6 +31,7 @@ _webmail_read_state_hostname() {
 }
 
 _webmail_write_snappymail_configs() {
+    local app_dir="$1"
     local config_dir="${WEBMAIL_DATA_DIR}/_data_/_default_/configs"
     local domains_dir="${WEBMAIL_DATA_DIR}/_data_/_default_/domains"
     mkdir -p "${config_dir}" "${domains_dir}"
@@ -74,7 +74,7 @@ EOF
 EOF
 
     # Point SnappyMail to the isolated data directory outside docRoot
-    cat > "${WEBMAIL_APP_DIR}/include.php" <<EOF
+    cat > "${app_dir}/include.php" <<EOF
 <?php
 define('APP_DATA_FOLDER_PATH', '${WEBMAIL_DATA_DIR}/');
 EOF
@@ -121,16 +121,20 @@ cmd_webmail_install() {
 
     _webmail_validate_hostname "${hostname}"
 
+    # Place SnappyMail app inside vhost.sh's native vhRoot layout so OLS `restrained 1`
+    # and `setfacl u:nobody:x` work seamlessly without path/permission mismatches.
+    local app_dir="${LC_HOME_ROOT}/${WEBMAIL_USER}/${hostname}/public_html"
+
     # 1. Ensure isolated lc-webmail system user exists
     if ! id -u "${WEBMAIL_USER}" >/dev/null 2>&1; then
-        useradd --system --no-create-home --shell /usr/sbin/nologin --home-dir "${WEBMAIL_BASE_DIR}" "${WEBMAIL_USER}"
+        useradd --system --no-create-home --shell /usr/sbin/nologin --home-dir "${LC_HOME_ROOT}/${WEBMAIL_USER}" "${WEBMAIL_USER}"
     fi
 
-    # 2. Create isolated directory layout
-    mkdir -p "${WEBMAIL_APP_DIR}" "${WEBMAIL_DATA_DIR}" "${WEBMAIL_BASE_DIR}/logs"
+    # 2. Create directory layout
+    mkdir -p "${app_dir}" "${WEBMAIL_DATA_DIR}"
 
     # 3. Download and extract SnappyMail if not already present
-    if [[ ! -f "${WEBMAIL_APP_DIR}/index.php" && "${LC_TEST_MODE:-0}" != "1" ]]; then
+    if [[ ! -f "${app_dir}/index.php" && "${LC_TEST_MODE:-0}" != "1" ]]; then
         local tmp_tar
         tmp_tar="$(mktemp /tmp/snappymail-XXXXXX.tar.gz)"
         if ! curl -fsSL --retry 3 --connect-timeout 15 --max-time 180 -o "${tmp_tar}" "${SNAPPYMAIL_DOWNLOAD_URL}"; then
@@ -138,27 +142,30 @@ cmd_webmail_install() {
             echo "Failed to download SnappyMail from ${SNAPPYMAIL_DOWNLOAD_URL}." >&2
             return 1
         fi
-        tar -xzf "${tmp_tar}" -C "${WEBMAIL_APP_DIR}"
+        tar -xzf "${tmp_tar}" -C "${app_dir}"
         rm -f "${tmp_tar}"
     fi
 
-    # 4. Write SnappyMail configs and fix ownership
-    _webmail_write_snappymail_configs
-    chown -R "${WEBMAIL_USER}:${WEBMAIL_GROUP}" "${WEBMAIL_BASE_DIR}"
-    chmod 0750 "${WEBMAIL_BASE_DIR}" "${WEBMAIL_DATA_DIR}"
-    chmod 0755 "${WEBMAIL_APP_DIR}"
+    # 4. Write SnappyMail configs and set isolated permissions
+    _webmail_write_snappymail_configs "${app_dir}"
+    chown -R "${WEBMAIL_USER}:${WEBMAIL_GROUP}" "${WEBMAIL_BASE_DIR}" "${app_dir}"
+    chmod 0755 "${WEBMAIL_BASE_DIR}"
+    chmod 0750 "${WEBMAIL_DATA_DIR}"
 
     # 5. Clean up any legacy Go-generated vhost directory if present
     if [[ -d /usr/local/lsws/conf/vhosts/lc-webmail ]]; then
         rm -rf /usr/local/lsws/conf/vhosts/lc-webmail
     fi
 
-    # 6. Provision OpenLiteSpeed vhost & listener mapping via proven vhost.sh
-    LC_JSON_OUTPUT=0 "${SCRIPT_DIR}/vhost.sh" add "${hostname}" "${WEBMAIL_USER}" "${LC_PHP_VER:-83}" "${WEBMAIL_APP_DIR}" >&2
+    # 6. Idempotently provision OpenLiteSpeed vhost & listener mapping via proven vhost.sh
+    if [[ -f "${LC_CONF_DIR}/vhosts/${hostname}.conf" || -d "${OLS_VHOSTS_DIR}/${hostname}" ]]; then
+        LC_JSON_OUTPUT=0 "${SCRIPT_DIR}/vhost.sh" remove "${hostname}" >&2 || true
+    fi
+    LC_JSON_OUTPUT=0 "${SCRIPT_DIR}/vhost.sh" add "${hostname}" "${WEBMAIL_USER}" "${LC_PHP_VER:-83}" "${app_dir}" >&2
 
     # 7. Issue & bind TLS certificate via proven ssl.sh (best-effort if DNS not yet propagated)
     local tls_issued="false"
-    if LC_JSON_OUTPUT=0 "${SCRIPT_DIR}/ssl.sh" issue "${hostname}" "${WEBMAIL_APP_DIR}" >&2; then
+    if LC_JSON_OUTPUT=0 "${SCRIPT_DIR}/ssl.sh" issue "${hostname}" "${app_dir}" >&2; then
         tls_issued="true"
     fi
 
@@ -168,7 +175,7 @@ cmd_webmail_install() {
 {
   "driver": "${driver}",
   "hostname": "${hostname}",
-  "app_dir": "${WEBMAIL_APP_DIR}",
+  "app_dir": "${app_dir}",
   "tls_issued": ${tls_issued}
 }
 EOF
@@ -176,7 +183,7 @@ EOF
     mark_module_installed "mail_webmail"
 
     printf '{"status":"installed","driver":"%s","hostname":"%s","app_dir":"%s","tls_issued":%s}\n' \
-        "${driver}" "${hostname}" "${WEBMAIL_APP_DIR}" "${tls_issued}"
+        "${driver}" "${hostname}" "${app_dir}" "${tls_issued}"
 }
 
 cmd_webmail_uninstall() {
@@ -184,7 +191,8 @@ cmd_webmail_uninstall() {
     hostname="$(_webmail_read_state_hostname)"
 
     if [[ -n "${hostname}" ]]; then
-        LC_JSON_OUTPUT=0 "${SCRIPT_DIR}/vhost.sh" remove "${hostname}" >&2 || true
+        LC_JSON_OUTPUT=0 "${SCRIPT_DIR}/vhost.sh" remove "${hostname}" --delete-files >&2 || true
+        rm -rf "${LC_HOME_ROOT}/${WEBMAIL_USER}/${hostname}"
     fi
 
     # Clean up legacy Go-generated vhost dir if present

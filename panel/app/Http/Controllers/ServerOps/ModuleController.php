@@ -30,8 +30,8 @@ class ModuleController extends Controller
     public function index(): Response
     {
         $rawModules = ModuleRegistry::mergeWithCliList($this->moduleCli->listModules());
-        $webmailHost = Cache::get('mail_webmail_hostname');
-        if (! is_string($webmailHost) || $webmailHost === '') {
+        $webmailHost = \App\Domains\Mail\Infrastructure\CliSnappyMailAdapter::resolveWebmailHostname();
+        if ($webmailHost === null) {
             $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
             $webmailHost = is_string($appHost) && $appHost !== '' && $appHost !== 'localhost'
                 ? "webmail.{$appHost}"
